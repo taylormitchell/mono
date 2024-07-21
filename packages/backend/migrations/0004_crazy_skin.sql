@@ -1,1 +1,0 @@
-ALTER TABLE "note" ADD COLUMN "deleted_at" text;
