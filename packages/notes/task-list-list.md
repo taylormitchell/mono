@@ -1,0 +1,13 @@
+- linear tickets
+- github PRs
+    - ts
+        - https://github.com/IdeaFlowCo/thoughtstream-web/pulls/taylormitchell
+        - https://github.com/IdeaFlowCo/thoughtstream-web/pulls?q=is%3Apr+is%3Aopen+reviewed-by%3A%40me
+        - https://github.com/IdeaFlowCo/thoughtstream-web/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A%40me
+        - https://github.com/IdeaFlowCo/thoughtstream-web/pulls?q=is%3Apr+is%3Aopen+review%3Achanges-requested+author%3Ataylormitchell
+    - mew
+        - https://github.com/IdeaFlowCo/mew/pulls/taylormitchell
+        - https://github.com/IdeaFlowCo/mew/pulls?q=is%3Apr+is%3Aopen+reviewed-by%3A%40me
+        - https://github.com/IdeaFlowCo/mew/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A%40me
+        - https://github.com/IdeaFlowCo/mew/pulls?q=is%3Apr+is%3Aopen+review%3Achanges-requested+author%3Ataylormitchell
+- Chores list

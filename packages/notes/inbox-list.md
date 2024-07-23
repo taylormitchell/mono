@@ -1,0 +1,9 @@
+- https://linear.app/ideaflow/inbox (inbox and new issues)
+- things3 today/inbox
+- https://github.com/notifications
+- email
+- slack
+    - slack - ideaflow
+        - messages
+        - saved for later
+    - slack - ideaflow user hq

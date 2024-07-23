@@ -1,0 +1,8 @@
+- [ ] Write out the top-of-mind things you think you should work on
+- [ ] Pull in commitments
+    - [ ] Daily note template #roam/templates 
+    - [ ] Make note of events from calendar (Google Calendar)
+    - [ ] Review this week's intentions and bring in /create tasks
+    - [ ] pull in options from [[Task lists list]]
+    - [ ] bring forward last week of todos (search `[]` in `packages/notes/journals/*`)
+- [ ] make choices and sketch the day
