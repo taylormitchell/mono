@@ -19,3 +19,4 @@
 - do weekly review!
 - text people about cottage weekend 
 - ankify Conrad's Bachelor Party (e.g. Brandon, gab, alec, Colin, Adam)
+
