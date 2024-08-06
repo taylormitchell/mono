@@ -9,11 +9,10 @@ function ensureDirectoryExists(directory: string) {
   }
 }
 
-function createFile(filepath: string) {
+function createFile(filepath: string, content: string = "") {
   const directory = path.dirname(filepath);
   ensureDirectoryExists(directory);
-  fs.writeFileSync(filepath, ""); // Create an empty file
-  execSync(`code ${filepath}`);
+  fs.writeFileSync(filepath, content);
   console.log(`Created file: ${filepath}`);
 }
 
@@ -32,9 +31,14 @@ function getFormattedTimestamp() {
   );
 }
 
-function createPost() {
+function createPost(content?: string) {
   const filename = path.join("posts", `${getFormattedTimestamp()}.md`);
-  createFile(filename);
+  createFile(filename, content || "");
+  if (!content) {
+    execSync(`code ${filename}`);
+  } else {
+    console.log(`Post created with content: ${filename}`);
+  }
 }
 
 function createNote(name?: string) {
@@ -43,18 +47,18 @@ function createNote(name?: string) {
 }
 
 const command = process.argv[2];
-const arg = process.argv[3];
+const arg = process.argv.slice(3).join(" ");
 
 switch (command) {
   case "post":
-    createPost();
+    createPost(arg);
     break;
   case "note":
     createNote(arg);
     break;
   default:
-    console.log("Usage: ts-node cli.ts <command> [arg]");
+    console.log("Usage: bun cli.ts <command> [content]");
     console.log("Commands:");
-    console.log("  post            Create a new post");
+    console.log("  post [content]  Create a new post with optional content");
     console.log("  note [name]     Create a new note (optional name)");
 }
