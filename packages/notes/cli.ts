@@ -45,22 +45,14 @@ function createNote(name?: string) {
 
 function listDir(directory: string) {
   const files = fs.readdirSync(directory);
-  const byDate: Record<string, string[]> = {};
   files.sort().forEach((file) => {
-    const date = file.slice(0, 10);
-    if (!byDate[date]) {
-      byDate[date] = [];
-    }
-    byDate[date].push(file);
-  });
-  Object.entries(byDate).forEach(([date, files]) => {
-    console.log("# " + date);
-    files.forEach((file) => {
-      console.log("---");
-      console.log(fs.readFileSync(path.join(directory, file), "utf-8"));
-    });
     console.log("---");
+    console.log(file);
+    console.log("");
+    console.log(fs.readFileSync(path.join(directory, file), "utf-8"));
+    console.log("");
   });
+  console.log("---");
 }
 
 const command = process.argv[2];
