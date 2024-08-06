@@ -1,5 +1,7 @@
 {
   "explorer.fileNesting.enabled": true,
   "explorer.sortOrder": "default",
-  "explorer.sortOrderLexicographicOptions": "default"
+  "explorer.sortOrderLexicographicOptions": "default",
+  "markdown.updateLinksOnFileMove.enabled": "always",
+  "markdown.extension.completion.enabled": true
 }
