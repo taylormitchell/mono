@@ -13,6 +13,7 @@ function createFile(filepath: string, content: string = "") {
   const directory = path.dirname(absolutePath);
   ensureDirectoryExists(directory);
   fs.writeFileSync(absolutePath, content);
+  return absolutePath;
 }
 
 function getFormattedTimestamp() {
@@ -55,6 +56,26 @@ function listDir(directory: string) {
   console.log("---");
 }
 
+function openDailyNote() {
+  const today = new Date();
+  const month = today.toLocaleString("default", { month: "long" }).toLowerCase();
+  const day = today.getDate();
+  const filepath = path.join("journals", month, `${day}.md`);
+  const absolutePath = createFile(filepath);
+  execSync(`code ${absolutePath}`);
+}
+
+function openWeeklyNote() {
+  const today = new Date();
+  const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+  const month = monday.toLocaleString("default", { month: "long" }).toLowerCase();
+  const year = monday.getFullYear().toString();
+  const day = monday.getDate();
+  const filepath = path.join("journals", year, month, `week-of-${day}.md`);
+  const absolutePath = createFile(filepath);
+  execSync(`code ${absolutePath}`);
+}
+
 const command = process.argv[2];
 const args = process.argv.slice(3);
 
@@ -68,9 +89,17 @@ switch (command) {
   case "note":
     createNote(args[0]);
     break;
+  case "daily":
+    openDailyNote();
+    break;
+  case "weekly":
+    openWeeklyNote();
+    break;
   default:
     console.log("Usage: bun cli.ts <command> [content]");
     console.log("Commands:");
     console.log("  post [content]  Create a new post with optional content");
     console.log("  note [name]     Create a new note (optional name)");
+    console.log("  daily           Open or create today's daily note");
+    console.log("  weekly          Open or create this week's note");
 }
