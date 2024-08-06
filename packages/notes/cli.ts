@@ -17,13 +17,28 @@ function createFile(filepath: string) {
   console.log(`Created file: ${filepath}`);
 }
 
+function getFormattedTimestamp() {
+  const now = new Date();
+  const offset = -now.getTimezoneOffset();
+  const offsetSign = offset >= 0 ? "+" : "-";
+  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
+  const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, "0");
+
+  return (
+    now
+      .toLocaleString("sv-SE", { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+      .replace(" ", "_")
+      .replace(/:/g, "-") + `_${offsetSign}${offsetHours}${offsetMinutes}`
+  );
+}
+
 function createPost() {
-  const filename = path.join("posts", `${new Date().toISOString()}.md`);
+  const filename = path.join("posts", `${getFormattedTimestamp()}.md`);
   createFile(filename);
 }
 
 function createNote(name?: string) {
-  const filename = name ? `${name}.txt` : `${new Date().toISOString()}.txt`;
+  const filename = name ? `${name}.md` : `${getFormattedTimestamp()}.md`;
   createFile(filename);
 }
 
