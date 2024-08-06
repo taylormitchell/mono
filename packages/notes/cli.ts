@@ -5,15 +5,14 @@ import fs from "fs";
 function ensureDirectoryExists(directory: string) {
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory, { recursive: true });
-    console.log(`Created directory: ${directory}`);
   }
 }
 
 function createFile(filepath: string, content: string = "") {
-  const directory = path.dirname(filepath);
+  const absolutePath = path.join(__dirname, filepath);
+  const directory = path.dirname(absolutePath);
   ensureDirectoryExists(directory);
-  fs.writeFileSync(filepath, content);
-  console.log(`Created file: ${filepath}`);
+  fs.writeFileSync(absolutePath, content);
 }
 
 function getFormattedTimestamp() {
@@ -36,8 +35,6 @@ function createPost(content?: string) {
   createFile(filename, content || "");
   if (!content) {
     execSync(`code ${filename}`);
-  } else {
-    console.log(`Post created with content: ${filename}`);
   }
 }
 
@@ -46,15 +43,38 @@ function createNote(name?: string) {
   createFile(filename);
 }
 
+function listDir(directory: string) {
+  const files = fs.readdirSync(directory);
+  const byDate: Record<string, string[]> = {};
+  files.sort().forEach((file) => {
+    const date = file.slice(0, 10);
+    if (!byDate[date]) {
+      byDate[date] = [];
+    }
+    byDate[date].push(file);
+  });
+  Object.entries(byDate).forEach(([date, files]) => {
+    console.log("# " + date);
+    files.forEach((file) => {
+      console.log("---");
+      console.log(fs.readFileSync(path.join(directory, file), "utf-8"));
+    });
+    console.log("---");
+  });
+}
+
 const command = process.argv[2];
-const arg = process.argv.slice(3).join(" ");
+const args = process.argv.slice(3);
 
 switch (command) {
+  case "list":
+    listDir(path.join(__dirname, args[0] || ""));
+    break;
   case "post":
-    createPost(arg);
+    createPost(args[0]);
     break;
   case "note":
-    createNote(arg);
+    createNote(args[0]);
     break;
   default:
     console.log("Usage: bun cli.ts <command> [content]");
