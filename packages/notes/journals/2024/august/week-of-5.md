@@ -4,8 +4,6 @@
 - Week long info diet: no twitter and keep dnd on [^1]
 - Use mew for work and vscode + markdown files for personal (one week commitment)
 
-
-
 ## maybe/options
 - Collect together my thoughts on note-taking (note-cli and adjacent)
 - Start getting weekly gtd systems back up and running. Planning the week etc
