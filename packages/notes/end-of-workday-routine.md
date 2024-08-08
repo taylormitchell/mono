@@ -5,3 +5,4 @@
 - [ ] Final close down tabs, windows, and apps
 - [ ] Update slack status
 - [ ] Reflect on the day
+- [ ] Apply heated eyepatch

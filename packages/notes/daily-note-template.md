@@ -1,17 +1,3 @@
 # <Date>
-
-## Morning Routine
-[](./morning-routine.md)
-
-
-## Work
-[](./start-of-workday-routine.md)
-
-??
-
-Lunch
-
-??
-
-
-## Personal
+- [](./morning-routine.md)
+- [0/3] apply heated eyepatch 
