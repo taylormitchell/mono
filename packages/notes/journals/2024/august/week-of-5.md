@@ -1,6 +1,6 @@
 # Week of August 5th 2024
 
-- [ ] Get rings ~~sized~~ and ordered (at minimum scheduled to do this)
+- [x] Get rings sized and ordered (at minimum scheduled to do this)
 - [ ] Calculate bills for trip
 - Put heated eyepatch on 3x/day
 - Do weekly review, planning, and bring back eod reminder in calendar
