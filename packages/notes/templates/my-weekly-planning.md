@@ -7,7 +7,7 @@
         - [ ] Review Intentions 
             - Go to [[List of date pages]] and open up this quarter, month, personal work sprints, and last 2 weeks of intentions
             - Pull in tasks to this week's page
-    - [ ] Go through [Task lists list](../task-list-list.md)
+    - [ ] Go through [Task lists list](../notes/task-list-list.md)
 - [ ] Set intentions for day and week
 
 # Archive

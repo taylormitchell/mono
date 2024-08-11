@@ -4,18 +4,25 @@ import fs from "fs";
 
 const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-function ensureDirectoryExists(directory: string) {
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
+// find root directory
+// walk up the directory tree until we find a package.json
+let d = 0;
+let rootDir = __dirname;
+while (!fs.existsSync(path.join(rootDir, "package.json"))) {
+  rootDir = path.dirname(rootDir);
+  d += 1;
+  if (d > 10) {
+    console.error("Could not find root directory");
+    process.exit(1);
   }
 }
 
-function createFile(filepath: string, content: string = "") {
-  const absolutePath = path.join(__dirname, filepath);
-  const directory = path.dirname(absolutePath);
-  ensureDirectoryExists(directory);
-  fs.writeFileSync(absolutePath, content);
-  return absolutePath;
+function createOrOpenFile(filepath: string, content: string = "") {
+  if (!fs.existsSync(filepath)) {
+    fs.mkdirSync(path.dirname(filepath), { recursive: true });
+    fs.writeFileSync(filepath, content);
+  }
+  return filepath;
 }
 
 function getFormattedTimestamp() {
@@ -34,8 +41,8 @@ function getFormattedTimestamp() {
 }
 
 function createPost(content?: string) {
-  const filename = path.join("posts", `${getFormattedTimestamp()}.md`);
-  createFile(filename, content || "");
+  const filename = path.join(rootDir, "posts", `${getFormattedTimestamp()}.md`);
+  createOrOpenFile(filename, content || "");
   if (!content) {
     execSync(`code ${filename}`);
   }
@@ -43,7 +50,7 @@ function createPost(content?: string) {
 
 function createNote(name?: string) {
   const filename = name ? `${name}.md` : `${getFormattedTimestamp()}.md`;
-  createFile(filename);
+  createOrOpenFile(path.join(rootDir, "notes", filename));
 }
 
 function listDir(directory: string) {
@@ -63,8 +70,8 @@ function openDailyNote(n = 0) {
   date.setDate(date.getDate() + n);
   const month = date.toLocaleString("default", { month: "long" }).toLowerCase();
   const day = date.getDate();
-  const filepath = path.join("journals", month, `${day}.md`);
-  const absolutePath = createFile(filepath, `# ${date.toDateString()}\n\n`);
+  const filepath = path.join(rootDir, "journals", month, `${day}.md`);
+  const absolutePath = createOrOpenFile(filepath, `# ${date.toDateString()}\n\n`);
   execSync(`code ${absolutePath}`);
 }
 
@@ -74,8 +81,8 @@ function openWeeklyNote() {
   const month = monday.toLocaleString("default", { month: "long" }).toLowerCase();
   const year = monday.getFullYear().toString();
   const day = monday.getDate();
-  const filepath = path.join("journals", year, month, `week-of-${day}.md`);
-  const absolutePath = createFile(filepath);
+  const filepath = path.join(rootDir, "journals", year, month, `week-of-${day}.md`);
+  const absolutePath = createOrOpenFile(filepath);
   execSync(`code ${absolutePath}`);
 }
 
@@ -83,8 +90,8 @@ function openMonthlyNote() {
   const today = new Date();
   const month = today.toLocaleString("default", { month: "long" }).toLowerCase();
   const year = today.getFullYear().toString();
-  const filepath = path.join("journals", year, month, "index.md");
-  const absolutePath = createFile(filepath);
+  const filepath = path.join(rootDir, "journals", year, month, "index.md");
+  const absolutePath = createOrOpenFile(filepath);
   execSync(`code ${absolutePath}`);
 }
 
