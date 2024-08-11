@@ -1,2 +1,2 @@
-[](<../ray and taylor monthly touchpoint>)
-[](<../Riley (Ray).md>)
+[](../notes/ray-and-taylor-monthly-touchpoint)
+[](../notes/Riley-(Ray).md)
