@@ -70,7 +70,8 @@ function openDailyNote(n = 0) {
   date.setDate(date.getDate() + n);
   const month = date.toLocaleString("default", { month: "long" }).toLowerCase();
   const day = date.getDate();
-  const filepath = path.join(rootDir, "journals", month, `${day}.md`);
+  const year = date.getFullYear().toString();
+  const filepath = path.join(rootDir, "journals", year, month, `${day}.md`);
   const absolutePath = createOrOpenFile(filepath, `# ${date.toDateString()}\n\n`);
   execSync(`code ${absolutePath}`);
 }
