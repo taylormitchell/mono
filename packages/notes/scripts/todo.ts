@@ -3,6 +3,7 @@ import fs from "fs";
 import { glob } from "glob";
 import chalk from "chalk";
 import path from "path";
+chalk.level = 3;
 
 interface Todo {
   text: string;
