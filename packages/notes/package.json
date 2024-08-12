@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "post": "bun cli.ts post",
-    "note": "bun cli.ts note"
+    "post": "bun scripts/note.ts post",
+    "posts": "FORCE_COLOR=1 bun scripts/note.ts list ./posts | less -R",
+    "note": "bun scripts/note.ts note"
   },
   "keywords": [],
   "author": "",

@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
 import path from "path";
 import fs from "fs";
+import chalk from "chalk";
 
 const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -54,15 +55,16 @@ function createNote(name?: string) {
 }
 
 function listDir(directory: string) {
-  const files = fs.readdirSync(directory);
-  files.sort().forEach((file) => {
-    console.log("---");
-    console.log(file);
-    console.log("");
-    console.log(fs.readFileSync(path.join(directory, file), "utf-8"));
-    console.log("");
-  });
-  console.log("---");
+  const files = fs.readdirSync(directory).sort().reverse();
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(directory, file), "utf-8");
+    if (content.length > 0) {
+      console.log(chalk.green("file: " + file));
+      console.log("");
+      console.log(content);
+      console.log("");
+    }
+  }
 }
 
 function openDailyNote(n = 0) {
@@ -70,7 +72,8 @@ function openDailyNote(n = 0) {
   date.setDate(date.getDate() + n);
   const month = date.toLocaleString("default", { month: "long" }).toLowerCase();
   const day = date.getDate();
-  const filepath = path.join(rootDir, "journals", month, `${day}.md`);
+  const year = date.getFullYear().toString();
+  const filepath = path.join(rootDir, "journals", year, month, `${day}.md`);
   const absolutePath = createOrOpenFile(filepath, `# ${date.toDateString()}\n\n`);
   execSync(`code ${absolutePath}`);
 }
@@ -100,7 +103,7 @@ const args = process.argv.slice(3);
 
 switch (command) {
   case "list":
-    listDir(path.join(__dirname, args[0] || ""));
+    listDir(path.join(rootDir, args[0] || ""));
     break;
   case "post":
     createPost(args[0]);
