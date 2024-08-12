@@ -1,9 +1,14 @@
-import { Command } from "commander";
 import fs from "fs";
+import { Command } from "commander";
 import { glob } from "glob";
 import chalk from "chalk";
 import path from "path";
 chalk.level = 3;
+
+let rootDir = __dirname;
+while (!fs.existsSync(path.join(rootDir, "package.json"))) {
+  rootDir = path.dirname(rootDir);
+}
 
 interface Todo {
   text: string;
@@ -13,8 +18,45 @@ interface Todo {
   heading: string;
 }
 
+type Schedule =
+  | { type: "daily" }
+  | { type: "weekly"; day: number }
+  | { type: "monthly"; day: number };
+
+interface RecurringTodo {
+  text: string;
+  schedule: Schedule;
+  filename: string;
+  heading: string;
+}
+
 const TODO_REGEX = /^- (TODO|DOING|DONE):?\s*(.+)$/;
+const RECURRING_TODO_REGEX = /^- RECURRING:?\s*(.+)$/;
 const DUE_DATE_REGEX = /^  due-date: (\d{4}-\d{2}-\d{2})$/;
+const SCHEDULE_REGEX = /^  schedule: (.*)$/;
+
+function parseSchedule(line: string): Schedule | undefined {
+  const match = line.match(SCHEDULE_REGEX);
+  if (!match) return undefined;
+  const [, schedule] = match;
+  if (schedule === "daily") {
+    return { type: "daily" };
+  } else if (schedule.endsWith(" of every month")) {
+    const day = parseInt(schedule.split(" ")[0]);
+    if (day < 1 || day > 31 || isNaN(day)) {
+      console.error(chalk.red(`Invalid day of month: ${day}`));
+      return undefined;
+    }
+    return { type: "monthly", day };
+  } else if (schedule.endsWith(" of every week")) {
+    const day = parseInt(schedule.split(" ")[0]);
+    if (day < 0 || day > 6 || isNaN(day)) {
+      console.error(chalk.red(`Invalid day of week: ${day}`));
+      return undefined;
+    }
+    return { type: "weekly", day };
+  }
+}
 
 function parseTodos(content: string, filename: string): Todo[] {
   const lines = content.split("\n");
@@ -52,6 +94,39 @@ function parseTodos(content: string, filename: string): Todo[] {
   return todos;
 }
 
+function parseRecurringTodos(content: string, filename: string): RecurringTodo[] {
+  const lines = content.split("\n");
+  const todos: RecurringTodo[] = [];
+  let currentHeading = "";
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("#")) {
+      currentHeading = line.trim();
+    }
+
+    const todoMatch = line.match(RECURRING_TODO_REGEX);
+    if (todoMatch) {
+      const [, text] = todoMatch;
+      if (i + 1 < lines.length) {
+        const schedule = parseSchedule(lines[i + 1]);
+        if (schedule) {
+          const todo: RecurringTodo = {
+            text,
+            schedule,
+            filename,
+            heading: currentHeading,
+          };
+          todos.push(todo);
+          i++; // Skip the schedule line
+        }
+      }
+    }
+  }
+
+  return todos;
+}
+
 function getAllTodos(pathname: string): Todo[] {
   let files: string[];
 
@@ -69,6 +144,29 @@ function getAllTodos(pathname: string): Todo[] {
   for (const file of files) {
     const content = fs.readFileSync(file, "utf-8");
     const todos = parseTodos(content, path.relative(path.dirname(file), file));
+    allTodos = allTodos.concat(todos);
+  }
+
+  return allTodos;
+}
+
+function getAllRecurringTodos(pathname: string): RecurringTodo[] {
+  let files: string[];
+
+  if (fs.statSync(pathname).isDirectory()) {
+    files = glob.sync(path.join(pathname, "**/*.md"));
+  } else if (pathname.endsWith(".md")) {
+    files = [pathname];
+  } else {
+    console.error(chalk.red(`Invalid path: ${pathname}. Must be a directory or a .md file.`));
+    return [];
+  }
+
+  let allTodos: RecurringTodo[] = [];
+
+  for (const file of files) {
+    const content = fs.readFileSync(file, "utf-8");
+    const todos = parseRecurringTodos(content, path.relative(path.dirname(file), file));
     allTodos = allTodos.concat(todos);
   }
 
@@ -188,6 +286,14 @@ program
   .description("Add a new todo to a file")
   .action((filename, todoText, path = process.cwd()) => {
     addTodo(path, filename, todoText);
+  });
+
+program
+  .command("list-recurring [path]")
+  .description("List all recurring todos")
+  .action((path = process.cwd()) => {
+    const todos = getAllRecurringTodos(path);
+    console.log(todos);
   });
 
 program.parse(process.argv);
