@@ -3,7 +3,7 @@
 - [ ] Collect options
     - [ ] Brain dump an initial set
     - [ ] Review sketches of my future
-        - [ ] Review next 4 weeks
+        - [ ] Review next 4 weeks in calendar (hide work calendars)
         - [ ] Review Intentions 
             - Go to [[List of date pages]] and open up this quarter, month, personal work sprints, and last 2 weeks of intentions
             - Pull in tasks to this week's page

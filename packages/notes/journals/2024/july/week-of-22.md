@@ -13,7 +13,7 @@
 
 ## personal
 
-- Spend 1 week playing with using vscode + markdown files as my daily notes system 
+- Spend 1 week playing with using [vscode + markdown files as my daily notes system](../../../notes/plaintext-notes.md) 
 - Try to embody: [relax -> happy -> achieve](../../../notes/relax-happy-achieve.md)
     - Try to drop work-related trains of thought that start to build up anxiety and overwhelm.
 - do weekly review!
