@@ -10,13 +10,63 @@ while (!fs.existsSync(path.join(rootDir, "package.json"))) {
   rootDir = path.dirname(rootDir);
 }
 
-interface Todo {
+const months = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
+
+function pathToDate(pathname: string): Date | undefined {
+  const parts = pathname.split("/").reverse();
+  const day = parseInt(parts[0].split(".")[0]);
+  if (isNaN(day)) {
+    return;
+  }
+  const month = months.indexOf(parts[1].toLocaleLowerCase());
+  if (month === -1) {
+    return;
+  }
+  const year = parseInt(parts[2]);
+  if (isNaN(year)) {
+    return;
+  }
+  return new Date(year, month, day);
+}
+
+type Heading = {
+  type: "heading";
+  level: number;
+  text: string;
+};
+
+type String = {
+  type: "string";
+  value: string;
+};
+
+interface Bullet {
+  depth: number;
+  char: string;
+  value: String[] | Todo | RecurringTodo;
+}
+
+type Todo = {
+  type: "todo";
   text: string;
   status: "TODO" | "DOING" | "DONE";
   dueDate?: Date;
   filename: string;
   heading: string;
-}
+};
 
 type Schedule =
   | { type: "daily" }
@@ -24,6 +74,7 @@ type Schedule =
   | { type: "monthly"; day: number };
 
 interface RecurringTodo {
+  type: "recurring-todo";
   text: string;
   schedule: Schedule;
   filename: string;
@@ -34,6 +85,102 @@ const TODO_REGEX = /^- (TODO|DOING|DONE):?\s*(.+)$/;
 const RECURRING_TODO_REGEX = /^- RECURRING:?\s*(.+)$/;
 const DUE_DATE_REGEX = /^  due-date: (\d{4}-\d{2}-\d{2})$/;
 const SCHEDULE_REGEX = /^  schedule: (.*)$/;
+
+function parseBullet(
+  content: string[],
+  line: number
+): { bullet: Bullet; nextLine: number } | undefined {
+  let depth = 0;
+  while (content[line][depth] === " ") {
+    depth++;
+  }
+  const char = content[line][depth];
+  if (char !== "-" && char !== "*") {
+    return;
+  }
+  const value: String[] = [{ type: "string", value: content[line].slice(depth + 1) }];
+  let currentLine = line + 1;
+  while (
+    currentLine < content.length && // not at end
+    content[currentLine] !== "" && // not an empty line
+    !content[currentLine].match(/^\s*[-*]$/) // not a new bullet
+  ) {
+    value.push({ type: "string", value: content[currentLine] });
+    currentLine++;
+  }
+  return [{ depth, char, value }, currentLine];
+}
+
+function bulletToTodo(
+  bullet: Bullet,
+  filename: string,
+  heading: string
+): Todo | RecurringTodo | undefined {
+  if (Array.isArray(bullet.value) && bullet.value.length === 1) {
+    const match = bullet.value[0].value.match(TODO_REGEX);
+    if (match) {
+      const [, status, text] = match;
+      return {
+        type: "todo",
+        text,
+        status: status as "TODO" | "DOING" | "DONE",
+        filename,
+        heading,
+      };
+    }
+    const recurringMatch = bullet.value[0].value.match(RECURRING_TODO_REGEX);
+    if (recurringMatch) {
+      const [, text] = recurringMatch;
+      return {
+        type: "recurring-todo",
+        text,
+        schedule: { type: "daily" },
+        filename,
+        heading,
+      };
+    }
+  }
+  return;
+}
+
+function parseTodo(
+  content: string[],
+  context: { filename?: string; headings?: Heading[]; line: number }
+): { todo: Todo | RecurringTodo; nextLine: number } | undefined {
+  const res = parseBullet(content, context.line);
+  if (!res) {
+    return;
+  }
+  const todo = bulletToTodo(res.bullet, context.filename, "");
+  if (!todo) {
+    return;
+  }
+  return { todo, nextLine: res.nextLine };
+}
+
+function parseMarkdown(content: string, filename: string): (Todo | RecurringTodo)[] {
+  const lines = content.split("\n");
+  const todos: (Todo | RecurringTodo)[] = [];
+  let currentHeading = "";
+
+  let line = 0;
+  while (line < lines.length) {
+    if (lines[line].startsWith("#")) {
+      currentHeading = lines[line].trim();
+      line++;
+      continue;
+    }
+    const todo = parseTodo(lines, { filename, line });
+    if (todo) {
+      todos.push(todo.todo);
+      line = todo.nextLine;
+    } else {
+      line++;
+    }
+  }
+
+  return todos;
+}
 
 function parseSchedule(line: string): Schedule | undefined {
   const match = line.match(SCHEDULE_REGEX);
