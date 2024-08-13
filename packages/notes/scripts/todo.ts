@@ -1,5 +1,4 @@
 import fs from "fs";
-import { Command } from "commander";
 import { glob } from "glob";
 import chalk from "chalk";
 import path from "path";
@@ -294,27 +293,26 @@ function listAllTodos(path: string): void {
   });
 }
 
-// function listTodosDueToday(path: string): void {
-//   const todos = getAllTodos(path);
-//   const today = new Date();
-//   today.setHours(0, 0, 0, 0);
-
-//   const todosDueToday = todos.filter((todo) => {
-//     if (!todo.due) return false;
-//     const dueDate = new Date(todo.due);
-//     dueDate.setHours(0, 0, 0, 0);
-//     return dueDate.getTime() === today.getTime();
-//   });
-
-//   if (todosDueToday.length === 0) {
-//     console.log(chalk.green("No todos due today!"));
-//     return;
-//   }
-
-//   console.log(chalk.bold("Todos due today:"));
-//   const groupedTodosDueToday = groupTodosByFileAndHeading(todosDueToday);
-//   printGroupedTodos(groupedTodosDueToday);
-// }
+function listTodosDueToday(path: string): void {
+  const todosByFile = getAllTodos(path);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  todosByFile.forEach((todos, filename) => {
+    const dueToday = todos.filter((todo) => todo.due && todo.due.getTime() === today.getTime());
+    if (dueToday.length === 0) {
+      return;
+    }
+    console.log(chalk.cyan(`File: ${filename}`));
+    console.log(chalk.cyan("=".repeat(filename.length + 6)));
+    dueToday.forEach((todo) => {
+      console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
+      if (todo.due) {
+        console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
+      }
+    });
+    console.log();
+  });
+}
 
 function addTodo(path: string, filename: string, todoText: string): void {
   const filePath = fs.statSync(path).isDirectory() ? path.join(path, filename) : path;
@@ -340,16 +338,16 @@ function addTodo(path: string, filename: string, todoText: string): void {
   console.log(chalk.green(`Todo added to ${filePath}`));
 }
 
-const program = new Command();
+// const program = new Command();
 
-program.version("1.0.0").description("A CLI tool for managing todos in markdown files");
+// program.version("1.0.0").description("A CLI tool for managing todos in markdown files");
 
-program
-  .command("list [path]")
-  .description("List all todos")
-  .action((path = process.cwd()) => {
-    listAllTodos(path);
-  });
+// program
+//   .command("list [path]")
+//   .description("List all todos")
+//   .action((path = process.cwd()) => {
+//     listAllTodos(path);
+//   });
 
 // program
 //   .command("due-today [path]")
@@ -358,19 +356,21 @@ program
 //     listTodosDueToday(path);
 //   });
 
-program
-  .command("add <filename> <todoText> [path]")
-  .description("Add a new todo to a file")
-  .action((filename, todoText, path = process.cwd()) => {
-    addTodo(path, filename, todoText);
-  });
+// program
+//   .command("add <filename> <todoText> [path]")
+//   .description("Add a new todo to a file")
+//   .action((filename, todoText, path = process.cwd()) => {
+//     addTodo(path, filename, todoText);
+//   });
 
-program
-  .command("list-recurring [path]")
-  .description("List all recurring todos")
-  .action((path = process.cwd()) => {
-    const todos = getAllRecurringTodos(path);
-    console.log(todos);
-  });
+// program
+//   .command("list-recurring [path]")
+//   .description("List all recurring todos")
+//   .action((path = process.cwd()) => {
+//     const todos = getAllRecurringTodos(path);
+//     console.log(todos);
+//   });
 
-program.parse(process.argv);
+// program.parse(process.argv);
+
+listTodosDueToday(rootDir);

@@ -4,6 +4,7 @@
 - TODO Call proctologist
 - TODO Finalize bills for [trip](../../../gtd/projects/fishing-trip-2024.md)
 - TODO Do some writing/thinking about personal work projects 
+  due: 2024-08-12
 - DONE Pick up suits for Conrad's wedding
 - DONE Arrange travel to Conrad's rehearsal dinner
 
