@@ -39,6 +39,14 @@ function pathToDate(pathname: string): Date | undefined {
   return new Date(year, month, day);
 }
 
+export function getRootDir() {
+  let rootDir = __dirname;
+  while (!fs.existsSync(path.join(rootDir, "package.json"))) {
+    rootDir = path.dirname(rootDir);
+  }
+  return rootDir;
+}
+
 type Heading = {
   type: "heading";
   level: number;
@@ -58,49 +66,25 @@ type Todo = {
 
 function parseKeyValue(
   line: string,
-  i: number = 0
+  offset: number = 0
 ): { key: string; value: string; start: number; end: number } | undefined {
-  let key = "";
-  let value = "";
-  let start: number | null = null;
-  let end: number | null = null;
-  for (let c = i; c < line.length; c++) {
+  for (let c = offset; c < line.length; c++) {
     if (line[c] === "{") {
-      start = c;
       // handle id
       if (line[c + 1] === "#") {
-        key = "id";
-        const valueStart = c + 2;
-        while (line[c] !== "}" && c < line.length) {
-          c++;
+        const match = line.slice(c).match(/\{#(\w+)\}/);
+        if (match) {
+          return { key: "id", value: match[1], start: c, end: c + match[0].length - 1 };
         }
-        if (line[c] !== "}") continue;
-        value = line.slice(valueStart, c).trim();
-        end = c;
-        break;
       } else {
         // handle other key-value pairs
-        // consume key
-        while (line[c] !== ":" && line[c] !== "}" && c < line.length) {
-          c++;
+        const match = line.slice(c).match(/\{(\w+):([^:]*)\}/);
+        if (match) {
+          return { key: match[1], value: match[2], start: c, end: c + match[0].length - 1 };
         }
-        if (line[c] !== ":") continue;
-        key = line.slice(start + 1, c);
-        // consume value
-        c++;
-        const valueStart = c + 1;
-        while (line[c] !== "}" && c < line.length) {
-          c++;
-        }
-        if (line[c] !== "}") continue;
-        value = line.slice(valueStart, c).trim();
-        end = c;
-        break;
       }
     }
   }
-  if (!key || !start || !end) return;
-  return { key, value, start, end };
 }
 
 function parseTodo(line: string) {
@@ -143,15 +127,6 @@ function parseTodo(line: string) {
     due = new Date(year, month, day);
     due.setHours(0, 0, 0, 0);
   }
-  // TODO handle due date from filename
-  // TODO we should be able to parse todos like this that aren't in markdown or at beginning of line
-  // else {
-  //   // Or parse due date from filename
-  //   const date = pathToDate(filename);
-  //   if (date) {
-  //     due = date;
-  //   }
-  // }
   let id: string | undefined = undefined;
   const idKv = kvs.get("id");
   if (idKv) {
@@ -199,7 +174,7 @@ export function parseMarkdownFile(filename: string): Todo[] {
   return todos.map((todo) => ({ ...todo, due: todo.due || date, filename }));
 }
 
-function getAllTodos(pathname: string): Map<string, Todo[]> {
+function getAllTodos(pathname: string, ignore = true): Map<string, Todo[]> {
   let files: string[];
 
   if (fs.statSync(pathname).isDirectory()) {
@@ -209,6 +184,11 @@ function getAllTodos(pathname: string): Map<string, Todo[]> {
   } else {
     console.error(chalk.red(`Invalid path: ${pathname}. Must be a directory or a .md file.`));
     return new Map();
+  }
+
+  // ignore test files
+  if (ignore) {
+    files = files.filter((file) => !file.includes("test.md"));
   }
 
   const allTodos = new Map<string, Todo[]>();
@@ -240,27 +220,37 @@ export function listAllTodos(path: string): void {
   });
 }
 
-function sameDay(date1: Date, date2: Date): boolean {
+function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
   return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
+    date1.getFullYear() <= date2.getFullYear() &&
+    date1.getMonth() <= date2.getMonth() &&
+    date1.getDate() <= date2.getDate()
   );
 }
 
-export function listTodosDueToday(offset: number = 0): void {
-  const todosByFile = getAllTodos(rootDir);
+export function listTodosDueToday(pathname: string, offset: number = 0): void {
+  const todosByFile = getAllTodos(pathname);
   const day = new Date();
   day.setDate(day.getDate() + offset);
   day.setHours(0, 0, 0, 0);
+
+  const dueTodosByFile = new Map<string, Todo[]>();
   todosByFile.forEach((todos, filename) => {
-    const dueToday = todos.filter((todo) => todo.due && sameDay(todo.due, day));
-    if (dueToday.length === 0) {
-      return;
+    const dueToday = todos.filter((todo) => todo.due && lessThanOrEqualTo(todo.due, day));
+    if (dueToday.length > 0) {
+      dueTodosByFile.set(filename, dueToday);
     }
+  });
+
+  if (dueTodosByFile.size === 0) {
+    console.log(chalk.green("Nothing to do today!"));
+    return;
+  }
+
+  dueTodosByFile.forEach((todos, filename) => {
     console.log(chalk.cyan(`File: ${filename}`));
     console.log(chalk.cyan("=".repeat(filename.length + 6)));
-    dueToday.forEach((todo) => {
+    todos.forEach((todo) => {
       console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
       if (todo.due) {
         console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
