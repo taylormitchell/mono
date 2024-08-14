@@ -133,6 +133,9 @@ switch (command) {
   case "monthly":
     openMonthlyNote();
     break;
+  case "sync":
+    execSync(`cd ${__dirname} && git pull && git add --all && git commit -m "sync" && git push`);
+    break;
   default:
     console.log("Usage: bun cli.ts <command> [content]");
     console.log("Commands:");
@@ -140,4 +143,5 @@ switch (command) {
     console.log("  note [name]     Create a new note (optional name)");
     console.log("  daily [offset]  Open or create daily note (optional offset from today)");
     console.log("  weekly          Open or create this week's note");
+    console.log("  sync            Commit and push all changes");
 }
