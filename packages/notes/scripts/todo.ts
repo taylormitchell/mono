@@ -71,7 +71,7 @@ interface RecurringTodo {
   headings: Heading[];
 }
 
-const TODO_KEYWORDS = ["TODO", "DOING", "DONE"] as const;
+const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE"] as const;
 const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
 const RECURRING_TODO_REGEX = /^- RECURRING:?\s*(.+)$/;
 const DUE_DATE_REGEX = /^\s*due: (\d{4}-\d{2}-\d{2})$/;
@@ -88,22 +88,36 @@ function parseKeyValue(
   for (let c = i; c < line.length; c++) {
     if (line[c] === "{") {
       start = c;
-      // consume key
-      while (line[c] !== ":" && line[c] !== "}" && c < line.length) {
+      // handle id
+      if (line[c + 1] === "#") {
+        key = "id";
+        const valueStart = c + 2;
+        while (line[c] !== "}" && c < line.length) {
+          c++;
+        }
+        if (line[c] !== "}") continue;
+        value = line.slice(valueStart, c).trim();
+        end = c;
+        break;
+      } else {
+        // handle other key-value pairs
+        // consume key
+        while (line[c] !== ":" && line[c] !== "}" && c < line.length) {
+          c++;
+        }
+        if (line[c] !== ":") continue;
+        key = line.slice(start + 1, c);
+        // consume value
         c++;
+        const valueStart = c + 1;
+        while (line[c] !== "}" && c < line.length) {
+          c++;
+        }
+        if (line[c] !== "}") continue;
+        value = line.slice(valueStart, c).trim();
+        end = c;
+        break;
       }
-      if (line[c] !== ":") continue;
-      key = line.slice(start + 1, c);
-      // consume value
-      c++;
-      const valueStart = c + 1;
-      while (line[c] !== "}" && c < line.length) {
-        c++;
-      }
-      if (line[c] !== "}") continue;
-      value = line.slice(valueStart, c).trim();
-      end = c;
-      break;
     }
   }
   if (!key || !start || !end) return;
@@ -158,9 +172,9 @@ function parseTodo(line: string, ctx: { filename: string; headings: Heading[] })
     }
   }
   let id: string | undefined = undefined;
-  const idString = kvs.get("id");
-  if (idString && idString.value.startsWith("#")) {
-    id = idString.value.slice(1);
+  const idKv = kvs.get("id");
+  if (idKv) {
+    id = idKv.value.slice(1);
   }
 
   const text = line.slice(prefix.length, kvStart || line.length).trim();
@@ -434,7 +448,7 @@ program
     console.log(todos);
   });
 
-// program.parse(process.argv);
-listAllTodos(
-  "/Users/taylormitchell/Code/taylors-tech/packages/notes/journals/2024/august/week-of-12.md"
-);
+program.parse(process.argv);
+// listAllTodos(
+//   "/Users/taylormitchell/Code/taylors-tech/packages/notes/journals/2024/august/week-of-12.md"
+// );
