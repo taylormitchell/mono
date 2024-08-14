@@ -6,9 +6,6 @@ chalk.level = 3;
 
 const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE"] as const;
 const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
-// const RECURRING_TODO_REGEX = /^- RECURRING:?\s*(.+)$/;
-// const DUE_DATE_REGEX = /^\s*due: (\d{4}-\d{2}-\d{2})$/;
-const SCHEDULE_REGEX = /^\s*schedule: (.*)$/;
 
 const months = [
   "january",
@@ -58,19 +55,6 @@ type Todo = {
   filename?: string;
   headings?: Heading[];
 };
-
-type Schedule =
-  | { type: "daily" }
-  | { type: "weekly"; day: number }
-  | { type: "monthly"; day: number };
-
-interface RecurringTodo {
-  type: "recurring-todo";
-  text: string;
-  schedule: Schedule;
-  filename: string;
-  headings: Heading[];
-}
 
 function parseKeyValue(
   line: string,
@@ -187,29 +171,6 @@ function parseHeading(line: string) {
   const text = line.slice(level).trim();
   return { level, text };
 }
-
-// function parseSchedule(line: string): Schedule | undefined {
-//   const match = line.match(SCHEDULE_REGEX);
-//   if (!match) return undefined;
-//   const [, schedule] = match;
-//   if (schedule === "daily") {
-//     return { type: "daily" };
-//   } else if (schedule.endsWith(" of every month")) {
-//     const day = parseInt(schedule.split(" ")[0]);
-//     if (day < 1 || day > 31 || isNaN(day)) {
-//       console.error(chalk.red(`Invalid day of month: ${day}`));
-//       return undefined;
-//     }
-//     return { type: "monthly", day };
-//   } else if (schedule.endsWith(" of every week")) {
-//     const day = parseInt(schedule.split(" ")[0]);
-//     if (day < 0 || day > 6 || isNaN(day)) {
-//       console.error(chalk.red(`Invalid day of week: ${day}`));
-//       return undefined;
-//     }
-//     return { type: "weekly", day };
-//   }
-// }
 
 export function parseMarkdown(content: string) {
   const lines = content.split("\n");
