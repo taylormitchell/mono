@@ -1,0 +1,310 @@
+import fs from "fs";
+import { glob } from "glob";
+import chalk from "chalk";
+import path from "path";
+chalk.level = 3;
+
+const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE"] as const;
+const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
+// const RECURRING_TODO_REGEX = /^- RECURRING:?\s*(.+)$/;
+// const DUE_DATE_REGEX = /^\s*due: (\d{4}-\d{2}-\d{2})$/;
+const SCHEDULE_REGEX = /^\s*schedule: (.*)$/;
+
+const months = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
+
+function pathToDate(pathname: string): Date | undefined {
+  const parts = pathname.split("/").reverse();
+  const day = parseInt(parts[0].split(".")[0]);
+  if (isNaN(day)) {
+    return;
+  }
+  const month = months.indexOf(parts[1].toLocaleLowerCase());
+  if (month === -1) {
+    return;
+  }
+  const year = parseInt(parts[2]);
+  if (isNaN(year)) {
+    return;
+  }
+  return new Date(year, month, day);
+}
+
+type Heading = {
+  type: "heading";
+  level: number;
+  text: string;
+};
+
+type TodoStatus = (typeof TODO_KEYWORDS)[number];
+type Todo = {
+  type: "todo";
+  text: string;
+  status: TodoStatus;
+  due?: Date;
+  id?: string;
+  filename?: string;
+  headings?: Heading[];
+};
+
+type Schedule =
+  | { type: "daily" }
+  | { type: "weekly"; day: number }
+  | { type: "monthly"; day: number };
+
+interface RecurringTodo {
+  type: "recurring-todo";
+  text: string;
+  schedule: Schedule;
+  filename: string;
+  headings: Heading[];
+}
+
+function parseKeyValue(
+  line: string,
+  i: number = 0
+): { key: string; value: string; start: number; end: number } | undefined {
+  let key = "";
+  let value = "";
+  let start: number | null = null;
+  let end: number | null = null;
+  for (let c = i; c < line.length; c++) {
+    if (line[c] === "{") {
+      start = c;
+      // handle id
+      if (line[c + 1] === "#") {
+        key = "id";
+        const valueStart = c + 2;
+        while (line[c] !== "}" && c < line.length) {
+          c++;
+        }
+        if (line[c] !== "}") continue;
+        value = line.slice(valueStart, c).trim();
+        end = c;
+        break;
+      } else {
+        // handle other key-value pairs
+        // consume key
+        while (line[c] !== ":" && line[c] !== "}" && c < line.length) {
+          c++;
+        }
+        if (line[c] !== ":") continue;
+        key = line.slice(start + 1, c);
+        // consume value
+        c++;
+        const valueStart = c + 1;
+        while (line[c] !== "}" && c < line.length) {
+          c++;
+        }
+        if (line[c] !== "}") continue;
+        value = line.slice(valueStart, c).trim();
+        end = c;
+        break;
+      }
+    }
+  }
+  if (!key || !start || !end) return;
+  return { key, value, start, end };
+}
+
+function parseTodo(line: string) {
+  if (!line) {
+    return;
+  }
+  // only needs to start with the keyword
+  const match = line.match(TODO_REGEX);
+  if (!match) {
+    return;
+  }
+  const [prefix, keyword] = match;
+  const status = TODO_KEYWORDS.find((k) => k === keyword);
+  if (!status) {
+    return;
+  }
+
+  // Parse key-value pairs
+  // Assume that once you hit the first key-value pair, all subsequent lines are key-value pairs
+  const kvs: Map<string, { key: string; value: string }> = new Map();
+  let kvStart: number | null = null;
+  for (let c = 0; c < line.length; c++) {
+    const kv = parseKeyValue(line, c);
+    if (!kv) {
+      break;
+    }
+    kvs.set(kv.key, kv);
+    kvStart = kvStart || kv.start;
+    c = kv.end + 1;
+  }
+
+  // Grab values for supported key-value pairs
+  let due: Date | undefined = undefined;
+  const dueKv = kvs.get("due");
+  if (dueKv) {
+    const parts = dueKv.value.split("-");
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1;
+    const day = parseInt(parts[2]);
+    due = new Date(year, month, day);
+    due.setHours(0, 0, 0, 0);
+  }
+  // TODO handle due date from filename
+  // TODO we should be able to parse todos like this that aren't in markdown or at beginning of line
+  // else {
+  //   // Or parse due date from filename
+  //   const date = pathToDate(filename);
+  //   if (date) {
+  //     due = date;
+  //   }
+  // }
+  let id: string | undefined = undefined;
+  const idKv = kvs.get("id");
+  if (idKv) {
+    id = idKv.value.slice(1);
+  }
+
+  const text = line.slice(prefix.length, kvStart || line.length).trim();
+  return { status, text, due, id };
+}
+
+function parseHeading(line: string) {
+  const match = line.match(/^#+/);
+  if (!match) {
+    return;
+  }
+  const level = match[0].length;
+  const text = line.slice(level).trim();
+  return { level, text };
+}
+
+// function parseSchedule(line: string): Schedule | undefined {
+//   const match = line.match(SCHEDULE_REGEX);
+//   if (!match) return undefined;
+//   const [, schedule] = match;
+//   if (schedule === "daily") {
+//     return { type: "daily" };
+//   } else if (schedule.endsWith(" of every month")) {
+//     const day = parseInt(schedule.split(" ")[0]);
+//     if (day < 1 || day > 31 || isNaN(day)) {
+//       console.error(chalk.red(`Invalid day of month: ${day}`));
+//       return undefined;
+//     }
+//     return { type: "monthly", day };
+//   } else if (schedule.endsWith(" of every week")) {
+//     const day = parseInt(schedule.split(" ")[0]);
+//     if (day < 0 || day > 6 || isNaN(day)) {
+//       console.error(chalk.red(`Invalid day of week: ${day}`));
+//       return undefined;
+//     }
+//     return { type: "weekly", day };
+//   }
+// }
+
+export function parseMarkdown(content: string) {
+  const lines = content.split("\n");
+  const todos: Todo[] = [];
+  const currentHeadings: Heading[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const heading = parseHeading(lines[i]);
+    if (heading) {
+      currentHeadings.slice(heading.level);
+      currentHeadings.push({ type: "heading", level: heading.level, text: heading.text });
+      continue;
+    }
+    const todo = parseTodo(lines[i]);
+    if (todo) {
+      todos.push({ ...todo, type: "todo", headings: currentHeadings });
+      continue;
+    }
+  }
+  return todos;
+}
+
+export function parseMarkdownFile(filename: string): Todo[] {
+  const content = fs.readFileSync(filename, "utf-8");
+  let todos = parseMarkdown(content);
+  const date = pathToDate(filename);
+  return todos.map((todo) => ({ ...todo, due: todo.due || date, filename }));
+}
+
+function getAllTodos(pathname: string): Map<string, Todo[]> {
+  let files: string[];
+
+  if (fs.statSync(pathname).isDirectory()) {
+    files = glob.sync(path.join(pathname, "**/*.md"));
+  } else if (pathname.endsWith(".md")) {
+    files = [pathname];
+  } else {
+    console.error(chalk.red(`Invalid path: ${pathname}. Must be a directory or a .md file.`));
+    return new Map();
+  }
+
+  const allTodos = new Map<string, Todo[]>();
+  for (const file of files) {
+    const todos = parseMarkdownFile(file);
+    if (todos.length > 0) {
+      allTodos.set(file, todos);
+    }
+  }
+
+  return allTodos;
+}
+
+export function listAllTodos(path: string): void {
+  const todosByFile = getAllTodos(path);
+  todosByFile.forEach((todos, filename) => {
+    console.log(chalk.cyan(`File: ${filename}`));
+    console.log(chalk.cyan("=".repeat(filename.length + 6)));
+    todos.forEach((todo) => {
+      console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
+      if (todo.due) {
+        console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
+      }
+      if (todo.id) {
+        console.log(chalk.green(`    ID: ${todo.id}`));
+      }
+    });
+    console.log();
+  });
+}
+
+function sameDay(date1: Date, date2: Date): boolean {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+export function listTodosDueToday(offset: number = 0): void {
+  const todosByFile = getAllTodos(rootDir);
+  const day = new Date();
+  day.setDate(day.getDate() + offset);
+  day.setHours(0, 0, 0, 0);
+  todosByFile.forEach((todos, filename) => {
+    const dueToday = todos.filter((todo) => todo.due && sameDay(todo.due, day));
+    if (dueToday.length === 0) {
+      return;
+    }
+    console.log(chalk.cyan(`File: ${filename}`));
+    console.log(chalk.cyan("=".repeat(filename.length + 6)));
+    dueToday.forEach((todo) => {
+      console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
+      if (todo.due) {
+        console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
+      }
+    });
+    console.log();
+  });
+}
