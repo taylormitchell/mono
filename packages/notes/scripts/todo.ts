@@ -53,6 +53,7 @@ type Todo = {
   text: string;
   status: "TODO" | "DOING" | "DONE";
   due?: Date;
+  id?: string;
   filename: string;
   headings: Heading[];
 };
@@ -70,56 +71,100 @@ interface RecurringTodo {
   headings: Heading[];
 }
 
-const TODO_REGEX = /^- (TODO|DOING|DONE)/;
+const TODO_KEYWORDS = ["TODO", "DOING", "DONE"] as const;
+const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
 const RECURRING_TODO_REGEX = /^- RECURRING:?\s*(.+)$/;
 const DUE_DATE_REGEX = /^\s*due: (\d{4}-\d{2}-\d{2})$/;
 const SCHEDULE_REGEX = /^\s*schedule: (.*)$/;
 
-function parseTodo(
-  content: string[],
-  ctx: { i: number; filename: string; headings: Heading[] }
-): { value: Todo; nextLine: number } | undefined {
-  const { i, filename, headings } = ctx;
-  const line = content[i];
+function parseKeyValue(
+  line: string,
+  i: number = 0
+): { key: string; value: string; start: number; end: number } | undefined {
+  let key = "";
+  let value = "";
+  let start: number | null = null;
+  let end: number | null = null;
+  for (let c = i; c < line.length; c++) {
+    if (line[c] === "{") {
+      start = c;
+      // consume key
+      while (line[c] !== ":" && line[c] !== "}" && c < line.length) {
+        c++;
+      }
+      if (line[c] !== ":") continue;
+      key = line.slice(start + 1, c);
+      // consume value
+      c++;
+      const valueStart = c + 1;
+      while (line[c] !== "}" && c < line.length) {
+        c++;
+      }
+      if (line[c] !== "}") continue;
+      value = line.slice(valueStart, c).trim();
+      end = c;
+      break;
+    }
+  }
+  if (!key || !start || !end) return;
+  return { key, value, start, end };
+}
+
+function parseTodo(line: string, ctx: { filename: string; headings: Heading[] }): Todo | undefined {
+  const { filename, headings } = ctx;
   if (!line) {
     return;
   }
+  // only needs to start with the keyword
   const match = line.match(TODO_REGEX);
   if (!match) {
     return;
   }
-  const status = match[1] as "TODO" | "DOING" | "DONE";
-  const text = line.slice(match[0].length + 1);
-  let due: Date | undefined;
-  let nextLine = i + 1;
-  while (
-    nextLine < content.length &&
-    content[nextLine] !== "" &&
-    !content[nextLine].match(/^[-*]/)
-  ) {
-    // Parse due date key-value pair
-    const dueDateMatch = content[nextLine].match(DUE_DATE_REGEX);
-    if (dueDateMatch) {
-      const parts = dueDateMatch[1].split("-");
-      const year = parseInt(parts[0]);
-      const month = parseInt(parts[1]) - 1;
-      const day = parseInt(parts[2]);
-      due = new Date(year, month, day);
-      due.setHours(0, 0, 0, 0);
-    }
-    nextLine++;
+  const [prefix, keyword] = match;
+  const status = TODO_KEYWORDS.find((k) => k === keyword);
+  if (!status) {
+    return;
   }
-  if (!due) {
+
+  // Parse key-value pairs
+  // Assume that once you hit the first key-value pair, all subsequent lines are key-value pairs
+  const kvs: Map<string, { key: string; value: string }> = new Map();
+  let kvStart: number | null = null;
+  for (let c = 0; c < line.length; c++) {
+    const kv = parseKeyValue(line, c);
+    if (!kv) {
+      break;
+    }
+    kvs.set(kv.key, kv);
+    kvStart = kvStart || kv.start;
+    c = kv.end + 1;
+  }
+
+  // Grab values for supported key-value pairs
+  let due: Date | undefined = undefined;
+  const dueKv = kvs.get("due");
+  if (dueKv) {
+    const parts = dueKv.value.split("-");
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1;
+    const day = parseInt(parts[2]);
+    due = new Date(year, month, day);
+    due.setHours(0, 0, 0, 0);
+  } else {
     // Or parse due date from filename
     const date = pathToDate(filename);
     if (date) {
       due = date;
     }
   }
-  return {
-    value: { type: "todo", status, text, due, filename, headings },
-    nextLine,
-  };
+  let id: string | undefined = undefined;
+  const idString = kvs.get("id");
+  if (idString && idString.value.startsWith("#")) {
+    id = idString.value.slice(1);
+  }
+
+  const text = line.slice(prefix.length, kvStart || line.length).trim();
+  return { type: "todo", status, text, due, id, filename, headings };
 }
 
 function parseHeading(
@@ -217,18 +262,18 @@ function parseMarkdown(content: string, filename: string): (Todo | RecurringTodo
       i = heading.nextLine;
       continue;
     }
-    const todo = parseTodo(lines, { i, filename, headings: [] });
+    const todo = parseTodo(lines[i], { filename, headings: [] });
     if (todo) {
-      todos.push(todo.value);
-      i = todo.nextLine;
+      todos.push(todo);
+      i++;
       continue;
     }
-    const recurringTodo = parseRecurringTodo(lines, { i, filename, headings: [] });
-    if (recurringTodo) {
-      todos.push(recurringTodo.value);
-      i = recurringTodo.nextLine;
-      continue;
-    }
+    // const recurringTodo = parseRecurringTodo(lines, { i, filename, headings: [] });
+    // if (recurringTodo) {
+    //   todos.push(recurringTodo.value);
+    //   i = recurringTodo.nextLine;
+    //   continue;
+    // }
     i++;
   }
   return todos;
@@ -293,6 +338,9 @@ function listAllTodos(path: string): void {
       console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
       if (todo.due) {
         console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
+      }
+      if (todo.id) {
+        console.log(chalk.green(`    ID: ${todo.id}`));
       }
     });
     console.log();
@@ -386,4 +434,7 @@ program
     console.log(todos);
   });
 
-program.parse(process.argv);
+// program.parse(process.argv);
+listAllTodos(
+  "/Users/taylormitchell/Code/taylors-tech/packages/notes/journals/2024/august/week-of-12.md"
+);
