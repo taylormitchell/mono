@@ -1,10 +1,9 @@
 # Week of August 12th 2024
 
-- TODO Order engagement ring
+- TODO Order engagement ring {#rPkdtB}
 - TODO Call proctologist
 - TODO Finalize bills for [trip](../../../gtd/projects/fishing-trip-2024.md)
 - TODO Do some writing/thinking about personal work projects 
-  due: 2024-08-12
 - DONE Pick up suits for Conrad's wedding
 - DONE Arrange travel to Conrad's rehearsal dinner
 
