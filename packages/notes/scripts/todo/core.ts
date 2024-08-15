@@ -4,7 +4,7 @@ import chalk from "chalk";
 import path from "path";
 chalk.level = 3;
 
-const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE"] as const;
+const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE", "WAITING"] as const;
 const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
 
 const months = [

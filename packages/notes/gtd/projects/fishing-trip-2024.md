@@ -1,3 +1,3 @@
 # Family Fishing Trip 2024
-
-- TODO Divvy up bills
+DONE Divvy up bills
+WAITING e-transfers from Courntey, Mike, and Emily
