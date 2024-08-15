@@ -1,4 +1,4 @@
-import { getRootDir, listTodosDueToday } from "./core";
+import { getTodos, getRootDir } from "./core";
 
 const md = `
 # Some document
@@ -18,4 +18,5 @@ last
 // const m = s.match(/\{#(\w+)\}/);
 // console.log(m);
 
-listTodosDueToday(getRootDir(), 0);
+// listTodosDueToday(getRootDir(), 0);
+console.log(getTodos(getRootDir()));
