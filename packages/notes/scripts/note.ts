@@ -112,7 +112,6 @@ program
 program
   .command("post [path]")
   .option("-m, --message <content>", "content of the post")
-  .option("-d, --directory <path>", "directory to save the post")
   .description("Create a new post with optional content")
   .action((path: string | undefined, options: Partial<{ message: string }>) => {
     createPost(path, options.message);
