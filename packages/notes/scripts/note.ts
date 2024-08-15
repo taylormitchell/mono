@@ -113,8 +113,11 @@ program
   .command("post [path]")
   .option("-m, --message <content>", "content of the post")
   .description("Create a new post with optional content")
-  .action((path: string | undefined, options: Partial<{ message: string }>) => {
-    createPost(path, options.message);
+  .action((p: string | undefined, options: Partial<{ message: string }>) => {
+    if (p !== undefined) {
+      p = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+    }
+    createPost(p, options.message);
   });
 
 program
