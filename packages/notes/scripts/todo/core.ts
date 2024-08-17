@@ -4,7 +4,7 @@ import chalk from "chalk";
 import path from "path";
 chalk.level = 3;
 
-const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE"] as const;
+const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE", "WAITING"] as const;
 const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
 
 const months = [
@@ -174,7 +174,7 @@ export function parseMarkdownFile(filename: string): Todo[] {
   return todos.map((todo) => ({ ...todo, due: todo.due || date, filename }));
 }
 
-function getAllTodos(pathname: string, ignore = true): Map<string, Todo[]> {
+export function getTodos(pathname: string, ignore = true): Todo[] {
   let files: string[];
 
   if (fs.statSync(pathname).isDirectory()) {
@@ -183,7 +183,7 @@ function getAllTodos(pathname: string, ignore = true): Map<string, Todo[]> {
     files = [pathname];
   } else {
     console.error(chalk.red(`Invalid path: ${pathname}. Must be a directory or a .md file.`));
-    return new Map();
+    return [];
   }
 
   // ignore test files
@@ -191,19 +191,22 @@ function getAllTodos(pathname: string, ignore = true): Map<string, Todo[]> {
     files = files.filter((file) => !file.includes("test.md"));
   }
 
-  const allTodos = new Map<string, Todo[]>();
-  for (const file of files) {
-    const todos = parseMarkdownFile(file);
-    if (todos.length > 0) {
-      allTodos.set(file, todos);
-    }
-  }
+  return files.flatMap((file) => parseMarkdownFile(file));
+}
 
-  return allTodos;
+function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
+  return arr.reduce((acc, todo) => {
+    const value = todo[key as keyof Todo];
+    if (!acc.has(value)) {
+      acc.set(value, []);
+    }
+    acc.get(value)!.push(todo);
+    return acc;
+  }, new Map<any, Todo[]>());
 }
 
 export function listAllTodos(path: string): void {
-  const todosByFile = getAllTodos(path);
+  const todosByFile = groupBy(getTodos(path), "filename");
   todosByFile.forEach((todos, filename) => {
     console.log(chalk.cyan(`File: ${filename}`));
     console.log(chalk.cyan("=".repeat(filename.length + 6)));
@@ -229,7 +232,7 @@ function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
 }
 
 export function listTodosDueToday(pathname: string, offset: number = 0): void {
-  const todosByFile = getAllTodos(pathname);
+  const todosByFile = groupBy(getTodos(pathname), "filename");
   const day = new Date();
   day.setDate(day.getDate() + offset);
   day.setHours(0, 0, 0, 0);

@@ -2,20 +2,21 @@ import { execSync } from "child_process";
 import path from "path";
 import fs from "fs";
 import chalk from "chalk";
+import { Command } from "commander";
 
 const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-// find root directory
-// walk up the directory tree until we find a package.json
-let d = 0;
-let rootDir = __dirname;
-while (!fs.existsSync(path.join(rootDir, "package.json"))) {
-  rootDir = path.dirname(rootDir);
-  d += 1;
-  if (d > 10) {
-    console.error("Could not find root directory");
-    process.exit(1);
+function getRootDir() {
+  let d = 0;
+  let rootDir = __dirname;
+  while (!fs.existsSync(path.join(rootDir, "package.json"))) {
+    rootDir = path.dirname(rootDir);
+    d += 1;
+    if (d > 10) {
+      throw new Error("Could not find root directory");
+    }
   }
+  return rootDir;
 }
 
 function createOrOpenFile(filepath: string, content: string = "") {
@@ -41,8 +42,9 @@ function getFormattedTimestamp() {
   );
 }
 
-function createPost(content?: string) {
-  const filename = path.join(rootDir, "posts", `${getFormattedTimestamp()}.md`);
+function createPost(directory?: string, content?: string) {
+  directory = directory || path.join(getRootDir(), "posts");
+  const filename = path.join(directory, `${getFormattedTimestamp()}.md`);
   createOrOpenFile(filename, content || "");
   if (!content) {
     execSync(`code ${filename}`);
@@ -51,7 +53,7 @@ function createPost(content?: string) {
 
 function createNote(name?: string) {
   const filename = name ? `${name}.md` : `${getFormattedTimestamp()}.md`;
-  createOrOpenFile(path.join(rootDir, "notes", filename));
+  createOrOpenFile(path.join(getRootDir(), "notes", filename));
 }
 
 function listDir(directory: string) {
@@ -73,7 +75,7 @@ function openDailyNote(n = 0) {
   const month = date.toLocaleString("default", { month: "long" }).toLowerCase();
   const day = date.getDate();
   const year = date.getFullYear().toString();
-  const filepath = path.join(rootDir, "journals", year, month, `${day}.md`);
+  const filepath = path.join(getRootDir(), "journals", year, month, `${day}.md`);
   const absolutePath = createOrOpenFile(filepath, `# ${date.toDateString()}\n\n`);
   execSync(`code ${absolutePath}`);
 }
@@ -84,7 +86,7 @@ function openWeeklyNote() {
   const month = monday.toLocaleString("default", { month: "long" }).toLowerCase();
   const year = monday.getFullYear().toString();
   const day = monday.getDate();
-  const filepath = path.join(rootDir, "journals", year, month, `week-of-${day}.md`);
+  const filepath = path.join(getRootDir(), "journals", year, month, `week-of-${day}.md`);
   const absolutePath = createOrOpenFile(filepath);
   execSync(`code ${absolutePath}`);
 }
@@ -93,55 +95,75 @@ function openMonthlyNote() {
   const today = new Date();
   const month = today.toLocaleString("default", { month: "long" }).toLowerCase();
   const year = today.getFullYear().toString();
-  const filepath = path.join(rootDir, "journals", year, month, "index.md");
+  const filepath = path.join(getRootDir(), "journals", year, month, "index.md");
   const absolutePath = createOrOpenFile(filepath);
   execSync(`code ${absolutePath}`);
 }
 
-const command = process.argv[2];
-const args = process.argv.slice(3);
+const program = new Command();
 
-switch (command) {
-  case "list":
-    listDir(path.join(rootDir, args[0] || ""));
-    break;
-  case "post":
-    createPost(args[0]);
-    break;
-  case "note":
-    createNote(args[0]);
-    break;
-  case "daily":
-    if (args[0]) {
-      const i = WEEK_DAYS.indexOf(args[0].toLowerCase());
+program
+  .command("list [dir]")
+  .description("List directory contents")
+  .action((dir) => {
+    listDir(path.join(getRootDir(), dir || ""));
+  });
+
+program
+  .command("post [path]")
+  .option("-m, --message <content>", "content of the post")
+  .description("Create a new post with optional content")
+  .action((p: string | undefined, options: Partial<{ message: string }>) => {
+    if (p !== undefined) {
+      p = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+    }
+    createPost(p, options.message);
+  });
+
+program
+  .command("note [name]")
+  .description("Create a new note with optional name")
+  .action((name) => {
+    createNote(name);
+  });
+
+program
+  .command("daily [offset]")
+  .description("Open or create daily note with optional offset from today")
+  .action((offset) => {
+    if (offset) {
+      const i = WEEK_DAYS.indexOf(offset.toLowerCase());
       if (i !== -1) {
-        // Provided arg is string day of the week
         const n = (new Date().getDay() + i + 1) % 7;
         openDailyNote(n);
       } else {
-        // Provided arg is number of days from today
-        const n = parseInt(args[0]) || 0;
+        const n = parseInt(offset) || 0;
         openDailyNote(n);
       }
     } else {
       openDailyNote();
     }
-    break;
-  case "weekly":
+  });
+
+program
+  .command("weekly")
+  .description("Open or create this week's note")
+  .action(() => {
     openWeeklyNote();
-    break;
-  case "monthly":
+  });
+
+program
+  .command("monthly")
+  .description("Open or create this month's note")
+  .action(() => {
     openMonthlyNote();
-    break;
-  case "sync":
+  });
+
+program
+  .command("sync")
+  .description("Commit and push all changes")
+  .action(() => {
     execSync(`cd ${__dirname} && git pull && git add --all && git commit -m "sync" && git push`);
-    break;
-  default:
-    console.log("Usage: bun cli.ts <command> [content]");
-    console.log("Commands:");
-    console.log("  post [content]  Create a new post with optional content");
-    console.log("  note [name]     Create a new note (optional name)");
-    console.log("  daily [offset]  Open or create daily note (optional offset from today)");
-    console.log("  weekly          Open or create this week's note");
-    console.log("  sync            Commit and push all changes");
-}
+  });
+
+program.parse(process.argv);
