@@ -239,7 +239,9 @@ export function listTodosDueToday(pathname: string, offset: number = 0): void {
 
   const dueTodosByFile = new Map<string, Todo[]>();
   todosByFile.forEach((todos, filename) => {
-    const dueToday = todos.filter((todo) => todo.due && lessThanOrEqualTo(todo.due, day));
+    const dueToday = todos.filter(
+      (todo) => todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day)
+    );
     if (dueToday.length > 0) {
       dueTodosByFile.set(filename, dueToday);
     }
