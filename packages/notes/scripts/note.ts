@@ -19,10 +19,26 @@ function getRootDir() {
   return rootDir;
 }
 
+function getTemplateDir() {
+  return path.join(getRootDir(), "templates");
+}
+
+function processTemplate(content: string): string {
+  return content.replace(/\{\{>\s*(.+?)\}\}/g, (match, templateName) => {
+    const fullPath = path.resolve(getTemplateDir(), templateName.trim(), ".md");
+    if (fs.existsSync(fullPath)) {
+      const templateContent = fs.readFileSync(fullPath, "utf-8");
+      return processTemplate(templateContent);
+    }
+    return match; // Return original if template not found
+  });
+}
+
 function createOrOpenFile(filepath: string, content: string = "") {
   if (!fs.existsSync(filepath)) {
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
-    fs.writeFileSync(filepath, content);
+    const processedContent = processTemplate(content);
+    fs.writeFileSync(filepath, processedContent);
   }
   return filepath;
 }
@@ -41,7 +57,6 @@ function getFormattedTimestamp() {
       .replace(/:/g, "-") + `_${offsetSign}${offsetHours}${offsetMinutes}`
   );
 }
-
 
 function createPost(directory?: string, content?: string) {
   directory = directory || path.join(getRootDir(), "posts");
@@ -77,7 +92,9 @@ function openDailyNote(n = 0) {
   const day = date.getDate();
   const year = date.getFullYear().toString();
   const filepath = path.join(getRootDir(), "journals", year, month, `${day}.md`);
-  const content = fs.readFileSync(path.join(getRootDir(), 'templates', 'daily-note-template.md'), 'utf-8').replace('<Date>', date.toDateString())
+  const templatePath = path.join(getRootDir(), "templates", "daily-note-template.md");
+  const templateContent = fs.readFileSync(templatePath, "utf-8");
+  const content = templateContent.replace("{{date}}", date.toDateString());
   const absolutePath = createOrOpenFile(filepath, content);
   execSync(`cursor ${absolutePath}`);
 }
