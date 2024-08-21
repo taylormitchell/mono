@@ -1,14 +1,16 @@
 # {{date}}
 
 ## morning
-TODO morning routine
-{{> morning-routine}}
+- TODO morning routine
+    {{> morning-routine}}
 
 ## work
-TODO [start of workday routine](../notes/start-of-workday-routine.md)
+- TODO start of workday routine
+    {{> start-of-workday-routine }}
 
 ??
 
-TODO [end of workday routine](end-of-workday-routine.md)
+- TODO end of workday routine
+    {{> end-of-workday-routine}}
 
 ## evening

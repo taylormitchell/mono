@@ -1,3 +1,3 @@
-- [ ] Check [inboxes](./inbox-list.md)
+- [ ] Check [inboxes](../notes/inbox-list.md)
 - [ ] write stand up
 - [ ] set slack to active
