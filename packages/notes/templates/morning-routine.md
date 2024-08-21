@@ -1,4 +1,4 @@
-- [ ] Apply heated eyepatch
+- [0/3] Apply heated eyepatch
 - [ ] Make coffee
 - [ ] Anki (10 min)
     - [ ] If something piques your interest, note it down. Don't diverge from the task of studying. Once you hit the 10min mark, you can decide whether you want to pursue those or not.

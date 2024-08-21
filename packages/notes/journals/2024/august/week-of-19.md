@@ -6,3 +6,6 @@
 - Continue playing with [plaintext for my notes](../../../notes/plaintext-notes.md) 
 - Put heated eyepatch on 3x/day
 - No twitter. On the toilet only.
+
+## maybe
+- Share photos with Conrad and Tina

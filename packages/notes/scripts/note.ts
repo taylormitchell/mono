@@ -42,12 +42,13 @@ function getFormattedTimestamp() {
   );
 }
 
+
 function createPost(directory?: string, content?: string) {
   directory = directory || path.join(getRootDir(), "posts");
   const filename = path.join(directory, `${getFormattedTimestamp()}.md`);
   createOrOpenFile(filename, content || "");
   if (!content) {
-    execSync(`code ${filename}`);
+    execSync(`cursor ${filename}`);
   }
 }
 
@@ -76,8 +77,9 @@ function openDailyNote(n = 0) {
   const day = date.getDate();
   const year = date.getFullYear().toString();
   const filepath = path.join(getRootDir(), "journals", year, month, `${day}.md`);
-  const absolutePath = createOrOpenFile(filepath, `# ${date.toDateString()}\n\n`);
-  execSync(`code ${absolutePath}`);
+  const content = fs.readFileSync(path.join(getRootDir(), 'templates', 'daily-note-template.md'), 'utf-8').replace('<Date>', date.toDateString())
+  const absolutePath = createOrOpenFile(filepath, content);
+  execSync(`cursor ${absolutePath}`);
 }
 
 function openWeeklyNote() {
@@ -88,7 +90,7 @@ function openWeeklyNote() {
   const day = monday.getDate();
   const filepath = path.join(getRootDir(), "journals", year, month, `week-of-${day}.md`);
   const absolutePath = createOrOpenFile(filepath);
-  execSync(`code ${absolutePath}`);
+  execSync(`cursor ${absolutePath}`);
 }
 
 function openMonthlyNote() {
@@ -97,7 +99,7 @@ function openMonthlyNote() {
   const year = today.getFullYear().toString();
   const filepath = path.join(getRootDir(), "journals", year, month, "index.md");
   const absolutePath = createOrOpenFile(filepath);
-  execSync(`code ${absolutePath}`);
+  execSync(`cursor ${absolutePath}`);
 }
 
 const program = new Command();
