@@ -236,7 +236,10 @@ export function listTodosDueToday(
   offset: number = 0,
   ignoreTodayPage: boolean = false
 ): void {
+  const rootDir = getRootDir();
   const todosByFile = groupBy(getTodos(pathname), "filename");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const day = new Date();
   day.setDate(day.getDate() + offset);
   day.setHours(0, 0, 0, 0);
@@ -244,7 +247,7 @@ export function listTodosDueToday(
   const dueTodosByFile = new Map<string, Todo[]>();
   todosByFile.forEach((todos, filename) => {
     // Ignore today's daily page if the option is set
-    if (ignoreTodayPage && pathToDate(filename)?.getTime() === day.getTime()) {
+    if (ignoreTodayPage && pathToDate(filename)?.getTime() === today.getTime()) {
       return;
     }
 
@@ -262,13 +265,14 @@ export function listTodosDueToday(
   }
 
   dueTodosByFile.forEach((todos, filename) => {
-    console.log(chalk.cyan(`File: ${filename}`));
-    console.log(chalk.cyan("=".repeat(filename.length + 6)));
+    const relativeFilename = path.relative(rootDir, filename);
+    console.log(chalk.cyan(`File: ${relativeFilename}`));
+    console.log(chalk.cyan("=".repeat(relativeFilename.length + 6)));
     todos.forEach((todo) => {
-      console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
-      if (todo.due) {
-        console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
-      }
+      console.log(
+        chalk.bold(`  ${todo.status}: ${todo.text}`),
+        todo.due ? chalk.green(`Due: ${todo.due.toISOString().split("T")[0]}`) : ""
+      );
     });
     console.log();
   });
