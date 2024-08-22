@@ -17,8 +17,9 @@ program
 program
   .command("due [offset]")
   .description("List todos due today")
-  .action((offset = 0) => {
-    listTodosDueToday(getRootDir(), parseInt(offset));
+  .option("-i, --ignore-today", "Ignore todos from today's daily page")
+  .action((offset = 0, options) => {
+    listTodosDueToday(getRootDir(), parseInt(offset), options.ignoreToday);
   });
 
 program.parse(process.argv);

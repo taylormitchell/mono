@@ -6,8 +6,6 @@
 - Work on product. Discuss with Jacob. Make space for product thoughts to arise.
 - Get sync and auth working.
 - Make the stream into a view instead of a place
-
-
 - Maybe start figuring out beta program
 
 

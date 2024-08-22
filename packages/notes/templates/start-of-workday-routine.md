@@ -1,3 +1,4 @@
 - [ ] Check [inboxes](../notes/inbox-list.md)
+- [ ] If you didn't didn't [sketch out your day](../notes/sketch-out-my-day.md) yesterday, do it now
 - [ ] write stand up
 - [ ] set slack to active

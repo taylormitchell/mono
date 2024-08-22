@@ -231,7 +231,11 @@ function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
   );
 }
 
-export function listTodosDueToday(pathname: string, offset: number = 0): void {
+export function listTodosDueToday(
+  pathname: string,
+  offset: number = 0,
+  ignoreTodayPage: boolean = false
+): void {
   const todosByFile = groupBy(getTodos(pathname), "filename");
   const day = new Date();
   day.setDate(day.getDate() + offset);
@@ -239,6 +243,11 @@ export function listTodosDueToday(pathname: string, offset: number = 0): void {
 
   const dueTodosByFile = new Map<string, Todo[]>();
   todosByFile.forEach((todos, filename) => {
+    // Ignore today's daily page if the option is set
+    if (ignoreTodayPage && pathToDate(filename)?.getTime() === day.getTime()) {
+      return;
+    }
+
     const dueToday = todos.filter(
       (todo) => todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day)
     );
@@ -248,7 +257,7 @@ export function listTodosDueToday(pathname: string, offset: number = 0): void {
   });
 
   if (dueTodosByFile.size === 0) {
-    console.log(chalk.green("Nothing to do today!"));
+    console.log(chalk.green("No results. Yay!"));
     return;
   }
 
