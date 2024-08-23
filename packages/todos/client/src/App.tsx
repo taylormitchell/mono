@@ -25,7 +25,12 @@ function useTodos() {
 
   useEffect(() => {
     async function fetchTodos() {
-      const res = await fetch("http://localhost:3000/api/data");
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (!apiUrl) {
+        console.error("VITE_API_URL is not set");
+        return;
+      }
+      const res = await fetch(`${apiUrl}/api/data`);
       if (res.ok) {
         const data = await res.json();
         // parse the todo dates
@@ -44,7 +49,12 @@ function useTodos() {
   const toggleTodoStatus = async (todo: Todo) => {
     console.log("toggling todo", todo);
     // const updatedTodo = { ...todo, status: todo.status === "DONE" ? "TODO" : "DONE" } as Todo;
-    // const res = await fetch("http://localhost:3000/api/todo", {
+    // const apiUrl = import.meta.env.VITE_API_URL;
+    // if (!apiUrl) {
+    //   console.error("VITE_API_URL is not set");
+    //   return;
+    // }
+    // const res = await fetch(`${apiUrl}/api/todo`, {
     //   method: "PUT",
     //   headers: { "Content-Type": "application/json" },
     //   body: JSON.stringify(updatedTodo),
