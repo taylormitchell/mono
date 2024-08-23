@@ -3,7 +3,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { getTodos, updateTodo } from "./todo";
+import { getTodos, Todo, updateTodo } from "./todo";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -25,7 +25,10 @@ app.get("/api/data", (req, res) => {
 
 // Update todo endpoint
 app.put("/api/todo", (req, res) => {
-  const updatedTodo = req.body;
+  const updatedTodo = req.body as Todo;
+  if (updatedTodo.due) {
+    updatedTodo.due = new Date(updatedTodo.due);
+  }
 
   // Attempt to update the todo in the file
   const updated = updateTodo(updatedTodo);

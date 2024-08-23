@@ -4,7 +4,7 @@ import path from "path";
 const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE", "WAITING"] as const;
 const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
 type TodoStatus = (typeof TODO_KEYWORDS)[number];
-type Todo = {
+export type Todo = {
   type: "todo";
   text: string;
   status: TodoStatus;
@@ -161,7 +161,12 @@ export function parseMarkdownFile(filename: string): Todo[] {
   const content = fs.readFileSync(filename, "utf-8");
   let todos = parseMarkdown(content);
   const date = pathToDate(filename);
-  return todos.map((todo) => ({ ...todo, due: todo.due || date, filename }));
+  return todos.map((todo) => ({
+    ...todo,
+    due: todo.due || date,
+    filename,
+    id: todo.id ? todo.id : todo.line ? `${filename}-${todo.line}` : undefined,
+  }));
 }
 
 export function getTodos(pathname: string, ignore = true): Todo[] {

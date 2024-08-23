@@ -42,15 +42,16 @@ function useTodos() {
   }, []);
 
   const toggleTodoStatus = async (todo: Todo) => {
-    const updatedTodo = { ...todo, status: todo.status === "DONE" ? "TODO" : "DONE" } as Todo;
-    const res = await fetch("http://localhost:3000/api/todo", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedTodo),
-    });
-    if (res.ok) {
-      setTodos(todos.map((t) => (t.id === todo.id ? updatedTodo : t)));
-    }
+    // const updatedTodo = { ...todo, status: todo.status === "DONE" ? "TODO" : "DONE" } as Todo;
+    // const res = await fetch("http://localhost:3000/api/todo", {
+    //   method: "PUT",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify(updatedTodo),
+    // });
+    // if (res.ok) {
+    //   console.log("updated todo", updatedTodo);
+    //   setTodos((todos) => todos.map((t) => (t.id === todo.id ? updatedTodo : t)));
+    // }
   };
 
   return { todos, toggleTodoStatus };
