@@ -277,3 +277,9 @@ export function listTodosDueToday(
     console.log();
   });
 }
+
+// add the given line to the top of the /gtd/someday-maybe.md file
+export function addSomedayMaybe(line: string): void {
+  const filename = path.join(__dirname, "..", "gtd", "someday-maybe.md");
+  fs.appendFileSync(filename, line);
+}
