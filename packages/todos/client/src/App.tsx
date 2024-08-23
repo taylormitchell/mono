@@ -89,14 +89,14 @@ function App() {
 
   return (
     <div className="app-container">
-      <div className="sidebar">
+      <header className="app-header">
         <button onClick={() => setFilter("all")} className={filter === "all" ? "active" : ""}>
           All Todos
         </button>
         <button onClick={() => setFilter("today")} className={filter === "today" ? "active" : ""}>
           Today's Todos
         </button>
-      </div>
+      </header>
       <div className="todo-list">
         {Object.entries(filteredTodos).map(([filename, fileTodos]) => (
           <div key={filename} className="file-group">
