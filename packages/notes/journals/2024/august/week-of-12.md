@@ -1,7 +1,7 @@
 # Week of August 12th 2024
 
-- TODO Finalize bills for [trip](../../../gtd/projects/fishing-trip-2024.md)
 - TODO Do some writing/thinking about personal work projects 
+- DOING Finalize bills for [trip](../../../gtd/projects/fishing-trip-2024.md)
 - DOING Order engagement ring {#rPkdtB}
 - DONE Pick up suits for Conrad's wedding
 - DONE Arrange travel to Conrad's rehearsal dinner

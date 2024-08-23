@@ -1,4 +1,3 @@
-# End of workday routine
 - [ ] any feedback for team members? (put in [[Project/Ideaflow/Ideaflow 1-on-1s]])
 - [ ] clear [](../notes/inbox-list.md)
 - [ ] Planned tomorrow using [](../notes/sketch-out-my-day.md)

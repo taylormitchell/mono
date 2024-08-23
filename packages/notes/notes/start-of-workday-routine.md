@@ -1,3 +1,0 @@
-- [ ] Check [inboxes](./inbox-list.md)
-- [ ] write stand up
-- [ ] set slack to active

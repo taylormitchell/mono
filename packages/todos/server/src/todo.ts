@@ -1,11 +1,20 @@
 import fs from "fs";
-import { glob } from "glob";
-import chalk from "chalk";
 import path from "path";
-chalk.level = 3;
 
 const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE", "WAITING"] as const;
 const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
+type TodoStatus = (typeof TODO_KEYWORDS)[number];
+export type Todo = {
+  type: "todo";
+  text: string;
+  status: TodoStatus;
+  due?: Date;
+  id?: string;
+  filename?: string;
+  headings?: Heading[];
+  line?: number;
+  raw: string;
+};
 
 const months = [
   "january",
@@ -39,29 +48,10 @@ function pathToDate(pathname: string): Date | undefined {
   return new Date(year, month, day);
 }
 
-export function getRootDir() {
-  let rootDir = __dirname;
-  while (!fs.existsSync(path.join(rootDir, "package.json"))) {
-    rootDir = path.dirname(rootDir);
-  }
-  return rootDir;
-}
-
 type Heading = {
   type: "heading";
   level: number;
   text: string;
-};
-
-type TodoStatus = (typeof TODO_KEYWORDS)[number];
-type Todo = {
-  type: "todo";
-  text: string;
-  status: TodoStatus;
-  due?: Date;
-  id?: string;
-  filename?: string;
-  headings?: Heading[];
 };
 
 function parseKeyValue(
@@ -160,7 +150,7 @@ export function parseMarkdown(content: string) {
     }
     const todo = parseTodo(lines[i]);
     if (todo) {
-      todos.push({ ...todo, type: "todo", headings: currentHeadings });
+      todos.push({ ...todo, type: "todo", headings: currentHeadings, raw: lines[i], line: i });
       continue;
     }
   }
@@ -171,18 +161,35 @@ export function parseMarkdownFile(filename: string): Todo[] {
   const content = fs.readFileSync(filename, "utf-8");
   let todos = parseMarkdown(content);
   const date = pathToDate(filename);
-  return todos.map((todo) => ({ ...todo, due: todo.due || date, filename }));
+  return todos.map((todo) => ({
+    ...todo,
+    due: todo.due || date,
+    filename,
+    id: todo.id ? todo.id : todo.line ? `${filename}-${todo.line}` : undefined,
+  }));
 }
 
 export function getTodos(pathname: string, ignore = true): Todo[] {
   let files: string[];
 
   if (fs.statSync(pathname).isDirectory()) {
-    files = glob.sync(path.join(pathname, "**/*.md"));
+    files = [];
+    const walkDir = (dir: string) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walkDir(fullPath);
+        } else if (entry.isFile() && entry.name.endsWith(".md")) {
+          files.push(fullPath);
+        }
+      }
+    };
+    walkDir(pathname);
   } else if (pathname.endsWith(".md")) {
     files = [pathname];
   } else {
-    console.error(chalk.red(`Invalid path: ${pathname}. Must be a directory or a .md file.`));
+    console.error(`Invalid path: ${pathname}. Must be a directory or a .md file.`);
     return [];
   }
 
@@ -194,92 +201,23 @@ export function getTodos(pathname: string, ignore = true): Todo[] {
   return files.flatMap((file) => parseMarkdownFile(file));
 }
 
-function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
-  return arr.reduce((acc, todo) => {
-    const value = todo[key as keyof Todo];
-    if (!acc.has(value)) {
-      acc.set(value, []);
-    }
-    acc.get(value)!.push(todo);
-    return acc;
-  }, new Map<any, Todo[]>());
+export function todoToRaw(todo: Todo) {
+  return `${todo.status} ${todo.text} ${todo.due ? `due: ${todo.due.toISOString()}` : ""}`;
 }
 
-export function listAllTodos(path: string): void {
-  const todosByFile = groupBy(getTodos(path), "filename");
-  todosByFile.forEach((todos, filename) => {
-    console.log(chalk.cyan(`File: ${filename}`));
-    console.log(chalk.cyan("=".repeat(filename.length + 6)));
-    todos.forEach((todo) => {
-      console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
-      if (todo.due) {
-        console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
-      }
-      if (todo.id) {
-        console.log(chalk.green(`    ID: ${todo.id}`));
-      }
-    });
-    console.log();
-  });
-}
-
-function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
-  return (
-    date1.getFullYear() <= date2.getFullYear() &&
-    date1.getMonth() <= date2.getMonth() &&
-    date1.getDate() <= date2.getDate()
-  );
-}
-
-export function listTodosDueToday(
-  pathname: string,
-  offset: number = 0,
-  ignoreTodayPage: boolean = false
-): void {
-  const rootDir = getRootDir();
-  const todosByFile = groupBy(getTodos(pathname), "filename");
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const day = new Date();
-  day.setDate(day.getDate() + offset);
-  day.setHours(0, 0, 0, 0);
-
-  const dueTodosByFile = new Map<string, Todo[]>();
-  todosByFile.forEach((todos, filename) => {
-    // Ignore today's daily page if the option is set
-    if (ignoreTodayPage && pathToDate(filename)?.getTime() === today.getTime()) {
-      return;
-    }
-
-    const dueToday = todos.filter(
-      (todo) => todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day)
-    );
-    if (dueToday.length > 0) {
-      dueTodosByFile.set(filename, dueToday);
-    }
-  });
-
-  if (dueTodosByFile.size === 0) {
-    console.log(chalk.green("No results. Yay!"));
-    return;
+export function updateTodo(todo: Todo) {
+  if (!todo.filename || todo.line === undefined || !todo.raw) {
+    return false;
   }
 
-  dueTodosByFile.forEach((todos, filename) => {
-    const relativeFilename = path.relative(rootDir, filename);
-    console.log(chalk.cyan(`File: ${relativeFilename}`));
-    console.log(chalk.cyan("=".repeat(relativeFilename.length + 6)));
-    todos.forEach((todo) => {
-      console.log(
-        chalk.bold(`  ${todo.status}: ${todo.text}`),
-        todo.due ? chalk.green(`Due: ${todo.due.toISOString().split("T")[0]}`) : ""
-      );
-    });
-    console.log();
-  });
-}
+  const content = fs.readFileSync(todo.filename, "utf-8");
+  const lines = content.split("\n");
 
-// add the given line to the top of the /gtd/someday-maybe.md file
-export function addSomedayMaybe(line: string): void {
-  const filename = path.join(__dirname, "..", "gtd", "someday-maybe.md");
-  fs.appendFileSync(filename, line);
+  if (lines[todo.line] === todo.raw) {
+    lines[todo.line] = todoToRaw(todo);
+    fs.writeFileSync(todo.filename, lines.join("\n"));
+    return true;
+  }
+
+  return false;
 }

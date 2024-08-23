@@ -1,7 +1,7 @@
-- [ ] Apply heated eyepatch
-- [ ] Make coffee
-- [ ] Anki (10 min)
-    - [ ] If something piques your interest, note it down. Don't diverge from the task of studying. Once you hit the 10min mark, you can decide whether you want to pursue those or not.
-- [ ] Meditate
-- [ ] Choose: monday personal weekly planning, top of mind personal work, journal / sit quietly
-- [ ] 8:45: Get ready and brush teeth
+- [0/3] Apply heated eyepatch
+- [ ] make coffee
+- [ ] anki (10 min)
+    - [ ] if something piques your interest, note it down. don't diverge from the task of studying. once you hit the 10min mark, you can decide whether you want to pursue those or not.
+- [ ] meditate
+- [ ] choose: monday personal weekly planning, top of mind personal work, journal / sit quietly
+- [ ] 8:45: get ready and brush teeth

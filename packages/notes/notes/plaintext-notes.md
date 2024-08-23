@@ -3,8 +3,9 @@
 I've been playing with using a git repository of markdown notes in vscode as my note-taking system. The repo includes a cli tool for automated certain things. I'm still undecided whether this is a long term solution but so far I'm enjoying it.    
 
 ### maybe/later
-- Auto-commit notes
-- Can I define my own custom prefix for links? Somehow typescript does it. There must be some server+linter thing running. Can I write my own?
+- MAYBE Extend todos convention to support structured log items too. My notes will continue to be free-form, which you can review in full, but some lines will be Logs, which can be parsed to show shorter summaries of the day/week/whatever. Useful for tracking habits too (or maybe this is a separate concept?)
+- MAYBE Auto-commit notes
+- MAYBE Can I define my own custom prefix for links? Somehow typescript does it. There must be some server+linter thing running. Can I write my own?
 
 ## Links
 - https://github.com/Yakitrak/obsidian-cli
