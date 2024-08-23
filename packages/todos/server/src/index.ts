@@ -7,7 +7,7 @@ import { getTodos, Todo, updateTodo } from "./todo";
 
 const app = express();
 const port = process.env.PORT || 3000;
-const rootDir = "/Users/taylormitchell/Code/taylors-tech/packages/notes/";
+const rootDir = path.join(__dirname, "../../../notes");
 
 // Middleware
 app.use(cors());

@@ -42,6 +42,7 @@ function useTodos() {
   }, []);
 
   const toggleTodoStatus = async (todo: Todo) => {
+    console.log("toggling todo", todo);
     // const updatedTodo = { ...todo, status: todo.status === "DONE" ? "TODO" : "DONE" } as Todo;
     // const res = await fetch("http://localhost:3000/api/todo", {
     //   method: "PUT",
