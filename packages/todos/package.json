@@ -4,10 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:client": "cd client && npm run build",
-    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm install && npm run build",
+    "build:server": "cd server && npm install && npm run build",
     "build": "npm run build:client && npm run build:server",
-    "start": "cd server && npm run start"
+    "start": "cd server && npm run start",
+    "deploy": "ssh ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com 'cd code/taylors-tech/packages/todos && git pull && pm2 delete todos && pm2 start npm --name todos -- run start'"
   },
   "keywords": [],
   "author": "",
