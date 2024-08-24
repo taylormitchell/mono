@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "NODE_ENV=production node dist/index.js",
+    "start": "NODE_ENV=production bun src/index.ts",
     "build": "tsc",
-    "dev": "nodemon --watch 'src/**/*.ts' --watch '../../common/**/*.ts' --exec 'ts-node' src/index.ts"
+    "dev": "bun --watch src/index.ts --watch '../../common/**/*.ts'"
   },
   "keywords": [],
   "author": "",
