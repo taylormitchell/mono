@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { deserializeTodo, Todo } from "@taylor/common/todo/types";
 import "./App.css";
 
@@ -50,9 +50,8 @@ function App() {
   const { todos, toggleTodoStatus } = useTodos();
   const [filter, setFilter] = useState<"all" | "today">("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<"byFile" | "byDueDate">("byFile");
+  const [showCompleted, setShowCompleted] = useState(false);
 
   console.log("todos", todos);
   // Group todos by filename
@@ -115,39 +114,31 @@ function App() {
       .filter(([_, todos]) => todos.length > 0)
   ) as Record<string, Todo[]>;
 
-  const fileOptions = Object.keys(groupedTodos);
+  const groupTodosByDueDate = (todos: Todo[]): Record<string, Todo[]> => {
+    const grouped = todos.reduce((acc, todo) => {
+      const dueDate = todo.due ? todo.due.toDateString() : "No Due Date";
+      if (!acc[dueDate]) {
+        acc[dueDate] = [];
+      }
+      acc[dueDate].push(todo);
+      return acc;
+    }, {} as Record<string, Todo[]>);
 
-  const fileFilteredTodos =
-    selectedFiles.length === 0
-      ? searchFilteredTodos
-      : (Object.fromEntries(
-          Object.entries(searchFilteredTodos).filter(([filename]) =>
-            selectedFiles.includes(filename)
-          )
-        ) as Record<string, Todo[]>);
-
-  const toggleFile = (file: string) => {
-    setSelectedFiles((prev) =>
-      prev.includes(file) ? prev.filter((f) => f !== file) : [...prev, file]
+    // Sort the groups by date (descending)
+    return Object.fromEntries(
+      Object.entries(grouped).sort((a, b) => {
+        if (a[0] === "No Due Date") return 1;
+        if (b[0] === "No Due Date") return -1;
+        return new Date(a[0]).getTime() - new Date(b[0]).getTime();
+      })
     );
   };
 
-  const clearSelection = () => {
-    setSelectedFiles([]);
+  const dueDateGroupedTodos = groupTodosByDueDate(todos);
+
+  const filterCompletedTodos = (todos: Todo[]) => {
+    return showCompleted ? todos : todos.filter((todo) => todo.status !== "DONE");
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   return (
     <div className="app-container">
@@ -165,54 +156,80 @@ function App() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
         />
-        <div className="custom-dropdown" ref={dropdownRef}>
-          <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="dropdown-toggle">
-            Select Files ({selectedFiles.length})
-          </button>
-          {isDropdownOpen && (
-            <div className="dropdown-menu">
-              {fileOptions.map((file) => (
-                <label key={file} className="dropdown-item">
-                  <input
-                    type="checkbox"
-                    checked={selectedFiles.includes(file)}
-                    onChange={() => toggleFile(file)}
-                  />
-                  {file}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-        {selectedFiles.length > 0 && (
-          <button onClick={clearSelection} className="clear-selection">
-            Clear
-          </button>
-        )}
+        <button onClick={() => setView("byFile")} className={view === "byFile" ? "active" : ""}>
+          Group by File
+        </button>
+        <button
+          onClick={() => setView("byDueDate")}
+          className={view === "byDueDate" ? "active" : ""}
+        >
+          Group by Due Date
+        </button>
+        <label className="show-completed-checkbox">
+          <input
+            type="checkbox"
+            checked={showCompleted}
+            onChange={(e) => setShowCompleted(e.target.checked)}
+          />
+          Show Completed
+        </label>
       </header>
       <div className="todo-list">
         <h1>Todos</h1>
-        {Object.entries(fileFilteredTodos).map(([filename, fileTodos]) => (
-          <div key={filename} className="file-group">
-            <h2>{filename}</h2>
-            {fileTodos.map((todo) => (
-              <div key={todo.id || todo.text} className="todo-item">
-                <div className="todo-content">
-                  <input
-                    type="checkbox"
-                    checked={todo.status === "DONE"}
-                    onChange={() => toggleTodoStatus(todo)}
-                    className="todo-checkbox"
-                  />
-                  <span className="todo-text">{todo.text}</span>
-                  {todo.due && (
-                    <span className="todo-due-date">Due: {todo.due.toLocaleDateString()}</span>
-                  )}
-                </div>
+        {view === "byFile"
+          ? Object.entries(searchFilteredTodos).map(([filename, fileTodos]) => (
+              <div key={filename} className="file-group">
+                <h2>{filename}</h2>
+                {filterCompletedTodos(fileTodos).map((todo) => (
+                  <div key={todo.id || todo.text} className="todo-item">
+                    <div className="todo-content">
+                      <input
+                        type="checkbox"
+                        checked={todo.status === "DONE"}
+                        onChange={() => toggleTodoStatus(todo)}
+                        className="todo-checkbox"
+                      />
+                      <span className="todo-text">{todo.text}</span>
+                      {todo.due && (
+                        <span className="todo-due-date">Due: {todo.due.toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ))}
+            ))
+          : Object.entries(dueDateGroupedTodos)
+              .map(([dueDate, dateTodos]) => ({
+                dueDate,
+                todos: filterCompletedTodos(dateTodos),
+              }))
+              .filter(({ todos }) => todos.length > 0)
+              .map(({ dueDate, todos }) => (
+                <div key={dueDate} className="date-group">
+                  <h2>{dueDate}</h2>
+                  {todos.map((todo) => (
+                    <div key={todo.id || todo.text} className="todo-item">
+                      <div className="todo-content">
+                        <input
+                          type="checkbox"
+                          checked={todo.status === "DONE"}
+                          onChange={() => toggleTodoStatus(todo)}
+                          className="todo-checkbox"
+                        />
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span className="todo-text">{todo.text}</span>
+                          <span
+                            className="todo-filename"
+                            style={{ fontSize: "0.8em", color: "gray" }}
+                          >
+                            {todo.relativeFilename || "Unspecified"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
       </div>
     </div>
   );
