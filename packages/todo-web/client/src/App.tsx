@@ -23,6 +23,7 @@ type Todo = {
 
 function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
+  console.log("todos", todos);
 
   useEffect(() => {
     async function fetchTodos() {
@@ -91,9 +92,12 @@ function App() {
           Object.entries(groupedTodos)
             .map(([filename, fileTodos]) => [
               filename,
-              fileTodos.filter(
-                (todo) => todo.due && todo.due.toDateString() === new Date().toDateString()
-              ),
+              fileTodos.filter((todo) => {
+                const today = new Date().toDateString();
+                const due = todo.due?.toDateString();
+                console.log({ todo, today, due });
+                return due && due === today;
+              }),
             ])
             .filter(([_, todos]) => todos.length > 0)
         ) as Record<string, Todo[]>);
@@ -109,6 +113,7 @@ function App() {
         </button>
       </header>
       <div className="todo-list">
+        <h1>Todos</h1>
         {Object.entries(filteredTodos).map(([filename, fileTodos]) => (
           <div key={filename} className="file-group">
             <h2>{filename}</h2>
