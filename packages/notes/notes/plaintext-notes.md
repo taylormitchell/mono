@@ -3,6 +3,7 @@
 I've been playing with using a git repository of markdown notes in vscode as my note-taking system. The repo includes a cli tool for automated certain things. I'm still undecided whether this is a long term solution but so far I'm enjoying it.    
 
 ### maybe/later
+- MAYBE prefix my posts differently so the most recent ones are at the top
 - MAYBE play with a vscode extension to get e.g. absolute path syntax w/ autocomplete and linking. see [convo with claude](https://claude.ai/chat/4c48c54e-bde9-446a-bb95-4e4678b12a8c)
 - MAYBE Extend todos convention to support structured log items too. My notes will continue to be free-form, which you can review in full, but some lines will be Logs, which can be parsed to show shorter summaries of the day/week/whatever. Useful for tracking habits too (or maybe this is a separate concept?)
 - MAYBE Auto-commit notes

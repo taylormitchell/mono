@@ -1,0 +1,2 @@
+git -C "/Users/taylormitchell/Code/taylors-tech/packages/notes" log -p --since="2 weeks ago" -- '/Users/taylormitchell/Code/taylors-tech/packages/notes/packages/notes/**/*.md' ':(exclude)packages/notes/journals/**/*.md'
+
