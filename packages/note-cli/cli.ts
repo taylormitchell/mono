@@ -2,7 +2,6 @@ import { execSync } from "child_process";
 import { Command } from "commander";
 import path from "path";
 import {
-  getRootDir,
   listDir,
   createPost,
   createNote,
@@ -10,6 +9,7 @@ import {
   openWeeklyNote,
   openMonthlyNote,
 } from "@taylor/common/note";
+import { getRootDir } from "@taylor/common/data";
 
 const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
