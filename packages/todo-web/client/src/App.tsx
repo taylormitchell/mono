@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { deserializeTodo, Todo } from "@taylor/common/todo/types";
 import "./App.css";
 
@@ -49,6 +49,10 @@ function useTodos() {
 function App() {
   const { todos, toggleTodoStatus } = useTodos();
   const [filter, setFilter] = useState<"all" | "today">("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   console.log("todos", todos);
   // Group todos by filename
@@ -60,6 +64,18 @@ function App() {
     acc[relativeFilename].push(todo);
     return acc;
   }, {} as Record<string, Todo[]>);
+
+  const extractKeywords = (text: string): string[] => {
+    return text.toLowerCase().split(/\s+/).filter(Boolean);
+  };
+
+  const extractFilenameKeywords = (filename: string): string[] => {
+    return filename
+      .replace(/\.[^/.]+$/, "") // Remove file extension
+      .split(/[/\\._-]/) // Split by common separators
+      .filter(Boolean) // Remove empty strings
+      .map((word) => word.toLowerCase());
+  };
 
   const filteredTodos =
     filter === "all"
@@ -78,6 +94,61 @@ function App() {
             .filter(([_, todos]) => todos.length > 0)
         ) as Record<string, Todo[]>);
 
+  const searchFilteredTodos = Object.fromEntries(
+    Object.entries(filteredTodos)
+      .map(([filename, fileTodos]) => {
+        const filenameKeywords = extractFilenameKeywords(filename);
+        const searchKeywords = extractKeywords(searchTerm);
+
+        return [
+          filename,
+          fileTodos.filter((todo) => {
+            const todoKeywords = extractKeywords(todo.text);
+            const allKeywords = [...todoKeywords, ...filenameKeywords];
+
+            return searchKeywords.every((searchKeyword) =>
+              allKeywords.some((keyword) => keyword.includes(searchKeyword))
+            );
+          }),
+        ];
+      })
+      .filter(([_, todos]) => todos.length > 0)
+  );
+
+  const fileOptions = Object.keys(groupedTodos);
+
+  const fileFilteredTodos =
+    selectedFiles.length === 0
+      ? searchFilteredTodos
+      : Object.fromEntries(
+          Object.entries(searchFilteredTodos).filter(([filename]) =>
+            selectedFiles.includes(filename)
+          )
+        );
+
+  const toggleFile = (file: string) => {
+    setSelectedFiles((prev) =>
+      prev.includes(file) ? prev.filter((f) => f !== file) : [...prev, file]
+    );
+  };
+
+  const clearSelection = () => {
+    setSelectedFiles([]);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -87,10 +158,41 @@ function App() {
         <button onClick={() => setFilter("today")} className={filter === "today" ? "active" : ""}>
           Today's Todos
         </button>
+        <input
+          type="text"
+          placeholder="Search todos..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+        <div className="custom-dropdown" ref={dropdownRef}>
+          <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="dropdown-toggle">
+            Select Files ({selectedFiles.length})
+          </button>
+          {isDropdownOpen && (
+            <div className="dropdown-menu">
+              {fileOptions.map((file) => (
+                <label key={file} className="dropdown-item">
+                  <input
+                    type="checkbox"
+                    checked={selectedFiles.includes(file)}
+                    onChange={() => toggleFile(file)}
+                  />
+                  {file}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+        {selectedFiles.length > 0 && (
+          <button onClick={clearSelection} className="clear-selection">
+            Clear
+          </button>
+        )}
       </header>
       <div className="todo-list">
         <h1>Todos</h1>
-        {Object.entries(filteredTodos).map(([filename, fileTodos]) => (
+        {Object.entries(fileFilteredTodos).map(([filename, fileTodos]) => (
           <div key={filename} className="file-group">
             <h2>{filename}</h2>
             {fileTodos.map((todo) => (
