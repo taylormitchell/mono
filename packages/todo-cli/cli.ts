@@ -2,8 +2,8 @@ import { Command } from "commander";
 import chalk from "chalk";
 import fs from "fs";
 import path from "path";
-import { listAllTodos, listTodosDueToday } from "@taylor/common/todo";
-import { getRootDir } from "@taylor/common/note";
+import { listAllTodos, listTodosDueToday } from "@taylor/common/todo/parsers";
+import { getRootDir } from "@taylor/common/data";
 chalk.level = 3;
 
 const program = new Command();

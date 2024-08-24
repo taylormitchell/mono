@@ -3,7 +3,8 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { getTodos, Todo } from "@taylor/common/todo";
+import { getTodos } from "@taylor/common/todo/parsers";
+import { Todo } from "@taylor/common/todo/types";
 
 const app = express();
 const port = process.env.PORT || 3000;

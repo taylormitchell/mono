@@ -2,7 +2,7 @@ import fs from "fs";
 import { glob } from "glob";
 import chalk from "chalk";
 import path from "path";
-import { getRootDir } from "./data";
+import { getRootDir } from "../data";
 import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
 chalk.level = 3;
 

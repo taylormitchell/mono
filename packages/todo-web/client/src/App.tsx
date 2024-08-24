@@ -1,23 +1,6 @@
 import { useState, useEffect } from "react";
-import { deserializeTodo } from "@taylor/common/deserializeTodo";
+import { deserializeTodo, Todo } from "@taylor/common/todo/types";
 import "./App.css";
-
-type Heading = {
-  type: "heading";
-  level: number;
-  text: string;
-};
-type TodoStatus = "TODO" | "DOING" | "DONE" | "MAYBE" | "WAITING";
-type Todo = {
-  type: "todo";
-  text: string;
-  status: TodoStatus;
-  due?: Date;
-  id?: string;
-  filename?: string;
-  relativeFilename?: string;
-  headings?: Heading[];
-};
 
 function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);

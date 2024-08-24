@@ -1,4 +1,4 @@
-import { Todo } from "./types";
+import { Todo } from "./todo/types";
 
 export function deserializeTodo(todo: Omit<Todo, "due"> & { due?: string }): Todo {
   let due: Date | undefined;
