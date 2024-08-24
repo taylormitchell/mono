@@ -76,7 +76,9 @@ program
   .command("sync")
   .description("Commit and push all changes")
   .action(() => {
-    execSync(`cd ${__dirname} && git pull && git add --all && git commit -m "sync" && git push`);
+    execSync(
+      `cd ${__dirname} && git add --all && git commit -m "sync" && git pull --rebase && git push`
+    );
   });
 
 program.parse(process.argv);
