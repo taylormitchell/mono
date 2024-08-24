@@ -113,18 +113,18 @@ function App() {
         ];
       })
       .filter(([_, todos]) => todos.length > 0)
-  );
+  ) as Record<string, Todo[]>;
 
   const fileOptions = Object.keys(groupedTodos);
 
   const fileFilteredTodos =
     selectedFiles.length === 0
       ? searchFilteredTodos
-      : Object.fromEntries(
+      : (Object.fromEntries(
           Object.entries(searchFilteredTodos).filter(([filename]) =>
             selectedFiles.includes(filename)
           )
-        );
+        ) as Record<string, Todo[]>);
 
   const toggleFile = (file: string) => {
     setSelectedFiles((prev) =>
