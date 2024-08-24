@@ -10,6 +10,16 @@
       "name": "Launch Chrome against localhost",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}"
+    },
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Run TypeScript with Bun",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "env": {},
+      "args": [],
+      "internalConsoleOptions": "openOnSessionStart"
     }
   ]
 }
