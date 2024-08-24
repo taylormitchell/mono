@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 
-const rootDir = "/Users/taylormitchell/Code/taylors-tech/packages/notes/";
-
-const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE", "WAITING"] as const;
 type Heading = {
   type: "heading";
   level: number;
   text: string;
 };
-type TodoStatus = (typeof TODO_KEYWORDS)[number];
+type TodoStatus = "TODO" | "DOING" | "DONE" | "MAYBE" | "WAITING";
 type Todo = {
   type: "todo";
   text: string;
