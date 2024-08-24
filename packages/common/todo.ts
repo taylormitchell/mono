@@ -2,11 +2,9 @@ import fs from "fs";
 import { glob } from "glob";
 import chalk from "chalk";
 import path from "path";
-import { getRootDir } from "./note";
+import { getRootDir } from "./data";
+import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
 chalk.level = 3;
-
-const TODO_KEYWORDS = ["TODO", "DOING", "DONE", "MAYBE", "WAITING"] as const;
-const TODO_REGEX = new RegExp(`^-?\\s*(${TODO_KEYWORDS.join("|")})`);
 
 const months = [
   "january",
@@ -39,24 +37,6 @@ function pathToDate(pathname: string): Date | undefined {
   }
   return new Date(year, month, day);
 }
-
-type Heading = {
-  type: "heading";
-  level: number;
-  text: string;
-};
-
-type TodoStatus = (typeof TODO_KEYWORDS)[number];
-export type Todo = {
-  type: "todo";
-  text: string;
-  status: TodoStatus;
-  due?: Date;
-  id?: string;
-  filename?: string;
-  relativeFilename?: string;
-  headings?: Heading[];
-};
 
 function parseKeyValue(
   line: string,

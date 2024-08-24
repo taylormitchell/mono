@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { deserializeTodo } from "@taylor/common/deserializeTodo";
 import "./App.css";
 
 type Heading = {
@@ -17,15 +18,6 @@ type Todo = {
   relativeFilename?: string;
   headings?: Heading[];
 };
-
-function deserializeTodo(todo: Omit<Todo, "due"> & { due?: string }): Todo {
-  let due: Date | undefined;
-  if (todo.due) {
-    const [year, month, day] = todo.due.split("-").map(Number);
-    due = new Date(year, month - 1, day);
-  }
-  return { ...todo, due };
-}
 
 function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
