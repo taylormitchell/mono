@@ -47,7 +47,7 @@ type Heading = {
 };
 
 type TodoStatus = (typeof TODO_KEYWORDS)[number];
-type Todo = {
+export type Todo = {
   type: "todo";
   text: string;
   status: TodoStatus;

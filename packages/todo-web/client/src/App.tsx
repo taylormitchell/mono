@@ -18,6 +18,15 @@ type Todo = {
   headings?: Heading[];
 };
 
+function deserializeTodo(todo: Omit<Todo, "due"> & { due?: string }): Todo {
+  let due: Date | undefined;
+  if (todo.due) {
+    const [year, month, day] = todo.due.split("-").map(Number);
+    due = new Date(year, month - 1, day);
+  }
+  return { ...todo, due };
+}
+
 function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   console.log("todos", todos);
@@ -33,12 +42,7 @@ function useTodos() {
       if (res.ok) {
         const data = await res.json();
         // parse the todo dates
-        const todos = data.todos.map((todo: Todo) => {
-          if (todo.due) {
-            todo.due = new Date(todo.due);
-          }
-          return todo;
-        });
+        const todos = data.todos.map(deserializeTodo);
         setTodos(todos);
       }
     }

@@ -3,7 +3,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { getTodos } from "@taylor/common/todo";
+import { getTodos, Todo } from "@taylor/common/todo";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,13 +12,20 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+function serializeTodo(todo: Todo): Omit<Todo, "due"> & { due?: string } {
+  return {
+    ...todo,
+    due: todo.due ? todo.due.toISOString().split("T")[0] : undefined,
+  };
+}
+
 // Mock API route
 app.get("/api/data", (req, res) => {
   const todos = getTodos();
   if (todos.length === 0) {
     res.json({ todos: [] });
   } else {
-    res.json({ todos });
+    res.json({ todos: todos.map(serializeTodo) });
   }
 });
 
