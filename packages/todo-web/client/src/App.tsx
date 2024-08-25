@@ -2,17 +2,17 @@ import { useState, useEffect } from "react";
 import { deserializeTodo, Todo } from "@taylor/common/todo/types";
 import "./App.css";
 
+const apiUrl = import.meta.env.VITE_API_URL;
+if (!apiUrl) {
+  throw new Error("VITE_API_URL is not set");
+}
+
 function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   console.log("todos", todos);
 
   useEffect(() => {
     async function fetchTodos() {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      if (!apiUrl) {
-        console.error("VITE_API_URL is not set");
-        return;
-      }
       const res = await fetch(`${apiUrl}/api/data`);
       if (res.ok) {
         const data = await res.json();
@@ -165,6 +165,7 @@ function App() {
         >
           Group by Due Date
         </button>
+        <button onClick={() => fetch(`${apiUrl}/api/pull`)}>Pull</button>
         <label className="show-completed-checkbox">
           <input
             type="checkbox"
