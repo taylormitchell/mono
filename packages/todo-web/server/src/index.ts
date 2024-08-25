@@ -1,10 +1,9 @@
-// File: backend/src/index.ts
-
 import express from "express";
 import cors from "cors";
 import path from "path";
 import { getTodos } from "@taylor/common/todo/parsers";
-import { Todo } from "@taylor/common/todo/types";
+import { serializeTodo } from "@taylor/common/todo/types";
+import { execSync } from "child_process";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,13 +11,6 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-function serializeTodo(todo: Todo): Omit<Todo, "due"> & { due?: string } {
-  return {
-    ...todo,
-    due: todo.due ? todo.due.toISOString().split("T")[0] : undefined,
-  };
-}
 
 // Mock API route
 app.get("/api/data", (req, res) => {
@@ -28,6 +20,11 @@ app.get("/api/data", (req, res) => {
   } else {
     res.json({ todos: todos.map(serializeTodo) });
   }
+});
+
+app.post("/api/pull", (req, res) => {
+  execSync("git pull");
+  res.sendStatus(200);
 });
 
 // Update todo endpoint

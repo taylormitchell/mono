@@ -16,12 +16,20 @@ export type Todo = {
   relativeFilename?: string;
   headings?: Heading[];
 };
+export type TodoSerialized = Omit<Todo, "due"> & { due?: string };
 
-export function deserializeTodo(todo: Omit<Todo, "due"> & { due?: string }): Todo {
+export function deserializeTodo(todo: TodoSerialized): Todo {
   let due: Date | undefined;
   if (todo.due) {
     const [year, month, day] = todo.due.split("-").map(Number);
     due = new Date(year, month - 1, day);
   }
   return { ...todo, due };
+}
+
+export function serializeTodo(todo: Todo): TodoSerialized {
+  return {
+    ...todo,
+    due: todo.due ? todo.due.toISOString().split("T")[0] : undefined,
+  };
 }
