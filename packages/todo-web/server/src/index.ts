@@ -14,6 +14,7 @@ app.use(express.json());
 
 // Mock API route
 app.get("/api/data", (req, res) => {
+  execSync("git pull");
   const todos = getTodos();
   if (todos.length === 0) {
     res.json({ todos: [] });
