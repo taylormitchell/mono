@@ -22,7 +22,8 @@ app.get("/api/data", (req, res) => {
   }
 });
 
-app.post("/api/pull", (req, res) => {
+app.get("/api/pull", (req, res) => {
+  console.log("Pulling");
   execSync("git pull");
   res.sendStatus(200);
 });
