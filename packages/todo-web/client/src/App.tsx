@@ -73,7 +73,6 @@ function App() {
   const [groupby, setGroupby] = useState<"byFile" | "byDueDate">("byDueDate");
   const [showCompleted, setShowCompleted] = useState(false);
   const [showNewTodoModal, setShowNewTodoModal] = useState(false);
-  const [newTodo, setNewTodo] = useState({ text: "", due: "" });
 
   // Apply filters
   const filteredTodos = todos.filter((todo) => {
@@ -93,18 +92,11 @@ function App() {
     return true;
   });
 
-  const handleSaveNewTodo = async (todo: { text: string; due: string }) => {
-    const newTodo: Todo = {
-      type: "todo",
-      text: todo.text,
-      status: "TODO",
-      due: todo.due ? new Date(todo.due) : undefined,
-    };
-
+  const handleSaveNewTodo = async (todo: Todo) => {
     const res = await fetch(`${apiUrl}/api/todo`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(serializeTodo(newTodo)),
+      body: JSON.stringify(serializeTodo(todo)),
     });
 
     if (res.ok) {
@@ -202,12 +194,20 @@ function TodoList({ todos }: { todos: Todo[] }) {
   );
 }
 
-function NewTodoModal({ isOpen, onClose, onSave }) {
-  const [todo, setTodo] = useState({ text: "", due: "" });
+function NewTodoModal({
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (todo: Todo) => void;
+}) {
+  const [todo, setTodo] = useState<Todo>({ type: "todo", text: "", status: "TODO" });
 
   const handleSave = () => {
     onSave(todo);
-    setTodo({ text: "", due: "" });
+    setTodo({ type: "todo", text: "", status: "TODO" });
     onClose();
   };
 
@@ -239,8 +239,8 @@ function NewTodoModal({ isOpen, onClose, onSave }) {
         />
         <input
           type="date"
-          value={todo.due}
-          onChange={(e) => setTodo({ ...todo, due: e.target.value })}
+          value={todo.due?.toISOString().split("T")[0]}
+          onChange={(e) => setTodo({ ...todo, due: new Date(e.target.value) })}
         />
         <div className="modal-buttons">
           <button onClick={handleSave}>Save</button>
