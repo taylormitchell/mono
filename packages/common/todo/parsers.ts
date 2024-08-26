@@ -200,6 +200,7 @@ export function addTodo(todo: Todo, filename?: string): string {
   fs.writeFileSync(filename, newContent);
   execSync(`git add ${filename}`);
   execSync(`git commit -m "Add todo: ${todo.text}"`);
+  execSync(`git push`);
   return filename;
 }
 
