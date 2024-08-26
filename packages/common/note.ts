@@ -80,13 +80,18 @@ export function listDir(directory: string) {
   }
 }
 
-export function openDailyNote(n = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + n);
+export function dateToJournalPath(date: Date) {
+  date.setDate(date.getDate());
   const month = date.toLocaleString("default", { month: "long" }).toLowerCase();
   const day = date.getDate();
   const year = date.getFullYear().toString();
-  const filepath = path.join(getRootDir(), "journals", year, month, `${day}.md`);
+  return path.join(getRootDir(), "journals", year, month, `${day}.md`);
+}
+
+export function openDailyNote(n = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + n);
+  const filepath = dateToJournalPath(date);
   const templatePath = path.join(getRootDir(), "templates", "daily-note-template.md");
   const templateContent = fs.readFileSync(templatePath, "utf-8");
   const content = templateContent.replace("{{date}}", date.toDateString());

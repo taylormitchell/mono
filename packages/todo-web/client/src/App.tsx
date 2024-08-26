@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { deserializeTodo, Todo } from "@taylor/common/todo/types";
+import { deserializeTodo, serializeTodo, Todo } from "@taylor/common/todo/types";
 import "./App.css";
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -9,41 +9,22 @@ if (!apiUrl) {
 
 function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
-  console.log("todos", todos);
+
+  async function fetchTodos() {
+    const res = await fetch(`${apiUrl}/api/data`);
+    if (res.ok) {
+      const data = await res.json();
+      // parse the todo dates
+      const todos = data.todos.map(deserializeTodo);
+      setTodos(todos);
+    }
+  }
 
   useEffect(() => {
-    async function fetchTodos() {
-      const res = await fetch(`${apiUrl}/api/data`);
-      if (res.ok) {
-        const data = await res.json();
-        // parse the todo dates
-        const todos = data.todos.map(deserializeTodo);
-        setTodos(todos);
-      }
-    }
     fetchTodos();
   }, []);
 
-  const toggleTodoStatus = async (todo: Todo) => {
-    console.log("toggling todo", todo);
-    // const updatedTodo = { ...todo, status: todo.status === "DONE" ? "TODO" : "DONE" } as Todo;
-    // const apiUrl = import.meta.env.VITE_API_URL;
-    // if (!apiUrl) {
-    //   console.error("VITE_API_URL is not set");
-    //   return;
-    // }
-    // const res = await fetch(`${apiUrl}/api/todo`, {
-    //   method: "PUT",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(updatedTodo),
-    // });
-    // if (res.ok) {
-    //   console.log("updated todo", updatedTodo);
-    //   setTodos((todos) => todos.map((t) => (t.id === todo.id ? updatedTodo : t)));
-    // }
-  };
-
-  return { todos, toggleTodoStatus };
+  return { todos, refetch: fetchTodos };
 }
 
 const extractFilenameKeywords = (filename: string): string[] => {
@@ -86,11 +67,13 @@ const groupTodosByFilename = (todos: Todo[]): Record<string, Todo[]> => {
 };
 
 function App() {
-  const { todos, toggleTodoStatus } = useTodos();
+  const { todos, refetch } = useTodos();
   const [filter, setFilter] = useState<"all" | "today">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [groupby, setGroupby] = useState<"byFile" | "byDueDate">("byDueDate");
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showNewTodoModal, setShowNewTodoModal] = useState(false);
+  const [newTodo, setNewTodo] = useState({ text: "", due: "" });
 
   // Apply filters
   const filteredTodos = todos.filter((todo) => {
@@ -109,6 +92,27 @@ function App() {
     }
     return true;
   });
+
+  const handleSaveNewTodo = async (todo: { text: string; due: string }) => {
+    const newTodo: Todo = {
+      type: "todo",
+      text: todo.text,
+      status: "TODO",
+      due: todo.due ? new Date(todo.due) : undefined,
+    };
+
+    const res = await fetch(`${apiUrl}/api/todo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(serializeTodo(newTodo)),
+    });
+
+    if (res.ok) {
+      refetch();
+    } else {
+      console.error("Failed to save new todo");
+    }
+  };
 
   return (
     <div className="app-container">
@@ -144,6 +148,9 @@ function App() {
           />
           Today only
         </label>
+        <button onClick={() => setShowNewTodoModal(true)} className="new-todo-button">
+          New Todo
+        </button>
       </header>
       <div className="todo-list">
         {groupby === "byFile" ? (
@@ -166,6 +173,11 @@ function App() {
           </div>
         )}
       </div>
+      <NewTodoModal
+        isOpen={showNewTodoModal}
+        onClose={() => setShowNewTodoModal(false)}
+        onSave={handleSaveNewTodo}
+      />
     </div>
   );
 }
@@ -186,6 +198,55 @@ function TodoList({ todos }: { todos: Todo[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function NewTodoModal({ isOpen, onClose, onSave }) {
+  const [todo, setTodo] = useState({ text: "", due: "" });
+
+  const handleSave = () => {
+    onSave(todo);
+    setTodo({ text: "", due: "" });
+    onClose();
+  };
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>New Todo</h2>
+        <input
+          type="text"
+          placeholder="Todo text"
+          value={todo.text}
+          onChange={(e) => setTodo({ ...todo, text: e.target.value })}
+        />
+        <input
+          type="date"
+          value={todo.due}
+          onChange={(e) => setTodo({ ...todo, due: e.target.value })}
+        />
+        <div className="modal-buttons">
+          <button onClick={handleSave}>Save</button>
+          <button onClick={onClose}>Cancel</button>
+        </div>
+      </div>
     </div>
   );
 }
