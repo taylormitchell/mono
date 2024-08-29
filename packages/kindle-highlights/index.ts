@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer";
+import puppeteer, { ElementHandle } from "puppeteer";
 import dotenv from "dotenv";
 import path from "path";
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -82,17 +82,19 @@ async function extractKindleHighlights(email: string, password: string): Promise
         console.error("Error getting book title");
         continue;
       }
-      const texts = await page.$$eval("#kp-notebook-annotations div", (divs) =>
-        divs.map((div) => div.textContent)
-      );
-      console.log(texts);
-      //   let highlightElements: ElementHandle<Element>[] = [];
-      //   try {
-      //     highlightElements = await page.$$("#kp-notebook-annotations div");
-      //   } catch (error) {
-      //     console.error("Error getting highlight elements");
-      //     throw error;
-      //   }
+      // const texts = await page.$$eval("#kp-notebook-annotations div", (divs) =>
+      //   divs.map((div) => div.textContent)
+      // );
+      // console.log(texts);
+      let highlightElements: ElementHandle<Element>[] = [];
+      try {
+        highlightElements = await page.$$("#kp-notebook-annotations div");
+      } catch (error) {
+        console.error("Error getting highlight elements");
+        throw error;
+      }
+      console.log(bookTitle, highlightElements.length);
+
       //   if (highlightElements.length === 0) {
       //     console.log("No highlights found for", bookTitle);
       //     continue;
