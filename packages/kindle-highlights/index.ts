@@ -3,11 +3,12 @@ import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
 import readline from "readline";
+import { execSync } from "child_process";
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 interface Highlight {
-  id: string;
+  highlightId: string;
   bookId: string;
   bookTitle: string;
   text: string;
@@ -133,11 +134,11 @@ async function getKindleHighlightsOfRecentlyAnnotatedBooks(
         }
 
         highlights.push({
+          createdAt: new Date().toISOString(),
           bookTitle: title,
           text,
-          id: highlightId,
+          highlightId,
           bookId,
-          createdAt: new Date().toISOString(),
         });
       }
     }
@@ -181,6 +182,8 @@ async function main() {
       const highlightsData = newHighlights.map((h) => JSON.stringify(h)).join("\n") + "\n";
       try {
         fs.appendFileSync(highlightsFile, highlightsData);
+        execSync(`git add ${highlightsFile}`);
+        execSync(`git commit -m "Added ${newHighlights.length} new highlights"`);
         console.log(`${newHighlights.length} new highlight(s) appended to highlights.jsonl`);
       } catch (error) {
         console.error("Error appending highlights to file:", error);
