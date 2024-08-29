@@ -1,25 +1,32 @@
 import puppeteer, { ElementHandle } from "puppeteer";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
+import readline from "readline";
+
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 interface Highlight {
-  book: string;
+  id: string;
+  bookId: string;
+  bookTitle: string;
   text: string;
+  createdAt: string;
 }
 
-async function extractKindleHighlights(email: string, password: string): Promise<Highlight[]> {
+async function getKindleHighlightsOfRecentlyAnnotatedBooks(
+  email: string,
+  password: string,
+  cutoffDate: Date
+): Promise<Highlight[]> {
+  const highlights: Highlight[] = [];
   const browser = await puppeteer.launch({ headless: false }); // Set to true for production
   const page = await browser.newPage();
-
   try {
-    // Navigate to the Amazon sign-in page
+    // Go to the Kindle highlights page
     await page.goto("https://read.amazon.com/notebook");
-
     try {
-      // Fill in the email and password
       await page.type("#ap_email", email);
-      // Check if there's a continue button and click it if present
       const continueButton = await page.$("#continue");
       if (continueButton) {
         await continueButton.click();
@@ -27,90 +34,114 @@ async function extractKindleHighlights(email: string, password: string): Promise
       }
       await page.type("#ap_password", password);
       await page.click("#signInSubmit");
-
-      // Wait for the highlights page to load
       await page.waitForSelector(".kp-notebook-library-each-book");
     } catch (error) {
       console.error("Error navigating to the highlights page");
       throw error;
     }
 
-    // Extract highlights
-
-    // to access the highlight of a book, you need to click the book line under <div id="kp-notebook-library" class="a-row">
-    // so we can just grab all the .kp-notebook-library-each-book inside of it, click each one
-    // and then once the date is available, we can start grabbing the highlights
-    // check if the date at <span id="kp-notebook-annotated-date">Wednesday August 28, 2024</span> is within the last 24 hours
-    // if it is, then we can start grabbing the highlights
-    // if not, we can end the script
-    const highlights: Highlight[] = [];
-    let books: any[] = [];
+    // Get book sidebar elements with new annotations
+    const bookSidebarElementsWithNewAnnotations: ElementHandle<Element>[] = [];
     try {
-      books = await page.$$(".kp-notebook-library-each-book a");
+      const bookSidebarElements = await page.$$(".kp-notebook-library-each-book");
+      for (const bookSidebarElement of bookSidebarElements) {
+        const id = await bookSidebarElement.evaluate((el) => el.getAttribute("id"));
+        const dateString = await bookSidebarElement.$eval(
+          `#kp-notebook-annotated-date-${id}`,
+          (el) => el.getAttribute("value") || ""
+        );
+        const lastAnnotationDate = new Date(dateString);
+        if (lastAnnotationDate > cutoffDate) {
+          bookSidebarElementsWithNewAnnotations.push(bookSidebarElement);
+        }
+      }
     } catch (error) {
       console.error("Error getting books");
       throw error;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    for (const book of books) {
-      try {
-        await book.click();
-      } catch (error) {
-        console.error("Error clicking book");
-        throw error;
-      }
-      try {
-        await page.waitForSelector("#kp-notebook-annotated-date");
-        const dateString = await page.$eval(
-          "#kp-notebook-annotated-date",
-          (el) => el.textContent || ""
-        );
-        const date = new Date(dateString);
-        const now = new Date();
-        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        if (date < oneDayAgo) {
-          console.log("Date is older than one day, stopping");
-          break;
-        }
-      } catch (error) {
-        console.error("Error getting date");
-        throw error;
-      }
-      const bookTitle = await page.$eval("h3.kp-notebook-metadata", (el) => el.textContent || "");
-      if (!bookTitle) {
-        console.error("Error getting book title");
+    // Get new annotations for each book
+    for (const bookSidebarElement of bookSidebarElementsWithNewAnnotations) {
+      // get book id attribute
+      const bookId = await bookSidebarElement.evaluate((el) => {
+        return el.getAttribute("id");
+      });
+      if (!bookId) {
+        console.error("Error getting book id", { id: bookId });
         continue;
       }
-      // const texts = await page.$$eval("#kp-notebook-annotations div", (divs) =>
-      //   divs.map((div) => div.textContent)
-      // );
-      // console.log(texts);
-      let highlightElements: ElementHandle<Element>[] = [];
+
+      // Break once we get to a book that doesn't have any new annotations
+      const dateString = await page.$eval(
+        `#kp-notebook-annotated-date-${bookId}`,
+        (el) => el.getAttribute("value") || ""
+      );
+      const lastAnnotationDate = new Date(dateString);
+      if (isNaN(lastAnnotationDate.getTime())) {
+        console.error("Error getting last annotation date", { id: bookId, dateString });
+        continue;
+      }
+      if (lastAnnotationDate < cutoffDate) {
+        console.log("Date is older than one day, stopping");
+        break;
+      }
+
+      // Get the book title
+      const title = await bookSidebarElement.$eval("h2", (el) => el.textContent || "");
+      if (!title) {
+        console.error("Error getting book title", { id: bookId });
+        continue;
+      }
+
+      // Open the book's highlights page
       try {
-        highlightElements = await page.$$("#kp-notebook-annotations div");
+        const link = await bookSidebarElement.$("a");
+        if (!link) throw new Error("No link found");
+        await link.click();
+      } catch (error) {
+        console.error("Error clicking book", { id: bookId });
+        continue;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Get all annotations elements
+      let annotationElements: ElementHandle<Element>[] = [];
+      try {
+        annotationElements = await page.$$("#kp-notebook-annotations > div");
       } catch (error) {
         console.error("Error getting highlight elements");
         throw error;
       }
-      console.log(bookTitle, highlightElements.length);
 
-      //   if (highlightElements.length === 0) {
-      //     console.log("No highlights found for", bookTitle);
-      //     continue;
-      //   }
-      //   for (const highlight of highlightElements) {
-      //     // get text from highlight element
-      //     const text = await highlight.$eval("span", (el) => el.textContent);
-      //     // const text = await highlight.$eval("#highlight", (el) => el.textContent);
-      //     if (text && bookTitle) {
-      //       highlights.push({ book: bookTitle, text });
-      //     } else {
-      //       console.log("Failed to get highlight data", { text, bookTitle });
-      //     }
-      // }
+      // Grab annotation
+      for (const annotation of annotationElements) {
+        let text = "";
+        try {
+          text = await annotation.$eval("#highlight", (el) => el.textContent || "");
+          if (!text) throw new Error("No text found");
+        } catch (error) {
+          continue;
+        }
+
+        let highlightId = "";
+        try {
+          highlightId = await annotation.evaluate((el) => el.getAttribute("id") || "");
+          if (!highlightId) throw new Error("No highlight id found");
+        } catch (error) {
+          console.error("Error getting highlight id", error);
+          continue;
+        }
+
+        highlights.push({
+          bookTitle: title,
+          text,
+          id: highlightId,
+          bookId,
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
-    // return highlights;
+    return highlights;
   } finally {
     await browser.close();
   }
@@ -120,15 +151,43 @@ async function extractKindleHighlights(email: string, password: string): Promise
 async function main() {
   const email = process.env.AMAZON_EMAIL;
   const password = process.env.AMAZON_PASSWORD;
+  const highlightsFile = path.join(__dirname, "highlights.jsonl");
+  const oneDayAgo = new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000);
 
   if (!email || !password) {
     throw new Error("AMAZON_EMAIL and AMAZON_PASSWORD must be set");
   }
 
+  // Get set of existing highlight ids
+  const existingHighlightIds = new Set<string>();
+  const fileStream = fs.createReadStream(highlightsFile, "utf8");
+  const rl = readline.createInterface({ input: fileStream });
+  for await (const line of rl) {
+    if (!line || line.trim() === "") continue; // Skip empty lines
+    const highlight = JSON.parse(line);
+    existingHighlightIds.add(highlight.id);
+  }
+  rl.close();
+  fileStream.close();
+
   try {
-    const highlights = await extractKindleHighlights(email, password);
-    console.log("Extracted highlights:", highlights);
-    // You can now process or store the highlights as needed
+    const highlights = await getKindleHighlightsOfRecentlyAnnotatedBooks(
+      email,
+      password,
+      oneDayAgo
+    );
+    const newHighlights = highlights.filter((h) => !existingHighlightIds.has(h.id));
+    if (newHighlights.length > 0) {
+      const highlightsData = newHighlights.map((h) => JSON.stringify(h)).join("\n") + "\n";
+      try {
+        fs.appendFileSync(highlightsFile, highlightsData);
+        console.log(`${newHighlights.length} new highlight(s) appended to highlights.jsonl`);
+      } catch (error) {
+        console.error("Error appending highlights to file:", error);
+      }
+    } else {
+      console.log("No new highlights found");
+    }
   } catch (error) {
     console.error("Error extracting highlights:", error);
   }
