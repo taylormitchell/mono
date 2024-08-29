@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.4.5",
-    "puppeteer": "^23.2.0"
+    "openai": "^4.56.1",
+    "puppeteer": "^23.2.0",
+    "zod": "^3.23.8"
   }
 }

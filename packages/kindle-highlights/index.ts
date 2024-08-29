@@ -20,6 +20,7 @@ async function getKindleHighlightsOfRecentlyAnnotatedBooks(
   password: string,
   cutoffDate: Date
 ): Promise<Highlight[]> {
+  const now = new Date();
   const highlights: Highlight[] = [];
   const browser = await puppeteer.launch({ headless: false }); // Set to true for production
   const page = await browser.newPage();
@@ -134,7 +135,7 @@ async function getKindleHighlightsOfRecentlyAnnotatedBooks(
         }
 
         highlights.push({
-          createdAt: new Date().toISOString(),
+          createdAt: now.toISOString(),
           bookTitle: title,
           text,
           highlightId,
