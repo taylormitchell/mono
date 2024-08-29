@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { getDefinitions, Definition } from "./dictionary.js";
+import { getDefinitions } from "./ai";
 dotenv.config();
 
 const LAST_RUN_FILE = path.resolve(process.env.LAST_RUN_FILE || "");
@@ -41,8 +41,6 @@ async function insertFlashcard(note: AnkiNote): Promise<void> {
   const res = await anki("addNote", {
     note: {
       deckName: "2-Recent",
-      modelName: "Basic (synced)",
-      fields: { Front: "", Back: "", SourceId: "" },
       options: { allowDuplicate: false },
       ...note,
     },
@@ -167,8 +165,7 @@ export async function ankifyRecent(): Promise<void> {
   }
   // Look up definitions for all vocab words in bulk
   console.log("Getting definitions for:", vocabWords);
-  const definitions: Definition[] = await getDefinitions(Array.from(vocabWords));
-  console.log("Definitions:", definitions);
+  const { definitions } = await getDefinitions(Array.from(vocabWords));
   // Convert vocab words to Anki notes
   for (const definition of definitions) {
     ankiNotes.push({

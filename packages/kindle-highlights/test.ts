@@ -1,5 +1,5 @@
-import { fetchDefinitions } from "./ai";
+import { getDefinitions } from "./ai";
 
-fetchDefinitions(["hello", "world"]).then((definitions) => {
+getDefinitions(["hello", "world"]).then((definitions) => {
   console.log(definitions);
 });
