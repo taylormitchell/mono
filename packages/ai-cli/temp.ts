@@ -2,52 +2,48 @@ import * as readline from "readline";
 import * as fs from "fs";
 import * as path from "path";
 
-function log(...messages: string[]) {
-  fs.appendFileSync(path.resolve(__dirname, "log.txt"), messages.join(" ") + "\n");
+function createInterface() {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    completer: fileCompleter,
+  });
 }
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  completer: (line: string) => {
-    // Only autocomplete after an @ symbol
-    if (!line.startsWith("@")) {
-      return [null, line];
+function fileCompleter(line: string): [string[], string] {
+  const lineUntilCursor = line.slice(0, readline.cursorTo(process.stdout, 0));
+  const lastToken = lineUntilCursor.split(" ").pop() || "";
+  const dir = path.dirname(lastToken);
+  const base = path.basename(lastToken);
+
+  let files: string[];
+  try {
+    files = fs.readdirSync(dir);
+  } catch (err) {
+    files = fs.readdirSync(".");
+  }
+
+  const hits = files.filter((file) => file.startsWith(base));
+
+  if (hits.length === 1) {
+    const full = path.join(dir, hits[0]);
+    if (fs.statSync(full).isDirectory()) {
+      return [[full + "/"], lineUntilCursor];
     }
+  }
 
-    const partial = line.slice(1);
-    const root = path.resolve(__dirname, "../../data");
-    let relativePath = "";
-    let filePrefix = "";
-    // find index of last / in line
-    const lastSlashIndex = partial.lastIndexOf("/");
-    if (lastSlashIndex !== -1) {
-      relativePath = partial.slice(0, lastSlashIndex);
-      filePrefix = partial.slice(lastSlashIndex + 1);
-    } else {
-      relativePath = "";
-      filePrefix = partial;
-    }
-    const dir = path.join(root, relativePath);
-    const files = fs.readdirSync(dir);
-    log(dir, relativePath, filePrefix);
-    log(...files);
-    const filteredFiles = files.filter((file) => file.startsWith(filePrefix));
-    const paths = filteredFiles.map((file) => path.join(relativePath, file));
-    return [paths, line];
-  },
-});
+  return [hits.length ? hits.map((file) => path.join(dir, file)) : files, lineUntilCursor];
+}
 
-console.log("Type a filename or path and press TAB for autocomplete.");
+const rl = createInterface();
 
+rl.setPrompt("Enter a file path: ");
 rl.prompt();
 
 rl.on("line", (line) => {
   console.log(`You entered: ${line}`);
   rl.prompt();
-});
-
-rl.on("close", () => {
-  console.log("Exiting...");
+}).on("close", () => {
+  console.log("Goodbye!");
   process.exit(0);
 });
