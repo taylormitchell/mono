@@ -1,0 +1,113 @@
+line datadata/data/data/datada
+daily-reflections
+daily-reflections
+daily-reflections/
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/da","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"da"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/daily-reflections","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"daily-reflections"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/daily-reflections","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"daily-reflections"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/jor","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"jor"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/jou","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"jou"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/journals","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"journals"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/journals","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"journals"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/journals/20","dir":"/Users/taylormitchell/Code/taylors-tech/data/journals","base":"20"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/jo","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"jo"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/journals","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"journals"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/journals","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"journals"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/journ","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"journ"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/li","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"li"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/list","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"list"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/list","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"list"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/list","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"list"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/list","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"list"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/notes","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"notes"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/notes","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"notes"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/notes","dir":"/Users/taylormitchell/Code/taylors-tech/data","base":"notes"}
+{"root":"/Users/taylormitchell/Code/taylors-tech/data","inputPath":"/Users/taylormitchell/Code/taylors-tech/data/notes/me","dir":"/Users/taylormitchell/Code/taylors-tech/data/notes","base":"me"}
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data/notes/
+kids.md meditation managing.md ideaflow-team-feedback.md engagement-rings.md 2024-08-13_09-53-34_-0400.md plaintext-notes.md relax-happy-achieve.md task-list-list.md lists.md ray-and-taylor-monthly-touchpoint ai-is-coming.md sketch-out-my-day.md inbox-list.md gift-ideas.md feedback-on-sync.md one-or-many-personal-repos.md Riley-(Ray).md
+/Users/taylormitchell/Code/taylors-tech/data/notes/
+kids.md meditation managing.md ideaflow-team-feedback.md engagement-rings.md 2024-08-13_09-53-34_-0400.md plaintext-notes.md relax-happy-achieve.md task-list-list.md lists.md ray-and-taylor-monthly-touchpoint ai-is-coming.md sketch-out-my-day.md inbox-list.md gift-ideas.md feedback-on-sync.md one-or-many-personal-repos.md Riley-(Ray).md
+/Users/taylormitchell/Code/taylors-tech/data/notes/
+kids.md meditation managing.md ideaflow-team-feedback.md engagement-rings.md 2024-08-13_09-53-34_-0400.md plaintext-notes.md relax-happy-achieve.md task-list-list.md lists.md ray-and-taylor-monthly-touchpoint ai-is-coming.md sketch-out-my-day.md inbox-list.md gift-ideas.md feedback-on-sync.md one-or-many-personal-repos.md Riley-(Ray).md
+/Users/taylormitchell/Code/taylors-tech/data/notes/
+kids.md meditation managing.md ideaflow-team-feedback.md engagement-rings.md 2024-08-13_09-53-34_-0400.md plaintext-notes.md relax-happy-achieve.md task-list-list.md lists.md ray-and-taylor-monthly-touchpoint ai-is-coming.md sketch-out-my-day.md inbox-list.md gift-ideas.md feedback-on-sync.md one-or-many-personal-repos.md Riley-(Ray).md
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data/people/
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people/
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people/
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data/people
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data/people 
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people 
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people em
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data 
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  li
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  pe
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  people
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data/people people 
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people people 
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people people em
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data  pe
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data/people people e
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data/people people emily.md
+emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
