@@ -111,3 +111,29 @@ kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections
 emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
 /Users/taylormitchell/Code/taylors-tech/data/people people emily.md
 emily.md mariela-(jonah).md garth.md jonah.md kevin-h.md ray.md
+/Users/taylormitchell/Code/taylors-tech/data  @
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  @
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  @
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  @
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  li
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  p
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  p
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd
+/Users/taylormitchell/Code/taylors-tech/data  peopl
+kids.md posts .DS_Store journals notes .gitignore package.json daily-reflections list people templates gtd

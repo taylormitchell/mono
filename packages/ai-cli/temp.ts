@@ -10,17 +10,23 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
   completer: (line: string) => {
+    // Only autocomplete after an @ symbol
+    if (!line.startsWith("@")) {
+      return [null, line];
+    }
+
+    const partial = line.slice(1);
     const root = path.resolve(__dirname, "../../data");
     let relativePath = "";
     let filePrefix = "";
     // find index of last / in line
-    const lastSlashIndex = line.lastIndexOf("/");
+    const lastSlashIndex = partial.lastIndexOf("/");
     if (lastSlashIndex !== -1) {
-      relativePath = line.slice(0, lastSlashIndex);
-      filePrefix = line.slice(lastSlashIndex + 1);
+      relativePath = partial.slice(0, lastSlashIndex);
+      filePrefix = partial.slice(lastSlashIndex + 1);
     } else {
       relativePath = "";
-      filePrefix = line;
+      filePrefix = partial;
     }
     const dir = path.join(root, relativePath);
     const files = fs.readdirSync(dir);
