@@ -4,6 +4,21 @@ import fs from "fs";
 import chalk from "chalk";
 import { getRootDir } from "./data";
 
+const MONTH_NAMES = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
+
 export function getTemplatePath(name: string) {
   return path.resolve(getRootDir(), "templates", name + ".md");
 }
@@ -81,16 +96,26 @@ export function listDir(directory: string) {
 }
 
 export function dateToJournalPath(date: Date) {
-  date.setDate(date.getDate());
-  const month = date.toLocaleString("default", { month: "long" }).toLowerCase();
-  const day = date.getDate();
-  const year = date.getFullYear().toString();
-  return path.join(getRootDir(), "journals", year, month, `${day}.md`);
+  const dateString = date.toISOString().split("T")[0];
+  const [year, month, day] = dateString.split("-");
+  const monthNum = parseInt(month);
+  if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+    throw new Error("Invalid month number");
+  }
+  const monthName = MONTH_NAMES[monthNum - 1];
+  return path.join(getRootDir(), "journals", year, monthName, `${day}.md`);
 }
 
-export function openDailyNote(n = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + n);
+export function openDailyNote(dateOrOffset?: Date | number) {
+  let date: Date;
+  if (dateOrOffset instanceof Date) {
+    date = dateOrOffset;
+  } else if (typeof dateOrOffset === "number") {
+    date = new Date();
+    date.setDate(date.getDate() + dateOrOffset);
+  } else {
+    date = new Date();
+  }
   const filepath = dateToJournalPath(date);
   const templatePath = path.join(getRootDir(), "templates", "daily-note-template.md");
   const templateContent = fs.readFileSync(templatePath, "utf-8");

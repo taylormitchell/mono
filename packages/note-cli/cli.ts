@@ -41,17 +41,28 @@ program
   });
 
 program
-  .command("daily [offset]")
-  .description("Open or create daily note with optional offset from today")
-  .action((offset) => {
-    if (offset) {
-      const i = WEEK_DAYS.indexOf(offset.toLowerCase());
-      if (i !== -1) {
-        const n = (new Date().getDay() + i + 1) % 7;
+  .command("daily [dateOrOffset]")
+  .description("Open or create daily note with optional date or offset from today")
+  .action((dateOrOffset) => {
+    if (dateOrOffset) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
+        const [year, month, day] = dateOrOffset.split("-").map(Number);
+        const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+        if (isNaN(date.getTime())) {
+          throw new Error("Invalid date format");
+        }
+        openDailyNote(date);
+      } else if (!isNaN(parseInt(dateOrOffset))) {
+        const n = parseInt(dateOrOffset);
         openDailyNote(n);
       } else {
-        const n = parseInt(offset) || 0;
-        openDailyNote(n);
+        const i = WEEK_DAYS.indexOf(dateOrOffset.toLowerCase());
+        if (i !== -1) {
+          const n = (new Date().getDay() + i + 1) % 7;
+          openDailyNote(n);
+        } else {
+          throw new Error("Invalid input: must be a date in YYYY-MM-DD format or a number");
+        }
       }
     } else {
       openDailyNote();
