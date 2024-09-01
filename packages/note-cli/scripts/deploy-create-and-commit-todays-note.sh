@@ -1,8 +1,8 @@
 # Assumes you're running this from the root of note-cli package
-job="0 0 * * * bash scripts/create-and-commit-todays-note.sh"
+job="0 0 * * * bash $PWD/scripts/create-and-commit-todays-note.sh"
 
 # Check if the job already exists in the crontab
-if ! crontab -l | grep -Fq "$job"; then
+if ! crontab -l | grep -Fq "create-and-commit-todays-note"; then
     # If the job doesn't exist, add it to the crontab
     (crontab -l 2>/dev/null; echo "$job") | crontab -
     echo "Cron job added successfully."
