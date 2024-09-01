@@ -1,5 +1,5 @@
 # Assumes you're running this from the root of note-cli package
-job="0 0 * * * bash $PWD/scripts/create-and-commit-todays-note.sh"
+job="* * * * * bash $PWD/scripts/create-and-commit-todays-note.sh"
 
 # Check if the job already exists in the crontab
 if ! crontab -l | grep -Fq "create-and-commit-todays-note"; then
