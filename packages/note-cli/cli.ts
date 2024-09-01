@@ -8,12 +8,24 @@ import {
   openDailyNote,
   openWeeklyNote,
   openMonthlyNote,
+  createDailyNote,
 } from "@taylor/common/note";
 import { getRootDir } from "@taylor/common/data";
 
 const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 const program = new Command();
+
+function parseDateOrOffset(dateOrOffset: string): Date | number {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
+    const [year, month, day] = dateOrOffset.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  } else if (!isNaN(parseInt(dateOrOffset))) {
+    return parseInt(dateOrOffset);
+  } else {
+    throw new Error("Invalid input: must be a date in YYYY-MM-DD format or a number");
+  }
+}
 
 program
   .command("list [dir]")
@@ -43,29 +55,13 @@ program
 program
   .command("daily [dateOrOffset]")
   .description("Open or create daily note with optional date or offset from today")
-  .action((dateOrOffset) => {
-    if (dateOrOffset) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
-        const [year, month, day] = dateOrOffset.split("-").map(Number);
-        const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
-        if (isNaN(date.getTime())) {
-          throw new Error("Invalid date format");
-        }
-        openDailyNote(date);
-      } else if (!isNaN(parseInt(dateOrOffset))) {
-        const n = parseInt(dateOrOffset);
-        openDailyNote(n);
-      } else {
-        const i = WEEK_DAYS.indexOf(dateOrOffset.toLowerCase());
-        if (i !== -1) {
-          const n = (new Date().getDay() + i + 1) % 7;
-          openDailyNote(n);
-        } else {
-          throw new Error("Invalid input: must be a date in YYYY-MM-DD format or a number");
-        }
-      }
-    } else {
-      openDailyNote();
+  .option("-n, --no-open", "Create the note without opening it")
+  .action((dateOrOffset, options) => {
+    const shouldOpen = options.open !== false;
+    const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
+    createDailyNote(date);
+    if (shouldOpen) {
+      openDailyNote(date);
     }
   });
 

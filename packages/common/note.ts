@@ -40,7 +40,7 @@ export function processTemplate(content: string): string {
     });
 }
 
-export function createOrOpenFile(filepath: string, content: string = "") {
+export function createFile(filepath: string, content: string = "") {
   if (!fs.existsSync(filepath)) {
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
     const processedContent = processTemplate(content);
@@ -67,7 +67,7 @@ function getFormattedTimestamp() {
 export function createPost(directory?: string, content?: string) {
   directory = directory || path.join(getRootDir(), "posts");
   const filename = path.join(directory, `${getFormattedTimestamp()}.md`);
-  createOrOpenFile(filename, content || "");
+  createFile(filename, content || "");
   if (!content) {
     execSync(`cursor ${filename}`);
   }
@@ -75,7 +75,7 @@ export function createPost(directory?: string, content?: string) {
 
 export function createNote(name?: string) {
   const filename = name ? `${name}.md` : `${getFormattedTimestamp()}.md`;
-  createOrOpenFile(path.join(getRootDir(), "notes", filename));
+  createFile(path.join(getRootDir(), "notes", filename));
 }
 
 export function listDir(directory: string) {
@@ -102,11 +102,15 @@ export function dateToJournalPath(date: Date) {
   if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
     throw new Error("Invalid month number");
   }
+  const dayNum = parseInt(day);
+  if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+    throw new Error("Invalid day number");
+  }
   const monthName = MONTH_NAMES[monthNum - 1];
-  return path.join(getRootDir(), "journals", year, monthName, `${day}.md`);
+  return path.join(getRootDir(), "journals", year, monthName, `${dayNum}.md`);
 }
 
-export function openDailyNote(dateOrOffset?: Date | number) {
+export function createDailyNote(dateOrOffset?: Date | number) {
   let date: Date;
   if (dateOrOffset instanceof Date) {
     date = dateOrOffset;
@@ -120,8 +124,12 @@ export function openDailyNote(dateOrOffset?: Date | number) {
   const templatePath = path.join(getRootDir(), "templates", "daily-note-template.md");
   const templateContent = fs.readFileSync(templatePath, "utf-8");
   const content = templateContent.replace("{{date}}", date.toDateString());
-  const absolutePath = createOrOpenFile(filepath, content);
-  execSync(`cursor ${absolutePath}`);
+  return createFile(filepath, content);
+}
+
+export function openDailyNote(dateOrOffset?: Date | number) {
+  const filepath = createDailyNote(dateOrOffset);
+  execSync(`cursor ${filepath}`);
 }
 
 export function openWeeklyNote() {
@@ -131,7 +139,7 @@ export function openWeeklyNote() {
   const year = monday.getFullYear().toString();
   const day = monday.getDate();
   const filepath = path.join(getRootDir(), "journals", year, month, `week-of-${day}.md`);
-  const absolutePath = createOrOpenFile(filepath);
+  const absolutePath = createFile(filepath);
   execSync(`cursor ${absolutePath}`);
 }
 
@@ -140,6 +148,6 @@ export function openMonthlyNote() {
   const month = today.toLocaleString("default", { month: "long" }).toLowerCase();
   const year = today.getFullYear().toString();
   const filepath = path.join(getRootDir(), "journals", year, month, "index.md");
-  const absolutePath = createOrOpenFile(filepath);
+  const absolutePath = createFile(filepath);
   execSync(`cursor ${absolutePath}`);
 }

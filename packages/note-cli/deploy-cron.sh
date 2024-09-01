@@ -2,10 +2,10 @@
 date=$(date -u +"%Y-%m-%d")
 echo "Adding cron job for $date"
 
-# get the absolute path of the cli.ts file
-cli_path=$(realpath cli.ts)
+cli_dir=$(dirname $cli_path)
 
-job="0 0 * * * bun $cli_path $date"
+# create daily note, commit, and push
+job="0 0 * * * cd $cli_dir && bun cli.ts daily $date -n && git add . && git commit -m 'save' && git push"
 
 # Check if the job already exists in the crontab
 if ! crontab -l | grep -Fq "$job"; then
