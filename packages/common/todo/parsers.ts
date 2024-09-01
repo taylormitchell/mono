@@ -4,6 +4,8 @@ import chalk from "chalk";
 import path from "path";
 import { getRootDir } from "../data";
 import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
+import { execSync } from "child_process";
+import { dateToJournalPath } from "../note";
 chalk.level = 3;
 
 const months = [
@@ -174,6 +176,34 @@ export function getTodos(pathname?: string, ignore = true): Todo[] {
     }));
 }
 
+function todoToMarkdown(todo: Todo): string {
+  return `${todo.status} ${todo.text} ${
+    todo.due ? `{due: ${todo.due.toISOString().split("T")[0]}}` : ""
+  }`;
+}
+
+export function addTodo(todo: Todo, filename?: string): string {
+  if (!filename && todo.due) {
+    // put the todo in the journal for the given date
+    filename = dateToJournalPath(todo.due);
+  } else {
+    // otherwise, put the todo in default todo file
+    filename = filename || path.join(getRootDir(), "gtd/todo.md");
+  }
+  const fileDate = pathToDate(filename);
+  if (fileDate && todo.due && equal(todo.due, fileDate)) {
+    // if we're putting a todo on the same day as the file, don't include the due date
+    todo = { ...todo, due: undefined };
+  }
+  const content = fs.readFileSync(filename, "utf-8");
+  const newContent = todoToMarkdown(todo) + "\n" + content;
+  fs.writeFileSync(filename, newContent);
+  execSync(`git add ${filename}`);
+  execSync(`git commit -m "Add todo: ${todo.text}"`);
+  execSync(`git push`);
+  return filename;
+}
+
 function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
   return arr.reduce((acc, todo) => {
     const value = todo[key as keyof Todo];
@@ -210,6 +240,14 @@ function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
     date1.getFullYear() <= date2.getFullYear() &&
     date1.getMonth() <= date2.getMonth() &&
     date1.getDate() <= date2.getDate()
+  );
+}
+
+function equal(date1: Date, date2: Date): boolean {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
   );
 }
 

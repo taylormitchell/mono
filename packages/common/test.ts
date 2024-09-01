@@ -1,5 +1,4 @@
-import { processTemplate } from "./note";
-import { listAllTodos } from "./todo";
+import { addTodo } from "./todo/parsers";
 
 const md = `
 # {{date}}
@@ -8,8 +7,6 @@ const md = `
   {{> morning-routine}}
 `;
 
-console.log(processTemplate(md));
-
 // function testDailyNoteTemplate() {
 //   const md = fs.readFileSync(getTemplatePath("daily-note-template"), "utf-8");
 //   console.log(processTemplate(md));
@@ -17,4 +14,19 @@ console.log(processTemplate(md));
 
 // testDailyNoteTemplate();
 
-listAllTodos();
+// listAllTodos();
+
+const date = new Date();
+date.setDate(date.getDate() + 1);
+const fn = addTodo(
+  {
+    type: "todo",
+    text: "test and stuff",
+    status: "TODO",
+    due: date,
+  },
+  "/Users/taylormitchell/Code/taylors-tech/data/journals/2024/august/25.md"
+);
+
+// const todos = parseMarkdownFile(fn);
+// console.log(todos);

@@ -1,10 +1,9 @@
-// File: backend/src/index.ts
-
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { getTodos } from "@taylor/common/todo/parsers";
-import { Todo } from "@taylor/common/todo/types";
+import { addTodo, getTodos } from "@taylor/common/todo/parsers";
+import { deserializeTodo, serializeTodo } from "@taylor/common/todo/types";
+import { execSync } from "child_process";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,20 +12,25 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-function serializeTodo(todo: Todo): Omit<Todo, "due"> & { due?: string } {
-  return {
-    ...todo,
-    due: todo.due ? todo.due.toISOString().split("T")[0] : undefined,
-  };
-}
-
 // Mock API route
 app.get("/api/data", (req, res) => {
+  execSync("git pull");
   const todos = getTodos();
   if (todos.length === 0) {
     res.json({ todos: [] });
   } else {
     res.json({ todos: todos.map(serializeTodo) });
+  }
+});
+
+app.post("/api/todo", (req, res) => {
+  try {
+    const todo = deserializeTodo(req.body);
+    addTodo(todo);
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("Error adding todo", error);
+    res.status(500).send("Error adding todo");
   }
 });
 
