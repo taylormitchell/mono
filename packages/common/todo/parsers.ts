@@ -235,6 +235,23 @@ export function listAllTodos(path?: string): void {
   });
 }
 
+/**
+ * Compares two dates and returns true if the first date is less than or equal to the second date
+ * Only compares year, month, and day.
+ */
+function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
+  if (date1.getFullYear() > date2.getFullYear()) {
+    return false;
+  }
+  if (date1.getMonth() > date2.getMonth()) {
+    return false;
+  }
+  if (date1.getDate() > date2.getDate()) {
+    return false;
+  }
+  return true;
+}
+
 function equal(date1: Date, date2: Date): boolean {
   return (
     date1.getFullYear() === date2.getFullYear() &&
@@ -264,10 +281,10 @@ export function listTodosDueToday(
     }
 
     const dueToday = todos.filter((todo) => {
-      // if (todo.text.includes("Larissa")) {
-      //   console.log({ todo, isLess: lessThanOrEqualTo(todo.due!, day) });
-      // }
-      return todo.status !== "DONE" && todo.due && todo.due.getTime() === day.getTime();
+      if (todo.text.includes("Larissa")) {
+        console.log({ todo, isLess: lessThanOrEqualTo(todo.due!, day) });
+      }
+      return todo.status !== "DONE" && todo.due && todo.due.getDate() === day.getDate();
     });
     if (dueToday.length > 0) {
       dueTodosByFile.set(filename, dueToday);
