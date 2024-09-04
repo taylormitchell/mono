@@ -284,7 +284,7 @@ export function listTodosDueToday(
       if (todo.text.includes("Larissa")) {
         console.log({ todo, isLess: lessThanOrEqualTo(todo.due!, day) });
       }
-      return todo.status !== "DONE" && todo.due && todo.due.getDate() === day.getDate();
+      return todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day);
     });
     if (dueToday.length > 0) {
       dueTodosByFile.set(filename, dueToday);
