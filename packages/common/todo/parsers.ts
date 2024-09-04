@@ -240,16 +240,7 @@ export function listAllTodos(path?: string): void {
  * Only compares year, month, and day.
  */
 function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
-  if (date1.getFullYear() > date2.getFullYear()) {
-    return false;
-  }
-  if (date1.getMonth() > date2.getMonth()) {
-    return false;
-  }
-  if (date1.getDate() > date2.getDate()) {
-    return false;
-  }
-  return true;
+  return date1.toISOString().split("T")[0] <= date2.toISOString().split("T")[0];
 }
 
 function equal(date1: Date, date2: Date): boolean {
