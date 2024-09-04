@@ -241,19 +241,7 @@ export function listAllTodos(path?: string): void {
  * Only compares year, month, and day.
  */
 function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
-  // return date1.toISOString().split("T")[0] <= date2.toISOString().split("T")[0];
-  // same logic but comparing the year, month, and day
-  if (date1.getFullYear() < date2.getFullYear()) {
-    return true;
-  } else if (date1.getFullYear() === date2.getFullYear() && date1.getMonth() < date2.getMonth()) {
-    return true;
-  } else if (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() <= date2.getDate()
-  ) {
-    return true;
-  }
+  return date1.toISOString().split("T")[0] <= date2.toISOString().split("T")[0];
 }
 
 function equal(date1: Date, date2: Date): boolean {
@@ -284,12 +272,9 @@ export function listTodosDueToday(
       return;
     }
 
-    const dueToday = todos.filter((todo) => {
-      if (todo.text.includes("Larissa")) {
-        console.log({ todo, isLess: lessThanOrEqualTo(todo.due!, day) });
-      }
-      return todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day);
-    });
+    const dueToday = todos.filter(
+      (todo) => todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day)
+    );
     if (dueToday.length > 0) {
       dueTodosByFile.set(filename, dueToday);
     }
