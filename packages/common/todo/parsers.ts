@@ -235,14 +235,6 @@ export function listAllTodos(path?: string): void {
   });
 }
 
-function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
-  return (
-    date1.getFullYear() <= date2.getFullYear() &&
-    date1.getMonth() <= date2.getMonth() &&
-    date1.getDate() <= date2.getDate()
-  );
-}
-
 function equal(date1: Date, date2: Date): boolean {
   return (
     date1.getFullYear() === date2.getFullYear() &&
@@ -272,10 +264,10 @@ export function listTodosDueToday(
     }
 
     const dueToday = todos.filter((todo) => {
-      if (todo.text.includes("Larissa")) {
-        console.log({ todo, isLess: lessThanOrEqualTo(todo.due!, day) });
-      }
-      return todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day);
+      // if (todo.text.includes("Larissa")) {
+      //   console.log({ todo, isLess: lessThanOrEqualTo(todo.due!, day) });
+      // }
+      return todo.status !== "DONE" && todo.due && todo.due.getTime() === day.getTime();
     });
     if (dueToday.length > 0) {
       dueTodosByFile.set(filename, dueToday);
