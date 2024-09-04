@@ -271,9 +271,12 @@ export function listTodosDueToday(
       return;
     }
 
-    const dueToday = todos.filter(
-      (todo) => todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day)
-    );
+    const dueToday = todos.filter((todo) => {
+      if (todo.text.includes("Larissa")) {
+        console.log(todo);
+      }
+      return todo.status !== "DONE" && todo.due && lessThanOrEqualTo(todo.due, day);
+    });
     if (dueToday.length > 0) {
       dueTodosByFile.set(filename, dueToday);
     }
