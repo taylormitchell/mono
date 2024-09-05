@@ -155,7 +155,6 @@ async function main() {
   const email = process.env.AMAZON_EMAIL;
   const password = process.env.AMAZON_PASSWORD;
   const highlightsFile = path.join(__dirname, "highlights.jsonl");
-  const oneDayAgo = new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000);
 
   if (!email || !password) {
     throw new Error("AMAZON_EMAIL and AMAZON_PASSWORD must be set");
@@ -173,7 +172,7 @@ async function main() {
     if (createdAt > lastCreatedAt) {
       lastCreatedAt = createdAt;
     }
-    existingHighlightIds.add(highlight.id);
+    existingHighlightIds.add(highlight.highlightId);
   }
   rl.close();
   fileStream.close();
@@ -182,9 +181,9 @@ async function main() {
     const highlights = await getKindleHighlightsOfRecentlyAnnotatedBooks(
       email,
       password,
-      oneDayAgo
+      lastCreatedAt
     );
-    const newHighlights = highlights.filter((h) => !existingHighlightIds.has(h.id));
+    const newHighlights = highlights.filter((h) => !existingHighlightIds.has(h.highlightId));
     if (newHighlights.length > 0) {
       const highlightsData = newHighlights.map((h) => JSON.stringify(h)).join("\n") + "\n";
       try {
