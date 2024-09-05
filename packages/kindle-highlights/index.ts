@@ -26,8 +26,9 @@ async function getKindleHighlightsOfRecentlyAnnotatedBooks(
   const page = await browser.newPage();
   try {
     // Go to the Kindle highlights page
-    await page.goto("https://read.amazon.com/notebook");
     try {
+      await page.goto("https://read.amazon.com/notebook");
+      await page.waitForSelector("#ap_email");
       await page.type("#ap_email", email);
       const continueButton = await page.$("#continue");
       if (continueButton) {
