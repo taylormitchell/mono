@@ -31,10 +31,10 @@ async function getKindleHighlightsOfRecentlyAnnotatedBooks(
       await page.waitForSelector("#ap_email, .a-alert-info");
 
       // Check if we've hit a captcha
-      const captchaAlert = await page.$(".a-alert-info");
-      if (captchaAlert) {
-        throw new Error("Encountered a captcha. Manual intervention required.");
-      }
+      // const captchaAlert = await page.$(".a-alert-info");
+      // if (captchaAlert) {
+      //   throw new Error("Encountered a captcha. Manual intervention required.");
+      // }
 
       await page.type("#ap_email", email);
       const continueButton = await page.$("#continue");
