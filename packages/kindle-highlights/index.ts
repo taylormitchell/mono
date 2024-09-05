@@ -163,11 +163,16 @@ async function main() {
 
   // Get set of existing highlight ids
   const existingHighlightIds = new Set<string>();
+  let lastCreatedAt: Date = new Date(0);
   const fileStream = fs.createReadStream(highlightsFile, "utf8");
   const rl = readline.createInterface({ input: fileStream });
   for await (const line of rl) {
     if (!line || line.trim() === "") continue; // Skip empty lines
     const highlight = JSON.parse(line);
+    const createdAt = new Date(highlight.createdAt);
+    if (createdAt > lastCreatedAt) {
+      lastCreatedAt = createdAt;
+    }
     existingHighlightIds.add(highlight.id);
   }
   rl.close();
