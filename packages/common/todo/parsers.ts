@@ -6,23 +6,7 @@ import { getRootDir } from "../data";
 import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
 import { execSync } from "child_process";
 import { dateToJournalPath } from "../note";
-import { equal } from "assert";
 chalk.level = 3;
-
-const months = [
-  "january",
-  "february",
-  "march",
-  "april",
-  "may",
-  "june",
-  "july",
-  "august",
-  "september",
-  "october",
-  "november",
-  "december",
-];
 
 function pathToDate(pathname: string): Date | undefined {
   const parts = pathname.split("/").reverse();
@@ -30,15 +14,18 @@ function pathToDate(pathname: string): Date | undefined {
   if (isNaN(day)) {
     return;
   }
-  const month = months.indexOf(parts[1].toLocaleLowerCase());
-  if (month === -1) {
+  const month = parseInt(parts[1]);
+  if (isNaN(month)) {
+    return;
+  }
+  if (month < 1 || month > 12) {
     return;
   }
   const year = parseInt(parts[2]);
   if (isNaN(year)) {
     return;
   }
-  return new Date(year, month, day);
+  return new Date(year, month - 1, day);
 }
 
 function parseKeyValue(

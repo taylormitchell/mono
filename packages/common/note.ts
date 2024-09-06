@@ -4,21 +4,6 @@ import fs from "fs";
 import chalk from "chalk";
 import { getRootDir } from "./data";
 
-const MONTH_NAMES = [
-  "january",
-  "february",
-  "march",
-  "april",
-  "may",
-  "june",
-  "july",
-  "august",
-  "september",
-  "october",
-  "november",
-  "december",
-];
-
 export function getTemplatePath(name: string) {
   return path.resolve(getRootDir(), "templates", name + ".md");
 }
@@ -106,8 +91,7 @@ export function dateToJournalPath(date: Date) {
   if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
     throw new Error("Invalid day number");
   }
-  const monthName = MONTH_NAMES[monthNum - 1];
-  return path.join(getRootDir(), "journals", year, monthName, `${dayNum}.md`);
+  return path.join(getRootDir(), "journals", year, monthNum.toString(), `${dayNum}.md`);
 }
 
 export function createDailyNote(dateOrOffset?: Date | number) {
