@@ -5,7 +5,7 @@ const app = express();
 const port = process.env.PORT || 3077;
 
 // Serve static files from the data directory
-app.use(express.static(path.join(__dirname, "../../data")));
+app.use(express.static(path.join(__dirname, "../../../data")));
 
 // Configure multer for file uploads
 // const upload = multer({ dest: path.join(__dirname, "../../data/uploads") });
