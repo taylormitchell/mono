@@ -5,7 +5,11 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@taylor/common/*": ["../common/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
