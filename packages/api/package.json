@@ -3,26 +3,19 @@
   "version": "1.0.0",
   "description": "Express API for serving and adding files",
   "main": "dist/index.js",
-  ⌘K to generate a command
-  Create an typescript express api inside of @api . The files inside of @data will be served statically from it. There's also an api to add new files, given an aribtrary path
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "ts-node-dev src/index.ts",
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "bun --watch src/index.ts",
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1",
-    "multer": "^1.4.3"
+    "express": "^4.17.1"
   },
   "devDependencies": {
     "@types/express": "^4.17.13",
-    "@types/multer": "^1.4.7",
     "@types/node": "^16.11.12",
-    "ts-node-dev": "^1.1.8",
     "typescript": "^4.5.4"
   }
 }
