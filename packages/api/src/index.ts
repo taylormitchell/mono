@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3077;
 
 // Serve static files from the data directory
 app.use(express.static(path.join(__dirname, "../../data")));
@@ -31,5 +31,5 @@ app.use(express.static(path.join(__dirname, "../../data")));
 // });
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
