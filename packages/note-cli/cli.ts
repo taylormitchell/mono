@@ -92,12 +92,10 @@ program
   .command("diffs")
   .description("Show diffs of recent changes in notes")
   .option("--since <time>", "Time range for diffs (e.g., '2 days ago')", "1 week ago")
-  .option("--include-journals", "Include journal entries in the diff")
+  .option("--include-journals", "Include daily journal entries in the diff")
   .action((options) => {
     const rootDir = getRootDir();
-    const excludeJournals = options.includeJournals
-      ? ""
-      : " ':(exclude)packages/notes/journals/**/*.md'";
+    const excludeJournals = options.includeJournals ? "" : " ':(exclude)journals/**/*.md'";
     const command = `git -C "${rootDir}" log -p --since="${options.since}" -- '${rootDir}/**/*.md'${excludeJournals}`;
     try {
       const output = execSync(command, { encoding: "utf-8" });
