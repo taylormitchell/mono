@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { commitAndPush, getRootDir } from "@taylor/common/data";
+import { save, getRootDir } from "@taylor/common/data";
 import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
 import { addTodo, listAllTodos } from "@taylor/common/todo/parsers";
 import fs from "fs";
@@ -140,7 +140,7 @@ app.patch("/api/files/:path(*)", (req, res) => {
   }
 
   if (AUTO_COMMIT_AND_PUSH) {
-    commitAndPush(filePath);
+    save(filePath);
   }
   res.status(200).json({ message: "File updated successfully" });
 });
