@@ -12,3 +12,4 @@ ssh ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com '
   npm i &&
   pm2 delete api || true &&
   pm2 start npm --name api -- run start
+'
