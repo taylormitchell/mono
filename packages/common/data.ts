@@ -5,7 +5,7 @@ export function getRootDir() {
   return path.resolve(__dirname, "../../data");
 }
 
-export function save(
+export function saveFile(
   filepath: string,
   message?: string
 ):
@@ -33,15 +33,9 @@ export function save(
     if (ok) {
       return { ok: true, stashed };
     } else {
-      return {
-        ok: false,
-        error: [stashOutput, pullOutput, addOutput, commitOutput, pushOutput].join("\n"),
-      };
+      return { ok: false, error: outputs.join("\n") };
     }
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

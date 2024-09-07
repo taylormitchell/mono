@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { save, getRootDir } from "@taylor/common/data";
+import { saveFile as _saveFile, getRootDir } from "@taylor/common/data";
 import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
 import { addTodo, listAllTodos } from "@taylor/common/todo/parsers";
 import fs from "fs";
@@ -13,6 +13,17 @@ config();
 const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
 const AUTO_COMMIT_AND_PUSH = process.env.AUTO_COMMIT_AND_PUSH === "true";
 
+const saveFile: typeof _saveFile = (filePath, message) => {
+  if (!AUTO_COMMIT_AND_PUSH) return { ok: true, stashed: false };
+  const result = _saveFile(filePath, message);
+  if (!result.ok) {
+    log.error("Failed to save file", result.error);
+  } else if (result.stashed) {
+    log.warn("Needed to stash changes before committing and pushing");
+  }
+  return result;
+};
+
 const app = express();
 const port = process.env.PORT || 3077;
 
@@ -22,6 +33,9 @@ app.use(express.static(getRootDir()));
 const log = {
   info: (message?: any, ...optionalParams: any[]) => {
     console.log(`[${new Date().toISOString()}] [INFO] `, message, ...optionalParams);
+  },
+  warn: (message?: any, ...optionalParams: any[]) => {
+    console.warn(`[${new Date().toISOString()}] [WARN] `, message, ...optionalParams);
   },
   error: (message?: any, ...optionalParams: any[]) => {
     console.error(`[${new Date().toISOString()}] [ERROR] `, message, ...optionalParams);
@@ -108,6 +122,10 @@ app.put("/api/files/:path(*)", (req, res) => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const exists = fs.existsSync(filePath);
   fs.writeFileSync(filePath, content);
+  const result = saveFile(filePath, exists ? "Update file" : "Create file");
+  if (!result.ok) {
+    return res.status(500).json({ error: result.error });
+  }
   res
     .status(200)
     .json({ message: exists ? "File updated successfully" : "File created successfully" });
@@ -139,8 +157,9 @@ app.patch("/api/files/:path(*)", (req, res) => {
       return res.status(400).json({ error: "Invalid method" });
   }
 
-  if (AUTO_COMMIT_AND_PUSH) {
-    save(filePath);
+  const result = saveFile(filePath);
+  if (!result.ok) {
+    return res.status(500).json({ error: result.error });
   }
   res.status(200).json({ message: "File updated successfully" });
 });
@@ -149,6 +168,10 @@ app.delete("/api/files/:path(*)", (req, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
+    const result = saveFile(filePath, "Delete file");
+    if (!result.ok) {
+      return res.status(500).json({ error: result.error });
+    }
     res.status(200).json({ message: "File deleted successfully" });
   } else {
     res.status(404).json({ error: "File not found" });
@@ -166,6 +189,10 @@ app.post("/api/log/:type", (req, res) => {
   };
   const logPath = path.join(getRootDir(), "log.jsonl");
   fs.appendFileSync(logPath, JSON.stringify(logEntry) + "\n");
+  const result = saveFile(logPath, "Add log entry");
+  if (!result.ok) {
+    return res.status(500).json({ error: result.error });
+  }
   res.status(201).json({ message: "Log entry added successfully" });
 });
 
@@ -206,6 +233,10 @@ app.post("/api/note/post/:dir(*)", (req, res) => {
   const content = req.body?.content || "";
   const dirPath = path.join(getRootDir(), dir);
   const filePath = createPost(dirPath, content);
+  const result = saveFile(filePath, "Create new post");
+  if (!result.ok) {
+    return res.status(500).json({ error: result.error });
+  }
   res.status(201).json({ message: "Post created successfully", path: filePath });
 });
 
@@ -241,6 +272,10 @@ function postTodoHandler(req: Request, res: Response, filepath?: string) {
   filepath = filepath || path.join(getRootDir(), "gtd", "todo.md");
   console.log("filepath", filepath);
   addTodo(todo, filepath);
+  const result = saveFile(filepath, "Add todo");
+  if (!result.ok) {
+    return res.status(500).json({ error: result.error });
+  }
   res.status(201).json({ message: "Todo added successfully", path: filepath });
 }
 
