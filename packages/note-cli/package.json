@@ -13,7 +13,8 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "commander": "^12.1.0",
-    "@taylor/common": "^1.0.0"
+    "@taylor/common": "^1.0.0",
+    "chrono-node": "^1.4.9",
+    "commander": "^12.1.0"
   }
 }
