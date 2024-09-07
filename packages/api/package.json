@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@taylor/common": "^1.0.0",
+    "date-fns": "^3.6.0",
     "express": "^4.17.1"
   },
   "devDependencies": {

@@ -203,24 +203,15 @@ function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
   }, new Map<any, Todo[]>());
 }
 
-export function listAllTodos(path?: string): void {
-  path = path || getRootDir();
-  console.log(path);
-  const todosByFile = groupBy(getTodos(path || getRootDir()), "filename");
-  todosByFile.forEach((todos, filename) => {
-    console.log(chalk.cyan(`File: ${filename}`));
-    console.log(chalk.cyan("=".repeat(filename.length + 6)));
-    todos.forEach((todo) => {
-      console.log(chalk.bold(`  ${todo.status}: ${todo.text}`));
-      if (todo.due) {
-        console.log(chalk.green(`    Due: ${todo.due.toISOString().split("T")[0]}`));
-      }
-      if (todo.id) {
-        console.log(chalk.green(`    ID: ${todo.id}`));
-      }
-    });
-    console.log();
-  });
+export function listAllTodos(rootPath?: string): Todo[] {
+  const todos: Todo[] = [];
+  const root = rootPath || getRootDir();
+  const files = glob.sync(`${root}/**/*.md`);
+  for (const file of files) {
+    const fileTodos = parseMarkdownFile(file);
+    todos.push(...fileTodos);
+  }
+  return todos;
 }
 
 /**
