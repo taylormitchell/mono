@@ -18,6 +18,7 @@ export function saveFile(
       error: string;
     } {
   try {
+    message = message || `Save ${filepath}`;
     const outputs = [
       execSync(`cd ${getRootDir()}`).toString(),
       execSync(
@@ -25,7 +26,7 @@ export function saveFile(
       ).toString(),
       execSync(`git pull`).toString(),
       execSync(`git add ${filepath}`).toString(),
-      execSync(`git commit -m "${message || `Save ${filepath}`}"`).toString(),
+      execSync(`git commit -m "${message}"`).toString(),
       execSync(`git push`).toString(),
     ];
     console.log("outputs:", outputs);
