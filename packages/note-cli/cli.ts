@@ -211,10 +211,11 @@ program
       }, {});
 
       Object.entries(summary).forEach(([type, data]: [string, any]) => {
-        console.log(`${type}: ${data.count} time(s)`);
-        if (data.totalDuration > 0) {
-          console.log(`  Total duration: ${formatDuration(data.totalDuration)}`);
-        }
+        console.log(
+          `${type}: ${data.count} ${
+            data.totalDuration ? `(${formatDuration(data.totalDuration)})` : ""
+          }`
+        );
       });
     } else {
       console.log("No log events for today.");
