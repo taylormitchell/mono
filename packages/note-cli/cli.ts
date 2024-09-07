@@ -181,17 +181,17 @@ logCommand
 
 program
   .command("today")
-  .description("Output today's daily note and log events")
+  .description("Output today's daily note and summarize log events")
   .action(() => {
     // Output today's daily note
     const todayNote = createDailyNote();
     console.log("Today's Daily Note:");
     console.log(readFileSync(todayNote, "utf-8"));
 
-    // Output today's log events
+    // Summarize today's log events
     const logPath = path.join(getRootDir(), "log.jsonl");
     const today = new Date().toISOString().split("T")[0];
-    console.log("\nToday's Log Events:");
+    console.log("\nToday's Log Events Summary:");
     const logEvents = readFileSync(logPath, "utf-8")
       .split("\n")
       .filter((line) => line.trim() !== "")
@@ -199,10 +199,53 @@ program
       .filter((entry) => entry.datetime.startsWith(today));
 
     if (logEvents.length > 0) {
-      logEvents.forEach((event) => console.log(JSON.stringify(event)));
+      const summary = logEvents.reduce((acc, event) => {
+        if (!acc[event.type]) {
+          acc[event.type] = { count: 0, totalDuration: 0 };
+        }
+        acc[event.type].count++;
+        if (event.duration) {
+          acc[event.type].totalDuration += parseDuration(event.duration);
+        }
+        return acc;
+      }, {});
+
+      Object.entries(summary).forEach(([type, data]: [string, any]) => {
+        console.log(`${type}: ${data.count} time(s)`);
+        if (data.totalDuration > 0) {
+          console.log(`  Total duration: ${formatDuration(data.totalDuration)}`);
+        }
+      });
     } else {
       console.log("No log events for today.");
     }
   });
+
+function parseDuration(duration: string): number {
+  const match = duration.match(/^(\d+)([hms])$/);
+  if (!match) return 0;
+  const [, value, unit] = match;
+  switch (unit) {
+    case "h":
+      return parseInt(value) * 60 * 60;
+    case "m":
+      return parseInt(value) * 60;
+    case "s":
+      return parseInt(value);
+    default:
+      return 0;
+  }
+}
+
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
+  return parts.join(" ");
+}
 
 program.parse(process.argv);
