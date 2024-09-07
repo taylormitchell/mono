@@ -8,6 +8,7 @@ scp .env.production ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com:~/code/tayl
 rm .env.production
 ssh ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com '
   cd code/taylors-tech/packages/api &&
+  git stash save "Stashing changes during api deploy $(date)" &&
   git pull &&
   npm i &&
   pm2 delete api || true &&
