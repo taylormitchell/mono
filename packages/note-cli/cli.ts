@@ -106,6 +106,33 @@ program
     }
   });
 
+function validateDuration(duration: string | undefined): boolean {
+  if (duration && !/^\d+[hms]$/.test(duration)) {
+    console.error(
+      "Invalid duration format. Use a number followed by 'h' (hours), 'm' (minutes), or 's' (seconds)."
+    );
+    return false;
+  }
+  return true;
+}
+
+function validateDatetime(datetime: string | undefined): boolean {
+  if (datetime && isNaN(Date.parse(datetime))) {
+    console.error(
+      "Invalid datetime format. Use ISO 8601 format (e.g., '2023-04-15T14:30:00-04:00')"
+    );
+    return false;
+  }
+  return true;
+}
+
+function addLogEntry(logEntry: any) {
+  const logPath = path.join(getRootDir(), "log.jsonl");
+  const logLine = JSON.stringify(logEntry) + "\n";
+  fs.appendFileSync(logPath, logLine);
+  console.log(`Log entry added: ${logLine.trim()}`);
+}
+
 const logCommand = program.command("log").description("Add a log entry to log.jsonl");
 const logTypes = ["meditated", "ankied", "eye-patch"];
 logTypes.forEach((type) => {
@@ -114,21 +141,7 @@ logTypes.forEach((type) => {
     .description(`Log a ${type} entry`)
     .option("-d, --datetime <datetime>", "Specify a custom datetime (default: current time)")
     .action((duration: string | undefined, options: { datetime?: string }) => {
-      // Validate duration (if provided)
-      if (duration && !/^\d+[hms]$/.test(duration)) {
-        console.error(
-          "Invalid duration format. Use a number followed by 'h' (hours), 'm' (minutes), or 's' (seconds)."
-        );
-        return;
-      }
-
-      // Validate datetime (if provided)
-      if (options.datetime && isNaN(Date.parse(options.datetime))) {
-        console.error(
-          "Invalid datetime format. Use ISO 8601 format (e.g., '2023-04-15T14:30:00-04:00')"
-        );
-        return;
-      }
+      if (!validateDuration(duration) || !validateDatetime(options.datetime)) return;
 
       const logEntry = {
         type,
@@ -136,12 +149,33 @@ logTypes.forEach((type) => {
         datetime: options.datetime || new Date().toISOString(),
       };
 
-      const logPath = path.join(getRootDir(), "log.jsonl");
-      const logLine = JSON.stringify(logEntry) + "\n";
-
-      fs.appendFileSync(logPath, logLine);
-      console.log(`Log entry added: ${logLine.trim()}`);
+      addLogEntry(logEntry);
     });
 });
+
+// Add new sub-command for custom log types
+logCommand
+  .command("custom <type> [duration]")
+  .description("Log a custom entry type")
+  .option("-d, --datetime <datetime>", "Specify a custom datetime (default: current time)")
+  .option("-m, --message <message>", "Add an optional message to the log entry")
+  .action(
+    (
+      type: string,
+      duration: string | undefined,
+      options: { datetime?: string; message?: string }
+    ) => {
+      if (!validateDuration(duration) || !validateDatetime(options.datetime)) return;
+
+      const logEntry = {
+        type,
+        ...(duration && { duration }),
+        datetime: options.datetime || new Date().toISOString(),
+        ...(options.message && { message: options.message }),
+      };
+
+      addLogEntry(logEntry);
+    }
+  );
 
 program.parse(process.argv);
