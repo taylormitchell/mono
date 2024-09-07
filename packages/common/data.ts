@@ -28,6 +28,7 @@ export function saveFile(
       execSync(`git commit -m "${message || `Save ${filepath}`}"`).toString(),
       execSync(`git push`).toString(),
     ];
+    console.log(outputs);
     const stashed = !outputs[1].includes("No local changes to save");
     const ok = execSync(`git pull`).toString().includes("Already up to date.");
     if (ok) {
