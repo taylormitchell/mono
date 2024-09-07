@@ -9,6 +9,7 @@ import {
   openWeeklyNote,
   openMonthlyNote,
   createDailyNote,
+  openFile,
 } from "@taylor/common/note";
 import { getRootDir } from "@taylor/common/data";
 import fs from "fs";
@@ -43,6 +44,9 @@ program
       p = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
     }
     createPost(p, options.message);
+    if (!options.message) {
+      openFile(p);
+    }
   });
 
 program

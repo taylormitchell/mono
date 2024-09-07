@@ -1,10 +1,16 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { getRootDir } from "@taylor/common/data";
-import { createDailyNote, createWeeklyNote, createMonthlyNote } from "@taylor/common/note";
-import { addTodo } from "@taylor/common/todo/parsers";
+import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
+import { addTodo, listAllTodos } from "@taylor/common/todo/parsers";
 import fs from "fs";
 import path from "path";
 import { format } from "date-fns";
+import { deserializeTodo } from "@taylor/common/todo/types";
+import { generateJwt, verifyJwt } from "./jwt";
+import { config } from "dotenv";
+
+config();
+const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
 
 const app = express();
 const port = process.env.PORT || 3077;
@@ -12,10 +18,27 @@ const port = process.env.PORT || 3077;
 app.use(express.json());
 app.use(express.static(getRootDir()));
 
-// Hello World route
+function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  if (AUTH_DISABLED) {
+    next();
+    return;
+  }
+  const auth = req.headers.authorization;
+  if (!auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const token = auth.split(" ")[1];
+  try {
+    verifyJwt(token);
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+}
 
 // Files API
-app.get("/files/:path(*)", (req, res) => {
+app.get("/files/:path(*)", authMiddleware, (req, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     if (fs.statSync(filePath).isFile()) {
@@ -132,128 +155,88 @@ app.post("/log/:type", (req, res) => {
 });
 
 // Note API
-app.get("/note/:type", (req, res) => {
-  const { type } = req.params;
-  const { date, offset } = req.query;
-  let notePath;
-
-  switch (type) {
-    case "daily":
-      notePath = createDailyNote(date ? new Date(date as string) : Number(offset) || 0);
-      break;
-    case "weekly":
-      notePath = createWeeklyNote(date ? new Date(date as string) : Number(offset) || 0);
-      break;
-    case "monthly":
-      notePath = createMonthlyNote(date ? new Date(date as string) : Number(offset) || 0);
-      break;
-    default:
-      return res.status(400).json({ error: "Invalid note type" });
-  }
-
-  const content = fs.readFileSync(notePath, "utf-8");
-  res.json({ content });
+app.get("/note/daily", (req, res) => {
+  handleNoteRequest("daily", req, res);
 });
+
+app.get("/note/weekly", (req, res) => {
+  handleNoteRequest("weekly", req, res);
+});
+
+app.get("/note/monthly", (req, res) => {
+  handleNoteRequest("monthly", req, res);
+});
+
+function handleNoteRequest(
+  type: "daily" | "weekly" | "monthly",
+  req: express.Request,
+  res: express.Response
+) {
+  const { date, offset } = req.query;
+  try {
+    const notePath = getOrCreateJournalNote({
+      type,
+      date: date ? new Date(date as string) : undefined,
+      offset: offset ? Number(offset) : undefined,
+    });
+    const content = fs.readFileSync(notePath, "utf-8");
+    res.json({ content });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to create journal note" });
+  }
+}
 
 app.post("/note/post/:dir(*)", (req, res) => {
   const { dir } = req.params;
   const content = req.body?.content || "";
   const dirPath = path.join(getRootDir(), dir);
-  const filename = format(new Date(), "yyyy-MM-dd_HH-mm-ss_xx") + ".md";
-  const filePath = path.join(dirPath, filename);
-  fs.mkdirSync(dirPath, { recursive: true });
-  fs.writeFileSync(filePath, content);
+  const filePath = createPost(dirPath, content);
   res.status(201).json({ message: "Post created successfully", path: filePath });
 });
 
 // Todos API
-app.get("/todos", (req, res) => {
-  // Implement this using the listAllTodos function from @taylor/common/todo/parsers
-  // You'll need to modify the function to return the data instead of logging it
-  res.json({ message: "Not implemented yet" });
-});
-
-app.post("/todos/:path(*)", (req, res) => {
-  const { path: todoPath } = req.params;
-  const { content } = req.body;
-  const filePath = path.join(getRootDir(), todoPath);
-
-  try {
-    addTodo(
-      {
-        type: "todo",
-        text: content,
-        status: "TODO",
-      },
-      filePath
-    );
-    res.status(201).json({ message: "Todo added successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add todo" });
-  }
+app.get("/todos", (req, res, next) => {
+  const todos = listAllTodos();
+  res.json({ todos });
 });
 
 app.post("/todos/today", (req, res) => {
-  const { content } = req.body;
-  const todayNote = createDailyNote();
-
-  try {
-    addTodo(
-      {
-        type: "todo",
-        text: content,
-        status: "TODO",
-      },
-      todayNote
-    );
-    res.status(201).json({ message: "Todo added to today's note successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add todo to today's note" });
-  }
+  const todayPath = dateToJournalPath(new Date());
+  return postTodoHandler(req, res, todayPath);
 });
 
 app.post("/todos/someday", (req, res) => {
-  const { content } = req.body;
   const somedayPath = path.join(getRootDir(), "gtd", "someday-maybe.md");
-
-  try {
-    addTodo(
-      {
-        type: "todo",
-        text: content,
-        status: "TODO",
-      },
-      somedayPath
-    );
-    res.status(201).json({ message: "Todo added to someday-maybe.md successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add todo to someday-maybe.md" });
-  }
+  return postTodoHandler(req, res, somedayPath);
 });
 
-app.post("/todos", (req, res) => {
-  const { content } = req.body;
-  const todoPath = path.join(getRootDir(), "gtd", "todo.md");
-
-  try {
-    addTodo(
-      {
-        type: "todo",
-        text: content,
-        status: "TODO",
-      },
-      todoPath
-    );
-    res.status(201).json({ message: "Todo added to todo.md successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add todo to todo.md" });
-  }
+app.post("/todos/:path(*)?", (req, res) => {
+  const { path: relativePath } = req.params;
+  return postTodoHandler(req, res, path.join(getRootDir(), relativePath));
 });
+
+function postTodoHandler(req: Request, res: Response, filepath?: string) {
+  let todo;
+  try {
+    todo = deserializeTodo(req.body);
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ error: "Invalid todo" });
+  }
+  filepath = filepath || path.join(getRootDir(), "gtd", "todo.md");
+  console.log("filepath", filepath);
+  addTodo(todo, filepath);
+  res.status(201).json({ message: "Todo added successfully", path: filepath });
+}
 
 // Auth API (placeholder)
 app.post("/auth/login", (req, res) => {
-  // Implement proper authentication logic here
-  res.json({ token: "placeholder_token" });
+  const { password } = req.body;
+  if (password === process.env.ADMIN_PASSWORD) {
+    res.json({ token: generateJwt() });
+  } else {
+    res.status(401).json({ error: "Invalid password" });
+  }
 });
 
 app.get("/", (req, res) => {
@@ -312,6 +295,14 @@ app.get("/", (req, res) => {
   `;
 
   res.send(htmlContent);
+});
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: "Internal server error",
+    message: process.env.NODE_ENV === "production" ? undefined : err.message,
+  });
 });
 
 app.listen(port, () => {

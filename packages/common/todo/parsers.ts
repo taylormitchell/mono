@@ -170,26 +170,32 @@ function todoToMarkdown(todo: Todo): string {
   }`;
 }
 
-export function addTodo(todo: Todo, filename?: string): string {
-  if (!filename && todo.due) {
-    // put the todo in the journal for the given date
-    filename = dateToJournalPath(todo.due);
-  } else {
-    // otherwise, put the todo in default todo file
-    filename = filename || path.join(getRootDir(), "gtd/todo.md");
+function commitAndPush(filepath: string, message?: string) {
+  execSync(`git add ${filepath}`);
+  execSync(`git commit -m "${message || `Save ${filepath}`}"`);
+  execSync(`git push`);
+}
+
+export function addTodo(todo: Todo, filepath?: string): string {
+  if (!filepath) {
+    if (todo.due) {
+      filepath = dateToJournalPath(todo.due);
+    } else {
+      filepath = path.join(getRootDir(), "gtd/todo.md");
+    }
+  } else if (!filepath.startsWith(getRootDir())) {
+    throw new Error("Invalid filepath");
   }
-  const fileDate = pathToDate(filename);
+  const fileDate = pathToDate(filepath);
   if (fileDate && todo.due && equal(todo.due, fileDate)) {
     // if we're putting a todo on the same day as the file, don't include the due date
     todo = { ...todo, due: undefined };
   }
-  const content = fs.readFileSync(filename, "utf-8");
+  const content = fs.readFileSync(filepath, "utf-8");
   const newContent = todoToMarkdown(todo) + "\n" + content;
-  fs.writeFileSync(filename, newContent);
-  execSync(`git add ${filename}`);
-  execSync(`git commit -m "Add todo: ${todo.text}"`);
-  execSync(`git push`);
-  return filename;
+  fs.writeFileSync(filepath, newContent);
+  // commitAndPush(filepath, `Add todo: ${todo.text}`);
+  return filepath;
 }
 
 function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {

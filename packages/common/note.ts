@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import chalk from "chalk";
 import { getRootDir } from "./data";
+import { format } from "date-fns";
 
 export function getTemplatePath(name: string) {
   return path.resolve(getRootDir(), "templates", name + ".md");
@@ -34,33 +35,25 @@ export function createFile(filepath: string, content: string = "") {
   return filepath;
 }
 
-function getFormattedTimestamp() {
-  const now = new Date();
-  const offset = -now.getTimezoneOffset();
-  const offsetSign = offset >= 0 ? "+" : "-";
-  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
-  const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, "0");
-
-  return (
-    now
-      .toLocaleString("sv-SE", { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
-      .replace(" ", "_")
-      .replace(/:/g, "-") + `_${offsetSign}${offsetHours}${offsetMinutes}`
-  );
+export function openFile(filepath: string) {
+  execSync(`cursor ${filepath}`);
 }
 
-export function createPost(directory?: string, content?: string) {
+function postFileFormat(date: string | number | Date) {
+  return format(date, "yyyy-MM-dd_HH-mm-ss_xx") + ".md";
+}
+
+export function createPost(directory?: string, content?: string): string {
   directory = directory || path.join(getRootDir(), "posts");
-  const filename = path.join(directory, `${getFormattedTimestamp()}.md`);
-  createFile(filename, content || "");
-  if (!content) {
-    execSync(`cursor ${filename}`);
-  }
+  const filepath = path.join(directory, postFileFormat(new Date()));
+  createFile(filepath, content || "");
+  return filepath;
 }
 
-export function createNote(name?: string) {
-  const filename = name ? `${name}.md` : `${getFormattedTimestamp()}.md`;
-  createFile(path.join(getRootDir(), "notes", filename));
+export function createNote(name?: string): string {
+  const filename = name ? `${name}.md` : postFileFormat(new Date());
+  const filepath = path.join(getRootDir(), "notes", filename);
+  return createFile(filepath);
 }
 
 export function listDir(directory: string) {
@@ -94,66 +87,107 @@ export function dateToJournalPath(date: Date) {
   return path.join(getRootDir(), "journals", year, monthNum.toString(), `${dayNum}.md`);
 }
 
-export function createDailyNote(dateOrOffset?: Date | number) {
-  let date: Date;
-  if (dateOrOffset instanceof Date) {
-    date = dateOrOffset;
-  } else if (typeof dateOrOffset === "number") {
-    date = new Date();
-    date.setDate(date.getDate() + dateOrOffset);
+export function getOrCreateJournalNote({
+  type,
+  date,
+  offset,
+}: {
+  type: "daily" | "weekly" | "monthly";
+  date?: Date;
+  offset?: number;
+}): string {
+  let targetDate: Date;
+
+  if (date instanceof Date) {
+    targetDate = date;
+  } else if (typeof offset === "number") {
+    targetDate = new Date();
+    if (type === "daily") {
+      targetDate.setDate(targetDate.getDate() + offset);
+    } else if (type === "weekly") {
+      targetDate.setDate(targetDate.getDate() + offset * 7);
+    } else if (type === "monthly") {
+      targetDate.setMonth(targetDate.getMonth() + offset);
+    }
   } else {
-    date = new Date();
+    targetDate = new Date();
   }
-  const filepath = dateToJournalPath(date);
-  const templatePath = path.join(getRootDir(), "templates", "daily-note-template.md");
-  const templateContent = fs.readFileSync(templatePath, "utf-8");
-  const content = templateContent.replace("{{date}}", date.toDateString());
+
+  let filepath: string;
+  let templatePath: string;
+
+  switch (type) {
+    case "daily":
+      filepath = dateToJournalPath(targetDate);
+      templatePath = path.join(getRootDir(), "templates", "daily-note-template.md");
+      break;
+    case "weekly":
+      const monday = new Date(targetDate.setDate(targetDate.getDate() - targetDate.getDay() + 1));
+      const month = monday.toLocaleString("default", { month: "long" }).toLowerCase();
+      const year = monday.getFullYear().toString();
+      const day = monday.getDate();
+      filepath = path.join(getRootDir(), "journals", year, month, `week-of-${day}.md`);
+      templatePath = path.join(getRootDir(), "templates", "weekly-note-template.md");
+      break;
+    case "monthly":
+      const monthName = targetDate.toLocaleString("default", { month: "long" }).toLowerCase();
+      const yearStr = targetDate.getFullYear().toString();
+      filepath = path.join(getRootDir(), "journals", yearStr, monthName, "index.md");
+      templatePath = path.join(getRootDir(), "templates", "monthly-note-template.md");
+      break;
+  }
+
+  if (fs.existsSync(filepath)) {
+    return filepath;
+  }
+
+  let templateContent = fs.readFileSync(templatePath, "utf-8");
+  let content: string;
+
+  switch (type) {
+    case "daily":
+      content = templateContent.replace("{{date}}", targetDate.toDateString());
+      break;
+    case "weekly":
+      content = templateContent.replace("{{date}}", targetDate.toDateString());
+      break;
+    case "monthly":
+      const monthName = targetDate.toLocaleString("default", { month: "long" });
+      const yearStr = targetDate.getFullYear().toString();
+      content = templateContent.replace("{{date}}", `${monthName} ${yearStr}`);
+      break;
+  }
+
   return createFile(filepath, content);
+}
+
+export function createDailyNote(dateOrOffset?: Date | number) {
+  return getOrCreateJournalNote({
+    type: "daily",
+    date: dateOrOffset instanceof Date ? dateOrOffset : undefined,
+    offset: typeof dateOrOffset === "number" ? dateOrOffset : undefined,
+  });
+}
+
+export function createWeeklyNote(dateOrOffset?: Date | number) {
+  return getOrCreateJournalNote({
+    type: "weekly",
+    date: dateOrOffset instanceof Date ? dateOrOffset : undefined,
+    offset: typeof dateOrOffset === "number" ? dateOrOffset : undefined,
+  });
+}
+
+export function createMonthlyNote(dateOrOffset?: Date | number) {
+  return getOrCreateJournalNote({
+    type: "monthly",
+    date: dateOrOffset instanceof Date ? dateOrOffset : undefined,
+    offset: typeof dateOrOffset === "number" ? dateOrOffset : undefined,
+  });
 }
 
 export function openDailyNote(dateOrOffset?: Date | number) {
   const filepath = createDailyNote(dateOrOffset);
   execSync(`cursor ${filepath}`);
-}
-
-export function createWeeklyNote(dateOrOffset?: Date | number) {
-  let date: Date;
-  if (dateOrOffset instanceof Date) {
-    date = dateOrOffset;
-  } else if (typeof dateOrOffset === "number") {
-    date = new Date();
-    date.setDate(date.getDate() + dateOrOffset);
-  } else {
-    date = new Date();
-  }
-  const monday = new Date(date.setDate(date.getDate() - date.getDay() + 1));
-  const month = monday.toLocaleString("default", { month: "long" }).toLowerCase();
-  const year = monday.getFullYear().toString();
-  const day = monday.getDate();
-  const filepath = path.join(getRootDir(), "journals", year, month, `week-of-${day}.md`);
-  const templatePath = path.join(getRootDir(), "templates", "weekly-note-template.md");
-  const templateContent = fs.readFileSync(templatePath, "utf-8");
-  const content = templateContent.replace("{{date}}", monday.toDateString());
-  return createFile(filepath, content);
-}
-
-export function createMonthlyNote(dateOrOffset?: Date | number) {
-  let date: Date;
-  if (dateOrOffset instanceof Date) {
-    date = dateOrOffset;
-  } else if (typeof dateOrOffset === "number") {
-    date = new Date();
-    date.setMonth(date.getMonth() + dateOrOffset);
-  } else {
-    date = new Date();
-  }
-  const month = date.toLocaleString("default", { month: "long" }).toLowerCase();
-  const year = date.getFullYear().toString();
-  const filepath = path.join(getRootDir(), "journals", year, month, "index.md");
-  const templatePath = path.join(getRootDir(), "templates", "monthly-note-template.md");
-  const templateContent = fs.readFileSync(templatePath, "utf-8");
-  const content = templateContent.replace("{{date}}", `${month} ${year}`);
-  return createFile(filepath, content);
 }
 
 export function openWeeklyNote() {
