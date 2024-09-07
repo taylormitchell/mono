@@ -125,7 +125,7 @@ logTypes.forEach((type) => {
       // Validate datetime (if provided)
       if (options.datetime && isNaN(Date.parse(options.datetime))) {
         console.error(
-          "Invalid datetime format. Use ISO 8601 format (e.g., '2023-04-15T14:30:00Z')"
+          "Invalid datetime format. Use ISO 8601 format (e.g., '2023-04-15T14:30:00-04:00')"
         );
         return;
       }
