@@ -14,8 +14,6 @@ import { getRootDir } from "@taylor/common/data";
 import fs from "fs";
 import { readFileSync } from "fs";
 
-const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
 const program = new Command();
 
 function parseDateOrOffset(dateOrOffset: string): Date | number {
