@@ -105,4 +105,44 @@ program
     }
   });
 
+const logCommand = program.command("log").description("Add a log entry to log.jsonl");
+
+const logTypes = ["work", "break", "meeting", "exercise", "study"];
+
+logTypes.forEach((type) => {
+  logCommand
+    .command(type + " [duration]")
+    .description(`Log a ${type} entry`)
+    .option("-d, --datetime <datetime>", "Specify a custom datetime (default: current time)")
+    .action((duration: string | undefined, options: { datetime?: string }) => {
+      // Validate duration (if provided)
+      if (duration && !/^\d+[hms]$/.test(duration)) {
+        console.error(
+          "Invalid duration format. Use a number followed by 'h' (hours), 'm' (minutes), or 's' (seconds)."
+        );
+        return;
+      }
+
+      // Validate datetime (if provided)
+      if (options.datetime && isNaN(Date.parse(options.datetime))) {
+        console.error(
+          "Invalid datetime format. Use ISO 8601 format (e.g., '2023-04-15T14:30:00Z')"
+        );
+        return;
+      }
+
+      const logEntry = {
+        type,
+        ...(duration && { duration }),
+        datetime: options.datetime || new Date().toISOString(),
+      };
+
+      const logPath = path.join(getRootDir(), "log.jsonl");
+      const logLine = JSON.stringify(logEntry) + "\n";
+
+      fs.appendFileSync(logPath, logLine);
+      console.log(`Log entry added: ${logLine.trim()}`);
+    });
+});
+
 program.parse(process.argv);
