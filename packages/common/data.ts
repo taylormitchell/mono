@@ -8,35 +8,39 @@ export function getRootDir() {
 export function save(
   filepath: string,
   message?: string
-): {
-  ok: boolean;
-  stashed: boolean;
-  error?: string;
-} {
-  try {
-    execSync(`cd ${getRootDir()}`);
-
-    let stashed = false;
-    try {
-      execSync(`git stash save "Stashing changes during data save $(date)"`);
-      stashed = true;
-    } catch (error) {
-      // If stash fails, it might be because there are no changes to stash
-      if (!(error instanceof Error) || !error.message.includes("No local changes to save")) {
-        throw error;
-      }
+):
+  | {
+      ok: true;
+      stashed: boolean;
     }
-
-    execSync(`git pull`);
-    execSync(`git add ${filepath}`);
-    execSync(`git commit -m "${message || `Save ${filepath}`}"`);
-    execSync(`git push`);
-
-    return { ok: true, stashed };
+  | {
+      ok: false;
+      error: string;
+    } {
+  try {
+    const outputs = [
+      execSync(`cd ${getRootDir()}`).toString(),
+      execSync(
+        `git stash save "Stashing changes during data save $(date)" --include-untracked`
+      ).toString(),
+      execSync(`git pull`).toString(),
+      execSync(`git add ${filepath}`).toString(),
+      execSync(`git commit -m "${message || `Save ${filepath}`}"`).toString(),
+      execSync(`git push`).toString(),
+    ];
+    const stashed = !outputs[1].includes("No local changes to save");
+    const ok = execSync(`git pull`).toString().includes("Already up to date.");
+    if (ok) {
+      return { ok: true, stashed };
+    } else {
+      return {
+        ok: false,
+        error: [stashOutput, pullOutput, addOutput, commitOutput, pushOutput].join("\n"),
+      };
+    }
   } catch (error) {
     return {
       ok: false,
-      stashed: false,
       error: error instanceof Error ? error.message : String(error),
     };
   }
