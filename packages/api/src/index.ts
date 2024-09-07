@@ -52,7 +52,7 @@ app.use((req, res, next) => {
 });
 
 // Files API
-app.get("/files/:path(*)", authMiddleware, (req, res) => {
+app.get("/api/files/:path(*)", authMiddleware, (req, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     if (fs.statSync(filePath).isFile()) {
@@ -64,7 +64,7 @@ app.get("/files/:path(*)", authMiddleware, (req, res) => {
         .map((file) => {
           const fullPath = path.join(req.params.path, file);
           const isDirectory = fs.statSync(path.join(filePath, file)).isDirectory();
-          return `<li><a href="/files/${fullPath}">${file}${isDirectory ? "/" : ""}</a></li>`;
+          return `<li><a href="/api/files/${fullPath}">${file}${isDirectory ? "/" : ""}</a></li>`;
         })
         .join("\n");
 
@@ -101,7 +101,7 @@ app.get("/files/:path(*)", authMiddleware, (req, res) => {
   }
 });
 
-app.put("/files/:path(*)", (req, res) => {
+app.put("/api/files/:path(*)", (req, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   const content = req.body?.content || "";
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -112,7 +112,7 @@ app.put("/files/:path(*)", (req, res) => {
     .json({ message: exists ? "File updated successfully" : "File created successfully" });
 });
 
-app.patch("/files/:path(*)", (req, res) => {
+app.patch("/api/files/:path(*)", (req, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   const { method, content } = req.body;
 
@@ -144,7 +144,7 @@ app.patch("/files/:path(*)", (req, res) => {
   res.status(200).json({ message: "File updated successfully" });
 });
 
-app.delete("/files/:path(*)", (req, res) => {
+app.delete("/api/files/:path(*)", (req, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
@@ -155,7 +155,7 @@ app.delete("/files/:path(*)", (req, res) => {
 });
 
 // Log API
-app.post("/log/:type", (req, res) => {
+app.post("/api/log/:type", (req, res) => {
   const { type } = req.params;
   const { datetime, duration } = req.body;
   const logEntry = {
@@ -169,15 +169,15 @@ app.post("/log/:type", (req, res) => {
 });
 
 // Note API
-app.get("/note/daily", (req, res) => {
+app.get("/api/note/daily", (req, res) => {
   handleNoteRequest("daily", req, res);
 });
 
-app.get("/note/weekly", (req, res) => {
+app.get("/api/note/weekly", (req, res) => {
   handleNoteRequest("weekly", req, res);
 });
 
-app.get("/note/monthly", (req, res) => {
+app.get("/api/note/monthly", (req, res) => {
   handleNoteRequest("monthly", req, res);
 });
 
@@ -200,7 +200,7 @@ function handleNoteRequest(
   }
 }
 
-app.post("/note/post/:dir(*)", (req, res) => {
+app.post("/api/note/post/:dir(*)", (req, res) => {
   const { dir } = req.params;
   const content = req.body?.content || "";
   const dirPath = path.join(getRootDir(), dir);
@@ -209,22 +209,22 @@ app.post("/note/post/:dir(*)", (req, res) => {
 });
 
 // Todos API
-app.get("/todos", (req, res, next) => {
+app.get("/api/todos", (req, res, next) => {
   const todos = listAllTodos();
   res.json({ todos });
 });
 
-app.post("/todos/today", (req, res) => {
+app.post("/api/todos/today", (req, res) => {
   const todayPath = dateToJournalPath(new Date());
   return postTodoHandler(req, res, todayPath);
 });
 
-app.post("/todos/someday", (req, res) => {
+app.post("/api/todos/someday", (req, res) => {
   const somedayPath = path.join(getRootDir(), "gtd", "someday-maybe.md");
   return postTodoHandler(req, res, somedayPath);
 });
 
-app.post("/todos/:path(*)?", (req, res) => {
+app.post("/api/todos/:path(*)?", (req, res) => {
   const { path: relativePath } = req.params;
   return postTodoHandler(req, res, path.join(getRootDir(), relativePath));
 });
@@ -244,7 +244,7 @@ function postTodoHandler(req: Request, res: Response, filepath?: string) {
 }
 
 // Auth API (placeholder)
-app.post("/auth/login", (req, res) => {
+app.post("/api/auth/login", (req, res) => {
   const { password } = req.body;
   if (password === process.env.ADMIN_PASSWORD) {
     res.json({ token: generateJwt() });
@@ -253,7 +253,7 @@ app.post("/auth/login", (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -276,33 +276,33 @@ app.get("/", (req, res) => {
       
       <h2>Files</h2>
       <ul>
-        <li><code>GET /files/:path</code> - Get file content</li>
-        <li><code>GET /files/:dir</code> - List files in directory</li>
-        <li><code>PUT /files/:path</code> - Update file content</li>
-        <li><code>PATCH /files/:path</code> - Modify file content (append/prepend/overwrite)</li>
-        <li><code>DELETE /files/:path</code> - Delete file</li>
+        <li><code>GET /api/files/:path</code> - Get file content</li>
+        <li><code>GET /api/files/:dir</code> - List files in directory</li>
+        <li><code>PUT /api/files/:path</code> - Update file content</li>
+        <li><code>PATCH /api/files/:path</code> - Modify file content (append/prepend/overwrite)</li>
+        <li><code>DELETE /api/files/:path</code> - Delete file</li>
       </ul>
       
       <h2>Notes</h2>
       <ul>
-        <li><code>GET /note/daily</code> - Get or create daily note</li>
-        <li><code>GET /note/weekly</code> - Get or create weekly note</li>
-        <li><code>GET /note/monthly</code> - Get or create monthly note</li>
-        <li><code>POST /note/post/:dir</code> - Add a post to specified directory</li>
+        <li><code>GET /api/note/daily</code> - Get or create daily note</li>
+        <li><code>GET /api/note/weekly</code> - Get or create weekly note</li>
+        <li><code>GET /api/note/monthly</code> - Get or create monthly note</li>
+        <li><code>POST /api/note/post/:dir</code> - Add a post to specified directory</li>
       </ul>
       
       <h2>Todos</h2>
       <ul>
-        <li><code>GET /todos</code> - List all todos</li>
-        <li><code>POST /todos/:path</code> - Add todo to specific file</li>
-        <li><code>POST /todos/today</code> - Add todo to today's note</li>
-        <li><code>POST /todos/someday</code> - Add todo to someday-maybe.md</li>
-        <li><code>POST /todos</code> - Add todo to todo.md</li>
+        <li><code>GET /api/todos</code> - List all todos</li>
+        <li><code>POST /api/todos/:path</code> - Add todo to specific file</li>
+        <li><code>POST /api/todos/today</code> - Add todo to today's note</li>
+        <li><code>POST /api/todos/someday</code> - Add todo to someday-maybe.md</li>
+        <li><code>POST /api/todos</code> - Add todo to todo.md</li>
       </ul>
       
       <h2>Auth</h2>
       <ul>
-        <li><code>POST /auth/login</code> - Login (placeholder)</li>
+        <li><code>POST /api/auth/login</code> - Login (placeholder)</li>
       </ul>
     </body>
     </html>
