@@ -11,6 +11,7 @@ import { config } from "dotenv";
 
 config();
 const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
+const AUTO_COMMIT_AND_PUSH = process.env.AUTO_COMMIT_AND_PUSH === "true";
 
 const app = express();
 const port = process.env.PORT || 3077;
@@ -124,24 +125,23 @@ app.patch("/api/files/:path(*)", (req, res) => {
     return res.status(404).json({ error: "File not found" });
   }
 
-  let existingContent = fs.readFileSync(filePath, "utf-8");
-
   switch (method) {
     case "append":
-      existingContent += content;
+      fs.appendFileSync(filePath, content);
       break;
     case "prepend":
-      existingContent = content + existingContent;
+      fs.writeFileSync(filePath, content + fs.readFileSync(filePath, "utf-8"));
       break;
     case "overwrite":
-      existingContent = content;
+      fs.writeFileSync(filePath, content);
       break;
     default:
       return res.status(400).json({ error: "Invalid method" });
   }
 
-  fs.writeFileSync(filePath, existingContent);
-  commitAndPush(filePath);
+  if (AUTO_COMMIT_AND_PUSH) {
+    commitAndPush(filePath);
+  }
   res.status(200).json({ message: "File updated successfully" });
 });
 
