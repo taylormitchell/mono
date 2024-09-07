@@ -12,6 +12,7 @@ import {
 } from "@taylor/common/note";
 import { getRootDir } from "@taylor/common/data";
 import fs from "fs";
+import { readFileSync } from "fs";
 
 const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -177,5 +178,31 @@ logCommand
       addLogEntry(logEntry);
     }
   );
+
+program
+  .command("today")
+  .description("Output today's daily note and log events")
+  .action(() => {
+    // Output today's daily note
+    const todayNote = createDailyNote();
+    console.log("Today's Daily Note:");
+    console.log(readFileSync(todayNote, "utf-8"));
+
+    // Output today's log events
+    const logPath = path.join(getRootDir(), "log.jsonl");
+    const today = new Date().toISOString().split("T")[0];
+    console.log("\nToday's Log Events:");
+    const logEvents = readFileSync(logPath, "utf-8")
+      .split("\n")
+      .filter((line) => line.trim() !== "")
+      .map((line) => JSON.parse(line))
+      .filter((entry) => entry.datetime.startsWith(today));
+
+    if (logEvents.length > 0) {
+      logEvents.forEach((event) => console.log(JSON.stringify(event)));
+    } else {
+      console.log("No log events for today.");
+    }
+  });
 
 program.parse(process.argv);
