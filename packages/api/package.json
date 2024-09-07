@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "bun src/index.ts",
-    "dev": "bun --watch src/index.ts"
+    "dev": "bun --watch src/index.ts",
+    "deploy": "bash scripts/deploy.sh"
   },
   "keywords": [],
   "author": "",
