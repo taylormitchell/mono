@@ -5,7 +5,18 @@ export function getRootDir() {
   return path.resolve(__dirname, "../../data");
 }
 
-export function save(filepath: string, message?: string) {
+export function save(
+  filepath: string,
+  message?: string
+):
+  | {
+      ok: true;
+      stashed: boolean;
+    }
+  | {
+      ok: false;
+      error: string;
+    } {
   execSync(`cd ${getRootDir()}`);
   execSync(`git stash save "Stashing changes during data save $(date)"`);
   execSync(`git pull`);
