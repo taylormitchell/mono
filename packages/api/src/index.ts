@@ -127,10 +127,10 @@ app.patch("/api/files/:path(*)", (req, res) => {
 
   switch (method) {
     case "append":
-      fs.appendFileSync(filePath, content);
+      fs.appendFileSync(filePath, "\n" + content);
       break;
     case "prepend":
-      fs.writeFileSync(filePath, content + fs.readFileSync(filePath, "utf-8"));
+      fs.writeFileSync(filePath, content + "\n" + fs.readFileSync(filePath, "utf-8"));
       break;
     case "overwrite":
       fs.writeFileSync(filePath, content);
