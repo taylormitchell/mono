@@ -11,6 +11,7 @@ import {
   createDailyNote,
 } from "@taylor/common/note";
 import { getRootDir } from "@taylor/common/data";
+import fs from "fs";
 
 const WEEK_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -106,9 +107,7 @@ program
   });
 
 const logCommand = program.command("log").description("Add a log entry to log.jsonl");
-
-const logTypes = ["work", "break", "meeting", "exercise", "study"];
-
+const logTypes = ["meditated", "ankied", "eye-patch"];
 logTypes.forEach((type) => {
   logCommand
     .command(type + " [duration]")
