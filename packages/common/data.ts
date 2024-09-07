@@ -1,14 +1,12 @@
 import path from "path";
+import { execSync } from "child_process";
+
 export function getRootDir() {
   return path.resolve(__dirname, "../../data");
-  // let d = 0;
-  // let rootDir = __dirname;
-  // while (!fs.existsSync(path.join(rootDir, "package.json"))) {
-  //   rootDir = path.dirname(rootDir);
-  //   d += 1;
-  //   if (d > 10) {
-  //     throw new Error("Could not find root directory");
-  //   }
-  // }
-  // return rootDir;
+}
+
+export function commitAndPush(filepath: string, message?: string) {
+  execSync(`git add ${filepath}`);
+  execSync(`git commit -m "${message || `Save ${filepath}`}"`);
+  execSync(`git push`);
 }

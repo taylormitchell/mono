@@ -4,7 +4,6 @@ import chalk from "chalk";
 import path from "path";
 import { getRootDir } from "../data";
 import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
-import { execSync } from "child_process";
 import { dateToJournalPath } from "../note";
 chalk.level = 3;
 
@@ -168,12 +167,6 @@ function todoToMarkdown(todo: Todo): string {
   return `${todo.status} ${todo.text} ${
     todo.due ? `{due: ${todo.due.toISOString().split("T")[0]}}` : ""
   }`;
-}
-
-function commitAndPush(filepath: string, message?: string) {
-  execSync(`git add ${filepath}`);
-  execSync(`git commit -m "${message || `Save ${filepath}`}"`);
-  execSync(`git push`);
 }
 
 export function addTodo(todo: Todo, filepath?: string): string {
