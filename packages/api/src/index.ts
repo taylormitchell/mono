@@ -18,6 +18,15 @@ const port = process.env.PORT || 3077;
 app.use(express.json());
 app.use(express.static(getRootDir()));
 
+const log = {
+  info: (message?: any, ...optionalParams: any[]) => {
+    console.log(`[${new Date().toISOString()}] [INFO] `, message, ...optionalParams);
+  },
+  error: (message?: any, ...optionalParams: any[]) => {
+    console.error(`[${new Date().toISOString()}] [ERROR] `, message, ...optionalParams);
+  },
+};
+
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (AUTH_DISABLED) {
     next();
@@ -36,6 +45,11 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 }
+
+app.use((req, res, next) => {
+  log.info(`${req.method} ${req.url}`);
+  next();
+});
 
 // Files API
 app.get("/files/:path(*)", authMiddleware, (req, res) => {
