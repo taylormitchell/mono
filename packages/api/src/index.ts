@@ -198,7 +198,7 @@ app.delete("/api/files/:path(*)", (req, res) => {
 });
 
 // Log API
-app.post("/api/log", (req, res) => {
+app.post("/api/log", authMiddleware, (req, res) => {
   const result = LogEntrySchema.safeParse(req.body);
   if (!result.success) {
     console.error("Invalid log entry: ", result.error);

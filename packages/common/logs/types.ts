@@ -17,9 +17,7 @@ export const LogEntrySchema = z.object({
   message: z.string().optional(),
 });
 
-export type LogEntrySchemaType = z.infer<typeof LogEntrySchema>;
-
-export type LogEntry = LogEntrySchemaType;
+export type LogEntry = z.infer<typeof LogEntrySchema>;
 
 export function parseDuration(duration: string): number {
   const match = duration.match(/^(\d+)([hms])$/);

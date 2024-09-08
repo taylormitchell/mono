@@ -52,7 +52,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/todos" element={<TodosPage jwt={jwt} />} />
-        <Route path="/logs" element={<LogsPage />} />
+        <Route path="/logs" element={<LogsPage jwt={jwt} />} />
       </Routes>
     </Router>
   );
