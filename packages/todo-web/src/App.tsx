@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { deserializeTodo, serializeTodo, Todo } from "@taylor/common/todo/types";
 import "./App.css";
 
@@ -87,6 +87,7 @@ const groupTodosByFilename = (todos: Todo[]): Record<string, Todo[]> => {
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [jwt, setJwt] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const storedJwt = localStorage.getItem("jwt");
@@ -123,6 +124,29 @@ function App() {
   const [groupby, setGroupby] = useState<"byFile" | "byDueDate">("byDueDate");
   const [showCompleted, setShowCompleted] = useState(false);
   const [showNewTodoModal, setShowNewTodoModal] = useState(false);
+
+  const handleSync = useCallback(async () => {
+    if (!jwt) return;
+    setIsSyncing(true);
+    try {
+      const response = await fetch(`${apiUrl}/api/git/rebase`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Sync successful:", result.message);
+        // Optionally, you can refetch todos here if needed
+        refetch(jwt);
+      } else {
+        console.error("Sync failed");
+      }
+    } catch (error) {
+      console.error("Error during sync:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [jwt, refetch]);
 
   // Apply filters
   const filteredTodos = todos.filter((todo) => {
@@ -199,6 +223,9 @@ function App() {
         </label>
         <button onClick={() => setShowNewTodoModal(true)} className="new-todo-button">
           New Todo
+        </button>
+        <button onClick={handleSync} disabled={isSyncing} className="sync-button">
+          {isSyncing ? "Syncing..." : "Sync"}
         </button>
       </header>
       <div className="todo-list">

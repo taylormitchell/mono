@@ -350,12 +350,26 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.get("/api/git/rebase", authMiddleware, (req, res) => {
-  exec(`git pull --rebase`, (error, stdout) => {
-    if (error) {
-      return res.status(500).json({ error: "Failed to rebase" });
+  const commands = ["git stash", "git pull --rebase", "git stash pop"];
+
+  const executeCommands = (index = 0) => {
+    if (index >= commands.length) {
+      return res
+        .status(200)
+        .json({ message: "Stash, rebase, and re-apply completed successfully" });
     }
-    res.status(200).json({ message: "Rebased successfully", output: stdout });
-  });
+
+    exec(commands[index], (error, stdout) => {
+      if (error) {
+        log.error(`Failed to execute '${commands[index]}': ${error.message}`);
+        return res
+          .status(500)
+          .json({ error: `Failed to execute '${commands[index]}': ${error.message}` });
+      }
+      log.info(`${commands[index]} output: ${stdout}`);
+      executeCommands(index + 1);
+    });
+  };
 });
 
 app.listen(port, () => {
