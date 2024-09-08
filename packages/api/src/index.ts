@@ -238,22 +238,22 @@ app.post("/api/note/post/:dir(*)", (req, res) => {
 });
 
 // Todos API
-app.get("/api/todos", (req, res, next) => {
+app.get("/api/todos", authMiddleware, (req, res, next) => {
   const todos = listAllTodos();
   res.json({ todos });
 });
 
-app.post("/api/todos/today", (req, res) => {
+app.post("/api/todos/today", authMiddleware, (req, res) => {
   const todayPath = dateToJournalPath(new Date());
   return postTodoHandler(req, res, todayPath);
 });
 
-app.post("/api/todos/someday", (req, res) => {
+app.post("/api/todos/someday", authMiddleware, (req, res) => {
   const somedayPath = path.join(getRootDir(), "gtd", "someday-maybe.md");
   return postTodoHandler(req, res, somedayPath);
 });
 
-app.post("/api/todos/:path(*)?", (req, res) => {
+app.post("/api/todos/:path(*)?", authMiddleware, (req, res) => {
   const { path: relativePath } = req.params;
   return postTodoHandler(req, res, path.join(getRootDir(), relativePath));
 });

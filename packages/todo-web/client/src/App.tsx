@@ -7,11 +7,13 @@ if (!apiUrl) {
   throw new Error("VITE_API_URL is not set");
 }
 
-function useTodos() {
+function useTodos(jwt: string | null) {
   const [todos, setTodos] = useState<Todo[]>([]);
 
-  async function fetchTodos() {
-    const res = await fetch(`${apiUrl}/api/todos`);
+  async function fetchTodos(jwt: string) {
+    const res = await fetch(`${apiUrl}/api/todos`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
     if (res.ok) {
       const data = await res.json();
       console.log(data);
@@ -35,8 +37,10 @@ function useTodos() {
   }
 
   useEffect(() => {
-    fetchTodos();
-  }, []);
+    if (jwt) {
+      fetchTodos(jwt);
+    }
+  }, [jwt]);
 
   return { todos, refetch: fetchTodos };
 }
@@ -81,7 +85,39 @@ const groupTodosByFilename = (todos: Todo[]): Record<string, Todo[]> => {
 };
 
 function App() {
-  const { todos, refetch } = useTodos();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [jwt, setJwt] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedJwt = localStorage.getItem("jwt");
+    if (storedJwt) {
+      setJwt(storedJwt);
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  const handleLogin = async (password: string) => {
+    try {
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        const { token } = await response.json();
+        localStorage.setItem("jwt", token);
+        setJwt(token);
+        setIsLoggedIn(true);
+      } else {
+        console.error("Login failed");
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+    }
+  };
+
+  const { todos, refetch } = useTodos(jwt);
   const [filter, setFilter] = useState<"all" | "today">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [groupby, setGroupby] = useState<"byFile" | "byDueDate">("byDueDate");
@@ -109,7 +145,10 @@ function App() {
   const handleSaveNewTodo = async (todo: Todo) => {
     const res = await fetch(`${apiUrl}/api/todo`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
       body: JSON.stringify(serializeTodo(todo)),
     });
 
@@ -119,6 +158,10 @@ function App() {
       console.error("Failed to save new todo");
     }
   };
+
+  if (!isLoggedIn) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   return (
     <div className="app-container">
@@ -261,6 +304,33 @@ function NewTodoModal({
           <button onClick={onClose}>Cancel</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoginPage({ onLogin }: { onLogin: (password: string) => void }) {
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onLogin(password);
+  };
+
+  return (
+    <div className="login-container">
+      <form onSubmit={handleSubmit} className="login-form">
+        <h2>Login</h2>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter password"
+          className="login-input"
+        />
+        <button type="submit" className="login-button">
+          Login
+        </button>
+      </form>
     </div>
   );
 }
