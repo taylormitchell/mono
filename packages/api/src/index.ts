@@ -12,40 +12,13 @@ import { execSync } from "child_process";
 
 config();
 const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
-const SYNC = process.env.SYNC === "true";
+const COMMIT_ON_SAVE = process.env.COMMIT_ON_SAVE === "true";
 
-const rebase = () => {
-  if (!SYNC) return;
-  execSync(`cd ${getRootDir()}`).toString();
-  const stashOutput = execSync(
-    `git stash save "Stashing changes during data save $(date)" --include-untracked`
-  ).toString();
-  execSync(`git pull`).toString();
-  if (!stashOutput.includes("No local changes to save")) {
-    log.warn("Unexpected dirty files in repo. Stashed.");
-  }
-};
-
-const saveFile = (
-  filePath: string,
-  message?: string
-): { ok: true } | { ok: false; error: string } => {
-  if (!SYNC) return { ok: true };
-  try {
-    message = message || `Save ${filePath}`;
-    execSync(`git add ${filePath}`).toString();
-    execSync(`git commit -m "${message}"`).toString();
-    execSync(`git push`).toString();
-    const output = execSync(`git pull`).toString();
-    if (output.includes("Already up to date.")) {
-      return { ok: true };
-    } else {
-      return { ok: false, error: output };
-    }
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) };
-  }
-};
+function commitFile(filePath: string, message?: string) {
+  message = message || `Save ${filePath}`;
+  execSync(`git add ${filePath}`);
+  execSync(`git commit -m "${message}"`);
+}
 
 const app = express();
 const port = process.env.PORT || 3077;
@@ -86,7 +59,6 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
 app.use((req, res, next) => {
   log.info(`${req.method} ${req.url}`);
-  rebase();
   next();
 });
 
@@ -146,10 +118,7 @@ app.put("/api/files/:path(*)", (req, res) => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const exists = fs.existsSync(filePath);
   fs.writeFileSync(filePath, content);
-  const result = saveFile(filePath, exists ? "Update file" : "Create file");
-  if (!result.ok) {
-    return res.status(500).json({ error: result.error });
-  }
+  if (COMMIT_ON_SAVE) commitFile(filePath, exists ? "Update file" : "Create file");
   res
     .status(200)
     .json({ message: exists ? "File updated successfully" : "File created successfully" });
@@ -180,11 +149,7 @@ app.patch("/api/files/:path(*)", (req, res) => {
     default:
       return res.status(400).json({ error: "Invalid method" });
   }
-
-  const result = saveFile(filePath);
-  if (!result.ok) {
-    return res.status(500).json({ error: result.error });
-  }
+  if (COMMIT_ON_SAVE) commitFile(filePath);
   res.status(200).json({ message: "File updated successfully" });
 });
 
@@ -192,10 +157,7 @@ app.delete("/api/files/:path(*)", (req, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
-    const result = saveFile(filePath, "Delete file");
-    if (!result.ok) {
-      return res.status(500).json({ error: result.error });
-    }
+    if (COMMIT_ON_SAVE) commitFile(filePath, "Delete file");
     res.status(200).json({ message: "File deleted successfully" });
   } else {
     res.status(404).json({ error: "File not found" });
@@ -213,10 +175,7 @@ app.post("/api/log/:type", (req, res) => {
   };
   const logPath = path.join(getRootDir(), "log.jsonl");
   fs.appendFileSync(logPath, JSON.stringify(logEntry) + "\n");
-  const result = saveFile(logPath, "Add log entry");
-  if (!result.ok) {
-    return res.status(500).json({ error: result.error });
-  }
+  if (COMMIT_ON_SAVE) commitFile(logPath, "Add log entry");
   res.status(201).json({ message: "Log entry added successfully" });
 });
 
@@ -257,10 +216,7 @@ app.post("/api/note/post/:dir(*)", (req, res) => {
   const content = req.body?.content || "";
   const dirPath = path.join(getRootDir(), dir);
   const filePath = createPost(dirPath, content);
-  const result = saveFile(filePath, "Create new post");
-  if (!result.ok) {
-    return res.status(500).json({ error: result.error });
-  }
+  if (COMMIT_ON_SAVE) commitFile(filePath, "Create new post");
   res.status(201).json({ message: "Post created successfully", path: filePath });
 });
 
@@ -296,10 +252,7 @@ function postTodoHandler(req: Request, res: Response, filepath?: string) {
   filepath = filepath || path.join(getRootDir(), "gtd", "todo.md");
   console.log("filepath", filepath);
   addTodo(todo, filepath);
-  const result = saveFile(filepath, "Add todo");
-  if (!result.ok) {
-    return res.status(500).json({ error: result.error });
-  }
+  if (COMMIT_ON_SAVE) commitFile(filepath, "Add todo");
   res.status(201).json({ message: "Todo added successfully", path: filepath });
 }
 
