@@ -350,20 +350,19 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.get("/api/git/rebase", authMiddleware, (req, res) => {
-  const commands = ["git stash", "git pull --rebase", "git stash pop"];
-  let stashed = true;
   try {
-    for (const command of commands) {
-      if (command === "git stash pop" && !stashed) {
-        continue;
-      }
-      const output = execSync(command, { encoding: "utf-8" });
-      if (command === "git stash" && output.includes("No local changes to save")) {
-        stashed = false;
-      }
-      log.info(`${command} output: ${output}`);
+    const stashOutput = execSync("git stash", { encoding: "utf-8" });
+    log.info(`Stash output: ${stashOutput}`);
+
+    const pullOutput = execSync("git pull --rebase", { encoding: "utf-8" });
+    log.info(`Pull output: ${pullOutput}`);
+
+    if (stashOutput.includes("No local changes to save")) {
+      const popOutput = execSync("git stash pop", { encoding: "utf-8" });
+      log.info(`Pop output: ${popOutput}`);
     }
-    res.status(200).json({ message: "Stash, rebase, and re-apply completed successfully" });
+
+    res.status(200).json({ message: "Rebase completed successfully" });
   } catch (error) {
     const message =
       "Failed to execute git commands: " +
