@@ -349,15 +349,15 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
-
-app.get("/api/rebase", authMiddleware, (req, res) => {
+app.get("/api/git/rebase", authMiddleware, (req, res) => {
   exec(`git pull --rebase`, (error, stdout) => {
     if (error) {
       return res.status(500).json({ error: "Failed to rebase" });
     }
     res.status(200).json({ message: "Rebased successfully", output: stdout });
   });
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
