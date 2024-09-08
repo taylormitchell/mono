@@ -1,25 +1,29 @@
 #!/bin/sh
 
+# Create function to log with timestamp
 root=$(git rev-parse --show-toplevel)
-log=$root/temp.log
-if [ ! -f $log ]; then
-    touch $log
+log_file=$root/temp.log
+if [ ! -f $log_file ]; then
+    touch $log_file
 fi
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> $log_file
+}
 
 # Fetch the latest changes from the remote
 git fetch origin
 
 # Attempt to rebase
 if git rebase origin/main; then
-    echo "Rebase successful, pushing changes..." >> $log
+    log "Rebase successful, pushing changes..."
     if git push origin main; then
-        echo "Push successful" >> $log
+        log "Push successful"
     else
-        echo "Error: Failed to push changes" >> $log
+        log "Error: Failed to push changes"
         exit 1
     fi
 else
-    echo "Error: Rebase failed" >> $log
+    log "Error: Rebase failed"
     # Abort the rebase to return to the previous state
     git rebase --abort
     exit 1
