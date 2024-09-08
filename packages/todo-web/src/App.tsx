@@ -22,24 +22,32 @@ function App() {
     }
   }, []);
 
-  const handleLogin = async (password: string) => {
+  const handleLogin = async (
+    password: string
+  ): Promise<{ success: true } | { success: false; error: string }> => {
     try {
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
+      const result = await response.json();
 
       if (response.ok) {
-        const { token } = await response.json();
+        const { token } = result;
         localStorage.setItem("jwt", token);
         setJwt(token);
         setIsLoggedIn(true);
+        return { success: true };
       } else {
-        console.error("Login failed");
+        const { error } = result;
+        console.error("Login error:", error);
+        return { success: false, error };
       }
     } catch (error) {
-      console.error("Error during login:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Error during login:", errorMessage);
+      return { success: false, error: `Error during login: ${errorMessage}` };
     }
   };
 

@@ -13,9 +13,15 @@ import { config } from "dotenv";
 import { exec, execSync } from "child_process";
 import cors from "cors";
 
-config();
-const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
-const COMMIT_ON_SAVE = process.env.COMMIT_ON_SAVE === "true";
+const { parsed } = config();
+const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
+const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
+const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
+console.log("env:", {
+  AUTH_DISABLED,
+  COMMIT_ON_SAVE,
+  ADMIN_PASSWORD,
+});
 
 function commitFile(filePath: string, message?: string) {
   message = message || `Save ${filePath}`;
@@ -290,7 +296,7 @@ function postTodoHandler(req: Request, res: Response, filepath?: string) {
 // Auth API (placeholder)
 app.post("/api/auth/login", (req, res) => {
   const { password } = req.body;
-  if (password === process.env.ADMIN_PASSWORD) {
+  if (password === ADMIN_PASSWORD) {
     res.json({ token: generateJwt() });
   } else {
     res.status(401).json({ error: "Invalid password" });

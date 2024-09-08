@@ -1,11 +1,22 @@
 import React, { useState } from "react";
 
-export function LoginPage({ onLogin }: { onLogin: (password: string) => void }) {
+export function LoginPage({
+  onLogin,
+}: {
+  onLogin: (password: string) => Promise<{ success: true } | { success: false; error: string }>;
+}) {
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(password);
+    onLogin(password).then((result) => {
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        setError(null);
+      }
+    });
   };
 
   return (
@@ -22,6 +33,7 @@ export function LoginPage({ onLogin }: { onLogin: (password: string) => void }) 
         <button type="submit" className="login-button">
           Login
         </button>
+        {error && <div className="error-message">{error}</div>}
       </form>
     </div>
   );
