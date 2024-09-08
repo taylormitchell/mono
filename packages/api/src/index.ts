@@ -27,11 +27,11 @@ function commitFile(filePath: string, message?: string) {
     );
   };
   exec(`git add ${filePath} && git commit -m "${message}"`, (error, stdout) => {
-    // if (error) {
-    //   log(`Error: ${error.message}`);
-    // } else {
-    //   log(stdout);
-    // }
+    if (error) {
+      log(`Error: ${error.message}`);
+    } else {
+      log(stdout);
+    }
   });
 }
 
