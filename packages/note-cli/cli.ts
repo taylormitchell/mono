@@ -194,21 +194,24 @@ program
     if (logEvents.length > 0) {
       const summary = logEvents.reduce((acc, event) => {
         if (!acc[event.type]) {
-          acc[event.type] = { count: 0, totalDuration: 0 };
+          acc[event.type] = { count: 0, totalDuration: 0, message: "" };
         }
         acc[event.type].count++;
         if (event.duration) {
           acc[event.type].totalDuration += parseDuration(event.duration);
         }
+        if (event.message) {
+          acc[event.type].message = event.message;
+        }
         return acc;
       }, {});
 
       Object.entries(summary).forEach(([type, data]: [string, any]) => {
-        console.log(
-          `${type}: ${data.count} ${
-            data.totalDuration ? `(${formatDuration(data.totalDuration)})` : ""
-          }`
-        );
+        let details = [data.totalDuration && formatDuration(data.totalDuration), data.message]
+          .filter(Boolean)
+          .join(" ");
+        details = details ? `(${details})` : "";
+        console.log(`${type}: ${data.count} ${details}`);
       });
     } else {
       console.log("No log events for today.");
