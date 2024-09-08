@@ -9,6 +9,7 @@ import { deserializeTodo } from "@taylor/common/todo/types";
 import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
 import { exec } from "child_process";
+import cors from "cors";
 
 config();
 const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
@@ -39,6 +40,7 @@ const app = express();
 const port = process.env.PORT || 3077;
 
 app.use(express.json());
+app.use(cors());
 app.use(express.static(getRootDir()));
 
 const log = {

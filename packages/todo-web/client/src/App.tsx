@@ -11,12 +11,26 @@ function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
 
   async function fetchTodos() {
-    const res = await fetch(`${apiUrl}/api/data`);
+    const res = await fetch(`${apiUrl}/api/todos`);
     if (res.ok) {
       const data = await res.json();
+      console.log(data);
       // parse the todo dates
-      const todos = data.todos.map(deserializeTodo);
-      setTodos(todos);
+      try {
+        const todos = data.todos
+          .map((todo: unknown) => {
+            try {
+              return deserializeTodo(todo);
+            } catch (e) {
+              console.error("Error deserializing todo:", todo, e);
+              return null;
+            }
+          })
+          .filter((todo: Todo | null): todo is Todo => todo !== null);
+        setTodos(todos);
+      } catch (e) {
+        console.error("Error processing todos", e);
+      }
     }
   }
 

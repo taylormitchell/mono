@@ -46,8 +46,11 @@ export function deserializeTodo(todo: any) {
   const serializedTodo = TodoSerializedSchema.parse(todo);
   let due: Date | undefined;
   if (serializedTodo.due) {
-    const [year, month, day] = serializedTodo.due.split("-").map(Number);
+    const [year, month, day] = serializedTodo.due.slice(0, 10).split("-").map(Number);
     due = new Date(year, month - 1, day);
+    if (isNaN(due.getTime())) {
+      throw new Error("Invalid due date");
+    }
   }
   return TodoSchema.parse({ ...serializedTodo, due });
 }
