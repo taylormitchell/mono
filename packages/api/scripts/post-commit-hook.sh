@@ -7,7 +7,7 @@ if [ ! -f $log_file ]; then
     touch $log_file
 fi
 log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> $log_file
+    echo "$(date '+%Y-%m-%d %H:%M:%S %z') - $1" >> $log_file
 }
 
 # Fetch the latest changes from the remote
