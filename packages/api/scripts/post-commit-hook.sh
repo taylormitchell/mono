@@ -11,7 +11,7 @@ log() {
 }
 
 # Log the top commit sha
-log "Commit $(git rev-parse HEAD | cut -c1-7)"
+log "Running post-commit hook after commit $(git rev-parse HEAD | cut -c1-7)"
 
 # Fetch the latest changes from the remote
 git fetch origin
