@@ -1,0 +1,1 @@
+echo "Post commit hook" > /Users/taylormitchell/Code/taylors-tech/packages/api/temp.log
