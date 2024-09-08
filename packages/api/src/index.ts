@@ -6,6 +6,8 @@ import fs from "fs";
 import path from "path";
 import { format } from "date-fns";
 import { deserializeTodo } from "@taylor/common/todo/types";
+import { addLogEntry } from "@taylor/common/logs/utils";
+import { LogEntrySchema } from "@taylor/common/logs/types";
 import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
 import { exec, execSync } from "child_process";
@@ -196,16 +198,14 @@ app.delete("/api/files/:path(*)", (req, res) => {
 });
 
 // Log API
-app.post("/api/log/:type", (req, res) => {
-  const { type } = req.params;
-  const { datetime, duration } = req.body;
-  const logEntry = {
-    type,
-    datetime: datetime || format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxx"),
-    ...(duration ? { duration } : {}),
-  };
-  const logPath = path.join(getRootDir(), "log.jsonl");
-  fs.appendFileSync(logPath, JSON.stringify(logEntry) + "\n");
+app.post("/api/log", (req, res) => {
+  const result = LogEntrySchema.safeParse(req.body);
+  if (!result.success) {
+    console.error("Invalid log entry: ", result.error);
+    return res.status(400).json({ error: "Invalid log entry", message: result.error.message });
+  }
+  const logEntry = result.data;
+  const logPath = addLogEntry(logEntry);
   if (COMMIT_ON_SAVE) commitFile(logPath, "Add log entry");
   res.status(201).json({ message: "Log entry added successfully" });
 });

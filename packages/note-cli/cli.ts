@@ -12,8 +12,16 @@ import {
   openFile,
 } from "@taylor/common/note";
 import { getRootDir } from "@taylor/common/data";
-import fs from "fs";
 import { readFileSync } from "fs";
+import {
+  addLogEntry,
+  getTodayLogEvents,
+  parseDuration,
+  formatDuration,
+  validateDuration,
+  validateDatetime,
+  LogEntry,
+} from "@taylor/common/logs";
 
 const program = new Command();
 
@@ -109,26 +117,6 @@ program
     }
   });
 
-function validateDuration(duration: string | undefined): boolean {
-  if (duration && !/^\d+[hms]$/.test(duration)) {
-    console.error(
-      "Invalid duration format. Use a number followed by 'h' (hours), 'm' (minutes), or 's' (seconds)."
-    );
-    return false;
-  }
-  return true;
-}
-
-function validateDatetime(datetime: string | undefined): boolean {
-  if (datetime && isNaN(Date.parse(datetime))) {
-    console.error(
-      "Invalid datetime format. Use ISO 8601 format (e.g., '2023-04-15T14:30:00-04:00')"
-    );
-    return false;
-  }
-  return true;
-}
-
 const logCommand = program
   .command("log")
   .description("Add a log entry to log.jsonl")
@@ -157,17 +145,14 @@ logTypes.forEach((type) => {
           datetime = new Date().toISOString();
         }
 
-        const logEntry = {
+        const logEntry: LogEntry = {
           type,
           ...(duration && { duration }),
           datetime,
           ...(options.message && { message: options.message }),
         };
 
-        const logPath = path.join(getRootDir(), "log.jsonl");
-        const logLine = JSON.stringify(logEntry) + "\n";
-        fs.appendFileSync(logPath, logLine);
-        console.log(`Log entry added: ${logLine.trim()}`);
+        addLogEntry(logEntry);
       }
     );
 });
@@ -182,14 +167,8 @@ program
     console.log(readFileSync(todayNote, "utf-8"));
 
     // Summarize today's log events
-    const logPath = path.join(getRootDir(), "log.jsonl");
-    const today = new Date().toISOString().split("T")[0];
     console.log("\nToday's Log Events Summary:");
-    const logEvents = readFileSync(logPath, "utf-8")
-      .split("\n")
-      .filter((line) => line.trim() !== "")
-      .map((line) => JSON.parse(line))
-      .filter((entry) => entry.datetime.startsWith(today));
+    const logEvents = getTodayLogEvents();
 
     if (logEvents.length > 0) {
       const summary = logEvents.reduce((acc, event) => {
@@ -217,32 +196,5 @@ program
       console.log("No log events for today.");
     }
   });
-
-function parseDuration(duration: string): number {
-  const match = duration.match(/^(\d+)([hms])$/);
-  if (!match) return 0;
-  const [, value, unit] = match;
-  switch (unit) {
-    case "h":
-      return parseInt(value) * 60 * 60;
-    case "m":
-      return parseInt(value) * 60;
-    case "s":
-      return parseInt(value);
-    default:
-      return 0;
-  }
-}
-
-function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-  const parts = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
-  return parts.join(" ");
-}
 
 program.parse(process.argv);

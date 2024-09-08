@@ -156,3 +156,45 @@ body {
 .login-button:hover {
   background-color: #0056b3;
 }
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 20px;
+  text-align: center;
+}
+
+.home-container h1 {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.nav-button {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-size: 1.2rem;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.nav-button:hover {
+  background-color: #0056b3;
+}
+
+@media (min-width: 768px) {
+  .nav-button {
+    font-size: 1.5rem;
+    padding: 1.5rem;
+  }
+}
