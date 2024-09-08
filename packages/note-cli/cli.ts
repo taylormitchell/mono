@@ -129,59 +129,48 @@ function validateDatetime(datetime: string | undefined): boolean {
   return true;
 }
 
-function addLogEntry(logEntry: any) {
-  const logPath = path.join(getRootDir(), "log.jsonl");
-  const logLine = JSON.stringify(logEntry) + "\n";
-  fs.appendFileSync(logPath, logLine);
-  console.log(`Log entry added: ${logLine.trim()}`);
-}
-
-const logCommand = program.command("log").description("Add a log entry to log.jsonl");
-const logTypes = ["meditated", "ankied", "eye-patch", "workout"];
+const logCommand = program
+  .command("log")
+  .description("Add a log entry to log.jsonl")
+  .option("-t, --type <type>", "Type of log entry");
+const logTypes = ["meditated", "ankied", "eye-patch", "workout", "custom"];
 logTypes.forEach((type) => {
   logCommand
     .command(type + " [duration]")
     .description(`Log a ${type} entry`)
     .option("-d, --datetime <datetime>", "Specify a custom datetime (default: current time)")
+    .option("-t, --today", "Set the date to today (yyyy-mm-dd)")
     .option("-m, --message <message>", "Add an optional message to the log entry")
-    .action((duration: string | undefined, options: { datetime?: string; message?: string }) => {
-      if (!validateDuration(duration) || !validateDatetime(options.datetime)) return;
+    .action(
+      (
+        duration: string | undefined,
+        options: { datetime?: string; today?: boolean; message?: string }
+      ) => {
+        if (!validateDuration(duration) || !validateDatetime(options.datetime)) return;
 
-      const logEntry = {
-        type,
-        ...(duration && { duration }),
-        datetime: options.datetime || new Date().toISOString(),
-        ...(options.message && { message: options.message }),
-      };
+        let datetime: string;
+        if (options.datetime) {
+          datetime = options.datetime;
+        } else if (options.today) {
+          datetime = new Date().toISOString().split("T")[0];
+        } else {
+          datetime = new Date().toISOString();
+        }
 
-      addLogEntry(logEntry);
-    });
+        const logEntry = {
+          type,
+          ...(duration && { duration }),
+          datetime,
+          ...(options.message && { message: options.message }),
+        };
+
+        const logPath = path.join(getRootDir(), "log.jsonl");
+        const logLine = JSON.stringify(logEntry) + "\n";
+        fs.appendFileSync(logPath, logLine);
+        console.log(`Log entry added: ${logLine.trim()}`);
+      }
+    );
 });
-
-// Add new sub-command for custom log types
-logCommand
-  .command("custom <type> [duration]")
-  .description("Log a custom entry type")
-  .option("-d, --datetime <datetime>", "Specify a custom datetime (default: current time)")
-  .option("-m, --message <message>", "Add an optional message to the log entry")
-  .action(
-    (
-      type: string,
-      duration: string | undefined,
-      options: { datetime?: string; message?: string }
-    ) => {
-      if (!validateDuration(duration) || !validateDatetime(options.datetime)) return;
-
-      const logEntry = {
-        type,
-        ...(duration && { duration }),
-        datetime: options.datetime || new Date().toISOString(),
-        ...(options.message && { message: options.message }),
-      };
-
-      addLogEntry(logEntry);
-    }
-  );
 
 program
   .command("today")
