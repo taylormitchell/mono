@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { saveFile as _saveFile, getRootDir } from "@taylor/common/data";
+import { getRootDir } from "@taylor/common/data";
 import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
 import { addTodo, listAllTodos } from "@taylor/common/todo/parsers";
 import fs from "fs";
@@ -8,20 +8,43 @@ import { format } from "date-fns";
 import { deserializeTodo } from "@taylor/common/todo/types";
 import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
+import { execSync } from "child_process";
 
 config();
 const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
-const AUTO_COMMIT_AND_PUSH = process.env.AUTO_COMMIT_AND_PUSH === "true";
+const SYNC = process.env.SYNC === "true";
 
-const saveFile: typeof _saveFile = (filePath, message) => {
-  if (!AUTO_COMMIT_AND_PUSH) return { ok: true, stashed: false };
-  const result = _saveFile(filePath, message);
-  if (!result.ok) {
-    log.error("Failed to save file", result.error);
-  } else if (result.stashed) {
-    log.warn("Needed to stash changes before committing and pushing");
+const rebase = () => {
+  if (!SYNC) return;
+  execSync(`cd ${getRootDir()}`).toString();
+  const stashOutput = execSync(
+    `git stash save "Stashing changes during data save $(date)" --include-untracked`
+  ).toString();
+  execSync(`git pull`).toString();
+  if (!stashOutput.includes("No local changes to save")) {
+    log.warn("Unexpected dirty files in repo. Stashed.");
   }
-  return result;
+};
+
+const saveFile = (
+  filePath: string,
+  message?: string
+): { ok: true } | { ok: false; error: string } => {
+  if (!SYNC) return { ok: true };
+  try {
+    message = message || `Save ${filePath}`;
+    execSync(`git add ${filePath}`).toString();
+    execSync(`git commit -m "${message}"`).toString();
+    execSync(`git push`).toString();
+    const output = execSync(`git pull`).toString();
+    if (output.includes("Already up to date.")) {
+      return { ok: true };
+    } else {
+      return { ok: false, error: output };
+    }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
 };
 
 const app = express();
@@ -63,6 +86,7 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
 app.use((req, res, next) => {
   log.info(`${req.method} ${req.url}`);
+  rebase();
   next();
 });
 

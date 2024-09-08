@@ -4,7 +4,7 @@ git commit -m "Deploy"
 git push
 cp .env .env.production
 echo "AUTH_DISABLED=false" >> .env.production
-echo "AUTO_COMMIT_AND_PUSH=true" >> .env.production
+echo "SYNC=true" >> .env.production
 scp .env.production ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com:~/code/taylors-tech/packages/api/.env
 rm .env.production
 ssh ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com '
