@@ -137,19 +137,21 @@ function addLogEntry(logEntry: any) {
 }
 
 const logCommand = program.command("log").description("Add a log entry to log.jsonl");
-const logTypes = ["meditated", "ankied", "eye-patch"];
+const logTypes = ["meditated", "ankied", "eye-patch", "workout"];
 logTypes.forEach((type) => {
   logCommand
     .command(type + " [duration]")
     .description(`Log a ${type} entry`)
     .option("-d, --datetime <datetime>", "Specify a custom datetime (default: current time)")
-    .action((duration: string | undefined, options: { datetime?: string }) => {
+    .option("-m, --message <message>", "Add an optional message to the log entry")
+    .action((duration: string | undefined, options: { datetime?: string; message?: string }) => {
       if (!validateDuration(duration) || !validateDatetime(options.datetime)) return;
 
       const logEntry = {
         type,
         ...(duration && { duration }),
         datetime: options.datetime || new Date().toISOString(),
+        ...(options.message && { message: options.message }),
       };
 
       addLogEntry(logEntry);
