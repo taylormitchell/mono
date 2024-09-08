@@ -2,7 +2,7 @@
 
 # Create function to log with timestamp
 root=$(git rev-parse --show-toplevel)
-log_file=$root/temp.log
+log_file=$root/sync.log
 if [ ! -f $log_file ]; then
     touch $log_file
 fi

@@ -1,8 +1,12 @@
 import path from "path";
 import { execSync } from "child_process";
 
+export function getRepoRoot() {
+  return path.resolve(__dirname, "../../");
+}
+
 export function getRootDir() {
-  return path.resolve(__dirname, "../../data");
+  return path.resolve(getRepoRoot(), "data");
 }
 
 export function saveFile(

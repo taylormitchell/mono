@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getRootDir } from "@taylor/common/data";
+import { getRepoRoot, getRootDir } from "@taylor/common/data";
 import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
 import { addTodo, listAllTodos } from "@taylor/common/todo/parsers";
 import fs from "fs";
@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { deserializeTodo } from "@taylor/common/todo/types";
 import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
-import { execSync } from "child_process";
+import { exec } from "child_process";
 
 config();
 const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
@@ -16,8 +16,23 @@ const COMMIT_ON_SAVE = process.env.COMMIT_ON_SAVE === "true";
 
 function commitFile(filePath: string, message?: string) {
   message = message || `Save ${filePath}`;
-  execSync(`git add ${filePath}`);
-  execSync(`git commit -m "${message}"`);
+  const log = (message: string) => {
+    const messageOneLine = message
+      .split("\n")
+      .map((line) => line.trim())
+      .join(" ");
+    fs.appendFileSync(
+      path.join(getRepoRoot(), "sync.log"),
+      `${format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxx")} - ${messageOneLine}\n`
+    );
+  };
+  exec(`git add ${filePath} && git commit -m "${message}"`, (error, stdout) => {
+    if (error) {
+      log(`Error: ${error.message}`);
+    } else {
+      log(stdout);
+    }
+  });
 }
 
 const app = express();
