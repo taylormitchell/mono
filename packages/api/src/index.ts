@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { deserializeTodo } from "@taylor/common/todo/types";
 import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
-import { exec } from "child_process";
+import { exec, execSync } from "child_process";
 import cors from "cors";
 
 config();
@@ -351,25 +351,19 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 app.get("/api/git/rebase", authMiddleware, (req, res) => {
   const commands = ["git stash", "git pull --rebase", "git stash pop"];
-
-  const executeCommands = (index = 0) => {
-    if (index >= commands.length) {
-      return res
-        .status(200)
-        .json({ message: "Stash, rebase, and re-apply completed successfully" });
+  try {
+    for (const command of commands) {
+      const output = execSync(command, { encoding: "utf-8" });
+      log.info(`${command} output: ${output}`);
     }
-
-    exec(commands[index], (error, stdout) => {
-      if (error) {
-        log.error(`Failed to execute '${commands[index]}': ${error.message}`);
-        return res
-          .status(500)
-          .json({ error: `Failed to execute '${commands[index]}': ${error.message}` });
-      }
-      log.info(`${commands[index]} output: ${stdout}`);
-      executeCommands(index + 1);
-    });
-  };
+    res.status(200).json({ message: "Stash, rebase, and re-apply completed successfully" });
+  } catch (error) {
+    const message =
+      "Failed to execute git commands: " +
+      (error instanceof Error ? error.message : "Unknown error");
+    log.error(message);
+    res.status(500).json({ error: message });
+  }
 });
 
 app.listen(port, () => {
