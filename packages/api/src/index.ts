@@ -23,13 +23,29 @@ console.log("env:", {
   ADMIN_PASSWORD,
 });
 
+const log = {
+  info: (message?: any, ...optionalParams: any[]) => {
+    const flat = flattenOptionalParams(optionalParams);
+    console.log(`[${new Date().toISOString()}] [INFO] `, message, ...flat);
+  },
+  warn: (message?: any, ...optionalParams: any[]) => {
+    const flat = flattenOptionalParams(optionalParams);
+    console.warn(`[${new Date().toISOString()}] [WARN] `, message, ...flat);
+  },
+  error: (message?: any, ...optionalParams: any[]) => {
+    const flat = flattenOptionalParams(optionalParams);
+    console.error(`[${new Date().toISOString()}] [ERROR] `, message, ...flat);
+  },
+};
+
 function commitFile(filePath: string, message?: string) {
   message = message || `Save ${filePath}`;
-  const log = (message: string) => {
+  const log2 = (message: string) => {
     const messageOneLine = message
       .split("\n")
       .map((line) => line.trim())
       .join(" ");
+    log.info(message);
     fs.appendFileSync(
       path.join(getRepoRoot(), "sync.log"),
       `${format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxx")} - ${messageOneLine}\n`
@@ -37,9 +53,9 @@ function commitFile(filePath: string, message?: string) {
   };
   exec(`git add ${filePath} && git commit -m "${message}"`, (error, stdout) => {
     if (error) {
-      log(`Error: ${error.message}`);
+      log2(`Error: ${error.message}`);
     } else {
-      log(stdout);
+      log2(stdout);
     }
   });
 }
@@ -61,21 +77,6 @@ function flattenOptionalParams(optionalParams: any[]) {
     return param;
   });
 }
-
-const log = {
-  info: (message?: any, ...optionalParams: any[]) => {
-    const flat = flattenOptionalParams(optionalParams);
-    console.log(`[${new Date().toISOString()}] [INFO] `, message, ...flat);
-  },
-  warn: (message?: any, ...optionalParams: any[]) => {
-    const flat = flattenOptionalParams(optionalParams);
-    console.warn(`[${new Date().toISOString()}] [WARN] `, message, ...flat);
-  },
-  error: (message?: any, ...optionalParams: any[]) => {
-    const flat = flattenOptionalParams(optionalParams);
-    console.error(`[${new Date().toISOString()}] [ERROR] `, message, ...flat);
-  },
-};
 
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (AUTH_DISABLED) {
