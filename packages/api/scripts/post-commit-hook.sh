@@ -10,6 +10,9 @@ log() {
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') - $1" >> $log_file
 }
 
+# Log the top commit sha
+log "Commit $(git rev-parse HEAD | cut -c1-7)"
+
 # Fetch the latest changes from the remote
 git fetch origin
 
