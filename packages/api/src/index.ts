@@ -43,15 +43,29 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(getRootDir()));
 
+function flattenOptionalParams(optionalParams: any[]) {
+  return optionalParams.map((param) => {
+    if (typeof param === "object") {
+      return JSON.stringify(param);
+    } else if (typeof param === "string" && param.includes("\n")) {
+      return param.replace(/\n/g, "\\n");
+    }
+    return param;
+  });
+}
+
 const log = {
   info: (message?: any, ...optionalParams: any[]) => {
-    console.log(`[${new Date().toISOString()}] [INFO] `, message, ...optionalParams);
+    const flat = flattenOptionalParams(optionalParams);
+    console.log(`[${new Date().toISOString()}] [INFO] `, message, ...flat);
   },
   warn: (message?: any, ...optionalParams: any[]) => {
-    console.warn(`[${new Date().toISOString()}] [WARN] `, message, ...optionalParams);
+    const flat = flattenOptionalParams(optionalParams);
+    console.warn(`[${new Date().toISOString()}] [WARN] `, message, ...flat);
   },
   error: (message?: any, ...optionalParams: any[]) => {
-    console.error(`[${new Date().toISOString()}] [ERROR] `, message, ...optionalParams);
+    const flat = flattenOptionalParams(optionalParams);
+    console.error(`[${new Date().toISOString()}] [ERROR] `, message, ...flat);
   },
 };
 
@@ -352,7 +366,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 app.get("/api/git/rebase", authMiddleware, (req, res) => {
   try {
     const stashOutput = execSync("git stash", { encoding: "utf-8" });
-    log.info(`Stash output: ${stashOutput}`);
+    log.info("Stash output: ", stashOutput);
 
     const pullOutput = execSync("git pull --rebase", { encoding: "utf-8" });
     log.info(`Pull output: ${pullOutput}`);
