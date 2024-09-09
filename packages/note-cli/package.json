@@ -15,6 +15,7 @@
   "dependencies": {
     "@taylor/common": "^1.0.0",
     "chrono-node": "^1.4.9",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "date-fns": "^3.6.0"
   }
 }

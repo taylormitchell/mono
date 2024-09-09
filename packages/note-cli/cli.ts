@@ -20,6 +20,7 @@ import {
   parseDuration,
   formatDuration,
 } from "@taylor/common/logs/types";
+import { format } from "date-fns";
 
 const program = new Command();
 
@@ -142,7 +143,7 @@ logTypes.forEach((type) => {
         } else if (options.today) {
           datetime = new Date().toISOString().split("T")[0];
         } else {
-          datetime = new Date().toISOString();
+          datetime = format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxxx");
         }
 
         const logEntry: LogEntry = {
