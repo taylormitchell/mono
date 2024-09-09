@@ -6,10 +6,10 @@ import {
   createPost,
   createNote,
   openDailyNote,
-  openWeeklyNote,
-  openMonthlyNote,
-  createDailyNote,
+  getOrCreateDailyNote,
   openFile,
+  getOrCreateWeeklyNote,
+  getOrCreateMonthlyNote,
 } from "@taylor/common/note";
 import { getRootDir } from "@taylor/common/data";
 import { readFileSync } from "fs";
@@ -70,7 +70,7 @@ program
   .action((dateOrOffset, options) => {
     const shouldOpen = options.open !== false;
     const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
-    createDailyNote(date);
+    getOrCreateDailyNote(date);
     if (shouldOpen) {
       openDailyNote(date);
     }
@@ -80,14 +80,16 @@ program
   .command("weekly")
   .description("Open or create this week's note")
   .action(() => {
-    openWeeklyNote();
+    const path = getOrCreateWeeklyNote();
+    execSync(`cursor ${path}`);
   });
 
 program
   .command("monthly")
   .description("Open or create this month's note")
   .action(() => {
-    openMonthlyNote();
+    const path = getOrCreateMonthlyNote();
+    execSync(`cursor ${path}`);
   });
 
 program
@@ -161,7 +163,7 @@ program
   .description("Output today's daily note and summarize log events")
   .action(() => {
     // Output today's daily note
-    const todayNote = createDailyNote();
+    const todayNote = getOrCreateDailyNote();
     console.log("Today's Daily Note:");
     console.log(readFileSync(todayNote, "utf-8"));
 

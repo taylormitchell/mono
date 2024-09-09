@@ -161,7 +161,7 @@ export function getOrCreateJournalNote({
   return createFile(filepath, content);
 }
 
-export function createDailyNote(dateOrOffset?: Date | number) {
+export function getOrCreateDailyNote(dateOrOffset?: Date | number) {
   return getOrCreateJournalNote({
     type: "daily",
     date: dateOrOffset instanceof Date ? dateOrOffset : undefined,
@@ -169,7 +169,7 @@ export function createDailyNote(dateOrOffset?: Date | number) {
   });
 }
 
-export function createWeeklyNote(dateOrOffset?: Date | number) {
+export function getOrCreateWeeklyNote(dateOrOffset?: Date | number) {
   return getOrCreateJournalNote({
     type: "weekly",
     date: dateOrOffset instanceof Date ? dateOrOffset : undefined,
@@ -177,35 +177,10 @@ export function createWeeklyNote(dateOrOffset?: Date | number) {
   });
 }
 
-export function createMonthlyNote(dateOrOffset?: Date | number) {
+export function getOrCreateMonthlyNote(dateOrOffset?: Date | number) {
   return getOrCreateJournalNote({
     type: "monthly",
     date: dateOrOffset instanceof Date ? dateOrOffset : undefined,
     offset: typeof dateOrOffset === "number" ? dateOrOffset : undefined,
   });
-}
-
-export function openDailyNote(dateOrOffset?: Date | number) {
-  const filepath = createDailyNote(dateOrOffset);
-  execSync(`cursor ${filepath}`);
-}
-
-export function openWeeklyNote() {
-  const today = new Date();
-  const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
-  const month = monday.toLocaleString("default", { month: "long" }).toLowerCase();
-  const year = monday.getFullYear().toString();
-  const day = monday.getDate();
-  const filepath = path.join(getRootDir(), "journals", year, month, `week-of-${day}.md`);
-  const absolutePath = createFile(filepath);
-  execSync(`cursor ${absolutePath}`);
-}
-
-export function openMonthlyNote() {
-  const today = new Date();
-  const month = today.toLocaleString("default", { month: "long" }).toLowerCase();
-  const year = today.getFullYear().toString();
-  const filepath = path.join(getRootDir(), "journals", year, month, "index.md");
-  const absolutePath = createFile(filepath);
-  execSync(`cursor ${absolutePath}`);
 }
