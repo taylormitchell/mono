@@ -5,7 +5,6 @@ import {
   listDir,
   createPost,
   createNote,
-  openDailyNote,
   getOrCreateDailyNote,
   openFile,
   getOrCreateWeeklyNote,
@@ -70,9 +69,9 @@ program
   .action((dateOrOffset, options) => {
     const shouldOpen = options.open !== false;
     const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
-    getOrCreateDailyNote(date);
+    const path = getOrCreateDailyNote(date);
     if (shouldOpen) {
-      openDailyNote(date);
+      execSync(`cursor ${path}`);
     }
   });
 
