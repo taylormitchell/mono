@@ -99,7 +99,9 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-app.use((req: Request, res: Response, next: NextFunction) => {
+type RequestWithStashed = Request & { stashed?: boolean };
+
+app.use((req: RequestWithStashed, res: Response, next: NextFunction) => {
   log.info(`${req.method} ${req.url}`);
   if (SYNC_ENABLED) {
     const gitStatus = execSync("git status --porcelain", { encoding: "utf-8" });
@@ -110,7 +112,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
           `git stash --include-untracked save "Stashing changes during api request ${new Date().toISOString()}"`,
           { encoding: "utf-8" }
         );
-        (req as any).stashed = true;
+        req.stashed = true;
         log.info("Changes stashed successfully.");
       }
       const pullOutput = execSync("git fetch origin && git rebase --abort origin/main", {
@@ -128,7 +130,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Files API
-app.get("/api/files/:path(*)", authMiddleware, (req, res, next) => {
+app.get("/api/files/:path(*)", authMiddleware, (req: RequestWithStashed, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     if (fs.statSync(filePath).isFile()) {
@@ -177,7 +179,7 @@ app.get("/api/files/:path(*)", authMiddleware, (req, res, next) => {
   }
 });
 
-app.put("/api/files/:path(*)", (req, res) => {
+app.put("/api/files/:path(*)", (req: RequestWithStashed, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   const content = req.body?.content || "";
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -189,7 +191,7 @@ app.put("/api/files/:path(*)", (req, res) => {
     .json({ message: exists ? "File updated successfully" : "File created successfully" });
 });
 
-app.patch("/api/files/:path(*)", (req, res) => {
+app.patch("/api/files/:path(*)", (req: RequestWithStashed, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   const { method, content } = req.body;
 
@@ -218,7 +220,7 @@ app.patch("/api/files/:path(*)", (req, res) => {
   res.status(200).json({ message: "File updated successfully" });
 });
 
-app.delete("/api/files/:path(*)", (req, res) => {
+app.delete("/api/files/:path(*)", (req: RequestWithStashed, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
@@ -243,22 +245,22 @@ app.post("/api/log", authMiddleware, (req, res) => {
 });
 
 // Note API
-app.get("/api/note/daily", (req, res) => {
+app.get("/api/note/daily", (req: RequestWithStashed, res) => {
   handleNoteRequest("daily", req, res);
 });
 
-app.get("/api/note/weekly", (req, res) => {
+app.get("/api/note/weekly", (req: RequestWithStashed, res) => {
   handleNoteRequest("weekly", req, res);
 });
 
-app.get("/api/note/monthly", (req, res) => {
+app.get("/api/note/monthly", (req: RequestWithStashed, res) => {
   handleNoteRequest("monthly", req, res);
 });
 
 function handleNoteRequest(
   type: "daily" | "weekly" | "monthly",
-  req: express.Request,
-  res: express.Response
+  req: RequestWithStashed,
+  res: Response
 ) {
   const { date, offset } = req.query;
   try {
@@ -284,27 +286,27 @@ app.post("/api/note/post/:dir(*)", (req, res) => {
 });
 
 // Todos API
-app.get("/api/todos", authMiddleware, (req, res, next) => {
+app.get("/api/todos", authMiddleware, (req: RequestWithStashed, res) => {
   const todos = listAllTodos();
   res.json({ todos });
 });
 
-app.post("/api/todos/today", authMiddleware, (req, res) => {
+app.post("/api/todos/today", authMiddleware, (req: RequestWithStashed, res) => {
   const todayPath = dateToJournalPath(new Date());
   return postTodoHandler(req, res, todayPath);
 });
 
-app.post("/api/todos/someday", authMiddleware, (req, res) => {
+app.post("/api/todos/someday", authMiddleware, (req: RequestWithStashed, res) => {
   const somedayPath = path.join(getRootDir(), "gtd", "someday-maybe.md");
   return postTodoHandler(req, res, somedayPath);
 });
 
-app.post("/api/todos/:path(*)?", authMiddleware, (req, res) => {
+app.post("/api/todos/:path(*)?", authMiddleware, (req: RequestWithStashed, res) => {
   const { path: relativePath } = req.params;
   return postTodoHandler(req, res, path.join(getRootDir(), relativePath));
 });
 
-function postTodoHandler(req: Request, res: Response, filepath?: string) {
+function postTodoHandler(req: RequestWithStashed, res: Response, filepath?: string) {
   let todo;
   try {
     todo = deserializeTodo(req.body);
@@ -320,7 +322,7 @@ function postTodoHandler(req: Request, res: Response, filepath?: string) {
 }
 
 // Auth API (placeholder)
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", (req: RequestWithStashed, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
     res.json({ token: generateJwt() });
@@ -329,7 +331,7 @@ app.post("/api/auth/login", (req, res) => {
   }
 });
 
-app.get("/api", (req, res) => {
+app.get("/api", (req: RequestWithStashed, res) => {
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -387,7 +389,7 @@ app.get("/api", (req, res) => {
   res.send(htmlContent);
 });
 
-app.get("/api/git/rebase", authMiddleware, (req, res) => {
+app.get("/api/git/rebase", authMiddleware, (req: RequestWithStashed, res) => {
   try {
     const stashOutput = execSync("git stash", { encoding: "utf-8" });
     log.info("Stash output: ", stashOutput);
@@ -411,7 +413,7 @@ app.get("/api/git/rebase", authMiddleware, (req, res) => {
 });
 
 // Clean up
-app.use((req, res, next) => {
+app.use((req: RequestWithStashed, res, next) => {
   console.log("next end");
   if (SYNC_ENABLED && req.stashed) {
     try {
@@ -427,7 +429,7 @@ app.use((req, res, next) => {
 });
 
 // Error handling
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: RequestWithStashed, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({
     error: "Internal server error",
