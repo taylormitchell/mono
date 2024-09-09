@@ -113,10 +113,9 @@ app.use((req, res, next) => {
         req.stashed = true;
         log.info("Changes stashed successfully.");
       }
-      const pullOutput = execSync(
-        "git fetch origin && git rebase --no-rebase-merges --abort-on-conflict origin/main",
-        { encoding: "utf-8" }
-      );
+      const pullOutput = execSync("git fetch origin && git rebase --abort origin/main", {
+        encoding: "utf-8",
+      });
       log.info(`Pull completed: ${pullOutput.trim()}`);
     } catch (error) {
       log.error(
