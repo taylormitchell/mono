@@ -13,15 +13,14 @@ import {
 } from "@taylor/common/note";
 import { getRootDir } from "@taylor/common/data";
 import { readFileSync } from "fs";
+import { addLogEntry, getTodayLogEvents } from "@taylor/common/logs/utils";
 import {
-  addLogEntry,
-  getTodayLogEvents,
-  parseDuration,
-  formatDuration,
   validateDuration,
   validateDatetime,
   LogEntry,
-} from "@taylor/common/logs";
+  parseDuration,
+  formatDuration,
+} from "@taylor/common/logs/types";
 
 const program = new Command();
 

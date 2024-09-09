@@ -99,7 +99,7 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   log.info(`${req.method} ${req.url}`);
   if (SYNC_ENABLED) {
     const gitStatus = execSync("git status --porcelain", { encoding: "utf-8" });
@@ -110,7 +110,7 @@ app.use((req, res, next) => {
           `git stash --include-untracked save "Stashing changes during api request ${new Date().toISOString()}"`,
           { encoding: "utf-8" }
         );
-        req.stashed = true;
+        (req as any).stashed = true;
         log.info("Changes stashed successfully.");
       }
       const pullOutput = execSync("git fetch origin && git rebase --abort origin/main", {
