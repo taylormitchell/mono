@@ -11,8 +11,6 @@ ssh ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com '
   cd code/taylors-tech/packages/api &&
   git stash save "Stashing changes during api deploy $(date)" &&
   git pull &&
-  cat scripts/post-commit-hook.sh > $(git rev-parse --show-toplevel)/.git/hooks/post-commit &&
-  chmod +x $(git rev-parse --show-toplevel)/.git/hooks/post-commit &&
   npm i &&
   pm2 delete api || true &&
   pm2 start npm --name api -- run start

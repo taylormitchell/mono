@@ -16,10 +16,12 @@ import cors from "cors";
 const { parsed } = config();
 const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
 const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
+const SYNC_ENABLED = parsed?.SYNC_ENABLED === "true";
 const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
 console.log("env:", {
   AUTH_DISABLED,
   COMMIT_ON_SAVE,
+  SYNC_ENABLED,
   ADMIN_PASSWORD,
 });
 
@@ -99,11 +101,40 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
 app.use((req, res, next) => {
   log.info(`${req.method} ${req.url}`);
+  if (SYNC_ENABLED) {
+    const gitStatus = execSync("git status --porcelain", { encoding: "utf-8" });
+    if (gitStatus.trim() !== "") {
+      log.warn("Git repository is dirty. Stashing changes before pull.");
+      try {
+        execSync("git stash --include-untracked", { encoding: "utf-8" });
+        log.info("Changes stashed successfully.");
+
+        const pullOutput = execSync("git pull --rebase", { encoding: "utf-8" });
+        log.info(`Pull completed: ${pullOutput.trim()}`);
+      } catch (error) {
+        log.error(
+          "Error during git operations:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+      }
+    } else {
+      log.info("Git repository is clean. No stash needed.");
+      try {
+        const pullOutput = execSync("git pull --rebase", { encoding: "utf-8" });
+        log.info(`Pull completed: ${pullOutput.trim()}`);
+      } catch (error) {
+        log.error(
+          "Error during git pull:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+      }
+    }
+  }
   next();
 });
 
 // Files API
-app.get("/api/files/:path(*)", authMiddleware, (req, res) => {
+app.get("/api/files/:path(*)", authMiddleware, (req, res, next) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     if (fs.statSync(filePath).isFile()) {
@@ -362,14 +393,6 @@ app.get("/api", (req, res) => {
   res.send(htmlContent);
 });
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: "Internal server error",
-    message: process.env.NODE_ENV === "production" ? undefined : err.message,
-  });
-});
-
 app.get("/api/git/rebase", authMiddleware, (req, res) => {
   try {
     const stashOutput = execSync("git stash", { encoding: "utf-8" });
@@ -391,6 +414,20 @@ app.get("/api/git/rebase", authMiddleware, (req, res) => {
     log.error(message);
     res.status(500).json({ error: message });
   }
+});
+
+// Clean up
+app.use((req, res, next) => {
+  console.log("next end");
+});
+
+// Error handling
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: "Internal server error",
+    message: process.env.NODE_ENV === "production" ? undefined : err.message,
+  });
 });
 
 app.listen(port, () => {
