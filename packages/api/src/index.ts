@@ -103,31 +103,26 @@ app.use((req, res, next) => {
   log.info(`${req.method} ${req.url}`);
   if (SYNC_ENABLED) {
     const gitStatus = execSync("git status --porcelain", { encoding: "utf-8" });
-    if (gitStatus.trim() !== "") {
-      log.warn("Git repository is dirty. Stashing changes before pull.");
-      try {
-        execSync("git stash --include-untracked", { encoding: "utf-8" });
+    try {
+      if (gitStatus.trim() !== "") {
+        log.warn("Git repository is dirty. Stashing changes before pull.");
+        execSync(
+          `git stash --include-untracked save "Stashing changes during api request ${new Date().toISOString()}"`,
+          { encoding: "utf-8" }
+        );
+        req.stashed = true;
         log.info("Changes stashed successfully.");
-
-        const pullOutput = execSync("git pull --rebase", { encoding: "utf-8" });
-        log.info(`Pull completed: ${pullOutput.trim()}`);
-      } catch (error) {
-        log.error(
-          "Error during git operations:",
-          error instanceof Error ? error.message : "Unknown error"
-        );
       }
-    } else {
-      log.info("Git repository is clean. No stash needed.");
-      try {
-        const pullOutput = execSync("git pull --rebase", { encoding: "utf-8" });
-        log.info(`Pull completed: ${pullOutput.trim()}`);
-      } catch (error) {
-        log.error(
-          "Error during git pull:",
-          error instanceof Error ? error.message : "Unknown error"
-        );
-      }
+      const pullOutput = execSync(
+        "git fetch origin && git rebase --no-rebase-merges --abort-on-conflict origin/main",
+        { encoding: "utf-8" }
+      );
+      log.info(`Pull completed: ${pullOutput.trim()}`);
+    } catch (error) {
+      log.error(
+        "Error during git operations:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
     }
   }
   next();
@@ -419,6 +414,17 @@ app.get("/api/git/rebase", authMiddleware, (req, res) => {
 // Clean up
 app.use((req, res, next) => {
   console.log("next end");
+  if (SYNC_ENABLED && req.stashed) {
+    try {
+      const popOutput = execSync("git stash pop", { encoding: "utf-8" });
+      log.info(`Unstash completed: ${popOutput.trim()}`);
+    } catch (error) {
+      log.error(
+        "Error during git unstash:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
+  }
 });
 
 // Error handling
