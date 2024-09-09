@@ -49,7 +49,7 @@ program
     if (p !== undefined) {
       p = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
     }
-    createPost(p, options.message);
+    p = createPost(p, options.message);
     if (!options.message) {
       openFile(p);
     }
