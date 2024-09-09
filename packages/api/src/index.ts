@@ -65,6 +65,16 @@ function commitFile(filePath: string, message?: string) {
 const app = express();
 const port = process.env.PORT || 3077;
 
+if (SYNC_ENABLED) {
+  setInterval(() => {
+    const dirty = execSync("git status --porcelain").trim() !== "";
+
+    execSync("git stash push -u");
+
+    execSync("git pull --rebase");
+  }, 1000 * 60 * 2);
+}
+
 app.use(express.json());
 app.use(cors());
 app.use(express.static(getRootDir()));
