@@ -88,7 +88,7 @@ if (SYNC_ENABLED) {
     } catch (error) {
       log.error("Error during recurring git pull rebase:", error);
     }
-  }, 1000 * 10);
+  }, 1000 * 60 * 2);
 }
 
 app.use(express.json());
