@@ -2,15 +2,15 @@ import fs from "fs";
 import path from "path";
 import { getRootDir } from "../data";
 import { LogEntry } from "./types";
-import { format } from "date-fns-tz";
+import { format, toZonedTime } from "date-fns-tz";
 
-export function addLogEntry(logEntry: LogEntry): string {
+export function addLogEntry(logEntry: LogEntry, timeZone: string = "Canada/Eastern"): string {
   const logPath = path.join(getRootDir(), "log.jsonl");
   const logLine =
     JSON.stringify({
       ...logEntry,
-      datetime: format(logEntry.datetime, "yyyy-MM-dd'T'HH:mm:ssxxx", {
-        timeZone: "Canada/Eastern",
+      datetime: format(toZonedTime(logEntry.datetime, timeZone), "yyyy-MM-dd'T'HH:mm:ssxxx", {
+        timeZone,
       }),
     }) + "\n";
   fs.appendFileSync(logPath, logLine);

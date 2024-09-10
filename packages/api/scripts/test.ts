@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import { generateJwt } from "../src/jwt";
-import { format } from "date-fns-tz";
-
+import { format, toZonedTime } from "date-fns-tz";
 dotenv.config();
 // const apiUrl = "http://localhost:3077";
 const apiUrl = "http://3.92.45.253";
@@ -39,5 +38,8 @@ async function appendToKids() {
   }
 }
 
-const date = new Date("2024-09-09T18:04:03-06:00");
-console.log(format(date, "yyyy-MM-dd'T'HH:mm:ssxxx", { timeZone: "Canada/Eastern" }));
+const TIMEZONE = "America/Chicago";
+const inputDate = new Date("2024-09-10T01:18:35.651Z");
+const easternDate = toZonedTime(inputDate, TIMEZONE);
+console.log("zoned time:", easternDate);
+console.log("formatted:", format(easternDate, "yyyy-MM-dd'T'HH:mm:ssxxx", { timeZone: TIMEZONE }));
