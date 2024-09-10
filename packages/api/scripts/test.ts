@@ -19,7 +19,7 @@ async function sync() {
 
 async function appendToKids() {
   const res = await fetch(`${apiUrl}/api/files/kids.md`, {
-    method: "POST",
+    method: "PATCH",
     headers: {
       Authorization: "Bearer " + jwt,
     },

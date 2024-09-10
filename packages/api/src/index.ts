@@ -186,10 +186,12 @@ app.patch("/api/files/:path(*)", (req: Request, res) => {
   const { method, content } = req.body;
 
   if (!method || !content) {
+    log.error("Method and content are required", req.body);
     return res.status(400).json({ error: "Method and content are required" });
   }
 
   if (!fs.existsSync(filePath)) {
+    log.error("File not found", filePath);
     return res.status(404).json({ error: "File not found" });
   }
 
@@ -204,6 +206,7 @@ app.patch("/api/files/:path(*)", (req: Request, res) => {
       fs.writeFileSync(filePath, content);
       break;
     default:
+      log.error("Invalid method", method);
       return res.status(400).json({ error: "Invalid method" });
   }
   if (COMMIT_ON_SAVE) commitAndPush(filePath);
