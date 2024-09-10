@@ -15,8 +15,13 @@ import cors from "cors";
 function flattenOptionalParams(optionalParams: any[]) {
   return optionalParams.map((param) => {
     if (typeof param === "object") {
-      return JSON.stringify(param);
-    } else if (typeof param === "string" && param.includes("\n")) {
+      try {
+        return JSON.stringify(param);
+      } catch (e) {
+        param = param.toString();
+      }
+    }
+    if (typeof param === "string" && param.includes("\n")) {
       return param.replace(/\n/g, " ");
     }
     return param;
