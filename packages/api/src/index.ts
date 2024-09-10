@@ -83,11 +83,12 @@ function gitSync() {
 if (SYNC_ENABLED) {
   setInterval(() => {
     try {
+      log.info("Syncing git on interval");
       gitSync();
     } catch (error) {
       log.error("Error during recurring git pull rebase:", error);
     }
-  }, 1000 * 60 * 2);
+  }, 1000 * 10);
 }
 
 app.use(express.json());
