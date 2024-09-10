@@ -53,8 +53,12 @@ log.info("env:", {
 function commitAndPush(filePath: string, message?: string) {
   message = message || `Save ${filePath}`;
   try {
-    execSync(`git add ${filePath} && git commit -m "${message}"`);
-    execSync(`git push`);
+    const add = execSync(`git add ${filePath}`, { encoding: "utf-8" });
+    log.info("Add output:", add.trim());
+    const commit = execSync(`git commit -m "${message}"`, { encoding: "utf-8" });
+    log.info("Commit output:", commit.trim());
+    const push = execSync(`git push`, { encoding: "utf-8" });
+    log.info("Push output:", push.trim());
   } catch (error) {
     log.error("Error during git commit and push:", error);
   }
