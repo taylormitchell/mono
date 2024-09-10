@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { generateJwt } from "../src/jwt";
+import { format } from "date-fns-tz";
 
 dotenv.config();
 // const apiUrl = "http://localhost:3077";
@@ -38,4 +39,5 @@ async function appendToKids() {
   }
 }
 
-appendToKids();
+const date = new Date("2024-09-09T18:04:03-06:00");
+console.log(format(date, "yyyy-MM-dd'T'HH:mm:ssxxx", { timeZone: "Canada/Eastern" }));
