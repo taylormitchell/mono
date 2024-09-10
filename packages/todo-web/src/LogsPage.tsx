@@ -29,7 +29,7 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
       const response = await fetch(`${apiUrl}/api/log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
-        body: JSON.stringify({ logEntry, datetime: logEntry.datetime.toISOString() }),
+        body: JSON.stringify({ ...logEntry, datetime: logEntry.datetime.toISOString() }),
       });
 
       if (!response.ok) {
