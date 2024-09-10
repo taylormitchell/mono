@@ -24,6 +24,17 @@ console.log("env:", {
   ADMIN_PASSWORD,
 });
 
+function flattenOptionalParams(optionalParams: any[]) {
+  return optionalParams.map((param) => {
+    if (typeof param === "object") {
+      return JSON.stringify(param);
+    } else if (typeof param === "string" && param.includes("\n")) {
+      return param.replace(/\n/g, " ");
+    }
+    return param;
+  });
+}
+
 const log = {
   info: (message?: any, ...optionalParams: any[]) => {
     const flat = flattenOptionalParams(optionalParams);
@@ -78,17 +89,6 @@ if (SYNC_ENABLED) {
 app.use(express.json());
 app.use(cors());
 app.use(express.static(getRootDir()));
-
-function flattenOptionalParams(optionalParams: any[]) {
-  return optionalParams.map((param) => {
-    if (typeof param === "object") {
-      return JSON.stringify(param);
-    } else if (typeof param === "string" && param.includes("\n")) {
-      return param.replace(/\n/g, "\\n");
-    }
-    return param;
-  });
-}
 
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (AUTH_DISABLED) {
