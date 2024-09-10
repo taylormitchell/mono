@@ -5,6 +5,7 @@ git push
 cp .env .env.production
 echo "AUTH_DISABLED=false" >> .env.production
 echo "COMMIT_ON_SAVE=true" >> .env.production
+echo "SYNC_ENABLED=true" >> .env.production
 scp .env.production ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com:~/code/taylors-tech/packages/api/.env
 rm .env.production
 ssh ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com '

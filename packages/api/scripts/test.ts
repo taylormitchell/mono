@@ -28,8 +28,13 @@ async function appendToKids() {
       content: "test",
     }),
   });
-  const data = await res.json();
-  console.log(data);
+  try {
+    const data = await res.json();
+    console.log(data);
+  } catch (e) {
+    console.log(e);
+    console.log(res);
+  }
 }
 
-sync();
+appendToKids();
