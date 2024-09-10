@@ -52,9 +52,10 @@ function commitAndPush(filePath: string, message?: string) {
 const app = express();
 const port = process.env.PORT || 3077;
 
-function gitPullRebase() {
+function gitSync() {
   const stash = execSync("git stash -u", { encoding: "utf-8" });
   execSync("git pull --rebase");
+  execSync("git push");
   if (!stash.includes("No local changes to save")) {
     execSync("git stash pop");
   }
@@ -62,7 +63,7 @@ function gitPullRebase() {
 
 setInterval(() => {
   try {
-    gitPullRebase();
+    gitSync();
   } catch (error) {
     log.error("Error during recurring git pull rebase:", error);
   }
@@ -363,13 +364,13 @@ app.get("/api", (req: Request, res) => {
   res.send(htmlContent);
 });
 
-app.get("/api/git/rebase", authMiddleware, (req: Request, res) => {
+app.get("/api/git/sync", authMiddleware, (req: Request, res) => {
   try {
-    gitPullRebase();
-    res.status(200).json({ message: "Rebase completed successfully" });
+    gitSync();
+    res.status(200).json({ message: "Synced" });
   } catch (error) {
     log.error("Error during git pull rebase request:", error);
-    res.status(500).json({ error: "Failed to rebase" });
+    res.status(500).json({ error: "Failed to sync" });
   }
 });
 
