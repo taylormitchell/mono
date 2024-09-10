@@ -61,13 +61,15 @@ function gitSync() {
   }
 }
 
-setInterval(() => {
-  try {
-    gitSync();
-  } catch (error) {
-    log.error("Error during recurring git pull rebase:", error);
-  }
-}, 1000 * 60 * 2);
+if (SYNC_ENABLED) {
+  setInterval(() => {
+    try {
+      gitSync();
+    } catch (error) {
+      log.error("Error during recurring git pull rebase:", error);
+    }
+  }, 1000 * 60 * 2);
+}
 
 app.use(express.json());
 app.use(cors());
