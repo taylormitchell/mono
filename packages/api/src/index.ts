@@ -1,29 +1,27 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getRepoRoot, getRootDir } from "@taylor/common/data";
+import { getRootDir } from "@taylor/common/data";
 import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
 import { addTodo, listAllTodos } from "@taylor/common/todo/parsers";
 import fs from "fs";
 import path from "path";
-import { format } from "date-fns";
 import { deserializeTodo } from "@taylor/common/todo/types";
 import { addLogEntry } from "@taylor/common/logs/utils";
 import { LogEntrySchema } from "@taylor/common/logs/types";
 import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
-import { exec, execSync } from "child_process";
+import { execSync } from "child_process";
 import cors from "cors";
 
-const { parsed } = config();
-const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
-const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
-const SYNC_ENABLED = parsed?.SYNC_ENABLED === "true";
-const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
-console.log("env:", {
-  AUTH_DISABLED,
-  COMMIT_ON_SAVE,
-  SYNC_ENABLED,
-  ADMIN_PASSWORD,
-});
+function flattenOptionalParams(optionalParams: any[]) {
+  return optionalParams.map((param) => {
+    if (typeof param === "object") {
+      return JSON.stringify(param);
+    } else if (typeof param === "string" && param.includes("\n")) {
+      return param.replace(/\n/g, " ");
+    }
+    return param;
+  });
+}
 
 const log = {
   info: (message?: any, ...optionalParams: any[]) => {
@@ -40,45 +38,61 @@ const log = {
   },
 };
 
-function commitFile(filePath: string, message?: string) {
+const { parsed } = config();
+const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
+const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
+const SYNC_ENABLED = parsed?.SYNC_ENABLED === "true";
+const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
+log.info("env:", {
+  AUTH_DISABLED,
+  COMMIT_ON_SAVE,
+  SYNC_ENABLED,
+  ADMIN_PASSWORD,
+});
+
+function commitAndPush(filePath: string, message?: string) {
   message = message || `Save ${filePath}`;
-  const log2 = (message: string) => {
-    const messageOneLine = message
-      .split("\n")
-      .map((line) => line.trim())
-      .join(" ");
-    log.info(message);
-    fs.appendFileSync(
-      path.join(getRepoRoot(), "sync.log"),
-      `${format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxx")} - ${messageOneLine}\n`
-    );
-  };
-  exec(`git add ${filePath} && git commit -m "${message}"`, (error, stdout) => {
-    if (error) {
-      log2(`Error: ${error.message}`);
-    } else {
-      log2(stdout);
-    }
-  });
+  try {
+    const add = execSync(`git add ${filePath}`, { encoding: "utf-8" });
+    log.info("Add output:", add.trim());
+    const commit = execSync(`git commit -m "${message}"`, { encoding: "utf-8" });
+    log.info("Commit output:", commit.trim());
+    const push = execSync(`git push`, { encoding: "utf-8" });
+    log.info("Push output:", push.trim());
+  } catch (error) {
+    log.error("Error during git commit and push:", error);
+  }
 }
 
 const app = express();
 const port = process.env.PORT || 3077;
 
+function gitSync() {
+  const stash = execSync("git stash -u", { encoding: "utf-8" });
+  log.info("Stash output:", stash.trim());
+  const pull = execSync("git pull --rebase", { encoding: "utf-8" });
+  log.info("Pull output:", pull.trim());
+  const push = execSync("git push", { encoding: "utf-8" });
+  log.info("Push output:", push.trim());
+  if (!stash.includes("No local changes to save")) {
+    const pop = execSync("git stash pop", { encoding: "utf-8" });
+    log.info("Pop output:", pop.trim());
+  }
+}
+
+if (SYNC_ENABLED) {
+  setInterval(() => {
+    try {
+      gitSync();
+    } catch (error) {
+      log.error("Error during recurring git pull rebase:", error);
+    }
+  }, 1000 * 60 * 2);
+}
+
 app.use(express.json());
 app.use(cors());
 app.use(express.static(getRootDir()));
-
-function flattenOptionalParams(optionalParams: any[]) {
-  return optionalParams.map((param) => {
-    if (typeof param === "object") {
-      return JSON.stringify(param);
-    } else if (typeof param === "string" && param.includes("\n")) {
-      return param.replace(/\n/g, "\\n");
-    }
-    return param;
-  });
-}
 
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (AUTH_DISABLED) {
@@ -99,38 +113,13 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-type RequestWithStashed = Request & { stashed?: boolean };
-
-app.use((req: RequestWithStashed, res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   log.info(`${req.method} ${req.url}`);
-  if (SYNC_ENABLED) {
-    const gitStatus = execSync("git status --porcelain", { encoding: "utf-8" });
-    try {
-      if (gitStatus.trim() !== "") {
-        log.warn("Git repository is dirty. Stashing changes before pull.");
-        execSync(
-          `git stash --include-untracked save "Stashing changes during api request ${new Date().toISOString()}"`,
-          { encoding: "utf-8" }
-        );
-        req.stashed = true;
-        log.info("Changes stashed successfully.");
-      }
-      const pullOutput = execSync("git fetch origin && git rebase --abort origin/main", {
-        encoding: "utf-8",
-      });
-      log.info(`Pull completed: ${pullOutput.trim()}`);
-    } catch (error) {
-      log.error(
-        "Error during git operations:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-    }
-  }
   next();
 });
 
 // Files API
-app.get("/api/files/:path(*)", authMiddleware, (req: RequestWithStashed, res) => {
+app.get("/api/files/:path(*)", authMiddleware, (req: Request, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     if (fs.statSync(filePath).isFile()) {
@@ -179,19 +168,19 @@ app.get("/api/files/:path(*)", authMiddleware, (req: RequestWithStashed, res) =>
   }
 });
 
-app.put("/api/files/:path(*)", (req: RequestWithStashed, res) => {
+app.put("/api/files/:path(*)", (req: Request, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   const content = req.body?.content || "";
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const exists = fs.existsSync(filePath);
   fs.writeFileSync(filePath, content);
-  if (COMMIT_ON_SAVE) commitFile(filePath, exists ? "Update file" : "Create file");
+  if (COMMIT_ON_SAVE) commitAndPush(filePath, exists ? "Update file" : "Create file");
   res
     .status(200)
     .json({ message: exists ? "File updated successfully" : "File created successfully" });
 });
 
-app.patch("/api/files/:path(*)", (req: RequestWithStashed, res) => {
+app.patch("/api/files/:path(*)", (req: Request, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   const { method, content } = req.body;
 
@@ -216,15 +205,15 @@ app.patch("/api/files/:path(*)", (req: RequestWithStashed, res) => {
     default:
       return res.status(400).json({ error: "Invalid method" });
   }
-  if (COMMIT_ON_SAVE) commitFile(filePath);
+  if (COMMIT_ON_SAVE) commitAndPush(filePath);
   res.status(200).json({ message: "File updated successfully" });
 });
 
-app.delete("/api/files/:path(*)", (req: RequestWithStashed, res) => {
+app.delete("/api/files/:path(*)", (req: Request, res) => {
   const filePath = path.join(getRootDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
-    if (COMMIT_ON_SAVE) commitFile(filePath, "Delete file");
+    if (COMMIT_ON_SAVE) commitAndPush(filePath, "Delete file");
     res.status(200).json({ message: "File deleted successfully" });
   } else {
     res.status(404).json({ error: "File not found" });
@@ -240,28 +229,24 @@ app.post("/api/log", authMiddleware, (req, res) => {
   }
   const logEntry = result.data;
   const logPath = addLogEntry(logEntry);
-  if (COMMIT_ON_SAVE) commitFile(logPath, "Add log entry");
+  if (COMMIT_ON_SAVE) commitAndPush(logPath, "Add log entry");
   res.status(201).json({ message: "Log entry added successfully" });
 });
 
 // Note API
-app.get("/api/note/daily", (req: RequestWithStashed, res) => {
+app.get("/api/note/daily", (req: Request, res) => {
   handleNoteRequest("daily", req, res);
 });
 
-app.get("/api/note/weekly", (req: RequestWithStashed, res) => {
+app.get("/api/note/weekly", (req: Request, res) => {
   handleNoteRequest("weekly", req, res);
 });
 
-app.get("/api/note/monthly", (req: RequestWithStashed, res) => {
+app.get("/api/note/monthly", (req: Request, res) => {
   handleNoteRequest("monthly", req, res);
 });
 
-function handleNoteRequest(
-  type: "daily" | "weekly" | "monthly",
-  req: RequestWithStashed,
-  res: Response
-) {
+function handleNoteRequest(type: "daily" | "weekly" | "monthly", req: Request, res: Response) {
   const { date, offset } = req.query;
   try {
     const notePath = getOrCreateJournalNote({
@@ -281,32 +266,32 @@ app.post("/api/note/post/:dir(*)", (req, res) => {
   const content = req.body?.content || "";
   const dirPath = path.join(getRootDir(), dir);
   const filePath = createPost(dirPath, content);
-  if (COMMIT_ON_SAVE) commitFile(filePath, "Create new post");
+  if (COMMIT_ON_SAVE) commitAndPush(filePath, "Create new post");
   res.status(201).json({ message: "Post created successfully", path: filePath });
 });
 
 // Todos API
-app.get("/api/todos", authMiddleware, (req: RequestWithStashed, res) => {
+app.get("/api/todos", authMiddleware, (req: Request, res) => {
   const todos = listAllTodos();
   res.json({ todos });
 });
 
-app.post("/api/todos/today", authMiddleware, (req: RequestWithStashed, res) => {
+app.post("/api/todos/today", authMiddleware, (req: Request, res) => {
   const todayPath = dateToJournalPath(new Date());
   return postTodoHandler(req, res, todayPath);
 });
 
-app.post("/api/todos/someday", authMiddleware, (req: RequestWithStashed, res) => {
+app.post("/api/todos/someday", authMiddleware, (req: Request, res) => {
   const somedayPath = path.join(getRootDir(), "gtd", "someday-maybe.md");
   return postTodoHandler(req, res, somedayPath);
 });
 
-app.post("/api/todos/:path(*)?", authMiddleware, (req: RequestWithStashed, res) => {
+app.post("/api/todos/:path(*)?", authMiddleware, (req: Request, res) => {
   const { path: relativePath } = req.params;
   return postTodoHandler(req, res, path.join(getRootDir(), relativePath));
 });
 
-function postTodoHandler(req: RequestWithStashed, res: Response, filepath?: string) {
+function postTodoHandler(req: Request, res: Response, filepath?: string) {
   let todo;
   try {
     todo = deserializeTodo(req.body);
@@ -317,12 +302,12 @@ function postTodoHandler(req: RequestWithStashed, res: Response, filepath?: stri
   filepath = filepath || path.join(getRootDir(), "gtd", "todo.md");
   console.log("filepath", filepath);
   addTodo(todo, filepath);
-  if (COMMIT_ON_SAVE) commitFile(filepath, "Add todo");
+  if (COMMIT_ON_SAVE) commitAndPush(filepath, "Add todo");
   res.status(201).json({ message: "Todo added successfully", path: filepath });
 }
 
 // Auth API (placeholder)
-app.post("/api/auth/login", (req: RequestWithStashed, res) => {
+app.post("/api/auth/login", (req: Request, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
     res.json({ token: generateJwt() });
@@ -331,7 +316,7 @@ app.post("/api/auth/login", (req: RequestWithStashed, res) => {
   }
 });
 
-app.get("/api", (req: RequestWithStashed, res) => {
+app.get("/api", (req: Request, res) => {
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -389,48 +374,19 @@ app.get("/api", (req: RequestWithStashed, res) => {
   res.send(htmlContent);
 });
 
-app.get("/api/git/rebase", authMiddleware, (req: RequestWithStashed, res) => {
+app.get("/api/git/sync", authMiddleware, (req: Request, res) => {
   try {
-    const stashOutput = execSync("git stash", { encoding: "utf-8" });
-    log.info("Stash output: ", stashOutput);
-
-    const pullOutput = execSync("git pull --rebase", { encoding: "utf-8" });
-    log.info(`Pull output: ${pullOutput}`);
-
-    if (stashOutput.includes("No local changes to save")) {
-      const popOutput = execSync("git stash pop", { encoding: "utf-8" });
-      log.info(`Pop output: ${popOutput}`);
-    }
-
-    res.status(200).json({ message: "Rebase completed successfully" });
+    gitSync();
+    res.status(200).json({ message: "Synced" });
   } catch (error) {
-    const message =
-      "Failed to execute git commands: " +
-      (error instanceof Error ? error.message : "Unknown error");
-    log.error(message);
-    res.status(500).json({ error: message });
-  }
-});
-
-// Clean up
-app.use((req: RequestWithStashed, res, next) => {
-  console.log("next end");
-  if (SYNC_ENABLED && req.stashed) {
-    try {
-      const popOutput = execSync("git stash pop", { encoding: "utf-8" });
-      log.info(`Unstash completed: ${popOutput.trim()}`);
-    } catch (error) {
-      log.error(
-        "Error during git unstash:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-    }
+    log.error("Error during git pull rebase request:", error);
+    res.status(500).json({ error: "Failed to sync" });
   }
 });
 
 // Error handling
-app.use((err: Error, req: RequestWithStashed, res: Response, next: NextFunction) => {
-  console.error(err.stack);
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  log.error(err.stack);
   res.status(500).json({
     error: "Internal server error",
     message: process.env.NODE_ENV === "production" ? undefined : err.message,
@@ -438,5 +394,5 @@ app.use((err: Error, req: RequestWithStashed, res: Response, next: NextFunction)
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  log.info(`Server is running on http://localhost:${port}`);
 });
