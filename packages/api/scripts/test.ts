@@ -21,6 +21,7 @@ async function appendToKids() {
   const res = await fetch(`${apiUrl}/api/files/kids.md`, {
     method: "PATCH",
     headers: {
+      "Content-Type": "application/json",
       Authorization: "Bearer " + jwt,
     },
     body: JSON.stringify({
