@@ -1,5 +1,8 @@
+// const apiUrl = "http://localhost:3077";
+const apiUrl = "http://3.92.45.253";
+
 async function sync() {
-  const res = await fetch("http://localhost:3077/api/git/sync", {
+  const res = await fetch(`${apiUrl}/api/git/sync`, {
     method: "GET",
     headers: {
       Authorization: "Bearer " + process.env.API_KEY,
@@ -10,7 +13,7 @@ async function sync() {
 }
 
 async function appendToKids() {
-  const res = await fetch("http://localhost:3077/api/files/kids.md", {
+  const res = await fetch(`${apiUrl}/api/files/kids.md`, {
     method: "POST",
     headers: {
       Authorization: "Bearer " + process.env.API_KEY,
