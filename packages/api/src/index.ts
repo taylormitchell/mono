@@ -12,18 +12,6 @@ import { config } from "dotenv";
 import { execSync } from "child_process";
 import cors from "cors";
 
-const { parsed } = config();
-const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
-const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
-const SYNC_ENABLED = parsed?.SYNC_ENABLED === "true";
-const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
-console.log("env:", {
-  AUTH_DISABLED,
-  COMMIT_ON_SAVE,
-  SYNC_ENABLED,
-  ADMIN_PASSWORD,
-});
-
 function flattenOptionalParams(optionalParams: any[]) {
   return optionalParams.map((param) => {
     if (typeof param === "object") {
@@ -50,6 +38,18 @@ const log = {
   },
 };
 
+const { parsed } = config();
+const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
+const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
+const SYNC_ENABLED = parsed?.SYNC_ENABLED === "true";
+const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
+log.info("env:", {
+  AUTH_DISABLED,
+  COMMIT_ON_SAVE,
+  SYNC_ENABLED,
+  ADMIN_PASSWORD,
+});
+
 function commitAndPush(filePath: string, message?: string) {
   message = message || `Save ${filePath}`;
   try {
@@ -66,12 +66,8 @@ const port = process.env.PORT || 3077;
 function gitSync() {
   const stash = execSync("git stash -u", { encoding: "utf-8" });
   log.info("Stash output:", stash.trim());
-  const fetch = execSync("git fetch", { encoding: "utf-8" });
-  log.info("Fetch output:", fetch.trim());
-  const rebase = execSync("git rebase origin/main", { encoding: "utf-8" });
-  log.info("Rebase output:", rebase.trim());
-  // const pull = execSync("git pull --rebase", { encoding: "utf-8" });
-  // log.info("Pull output:", pull.trim());
+  const pull = execSync("git pull --rebase", { encoding: "utf-8" });
+  log.info("Pull output:", pull.trim());
   const push = execSync("git push", { encoding: "utf-8" });
   log.info("Push output:", push.trim());
   if (!stash.includes("No local changes to save")) {
@@ -386,7 +382,7 @@ app.get("/api/git/sync", authMiddleware, (req: Request, res) => {
 
 // Error handling
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
+  log.error(err.stack);
   res.status(500).json({
     error: "Internal server error",
     message: process.env.NODE_ENV === "production" ? undefined : err.message,
@@ -394,5 +390,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  log.info(`Server is running on http://localhost:${port}`);
 });
