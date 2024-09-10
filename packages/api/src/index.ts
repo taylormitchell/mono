@@ -66,8 +66,12 @@ const port = process.env.PORT || 3077;
 function gitSync() {
   const stash = execSync("git stash -u", { encoding: "utf-8" });
   log.info("Stash output:", stash.trim());
-  const pull = execSync("git pull --rebase", { encoding: "utf-8" });
-  log.info("Pull output:", pull.trim());
+  const fetch = execSync("git fetch", { encoding: "utf-8" });
+  log.info("Fetch output:", fetch.trim());
+  const rebase = execSync("git rebase origin/main", { encoding: "utf-8" });
+  log.info("Rebase output:", rebase.trim());
+  // const pull = execSync("git pull --rebase", { encoding: "utf-8" });
+  // log.info("Pull output:", pull.trim());
   const push = execSync("git push", { encoding: "utf-8" });
   log.info("Push output:", push.trim());
   if (!stash.includes("No local changes to save")) {
