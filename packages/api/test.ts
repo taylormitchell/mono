@@ -24,4 +24,4 @@ async function appendToKids() {
   console.log(data);
 }
 
-appendToKids();
+sync();
