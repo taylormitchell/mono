@@ -16,7 +16,7 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
     const logEntry: LogEntry = {
       type: logType,
       duration: duration || undefined,
-      datetime: new Date().toISOString(),
+      datetime: new Date(),
       message: message || undefined,
     };
 

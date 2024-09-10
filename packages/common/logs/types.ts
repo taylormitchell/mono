@@ -7,9 +7,17 @@ import { z } from "zod";
 export const LogEntrySchema = z.object({
   type: z.enum(LOG_TYPES),
   datetime: z
-    .string()
-    .datetime()
-    .default(() => new Date().toISOString()),
+    .union([
+      z.date(),
+      z
+        .string()
+        .refine((str) => !isNaN(Date.parse(str)), {
+          message: "Invalid date string",
+          path: ["datetime"],
+        })
+        .transform((str) => new Date(str)),
+    ])
+    .default(() => new Date()),
   duration: z
     .string()
     .regex(/^\d+[hms]$/)
