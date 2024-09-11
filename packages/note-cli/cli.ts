@@ -47,8 +47,12 @@ program
   .option("-m, --message <content>", "content of the post")
   .description("Create a new post with optional content")
   .action((p: string | undefined, options: Partial<{ message: string }>) => {
-    if (p !== undefined) {
-      p = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+    if (p !== undefined && !path.isAbsolute(p)) {
+      if (p.startsWith("@")) {
+        p = path.join(getRootDir(), p.slice(1));
+      } else {
+        p = path.join(process.cwd(), p);
+      }
     }
     p = createPost(p, options.message);
     if (!options.message) {
