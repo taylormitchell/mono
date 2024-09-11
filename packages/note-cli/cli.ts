@@ -31,7 +31,9 @@ function parseDateOrOffset(dateOrOffset: string): Date | number {
   } else if (!isNaN(parseInt(dateOrOffset))) {
     return parseInt(dateOrOffset);
   } else {
-    throw new Error("Invalid input: must be a date in YYYY-MM-DD format or a number");
+    throw new Error(
+      `Invalid input: must be a date in YYYY-MM-DD format or a number. Received: ${dateOrOffset}`
+    );
   }
 }
 
@@ -81,10 +83,11 @@ program
   });
 
 program
-  .command("weekly")
-  .description("Open or create this week's note")
-  .action(() => {
-    const path = getOrCreateWeeklyNote();
+  .command("weekly [dateOrOffset]")
+  .description("Open or create this week's note with optional date or offset from today")
+  .action((dateOrOffset) => {
+    const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
+    const path = getOrCreateWeeklyNote(date);
     execSync(`cursor ${path}`);
   });
 
