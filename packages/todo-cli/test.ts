@@ -20,4 +20,3 @@ last
 // console.log(m);
 
 listTodosDueToday(getRootDir(), 0, true);
-// console.log(getTodos(getRootDir()));

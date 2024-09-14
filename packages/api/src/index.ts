@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import { getRootDir } from "@taylor/common/data";
 import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
-import { addTodo, listAllTodos } from "@taylor/common/todo/parsers";
+import { addTodo, getTodos } from "@taylor/common/todo/parsers";
 import fs from "fs";
 import path from "path";
 import { deserializeTodo } from "@taylor/common/todo/types";
@@ -282,7 +282,7 @@ app.post("/api/note/post/:dir(*)", (req, res) => {
 
 // Todos API
 app.get("/api/todos", authMiddleware, (req: Request, res) => {
-  const todos = listAllTodos();
+  const todos = getTodos();
   res.json({ todos });
 });
 

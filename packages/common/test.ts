@@ -14,7 +14,7 @@ const md = `
 
 // testDailyNoteTemplate();
 
-// listAllTodos();
+// getTodos();
 
 const date = new Date();
 date.setDate(date.getDate() + 1);

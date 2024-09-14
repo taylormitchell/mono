@@ -137,32 +137,6 @@ export function parseMarkdownFile(filename: string): Todo[] {
   return todos.map((todo) => ({ ...todo, due: todo.due || date, filename }));
 }
 
-export function getTodos(pathname?: string, ignore = true): Todo[] {
-  pathname = pathname || getRootDir();
-  let files: string[];
-
-  if (fs.statSync(pathname).isDirectory()) {
-    files = glob.sync(path.join(pathname, "**/*.md"));
-  } else if (pathname.endsWith(".md")) {
-    files = [pathname];
-  } else {
-    console.error(chalk.red(`Invalid path: ${pathname}. Must be a directory or a .md file.`));
-    return [];
-  }
-
-  // ignore test files
-  if (ignore) {
-    files = files.filter((file) => !file.includes("test.md"));
-  }
-
-  return files
-    .flatMap((file) => parseMarkdownFile(file))
-    .map((todo) => ({
-      ...todo,
-      relativeFilename: todo.filename ? path.relative(getRootDir(), todo.filename) : undefined,
-    }));
-}
-
 function todoToMarkdown(todo: Todo): string {
   return `${todo.status} ${todo.text} ${
     todo.due ? `{due: ${todo.due.toISOString().split("T")[0]}}` : ""
@@ -191,7 +165,7 @@ export function addTodo(todo: Todo, filepath?: string): string {
   return filepath;
 }
 
-function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
+export function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
   return arr.reduce((acc, todo) => {
     const value = todo[key as keyof Todo];
     if (!acc.has(value)) {
@@ -202,15 +176,16 @@ function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
   }, new Map<any, Todo[]>());
 }
 
-export function listAllTodos(rootPath?: string): Todo[] {
-  const todos: Todo[] = [];
-  const root = rootPath || getRootDir();
+export function getTodos(rootPath?: string, ignore = true): Todo[] {
+  const root = rootPath ? path.resolve(rootPath) : getRootDir();
   const files = glob.sync(`${root}/**/*.md`);
-  for (const file of files) {
-    const fileTodos = parseMarkdownFile(file);
-    todos.push(...fileTodos);
-  }
-  return todos;
+  return files
+    .filter((file) => (ignore ? !file.includes("test.md") : true))
+    .flatMap((file) => parseMarkdownFile(file))
+    .map((todo) => ({
+      ...todo,
+      relativeFilename: todo.filename ? path.relative(getRootDir(), todo.filename) : undefined,
+    }));
 }
 
 /**
