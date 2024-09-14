@@ -192,7 +192,7 @@ export function getTodos(rootPath?: string, ignore = true): Todo[] {
  * Compares two dates and returns true if the first date is less than or equal to the second date
  * Only compares year, month, and day.
  */
-function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
+export function lessThanOrEqualTo(date1: Date, date2: Date): boolean {
   return date1.toISOString().split("T")[0] <= date2.toISOString().split("T")[0];
 }
 
