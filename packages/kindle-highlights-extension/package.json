@@ -1,0 +1,18 @@
+{
+  "name": "kindle-highlights-extension",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "cp manifest.json out/manifest.json && bun build src/background.ts --outdir out"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/chrome": "^0.0.271"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "dom-parser": "^1.1.5"
+  }
+}
