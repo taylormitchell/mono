@@ -155,7 +155,7 @@ export function getOrCreateJournalNote({
       content = templateContent.replace("{{date}}", targetDate.toDateString());
       break;
     case "weekly":
-      content = templateContent.replace("{{date}}", targetDate.toDateString());
+      content = templateContent.replace("{{date}}", "Week of " + targetDate.toDateString());
       break;
     case "monthly":
       const monthName = targetDate.toLocaleString("default", { month: "long" });
