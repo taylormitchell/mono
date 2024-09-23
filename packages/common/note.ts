@@ -141,8 +141,14 @@ export function getOrCreateJournalNote({
     return filepath;
   }
 
-  let templateContent = fs.readFileSync(templatePath, "utf-8");
+  // Use template on weekdays, otherwise just use the date
+  let templateContent = "";
   let content: string;
+  if (targetDate.getDay() > 0 && targetDate.getDay() < 6) {
+    templateContent = fs.readFileSync(templatePath, "utf-8");
+  } else {
+    templateContent = "# {{date}}";
+  }
 
   switch (type) {
     case "daily":

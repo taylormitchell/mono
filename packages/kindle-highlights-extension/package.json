@@ -3,7 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "cp manifest.json out/manifest.json && bun build src/background.ts --outdir out"
+    "build": "bun build src/*.ts --outdir dist"
   },
   "devDependencies": {
     "@types/bun": "latest",
