@@ -2,7 +2,11 @@ import type { Annotation, Book } from "./types";
 
 chrome.runtime.onMessage.addListener((message) => {
   console.debug("received message", message);
-  if (message.target !== "offscreen") return;
+  if (!message.messageId) {
+    console.warn("message has no messageId", message);
+    return;
+  }
+
   if (message.type === "get-annotations") {
     console.debug("get-annotations", message);
     const { html } = message.data;
@@ -40,7 +44,6 @@ chrome.runtime.onMessage.addListener((message) => {
 
     console.debug("annotations", annotations);
     chrome.runtime.sendMessage({
-      arget: "background",
       messageId: message.messageId,
       data: annotations,
     });
@@ -63,5 +66,7 @@ chrome.runtime.onMessage.addListener((message) => {
       messageId: message.messageId,
       data: books,
     });
+  } else {
+    console.warn("unsupported message type", message);
   }
 });

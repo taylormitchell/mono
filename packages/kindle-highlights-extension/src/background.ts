@@ -88,7 +88,6 @@ async function fetchFromOffscreenDocument<T>({
   chrome.runtime.sendMessage({
     type,
     messageId,
-    target: "offscreen",
     data,
   });
   return new Promise((resolve) => {
