@@ -1,41 +1,67 @@
+import type { Annotation, Book } from "./types";
+
 chrome.runtime.onMessage.addListener((message) => {
+  console.debug("received message", message);
   if (message.target !== "offscreen") return;
   if (message.type === "get-annotations") {
+    console.debug("get-annotations", message);
     const { html } = message.data;
     const document = new DOMParser().parseFromString(html, "text/html");
-    const annotationElements = document.querySelectorAll("#annotations .annotation");
-    const annotations = [];
-    for (const annotationElement of Array.from(annotationElements)) {
-      const highlightElement = annotationElement.querySelector(".highlight");
-      const noteElement = annotationElement.querySelector(".note");
-      annotations.push({
-        highlight: highlightElement?.textContent,
-        note: noteElement?.textContent,
-      });
+
+    const annotations: Annotation[] = [];
+    const annotationElements =
+      document.querySelectorAll("#kp-notebook-annotations > div[id^=Q]") ?? [];
+    console.debug("annotationElements", annotationElements);
+    for (const el of Array.from(annotationElements)) {
+      // Find highlight text
+      let highlight = "";
+      try {
+        const highlightSpan = el.querySelector("#highlight");
+        highlight = highlightSpan?.textContent?.trim() ?? "";
+      } catch (e) {
+        console.error(e);
+      }
+
+      // Find note text
+      let note = "";
+      try {
+        const noteSpan = el.querySelector("#note");
+        note = noteSpan?.textContent?.trim() ?? "";
+      } catch (e) {
+        console.error(e);
+      }
+
+      if (el.id && (highlight || note)) {
+        annotations.push({ id: el.id, highlight, note });
+      } else {
+        console.warn("missing id, highlight, or note", el);
+      }
     }
+
+    console.debug("annotations", annotations);
     chrome.runtime.sendMessage({
-      type: "annotations-parsed",
-      target: "background",
+      arget: "background",
       messageId: message.messageId,
-      data: {
-        annotations,
-      },
+      data: annotations,
     });
-  } else if (message.type === "get-asins") {
+  } else if (message.type === "get-books") {
     const { html } = message.data;
     const document = new DOMParser().parseFromString(html, "text/html");
-    const asins = [];
-    const asinElements = document.querySelectorAll(".asin");
-    for (const asinElement of Array.from(asinElements)) {
-      asins.push(asinElement.textContent);
-    }
+    const bookElements = document.querySelectorAll(".kp-notebook-library-each-book");
+    const books: Book[] = Array.from(bookElements).map((element) => {
+      const asin = element.id;
+      const title = element.querySelector("h2")?.textContent?.trim() ?? "";
+      const authorElement = Array.from(element.querySelectorAll("p")).find((el) =>
+        el.textContent?.trim().startsWith("By:")
+      );
+      const author = authorElement?.textContent?.trim().replace(/^By:\s*/, "") ?? "";
+      return { asin, title, author };
+    });
+    console.debug("books", books);
+
     chrome.runtime.sendMessage({
-      type: "asins-parsed",
-      target: "background",
       messageId: message.messageId,
-      data: {
-        asins,
-      },
+      data: books,
     });
   }
 });

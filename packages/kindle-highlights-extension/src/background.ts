@@ -1,9 +1,11 @@
+import type { Annotation, Book } from "./types";
+
 console.log("Kindle Highlights Extractor extension is running!");
 
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Extension installed!!!");
   //   chrome.alarms.create("fetchHighlights", { periodInMinutes: 1 / 6 });
-  //   fetchHighlights();
+  fetchHighlights();
 });
 
 // chrome.alarms.onAlarm.addListener((alarm) => {
@@ -25,36 +27,55 @@ async function fetchHighlights() {
       credentials: "include",
     });
     const html = await response.text();
-    const asins = await sendMessageToOffscreenDocument({ type: "get-asins", data: { html } });
+    const books = await fetchFromOffscreenDocument<Book[]>({
+      type: "get-books",
+      data: { html },
+    });
 
-    const bookAnnotations: { asin: string; html: string; annotations: any[] }[] = await Promise.all(
-      asins.map(async (asin) => {
-        console.log("fetching", asin);
-        const response = await fetch(
-          `https://read.amazon.com/notebook?asin=${asin}&contentLimitState=&`,
-          {
-            method: "GET",
-            headers: {
-              Cookie: cookieHeader,
-            },
-            credentials: "include",
-          }
-        );
-        const html = await response.text();
-        console.log("getting annotations for", asin);
-        return {
-          asin,
-          html,
-          annotations: sendMessageToOffscreenDocument({ type: "get-annotations", data: { html } }),
-        };
-      })
-    );
+    const bookAnnotations = (
+      await Promise.all(
+        books.slice(0, 2).map(async (book) => {
+          console.log("fetching", book);
+          const response = await fetch(
+            `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
+            {
+              method: "GET",
+              headers: {
+                Cookie: cookieHeader,
+              },
+              credentials: "include",
+            }
+          );
+          const html = await response.text();
+          console.log("getting annotations for", book.asin);
+          const annotations = await fetchFromOffscreenDocument<Annotation[]>({
+            type: "get-annotations",
+            data: { html },
+          });
+          return annotations.map((annotation) => ({ ...annotation, ...book }));
+        })
+      )
+    )
+      .flat()
+      .sort((a, b) => {
+        if (a.asin < b.asin) return -1;
+        if (a.asin > b.asin) return 1;
+        if (a.id < b.id) return -1;
+        if (a.id > b.id) return 1;
+        return 0;
+      });
 
     console.log(bookAnnotations);
   });
 }
 
-async function sendMessageToOffscreenDocument({ type, data }: { type: string; data: any }) {
+async function fetchFromOffscreenDocument<T>({
+  type,
+  data,
+}: {
+  type: string;
+  data: any;
+}): Promise<T> {
   const hasOffscreen = await chrome.offscreen.hasDocument();
   if (!hasOffscreen) {
     await chrome.offscreen.createDocument({
@@ -72,7 +93,7 @@ async function sendMessageToOffscreenDocument({ type, data }: { type: string; da
   });
   return new Promise((resolve) => {
     const listener = (message: any) => {
-      if (message.messageId === messageId && message.target === "background") {
+      if (message.messageId === messageId) {
         chrome.runtime.onMessage.removeListener(listener);
         resolve(message.data);
       }
