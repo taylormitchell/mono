@@ -85,11 +85,7 @@ async function fetchFromOffscreenDocument<T>({
     });
   }
   const messageId = Math.random();
-  chrome.runtime.sendMessage({
-    type,
-    messageId,
-    data,
-  });
+  chrome.runtime.sendMessage({ type, messageId, data });
   return new Promise((resolve) => {
     const listener = (message: any) => {
       if (message.messageId === messageId) {
