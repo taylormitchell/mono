@@ -3,11 +3,12 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build src/*.ts --outdir dist"
+    "build": "concurrently \"bun --watch run scripts/build-manifest.ts\" \"bun --watch build src/*.ts --outdir dist\""
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/chrome": "^0.0.271"
+    "@types/chrome": "^0.0.271",
+    "concurrently": "^9.0.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

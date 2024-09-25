@@ -1,3 +1,4 @@
+import { updateBadge } from "./helpers";
 import type { Annotation, Book } from "./types";
 
 console.log("Kindle Highlights Extractor extension is running!");
@@ -5,15 +6,20 @@ console.log("Kindle Highlights Extractor extension is running!");
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Extension installed!!!");
   //   chrome.alarms.create("fetchHighlights", { periodInMinutes: 1 / 6 });
-  fetchHighlights();
+  chrome.alarms.create("checkLoginStatus", { periodInMinutes: 1 / 6 });
+  //   fetchHighlights();
+  //   checkLoginStatus();
+  updateBadge();
 });
 
-// chrome.alarms.onAlarm.addListener((alarm) => {
-//   if (alarm.name === "fetchHighlights") {
-//     console.log("Fetching highlights...");
-//     fetchHighlights();
-//   }
-// });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "fetchHighlights") {
+    console.log("Fetching highlights...");
+    fetchHighlights();
+  } else if (alarm.name === "checkLoginStatus") {
+    updateBadge();
+  }
+});
 
 async function fetchHighlights() {
   chrome.cookies.getAll({ domain: "read.amazon.com" }, async (cookies) => {
@@ -34,8 +40,8 @@ async function fetchHighlights() {
 
     const bookAnnotations = (
       await Promise.all(
-        books.slice(0, 2).map(async (book) => {
-          console.log("fetching", book);
+        books.map(async (book) => {
+          console.debug("fetching", book);
           const response = await fetch(
             `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
             {
@@ -47,7 +53,7 @@ async function fetchHighlights() {
             }
           );
           const html = await response.text();
-          console.log("getting annotations for", book.asin);
+          console.debug("getting annotations for", book.asin);
           const annotations = await fetchFromOffscreenDocument<Annotation[]>({
             type: "get-annotations",
             data: { html },
