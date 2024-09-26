@@ -96,8 +96,12 @@ if (SYNC_ENABLED) {
   }, 1000 * 60 * 2);
 }
 
-app.use(express.json({ limit: "50mb" }));
 app.use(cors());
+app.use((req: Request, res: Response, next: NextFunction) => {
+  log.info(`${req.method} ${req.url}`);
+  next();
+});
+app.use(express.json({ limit: "50mb" }));
 app.use(express.static(getRootDir()));
 
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -118,11 +122,6 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 }
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  log.info(`${req.method} ${req.url}`);
-  next();
-});
 
 // Files API
 app.get("/api/files/:path(*)", authMiddleware, (req: Request, res) => {
