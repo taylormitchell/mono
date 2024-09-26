@@ -1,5 +1,5 @@
 import { GET_AUTH_API_URL } from "./env";
-import { updateBadge } from "./helpers";
+import { updateBadge } from "./shared";
 
 document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");

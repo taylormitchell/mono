@@ -1,4 +1,4 @@
-import type { Annotation, Book } from "./types";
+import type { Annotation, Book } from "./shared";
 
 chrome.runtime.onMessage.addListener((message) => {
   console.debug("received message", message);

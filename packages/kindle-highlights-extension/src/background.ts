@@ -1,39 +1,30 @@
 import { PUT_HIGHLIGHTS_API_URL } from "./env";
-import { updateBadge } from "./helpers";
-import type { Annotation, Book } from "./types";
-
-console.log("Kindle Highlights Extractor extension is running!");
+import { updateBadge } from "./shared";
+import type { Annotation, Book } from "./shared";
 
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log("Extension installed!!!");
-  //   chrome.alarms.create("fetchHighlights", { periodInMinutes: 1 / 6 });
-  chrome.alarms.create("checkLoginStatus", { periodInMinutes: 1 });
-  //   checkLoginStatus();
+  console.log("Kindle Highlights Extractor extension is running");
+  chrome.alarms.create("syncHighlights", { periodInMinutes: 24 * 60 });
+  chrome.alarms.create("checkLoginStatus", { periodInMinutes: 60 });
   updateBadge();
-  getAndPutHighlights();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "fetchHighlights") {
-    console.log("Fetching highlights...");
-    fetchHighlights();
+  if (alarm.name === "syncHighlights") {
+    chrome.storage.local.get("token", async (data) => {
+      if (!data.token) {
+        console.error("No token found");
+        return;
+      }
+      console.log("Getting highlights...");
+      const highlights = await fetchHighlights();
+      console.log("Putting highlights...");
+      await putHighlights(highlights, data.token);
+    });
   } else if (alarm.name === "checkLoginStatus") {
     updateBadge();
   }
 });
-
-async function getAndPutHighlights() {
-  chrome.storage.local.get("token", async (data) => {
-    if (!data.token) {
-      console.error("No token found");
-      return;
-    }
-    console.log("Getting highlights...");
-    const highlights = await fetchHighlights();
-    console.log("Putting highlights...");
-    await putHighlights(highlights, data.token);
-  });
-}
 
 async function fetchHighlights(): Promise<Annotation[]> {
   return new Promise((resolve, reject) => {
