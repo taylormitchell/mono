@@ -7,7 +7,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.local.set({ startedAt: new Date().toISOString() });
   chrome.alarms.create("syncHighlights", { periodInMinutes: syncInterval });
   chrome.alarms.create("checkLoginStatus", { periodInMinutes: 60 });
-  //   fetchHighlights();
+  fetchHighlights();
   renderBadge();
 });
 

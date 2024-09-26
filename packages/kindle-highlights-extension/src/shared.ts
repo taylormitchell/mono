@@ -12,10 +12,7 @@ export async function renderBadge() {
 
 export function readAmazonAccessible() {
   return new Promise<boolean>((resolve) => {
-    fetch("https://read.amazon.com/notebook", {
-      method: "GET",
-      credentials: "include",
-    })
+    fetch("https://read.amazon.com/notebook")
       .then((response) => {
         resolve(response.ok);
       })
