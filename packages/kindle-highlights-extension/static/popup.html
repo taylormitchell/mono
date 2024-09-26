@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kindle Highlights Extension</title>
+    <style>
+      body {
+        width: 300px;
+        padding: 10px;
+      }
+      input,
+      button {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      #loginForm,
+      #loggedInContent {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Kindle Highlights Extension</h2>
+    <div id="apiAuth">
+      <h3>API Auth</h3>
+      <div id="loginForm">
+        <h2>Login</h2>
+        <input type="password" id="password" placeholder="Password" />
+        <button id="loginButton">Login</button>
+      </div>
+      <div id="loggedInContent">
+        <p>You are logged in.</p>
+        <button id="logoutButton">Logout</button>
+      </div>
+    </div>
+    <div id="amazonAuth">
+      <h3>Amazon Auth</h3>
+      <p id="amazonAuthStatus">ok</p>
+    </div>
+    <div id="status"></div>
+    <div>
+      <span>Last Synced:</span>
+      <span id="lastSyncTime"></span>
+    </div>
+    <div>
+      <span>Next Sync:</span>
+      <span id="nextSyncTime"></span>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
