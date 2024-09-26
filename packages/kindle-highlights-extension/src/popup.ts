@@ -1,5 +1,5 @@
 import { GET_AUTH_API_URL } from "./env";
-import { updateBadge } from "./shared";
+import { readAmazonAccessible, updateBadge } from "./shared";
 
 document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");
@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const logoutButton = document.getElementById("logoutButton");
   const passwordInput = document.getElementById("password") as HTMLInputElement;
   const statusDiv = document.getElementById("status");
+  const amazonAuthStatus = document.getElementById("amazonAuthStatus");
 
   let page: "login" | "loggedIn" = "login";
 
@@ -17,11 +18,20 @@ document.addEventListener("DOMContentLoaded", function () {
     !loginButton ||
     !logoutButton ||
     !passwordInput ||
-    !statusDiv
+    !statusDiv ||
+    !amazonAuthStatus
   ) {
     console.error("Missing elements in DOM");
     return;
   }
+
+  updateBadge();
+
+  readAmazonAccessible().then((isAccessible) => {
+    amazonAuthStatus.innerHTML = isAccessible
+      ? "ok"
+      : 'got to <a href="https://read.amazon.com/notebook" target="_blank">https://read.amazon.com/notebook</a> and login';
+  });
 
   // Check if user is logged in
   chrome.storage.local.get("token", (result) => {

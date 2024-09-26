@@ -29,15 +29,16 @@ async function fetchHighlights(): Promise<void> {
       // Load read.amazon.com cookies
       chrome.cookies.getAll({ domain: "read.amazon.com" }, async (cookies) => {
         const cookieHeader = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+        console.debug("Cookie header", cookieHeader);
 
         // Get list of books
         console.debug("Getting books");
         const booksResponse = await fetch("https://read.amazon.com/notebook", {
           method: "GET",
-          headers: {
-            Cookie: cookieHeader,
-          },
-          credentials: "include",
+          //   headers: {
+          //     Cookie: cookieHeader,
+          //   },
+          //   credentials: "include",
         });
         const html = await booksResponse.text();
         const books = await parseHtml<Book[]>({ type: "get-books", html });
