@@ -28,7 +28,9 @@ async function getAndPutHighlights() {
       console.error("No token found");
       return;
     }
+    console.log("Getting highlights...");
     const highlights = await fetchHighlights();
+    console.log("Putting highlights...");
     await putHighlights(highlights, data.token);
   });
 }
