@@ -1,5 +1,5 @@
 import { GET_AUTH_API_URL } from "./env";
-import { readAmazonAccessible, updateBadge } from "./shared";
+import { checkHaveToken, readAmazonAccessible, updateBadge } from "./shared";
 
 document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");
@@ -33,9 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
       : 'got to <a href="https://read.amazon.com/notebook" target="_blank">https://read.amazon.com/notebook</a> and login';
   });
 
-  // Check if user is logged in
-  chrome.storage.local.get("token", (result) => {
-    if (result.token) {
+  checkHaveToken().then((hasToken) => {
+    if (hasToken) {
       showLoggedInContent();
     } else {
       showLoginForm();
@@ -98,3 +97,49 @@ document.addEventListener("DOMContentLoaded", function () {
     statusDiv.textContent = "";
   }
 });
+
+function popup({
+  apiAuth,
+  amazonAuth,
+  status,
+}: {
+  apiAuth: boolean;
+  amazonAuth: boolean;
+  status: string;
+}) {
+  return `
+    <h2>Kindle Highlights Extension</h2>
+    <div id="apiAuth">
+      <h3>API Auth</h3>
+      ${
+        apiAuth
+          ? `
+            <div>
+              <h2>Login</h2>
+              <input type="password" id="password" placeholder="Password" />
+              <button id="loginButton">Login</button>
+            </div>
+          `
+          : `
+            <div>
+              <p>You are logged in.</p>
+              <button id="logoutButton">Logout</button>
+            </div>
+          `
+      }
+    </div>
+    <div id="amazonAuth">
+      <h3>Amazon Auth</h3>
+      ${
+        amazonAuth
+          ? `
+            <p>ok</p>
+          `
+          : `
+            <p>got to <a href="https://read.amazon.com/notebook" target="_blank">https://read.amazon.com/notebook</a> and login</p>
+          `
+      }
+    </div>
+    <div id="status">${status}</div>
+  `;
+}

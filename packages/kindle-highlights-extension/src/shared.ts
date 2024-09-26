@@ -1,27 +1,19 @@
 export async function updateBadge() {
-  const isAmazonAccessible = await readAmazonAccessible();
-  if (!isAmazonAccessible) {
-    return showBadge();
+  if (!(await readAmazonAccessible()) || !(await checkHaveToken())) {
+    chrome.action.setBadgeText({ text: "!" });
+    chrome.action.setBadgeBackgroundColor({ color: "#FF0000" });
+  } else {
+    chrome.action.setBadgeText({ text: "" });
+    chrome.action.setBadgeBackgroundColor({ color: "#00FF00" });
   }
-  const haveToken = new Promise<boolean>((resolve) => {
+}
+
+export function checkHaveToken() {
+  return new Promise<boolean>((resolve) => {
     chrome.storage.local.get("token", (result) => {
       resolve(!!result.token);
     });
   });
-  if (!haveToken) {
-    return showBadge();
-  }
-  hideBadge();
-}
-
-function showBadge() {
-  chrome.action.setBadgeText({ text: "!" });
-  chrome.action.setBadgeBackgroundColor({ color: "#FF0000" });
-}
-
-function hideBadge() {
-  chrome.action.setBadgeText({ text: "" });
-  chrome.action.setBadgeBackgroundColor({ color: "#00FF00" });
 }
 
 export function readAmazonAccessible() {
