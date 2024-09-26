@@ -1,6 +1,6 @@
 import { writeFileSync } from "fs";
 import { resolve } from "path";
-import { AUTH_API_URL } from "../src/env";
+import { GET_AUTH_API_URL } from "../src/env";
 
 const manifest = {
   manifest_version: 3,
@@ -17,9 +17,9 @@ const manifest = {
     "offscreen",
     "storage",
     "https://read.amazon.com/*",
-    AUTH_API_URL,
+    GET_AUTH_API_URL,
   ],
-  host_permissions: ["https://read.amazon.com/*", AUTH_API_URL],
+  host_permissions: ["https://read.amazon.com/*", GET_AUTH_API_URL],
   background: {
     service_worker: "background.js",
   },

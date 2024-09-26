@@ -1,4 +1,4 @@
-import { AUTH_API_URL } from "./env";
+import { GET_AUTH_API_URL } from "./env";
 import { updateBadge } from "./helpers";
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const password = passwordInput.value;
 
     try {
-      const response = await fetch(AUTH_API_URL, {
+      const response = await fetch(GET_AUTH_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
