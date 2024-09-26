@@ -19,15 +19,21 @@ chrome.runtime.onInstalled.addListener(async () => {
         Authorization: `Bearer ${data.token}`,
       },
       body: JSON.stringify({
-        highlights: [
+        content: JSON.stringify(
           {
-            asin: "B07VGRYD1M",
-            id: "01HFFZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5",
-            text: "This is a test highlight",
-            location: "100",
-            createdAt: "2024-09-25T12:00:00Z",
+            highlights: [
+              {
+                asin: "B07VGRYD1M",
+                id: "01HFFZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5",
+                text: "This is a test highlight",
+                location: "100",
+                createdAt: "2024-09-25T12:00:00Z",
+              },
+            ],
           },
-        ],
+          null,
+          2
+        ),
       }),
     });
     if (response.ok) {
