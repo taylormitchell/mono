@@ -8,13 +8,9 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/chrome": "^0.0.271",
-    "concurrently": "^9.0.1"
+    "chokidar": "^4.0.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "chokidar": "^4.0.1",
-    "dom-parser": "^1.1.5"
   }
 }
