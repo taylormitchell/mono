@@ -1,3 +1,4 @@
+import { PUT_HIGHLIGHTS_API_URL } from "./env";
 import { updateBadge } from "./helpers";
 import type { Annotation, Book } from "./types";
 
@@ -7,9 +8,37 @@ chrome.runtime.onInstalled.addListener(async () => {
   console.log("Extension installed!!!");
   //   chrome.alarms.create("fetchHighlights", { periodInMinutes: 1 / 6 });
   chrome.alarms.create("checkLoginStatus", { periodInMinutes: 1 / 6 });
-  //   fetchHighlights();
   //   checkLoginStatus();
   updateBadge();
+  chrome.storage.local.get("token", async (data) => {
+    console.log(data);
+    const response = await fetch(PUT_HIGHLIGHTS_API_URL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${data.token}`,
+      },
+      body: JSON.stringify({
+        highlights: [
+          {
+            asin: "B07VGRYD1M",
+            id: "01HFFZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5",
+            text: "This is a test highlight",
+            location: "100",
+            createdAt: "2024-09-25T12:00:00Z",
+          },
+        ],
+      }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log(data);
+    } else {
+      console.error("Failed to put highlights");
+    }
+  });
+
+  //   fetchHighlights();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
