@@ -26,65 +26,57 @@ async function fetchHighlights(): Promise<void> {
       if (!data.token) {
         return reject(new Error("No token found"));
       }
-      // Load read.amazon.com cookies
-      chrome.cookies.getAll({ domain: "read.amazon.com" }, async (cookies) => {
-        const cookieHeader = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
-        console.debug("Cookie header", cookieHeader);
+      // Get list of books
+      console.debug("Getting books");
+      const booksResponse = await fetch("https://read.amazon.com/notebook", { method: "GET" });
+      const html = await booksResponse.text();
+      const books = await parseHtml<Book[]>({ type: "get-books", html });
 
-        // Get list of books
-        console.debug("Getting books");
-        const booksResponse = await fetch("https://read.amazon.com/notebook", { method: "GET" });
-        const html = await booksResponse.text();
-        const books = await parseHtml<Book[]>({ type: "get-books", html });
-
-        // Get annotations for each book
-        console.debug("Getting all annotations");
-        const bookAnnotations = (
-          await Promise.all(
-            books.map(async (book) => {
-              const response = await fetch(
-                `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
-                {
-                  method: "GET",
-                  //   headers: {
-                  //     Cookie: cookieHeader,
-                  //   },
-                  //   credentials: "include",
-                }
-              );
-              const html = await response.text();
-              const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
-              return annotations.map((annotation) => ({ ...annotation, ...book }));
-            })
-          )
+      // Get annotations for each book
+      console.debug("Getting all annotations");
+      const bookAnnotations = (
+        await Promise.all(
+          books.map(async (book) => {
+            const response = await fetch(
+              `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
+              {
+                method: "GET",
+              }
+            );
+            const html = await response.text();
+            const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
+            return annotations.map((annotation) => ({ ...annotation, ...book }));
+          })
         )
-          .flat()
-          .sort((a, b) => {
-            if (a.asin < b.asin) return -1;
-            if (a.asin > b.asin) return 1;
-            if (a.id < b.id) return -1;
-            if (a.id > b.id) return 1;
-            return 0;
-          });
-
-        // Save annotations
-        console.debug("Saving annotations");
-        const content = JSON.stringify({ highlights: bookAnnotations }, null, 2);
-        const putResponse = await fetch(PUT_HIGHLIGHTS_API_URL, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.token}`,
-          },
-          body: JSON.stringify({ content }),
+      )
+        .flat()
+        .sort((a, b) => {
+          if (a.asin < b.asin) return -1;
+          if (a.asin > b.asin) return 1;
+          if (a.id < b.id) return -1;
+          if (a.id > b.id) return 1;
+          return 0;
         });
-        if (putResponse.ok) {
-          console.log("Annotations saved");
-          resolve();
-        } else {
-          reject(new Error(`Request not ok: ${putResponse.status} ${putResponse.statusText}`));
-        }
+
+      // Save annotations
+      console.debug("Saving annotations", { count: bookAnnotations.length });
+      const content = JSON.stringify({ highlights: bookAnnotations }, null, 2);
+      const putResponse = await fetch(PUT_HIGHLIGHTS_API_URL, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.token}`,
+        },
+        body: JSON.stringify({ content }),
       });
+      if (putResponse.ok) {
+        const data = await putResponse.json();
+        console.debug("put response:", data);
+        console.log("Annotations saved");
+        resolve();
+      } else {
+        reject(new Error(`Request not ok: ${putResponse.status} ${putResponse.statusText}`));
+      }
     });
   });
 }
