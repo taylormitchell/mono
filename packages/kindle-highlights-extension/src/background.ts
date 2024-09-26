@@ -6,7 +6,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   console.log("Kindle Highlights Extractor extension is running");
   chrome.alarms.create("syncHighlights", { periodInMinutes: 24 * 60 });
   chrome.alarms.create("checkLoginStatus", { periodInMinutes: 60 });
-  fetchHighlights();
+  //   fetchHighlights();
   updateBadge();
 });
 
