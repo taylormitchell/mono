@@ -19,6 +19,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 async function fetchHighlights(): Promise<void> {
+  console.log("Fetching annotations");
   return new Promise((resolve, reject) => {
     // Load auth token
     chrome.storage.local.get("token", async (data) => {
@@ -28,9 +29,6 @@ async function fetchHighlights(): Promise<void> {
       // Load read.amazon.com cookies
       chrome.cookies.getAll({ domain: "read.amazon.com" }, async (cookies) => {
         const cookieHeader = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
-        if (!cookieHeader) {
-          return reject(new Error("No cookie header found"));
-        }
 
         // Get list of books
         console.debug("Getting books");
@@ -86,7 +84,7 @@ async function fetchHighlights(): Promise<void> {
           body: JSON.stringify({ content }),
         });
         if (putResponse.ok) {
-          console.debug("Saved annotations");
+          console.log("Annotations saved");
           resolve();
         } else {
           reject(new Error(`Request not ok: ${putResponse.status} ${putResponse.statusText}`));
