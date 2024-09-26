@@ -33,13 +33,7 @@ async function fetchHighlights(): Promise<void> {
 
         // Get list of books
         console.debug("Getting books");
-        const booksResponse = await fetch("https://read.amazon.com/notebook", {
-          method: "GET",
-          //   headers: {
-          //     Cookie: cookieHeader,
-          //   },
-          //   credentials: "include",
-        });
+        const booksResponse = await fetch("https://read.amazon.com/notebook", { method: "GET" });
         const html = await booksResponse.text();
         const books = await parseHtml<Book[]>({ type: "get-books", html });
 
@@ -52,10 +46,10 @@ async function fetchHighlights(): Promise<void> {
                 `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
                 {
                   method: "GET",
-                  headers: {
-                    Cookie: cookieHeader,
-                  },
-                  credentials: "include",
+                  //   headers: {
+                  //     Cookie: cookieHeader,
+                  //   },
+                  //   credentials: "include",
                 }
               );
               const html = await response.text();
