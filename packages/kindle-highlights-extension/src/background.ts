@@ -1,26 +1,28 @@
 import { PUT_HIGHLIGHTS_API_URL } from "./env";
-import { updateBadge } from "./shared";
+import { renderBadge, syncInterval } from "./shared";
 import type { Annotation, Book } from "./shared";
 
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Kindle Highlights Extractor extension is running");
-  chrome.alarms.create("syncHighlights", { periodInMinutes: 24 * 60 });
+  chrome.storage.local.set({ startedAt: new Date().toISOString() });
+  chrome.alarms.create("syncHighlights", { periodInMinutes: syncInterval });
   chrome.alarms.create("checkLoginStatus", { periodInMinutes: 60 });
   //   fetchHighlights();
-  updateBadge();
+  renderBadge();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "syncHighlights") {
     fetchHighlights();
   } else if (alarm.name === "checkLoginStatus") {
-    updateBadge();
+    renderBadge();
   }
 });
 
 async function fetchHighlights(): Promise<void> {
   console.log("Fetching annotations");
   return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ lastSyncTime: new Date().toISOString() });
     // Load auth token
     chrome.storage.local.get("token", async (data) => {
       if (!data.token) {
