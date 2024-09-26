@@ -53,6 +53,7 @@ async function fetchHighlights(): Promise<void> {
       )
         .flat()
         .sort((a, b) => {
+          // sort by asin then id
           if (a.asin < b.asin) return -1;
           if (a.asin > b.asin) return 1;
           if (a.id < b.id) return -1;
