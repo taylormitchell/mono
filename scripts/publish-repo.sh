@@ -28,6 +28,13 @@ rsync -av --exclude="$EXCLUDE_DIR" --exclude=".git" --exclude="node_modules" ./ 
 # Navigate to the new repository directory
 cd "$NEW_REPO_PATH"
 
+# Add a line to the top of the README.md explaining that this is a copy of a private repo
+if [ -f "README.md" ]; then
+    sed -i '1i# This is a public copy of a private repository\n' README.md
+else
+    echo "# This is a public copy of a private repository" > README.md
+fi
+
 # Remove any .git directories that might have been copied (just in case)
 rm -rf .git
 
