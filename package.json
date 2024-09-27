@@ -1,0 +1,9 @@
+{
+  "name": "taylor",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "publish-repo": "bash scripts/publish-repo.sh"
+  }
+}
