@@ -34,6 +34,9 @@ rm -rf .git
 # Initialize a new Git repository
 git init
 
+# Rename the main branch to "main"
+git branch -m main
+
 # Add all files to the new repository
 git add .
 
