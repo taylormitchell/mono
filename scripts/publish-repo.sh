@@ -46,8 +46,9 @@ git remote add origin "$NEW_REPO_URL"
 # Push to the public repository
 git push -uf origin main
 
-echo "Success: The public repository has been created and pushed to $NEW_REPO_URL"
-
 # Clean up the temporary directory
 cd -
 rm -rf "$NEW_REPO_PATH"
+
+echo "Repository published to $NEW_REPO_URL"
+
