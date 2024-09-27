@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Bash Script: create_public_copy.sh
-
 # Exit immediately if a command exits with a non-zero status
 set -e
 
@@ -16,10 +14,9 @@ if [ ! -d ".git" ]; then
     exit 1
 fi
 
-# Check if the new repository directory already exists
+# Remove the existing public repository if it exists
 if [ -d "$NEW_REPO_PATH" ]; then
-    echo "Error: Directory '$NEW_REPO_PATH' already exists. Please remove it or choose a different NEW_REPO_PATH."
-    exit 1
+    rm -rf "$NEW_REPO_PATH"
 fi
 
 # Create a new directory for the public repository
@@ -50,3 +47,7 @@ git remote add origin "$NEW_REPO_URL"
 git push -uf origin main
 
 echo "Success: The public repository has been created and pushed to $NEW_REPO_URL"
+
+# Clean up the temporary directory
+cd -
+rm -rf "$NEW_REPO_PATH"
