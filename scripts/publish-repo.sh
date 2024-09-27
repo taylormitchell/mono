@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Bash Script: create_public_copy.sh
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Configuration Variables (modify these as needed)
+EXCLUDE_DIR="data"   # Directory to exclude, relative to the repo root
+NEW_REPO_URL="https://github.com/taylormitchell/mono.git"  # URL of your new public GitHub repository
+NEW_REPO_PATH="/tmp/mono"
+
+# Check if the script is run inside a Git repository
+if [ ! -d ".git" ]; then
+    echo "Error: This script must be run from the root of a Git repository."
+    exit 1
+fi
+
+# Check if the new repository directory already exists
+if [ -d "$NEW_REPO_PATH" ]; then
+    echo "Error: Directory '$NEW_REPO_PATH' already exists. Please remove it or choose a different NEW_REPO_PATH."
+    exit 1
+fi
+
+# Create a new directory for the public repository
+mkdir "$NEW_REPO_PATH"
+
+# Use rsync to copy files, excluding the specified directory and the .git directory
+rsync -av --exclude="$EXCLUDE_DIR" --exclude=".git" --exclude="node_modules" ./ "$NEW_REPO_PATH"
+
+# Navigate to the new repository directory
+cd "$NEW_REPO_PATH"
+
+# Remove any .git directories that might have been copied (just in case)
+rm -rf .git
+
+# Initialize a new Git repository
+git init
+
+# Add all files to the new repository
+git add .
+
+# Commit the files
+git commit -m "Public version"
+
+# Add the new remote origin
+git remote add origin "$NEW_REPO_URL"
+
+# Push to the public repository
+git push -uf origin main
+
+echo "Success: The public repository has been created and pushed to $NEW_REPO_URL"
