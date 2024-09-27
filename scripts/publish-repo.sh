@@ -30,7 +30,7 @@ cd "$NEW_REPO_PATH"
 
 # Add a line to the top of the README.md explaining that this is a copy of a private repo
 if [ -f "README.md" ]; then
-    sed -i '1i# This is a public copy of a private repository\n' README.md
+    echo -e "(Note: This is a public copy of a private repository)\n\n$(cat README.md)" > README.md
 else
     echo "# This is a public copy of a private repository" > README.md
 fi
