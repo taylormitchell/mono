@@ -4,7 +4,6 @@
 set -e
 
 # Configuration Variables (modify these as needed)
-EXCLUDE_DIR="data"   # Directory to exclude, relative to the repo root
 NEW_REPO_URL="https://github.com/taylormitchell/mono.git"  # URL of your new public GitHub repository
 NEW_REPO_PATH="/tmp/mono"
 
@@ -23,7 +22,7 @@ fi
 mkdir "$NEW_REPO_PATH"
 
 # Use rsync to copy files, excluding the specified directory and the .git directory
-rsync -av --exclude="$EXCLUDE_DIR" --exclude=".git" --exclude="node_modules" ./ "$NEW_REPO_PATH"
+rsync -av --exclude="data" --exclude=".git" --exclude=".github" --exclude=".vscode" --exclude="node_modules" ./ "$NEW_REPO_PATH"
 
 # Navigate to the new repository directory
 cd "$NEW_REPO_PATH"
