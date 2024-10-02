@@ -36,7 +36,10 @@ export function createFile(filepath: string, content: string = "") {
 }
 
 export function openFile(filepath: string) {
-  execSync(`cursor ${filepath}`);
+  // execSync(`cursor ${filepath}`);
+  // open in obsidian
+  const file = filepath.replace(getRootDir(), "").replace(/\\/g, "/");
+  execSync(`open -n "obsidian://open?vault=data&file=${file}"`);
 }
 
 function postFileFormat(date: string | number | Date) {
