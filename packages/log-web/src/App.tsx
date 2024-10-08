@@ -9,7 +9,7 @@ if (!apiUrl) {
 }
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [jwt, setJwt] = useState<string | null>(null);
 
   useEffect(() => {
