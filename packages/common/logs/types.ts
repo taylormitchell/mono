@@ -1,29 +1,66 @@
-export const LOG_TYPES = ["meditated", "ankied", "eye-patch", "workout", "custom"] as const;
-
-export type LogType = (typeof LOG_TYPES)[number];
-
 import { z } from "zod";
 
-export const LogEntrySchema = z.object({
-  type: z.enum(LOG_TYPES),
-  datetime: z
-    .union([
-      z.date(),
-      z
-        .string()
-        .refine((str) => !isNaN(Date.parse(str)), {
-          message: "Invalid date string",
-          path: ["datetime"],
-        })
-        .transform((str) => new Date(str)),
-    ])
-    .default(() => new Date()),
-  duration: z
+// z.enum(["meditated", "ankied", "eye-patch", "workout", "custom"]),
+
+export const DatetimeSchema = z.union([
+  z.date(),
+  z
     .string()
-    .regex(/^\d+[hms]$/)
-    .optional(),
-  message: z.string().optional(),
-});
+    .refine((str) => !isNaN(Date.parse(str)), {
+      message: "Invalid date string",
+      path: ["datetime"],
+    })
+    .transform((str) => new Date(str)),
+]);
+
+export const DurationSchema = z.string().regex(/^\d+[hms]$/);
+
+export const LogEntrySchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("meditated"),
+    datetime: DatetimeSchema,
+    duration: DurationSchema.optional(),
+    message: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("eye-patch"),
+    datetime: DatetimeSchema,
+    duration: DurationSchema.optional(),
+    message: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("ankied"),
+    datetime: DatetimeSchema,
+    duration: DurationSchema.optional(),
+    message: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("workout"),
+    datetime: DatetimeSchema,
+    duration: DurationSchema.optional(),
+    message: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("custom"),
+    datetime: DatetimeSchema,
+    duration: DurationSchema.optional(),
+    message: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("poop"),
+    datetime: DatetimeSchema,
+    duration: DurationSchema.optional(),
+    effort: z.number().int().min(1).max(5).optional(),
+    emptiness: z.number().int().min(1).max(5).optional(),
+    burning: z.boolean().optional(),
+    poopType: z.number().int().min(1).max(7).optional(),
+    message: z.string().optional(),
+  }),
+]);
+
+export const LOG_TYPES = new Set(LogEntrySchema.options.map((option) => option.shape.type.value));
+
+export type LogType = typeof LOG_TYPES extends Set<infer T> ? T : never;
 
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
