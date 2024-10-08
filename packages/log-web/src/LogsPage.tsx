@@ -74,10 +74,8 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
           return (
             <button
               key={type}
-              onTouchStart={() => handleButtonPress(type)}
-              onTouchEnd={() => handleButtonRelease(type)}
-              onMouseDown={() => handleButtonPress(type)}
-              onMouseUp={() => handleButtonRelease(type)}
+              onPointerDown={() => handleButtonPress(type)}
+              onPointerUp={() => handleButtonRelease(type)}
               className="log-type-button"
             >
               {emoji} {type}
