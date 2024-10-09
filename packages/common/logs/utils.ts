@@ -6,10 +6,11 @@ import { format, toZonedTime } from "date-fns-tz";
 
 export function addLogEntry(logEntry: LogEntry, timeZone: string = "Canada/Eastern"): string {
   const logPath = path.join(getRootDir(), "log.jsonl");
+  const datetime = logEntry.datetime ?? new Date();
   const logLine =
     JSON.stringify({
       ...logEntry,
-      datetime: format(toZonedTime(logEntry.datetime, timeZone), "yyyy-MM-dd'T'HH:mm:ssxxx", {
+      datetime: format(toZonedTime(datetime, timeZone), "yyyy-MM-dd'T'HH:mm:ssxxx", {
         timeZone,
       }),
     }) + "\n";

@@ -13,14 +13,7 @@ import {
 import { getRootDir } from "@taylor/common/data";
 import { readFileSync } from "fs";
 import { addLogEntry, getTodayLogEvents } from "@taylor/common/logs/utils";
-import {
-  validateDuration,
-  validateDatetime,
-  LogEntry,
-  parseDuration,
-  formatDuration,
-} from "@taylor/common/logs/types";
-import { format } from "date-fns";
+import { LogEntry, parseDuration, formatDuration, LogEntrySchema } from "@taylor/common/logs/types";
 
 const program = new Command();
 
@@ -125,44 +118,32 @@ program
     }
   });
 
-const logCommand = program
-  .command("log")
-  .description("Add a log entry to log.jsonl")
-  .option("-t, --type <type>", "Type of log entry");
-const logTypes = ["meditated", "ankied", "eye-patch", "workout", "custom"];
-logTypes.forEach((type) => {
-  logCommand
-    .command(type + " [duration]")
-    .description(`Log a ${type} entry`)
-    .option("-d, --datetime <datetime>", "Specify a custom datetime (default: current time)")
-    .option("-t, --today", "Set the date to today (yyyy-mm-dd)")
-    .option("-m, --message <message>", "Add an optional message to the log entry")
-    .action(
-      (
-        duration: string | undefined,
-        options: { datetime?: string; today?: boolean; message?: string }
-      ) => {
-        if (!validateDuration(duration) || !validateDatetime(options.datetime)) return;
+const logCommand = program.command("log").description("Add a log entry to log.jsonl");
+LogEntrySchema.options.forEach((schema) => {
+  const type = schema.shape.type.value;
+  const command = logCommand.command(type);
+  const shortFlags = new Set();
 
-        let datetime: string;
-        if (options.datetime) {
-          datetime = options.datetime;
-        } else if (options.today) {
-          datetime = new Date().toISOString().split("T")[0];
-        } else {
-          datetime = format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxxx");
-        }
+  Object.entries(schema.shape).forEach(([key, value]) => {
+    if (key === "type") return;
+    let shortFlag = key[0];
+    while (shortFlags.has(shortFlag) && shortFlag.length <= key.length) {
+      shortFlag = key.slice(0, shortFlag.length + 1);
+    }
+    shortFlags.add(shortFlag);
+    const description = value.description || `Specify the ${key}`;
+    command.option(`-${shortFlag}, --${key} <${key}>`, description);
+  });
 
-        const logEntry: LogEntry = {
-          type,
-          ...(duration && { duration }),
-          datetime,
-          ...(options.message && { message: options.message }),
-        };
-
-        addLogEntry(logEntry);
-      }
-    );
+  command.action((options) => {
+    const logEntry: Partial<LogEntry> = { type, ...options };
+    try {
+      const validatedEntry = LogEntrySchema.parse(logEntry);
+      addLogEntry(validatedEntry);
+    } catch (error) {
+      console.error("Invalid log entry:", error.message);
+    }
+  });
 });
 
 program

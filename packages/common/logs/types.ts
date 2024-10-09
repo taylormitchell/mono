@@ -2,59 +2,98 @@ import { z } from "zod";
 
 // z.enum(["meditated", "ankied", "eye-patch", "workout", "custom"]),
 
-export const DatetimeSchema = z.union([
-  z.date(),
-  z
-    .string()
-    .refine((str) => !isNaN(Date.parse(str)), {
-      message: "Invalid date string",
-      path: ["datetime"],
-    })
-    .transform((str) => new Date(str)),
-]);
+export const DatetimeSchema = z
+  .union([
+    z.date(),
+    z
+      .string()
+      .refine((str) => !isNaN(Date.parse(str)), {
+        message: "Invalid date string",
+        path: ["datetime"],
+      })
+      .transform((str) => new Date(str)),
+  ])
+  .optional()
+  .describe("A datetime string or date object");
 
-export const DurationSchema = z.string().regex(/^\d+[hms]$/);
+export const DurationSchema = z
+  .string()
+  .regex(/^\d+[hms]$/)
+  .optional()
+  .describe("A duration string (e.g. 5s, 10m, 2h)");
+
+export const MessageSchema = z.string().optional().describe("An optional message");
 
 export const LogEntrySchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("meditated"),
     datetime: DatetimeSchema,
-    duration: DurationSchema.optional(),
-    message: z.string().optional(),
+    duration: DurationSchema,
+    message: MessageSchema,
   }),
   z.object({
     type: z.literal("eye-patch"),
     datetime: DatetimeSchema,
-    duration: DurationSchema.optional(),
-    message: z.string().optional(),
+    duration: DurationSchema,
+    message: MessageSchema,
   }),
   z.object({
     type: z.literal("ankied"),
     datetime: DatetimeSchema,
-    duration: DurationSchema.optional(),
-    message: z.string().optional(),
+    duration: DurationSchema,
+    message: MessageSchema,
   }),
   z.object({
     type: z.literal("workout"),
     datetime: DatetimeSchema,
-    duration: DurationSchema.optional(),
-    message: z.string().optional(),
+    duration: DurationSchema,
+    message: MessageSchema,
   }),
   z.object({
     type: z.literal("custom"),
     datetime: DatetimeSchema,
-    duration: DurationSchema.optional(),
-    message: z.string().optional(),
+    duration: DurationSchema,
+    message: MessageSchema,
   }),
   z.object({
     type: z.literal("poop"),
     datetime: DatetimeSchema,
-    duration: DurationSchema.optional(),
-    effort: z.number().int().min(1).max(5).optional(),
-    emptiness: z.number().int().min(1).max(5).optional(),
-    burning: z.boolean().optional(),
-    poopType: z.number().int().min(1).max(7).optional(),
-    message: z.string().optional(),
+    duration: DurationSchema,
+    effort: z
+      .union([z.number().int(), z.string()])
+      .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val))
+      .refine((val) => val >= 1 && val <= 5, {
+        message: "Effort must be between 1 and 5",
+      })
+      .optional()
+      .describe("How much effort was put into the poop"),
+    emptiness: z
+      .union([z.number().int(), z.string()])
+      .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val))
+      .refine((val) => val >= 1 && val <= 5, {
+        message: "Emptiness must be between 1 and 5",
+      })
+      .optional()
+      .describe("How empty the poop feels"),
+    burning: z
+      .union([z.boolean(), z.string()])
+      .transform((val) => {
+        if (typeof val === "string") {
+          return val.toLowerCase() === "true";
+        }
+        return val;
+      })
+      .optional()
+      .describe("If the poop is burning"),
+    poopType: z
+      .union([z.number().int(), z.string()])
+      .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val))
+      .refine((val) => val >= 1 && val <= 7, {
+        message: "Poop type must be between 1 and 7",
+      })
+      .optional()
+      .describe("The type of poop"),
+    message: MessageSchema,
   }),
 ]);
 
