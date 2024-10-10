@@ -93,6 +93,10 @@ html,
   background-color: #ccc;
 }
 
+.undefined-value {
+  opacity: 0.5;
+}
+
 form button[type="submit"] {
   width: 100%;
   height: 40px;

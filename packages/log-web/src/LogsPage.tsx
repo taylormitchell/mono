@@ -28,7 +28,7 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
       const response = await fetch(`${apiUrl}/api/log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
-        body: JSON.stringify({ ...logEntry, datetime: logEntry.datetime.toISOString() }),
+        body: JSON.stringify({ ...logEntry, datetime: logEntry.datetime?.toISOString() }),
       });
 
       if (!response.ok) {
@@ -56,10 +56,35 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
     if (longPressTimeoutRef.current) {
       clearTimeout(longPressTimeoutRef.current);
       longPressTimeoutRef.current = null;
-      handleSubmit({
-        type: logType,
-        datetime: new Date(),
-      });
+      if (logType === "water" || logType === "coffee" || logType === "alcohol") {
+        handleSubmit({
+          type: logType,
+          datetime: new Date(),
+          amount: "1 cup", // Default amount
+        });
+      } else if (logType === "food") {
+        handleSubmit({
+          type: logType,
+          datetime: new Date(),
+          amount: "medium", // Default amount
+          healthiness: 3, // Default healthiness
+        });
+      } else if (logType === "poop") {
+        handleSubmit({
+          type: logType,
+          datetime: new Date(),
+          effort: 3, // Default effort
+          emptiness: 3, // Default emptiness
+          burning: false, // Default burning
+          poopType: 4, // Default poop type (middle of the scale)
+        });
+      } else {
+        // For other types (meditated, eye-patch, ankied, workout, custom)
+        handleSubmit({
+          type: logType,
+          datetime: new Date(),
+        });
+      }
     }
   };
 
@@ -167,7 +192,7 @@ function PoopForm({ handleSubmit }: { handleSubmit: (poop: LogEntry) => void }) 
   const [emptiness, setEmptiness] = useState(3);
   const [burning, setBurning] = useState(false);
   const [poopType, setPoopType] = useState(3);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<string | undefined>(undefined);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,7 +422,7 @@ function DrinkForm({
       .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+)/, "$3-$1-$2T$4:$5");
     return dt;
   });
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<string | undefined>(undefined);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -447,8 +472,8 @@ function DrinkForm({
 }
 
 function FoodForm({ handleSubmit }: { handleSubmit: (entry: LogEntry) => void }) {
-  const [amount, setAmount] = useState<"small" | "medium" | "large">("medium");
-  const [healthiness, setHealthiness] = useState(3);
+  const [amount, setAmount] = useState<"small" | "medium" | "large" | undefined>(undefined);
+  const [healthiness, setHealthiness] = useState<number | undefined>(undefined);
   const [datetime, setDatetime] = useState(() => {
     const dt = new Date()
       .toLocaleString("en-US", {
@@ -462,7 +487,7 @@ function FoodForm({ handleSubmit }: { handleSubmit: (entry: LogEntry) => void })
       .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+)/, "$3-$1-$2T$4:$5");
     return dt;
   });
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<string | undefined>(undefined);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -494,7 +519,7 @@ function FoodForm({ handleSubmit }: { handleSubmit: (entry: LogEntry) => void })
       </div>
       <div>
         <label>Amount:</label>
-        <div className="amount-toggle">
+        <div className={`amount-toggle ${amount === undefined ? "undefined-value" : ""}`}>
           {["small", "medium", "large"].map((size) => (
             <button
               key={size}
@@ -507,16 +532,16 @@ function FoodForm({ handleSubmit }: { handleSubmit: (entry: LogEntry) => void })
           ))}
         </div>
       </div>
-      <div>
+      <div className={healthiness === undefined ? "undefined-value" : ""}>
         <label htmlFor="healthiness">
-          Healthiness:<span>{healthiness}</span>
+          Healthiness:<span>{healthiness !== undefined ? healthiness : ""}</span>
         </label>
         <input
           type="range"
           id="healthiness"
           min="1"
           max="5"
-          value={healthiness}
+          value={healthiness !== undefined ? healthiness : 3}
           onChange={(e) => setHealthiness(parseInt(e.target.value))}
           required
         />

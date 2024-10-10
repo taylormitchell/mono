@@ -122,7 +122,7 @@ export const LogEntrySchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("food"),
     datetime: DatetimeSchema,
-    amount: z.enum(["small", "medium", "large"]).describe("Amount of food consumed"),
+    amount: z.enum(["small", "medium", "large"]).optional().describe("Amount of food consumed"),
     healthiness: z
       .union([z.number().int(), z.string()])
       .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val))
