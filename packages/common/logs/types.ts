@@ -24,6 +24,11 @@ export const DurationSchema = z
 
 export const MessageSchema = z.string().optional().describe("An optional message");
 
+export const DrinkAmountStringSchema = z
+  .string()
+  .regex(/^\d+(\.\d+)?\s*(ml|l|liter|oz|cup|bottle|drink|glasse?|can)s?$/)
+  .optional();
+
 export const LogEntrySchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("meditated"),
@@ -94,6 +99,38 @@ export const LogEntrySchema = z.discriminatedUnion("type", [
       })
       .optional()
       .describe("The type of poop (0 means I couldn't go)"),
+    message: MessageSchema,
+  }),
+  z.object({
+    type: z.literal("water"),
+    datetime: DatetimeSchema,
+    amount: DrinkAmountStringSchema.describe("Amount of water consumed"),
+    message: MessageSchema,
+  }),
+  z.object({
+    type: z.literal("coffee"),
+    datetime: DatetimeSchema,
+    amount: DrinkAmountStringSchema.describe("Amount of coffee consumed"),
+    message: MessageSchema,
+  }),
+  z.object({
+    type: z.literal("alcohol"),
+    datetime: DatetimeSchema,
+    amount: DrinkAmountStringSchema.describe("Amount of alcohol consumed"),
+    message: MessageSchema,
+  }),
+  z.object({
+    type: z.literal("food"),
+    datetime: DatetimeSchema,
+    amount: z.enum(["small", "medium", "large"]).describe("Amount of food consumed"),
+    healthiness: z
+      .union([z.number().int(), z.string()])
+      .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val))
+      .refine((val) => val >= 1 && val <= 5, {
+        message: "Healthiness must be between 1 and 5",
+      })
+      .optional()
+      .describe("The healthiness of the food consumed (1-5 scale)"),
     message: MessageSchema,
   }),
 ]);
