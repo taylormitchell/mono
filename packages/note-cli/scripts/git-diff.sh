@@ -7,9 +7,7 @@
 INCLUDE_PATHS="data/notes/ data/posts/"
 
 # Get all commits from the last week
-commits=$(git rev-list --since="7 days ago" --reverse HEAD)
-
-echo "These are the notes I've written in the last week. They generate from the git diffs of the last 7 days."
+commits=$(git rev-list --since="7 days ago" HEAD)
 
 for commit in $commits; do
     # Get the list of files changed in the commit within the include paths
@@ -58,7 +56,9 @@ for commit in $commits; do
                              | sed '/^new file mode/d' \
                              | sed '/^deleted file mode/d' \
                              | sed '/^---/d' \
-                             | sed '/^\+\+\+/d'
+                             | sed '/^\+\+\+/d' \
+                             | sed '/^@@.*@@/d' \
+                             | sed '/\\ No newline at end of file/d'
 
         echo
     done

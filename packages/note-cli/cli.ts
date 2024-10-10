@@ -10,7 +10,7 @@ import {
   getOrCreateWeeklyNote,
   getOrCreateMonthlyNote,
 } from "@taylor/common/note";
-import { getRootDir } from "@taylor/common/data";
+import { getRepoRoot, getRootDir } from "@taylor/common/data";
 import { readFileSync } from "fs";
 import { addLogEntry, getTodayLogEvents } from "@taylor/common/logs/utils";
 import { LogEntry, parseDuration, formatDuration, LogEntrySchema } from "@taylor/common/logs/types";
@@ -104,17 +104,15 @@ program
 program
   .command("diffs")
   .description("Show diffs of recent changes in notes")
-  .option("--since <time>", "Time range for diffs (e.g., '2 days ago')", "1 week ago")
-  .option("--include-journals", "Include daily journal entries in the diff")
+  .option("--since <time>", "Time range for diffs (e.g., '7 days ago')", "7 days ago")
   .action((options) => {
-    const rootDir = getRootDir();
-    const excludeJournals = options.includeJournals ? "" : " ':(exclude)journals/**/*.md'";
-    const command = `git -C "${rootDir}" log -p --since="${options.since}" -- '${rootDir}/**/*.md'${excludeJournals}`;
+    const scriptPath = path.join(__dirname, "scripts", "git-diff.sh");
+    const command = `bash "${scriptPath}" "${options.since}"`;
     try {
-      const output = execSync(command, { encoding: "utf-8" });
+      const output = execSync(command, { encoding: "utf-8", cwd: getRepoRoot() });
       console.log(output);
     } catch (error) {
-      console.error("Error executing git command:", error);
+      console.error("Error executing git-diff script:", error);
     }
   });
 
