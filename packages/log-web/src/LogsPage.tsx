@@ -214,13 +214,14 @@ function PoopForm({ handleSubmit }: { handleSubmit: (poop: LogEntry) => void }) 
       <div>
         <label>Poop Type:</label>
         <div className="poop-type-toggle">
-          {[1, 2, 3, 4, 5, 6, 7].map((type) => (
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((type) => (
             <button
               key={type}
               type="button"
               onClick={() => setPoopType(type)}
               className={poopType === type ? "selected" : ""}
             >
+              {type === 0 && "🚫"}
               {type === 1 && "🫘"}
               {type === 2 && "🐛"}
               {type === 3 && "🌭"}

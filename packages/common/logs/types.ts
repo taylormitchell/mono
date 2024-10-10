@@ -85,14 +85,15 @@ export const LogEntrySchema = z.discriminatedUnion("type", [
       })
       .optional()
       .describe("If the poop is burning"),
+    // 1-7 are standard types, 0 means I couldn't go
     poopType: z
       .union([z.number().int(), z.string()])
       .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val))
-      .refine((val) => val >= 1 && val <= 7, {
-        message: "Poop type must be between 1 and 7",
+      .refine((val) => val >= 0 && val <= 7, {
+        message: "Type must be between 0 and 7",
       })
       .optional()
-      .describe("The type of poop"),
+      .describe("The type of poop (0 means I couldn't go)"),
     message: MessageSchema,
   }),
 ]);
