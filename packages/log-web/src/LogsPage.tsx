@@ -1,5 +1,11 @@
 import { useState, useRef } from "react";
-import { LogType, LogEntry, validateDatetime, validateDuration } from "@taylor/common/logs/types";
+import {
+  LogType,
+  LogEntry,
+  validateDatetime,
+  validateDuration,
+  DrinkAmountStringSchema,
+} from "@taylor/common/logs/types";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -63,6 +69,10 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
     { type: "meditated", emoji: "🧘‍♂️" },
     { type: "ankied", emoji: "📚" },
     { type: "workout", emoji: "🏃‍♂️" },
+    { type: "water", emoji: "💧" },
+    { type: "coffee", emoji: "☕" },
+    { type: "alcohol", emoji: "🍺" },
+    { type: "food", emoji: "🍽️" },
     { type: "custom", emoji: "📝" },
   ];
 
@@ -109,6 +119,16 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
               }}
             />
           )}
+          {selectedLogType === "water" && (
+            <DrinkForm title="Water" type="water" handleSubmit={handleSubmit} />
+          )}
+          {selectedLogType === "coffee" && (
+            <DrinkForm title="Coffee" type="coffee" handleSubmit={handleSubmit} />
+          )}
+          {selectedLogType === "alcohol" && (
+            <DrinkForm title="Alcohol" type="alcohol" handleSubmit={handleSubmit} />
+          )}
+          {selectedLogType === "food" && <FoodForm handleSubmit={handleSubmit} />}
         </Modal>
       )}
     </div>
@@ -340,6 +360,170 @@ function GenericForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+function DrinkForm({
+  title,
+  type,
+  handleSubmit,
+}: {
+  title: string;
+  type: "water" | "coffee" | "alcohol";
+  handleSubmit: (entry: LogEntry) => void;
+}) {
+  const [amount, setAmount] = useState(() => {
+    switch (type) {
+      case "water":
+      case "coffee":
+        return "1 cup";
+      case "alcohol":
+        return "1 drink";
+    }
+  });
+  const [datetime, setDatetime] = useState(() => {
+    const dt = new Date()
+      .toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+      .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+)/, "$3-$1-$2T$4:$5");
+    return dt;
+  });
+  const [message, setMessage] = useState("");
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateDatetime(datetime) || !DrinkAmountStringSchema.safeParse(amount).success) {
+      return;
+    }
+    const entry: LogEntry = {
+      type,
+      amount,
+      datetime: new Date(datetime),
+      message,
+    };
+    handleSubmit(entry);
+  };
+
+  return (
+    <form onSubmit={handleFormSubmit}>
+      <h2>{title}</h2>
+      <div>
+        <label htmlFor="datetime">Date and Time:</label>
+        <input
+          type="datetime-local"
+          id="datetime"
+          value={datetime}
+          onChange={(e) => setDatetime(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="amount">Amount:</label>
+        <input
+          type="text"
+          id="amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="e.g., 250ml, 1l, 8oz, 1 cup"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="message">Additional Notes:</label>
+        <textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} />
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+function FoodForm({ handleSubmit }: { handleSubmit: (entry: LogEntry) => void }) {
+  const [amount, setAmount] = useState<"small" | "medium" | "large">("medium");
+  const [healthiness, setHealthiness] = useState(3);
+  const [datetime, setDatetime] = useState(() => {
+    const dt = new Date()
+      .toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+      .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+)/, "$3-$1-$2T$4:$5");
+    return dt;
+  });
+  const [message, setMessage] = useState("");
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateDatetime(datetime)) {
+      return;
+    }
+    const entry: LogEntry = {
+      type: "food",
+      amount,
+      healthiness,
+      datetime: new Date(datetime),
+      message,
+    };
+    handleSubmit(entry);
+  };
+
+  return (
+    <form onSubmit={handleFormSubmit}>
+      <h2>Food</h2>
+      <div>
+        <label htmlFor="datetime">Date and Time:</label>
+        <input
+          type="datetime-local"
+          id="datetime"
+          value={datetime}
+          onChange={(e) => setDatetime(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label>Amount:</label>
+        <div className="amount-toggle">
+          {["small", "medium", "large"].map((size) => (
+            <button
+              key={size}
+              type="button"
+              onClick={() => setAmount(size as "small" | "medium" | "large")}
+              className={amount === size ? "selected" : ""}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label htmlFor="healthiness">
+          Healthiness:<span>{healthiness}</span>
+        </label>
+        <input
+          type="range"
+          id="healthiness"
+          min="1"
+          max="5"
+          value={healthiness}
+          onChange={(e) => setHealthiness(parseInt(e.target.value))}
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="message">Additional Notes:</label>
+        <textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} />
       </div>
       <button type="submit">Submit</button>
     </form>
