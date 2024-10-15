@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+
+interface TimerState {
+  time: number;
+  isActive: boolean;
+  startTime: number | null;
+}
 
 interface TimerProps {
   label: string;
+  timerState: TimerState;
   initialTime: number;
   onTimeChange: (newTime: number) => void;
   onTimerComplete: (timerData: {
@@ -9,46 +16,49 @@ interface TimerProps {
     duration: number;
     completedAt: string;
   }) => void;
+  updateTimerState: (newState: TimerState) => void;
 }
 
-function Timer({ label, initialTime, onTimeChange, onTimerComplete }: TimerProps) {
-  const [time, setTime] = useState(initialTime * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
-
+function Timer({
+  label,
+  timerState,
+  initialTime,
+  onTimeChange,
+  onTimerComplete,
+  updateTimerState,
+}: TimerProps) {
   useEffect(() => {
-    let interval: number | undefined;
+    let interval: ReturnType<typeof setInterval> | undefined;
 
-    if (isActive && time > 0) {
+    if (timerState.isActive && timerState.time > 0) {
       interval = setInterval(() => {
-        setTime((prevTime) => prevTime - 1);
+        updateTimerState({ ...timerState, time: timerState.time - 1 });
       }, 1000);
-    } else if (isActive && time === 0) {
+    } else if (timerState.isActive && timerState.time <= 0) {
       clearInterval(interval);
       playSound();
-      setIsActive(false);
+      updateTimerState({ ...timerState, isActive: false });
       completeTimer(initialTime * 60);
     }
 
     return () => clearInterval(interval);
-  }, [isActive, time]);
+  }, [timerState.isActive, timerState.time]);
 
   const toggleTimer = () => {
-    if (!isActive) {
-      setStartTime(Date.now());
+    if (!timerState.isActive) {
+      updateTimerState({ ...timerState, isActive: true, startTime: Date.now() });
+    } else {
+      updateTimerState({ ...timerState, isActive: false });
     }
-    setIsActive(!isActive);
   };
 
   const resetTimer = () => {
-    setIsActive(false);
-    setTime(initialTime * 60);
-    setStartTime(null);
+    updateTimerState({ time: initialTime * 60, isActive: false, startTime: null });
   };
 
   const finishTimer = () => {
-    if (startTime) {
-      const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    if (timerState.startTime) {
+      const elapsedTime = Math.floor((Date.now() - timerState.startTime) / 1000);
       completeTimer(elapsedTime);
     }
     resetTimer();
@@ -76,7 +86,7 @@ function Timer({ label, initialTime, onTimeChange, onTimerComplete }: TimerProps
   const handleTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = parseInt(event.target.value, 10);
     onTimeChange(newTime);
-    setTime(newTime * 60);
+    updateTimerState({ ...timerState, time: newTime * 60 });
   };
 
   return (
@@ -84,13 +94,18 @@ function Timer({ label, initialTime, onTimeChange, onTimerComplete }: TimerProps
       <h2>{label} Timer</h2>
       <div className="timer-input">
         <label>{label} Time (minutes): </label>
-        <input type="number" value={initialTime} onChange={handleTimeChange} disabled={isActive} />
+        <input
+          type="number"
+          value={initialTime}
+          onChange={handleTimeChange}
+          disabled={timerState.isActive}
+        />
       </div>
-      <div className="time-left">{formatTime(time)}</div>
+      <div className="time-left">{formatTime(timerState.time)}</div>
       <div className="controls">
-        <button onClick={toggleTimer}>{isActive ? "Pause" : "Start"}</button>
+        <button onClick={toggleTimer}>{timerState.isActive ? "Pause" : "Start"}</button>
         <button onClick={resetTimer}>Reset</button>
-        <button onClick={finishTimer} disabled={!isActive && !startTime}>
+        <button onClick={finishTimer} disabled={!timerState.isActive && !timerState.startTime}>
           Finish
         </button>
       </div>

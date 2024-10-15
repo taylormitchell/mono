@@ -1,20 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Timer from "./Timer";
 import { LoginPage } from "./LoginPage";
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+interface AppState {
+  workTime: number;
+  restTime: number;
+  token: string | null;
+  workTimer: {
+    time: number;
+    isActive: boolean;
+    startTime: number | null;
+  };
+  restTimer: {
+    time: number;
+    isActive: boolean;
+    startTime: number | null;
+  };
+}
+
 function App() {
-  const [workTime, setWorkTime] = useState(55);
-  const [restTime, setRestTime] = useState(5);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("jwt"));
+  const [appState, setAppState] = useState<AppState>(() => {
+    const savedState = localStorage.getItem("appState");
+    return savedState
+      ? JSON.parse(savedState)
+      : {
+          workTime: 55,
+          restTime: 5,
+          token: localStorage.getItem("jwt"),
+          workTimer: { time: 55 * 60, isActive: false, startTime: null },
+          restTimer: { time: 5 * 60, isActive: false, startTime: null },
+        };
+  });
+
+  const appStateRef = useRef(appState);
+  appStateRef.current = appState;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      localStorage.setItem("appState", JSON.stringify(appStateRef.current));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleTimeChange = (newTime: number, isWork: boolean) => {
     if (isWork) {
-      setWorkTime(newTime);
+      setAppState((prev) => ({ ...prev, workTime: newTime }));
     } else {
-      setRestTime(newTime);
+      setAppState((prev) => ({ ...prev, restTime: newTime }));
     }
   };
 
@@ -27,7 +62,7 @@ function App() {
       });
       const data = await response.json();
       if (response.ok) {
-        setToken(data.token);
+        setAppState((prev) => ({ ...prev, token: data.token }));
         localStorage.setItem("jwt", data.token);
         return { success: true };
       } else {
@@ -44,14 +79,14 @@ function App() {
     duration: number;
     completedAt: string;
   }) => {
-    if (!token) return;
+    if (!appState.token) return;
 
     try {
       const response = await fetch(`${API_URL}/api/files/pomodoro.jsonl`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${appState.token}`,
         },
         body: JSON.stringify({
           method: "append",
@@ -69,7 +104,7 @@ function App() {
     }
   };
 
-  if (!token) {
+  if (!appState.token) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
@@ -79,15 +114,19 @@ function App() {
       <div className="timers">
         <Timer
           label="Work"
-          initialTime={workTime}
+          timerState={appState.workTimer}
+          initialTime={appState.workTime}
           onTimeChange={(newTime) => handleTimeChange(newTime, true)}
           onTimerComplete={persistTimerData}
+          updateTimerState={(newState) => setAppState((prev) => ({ ...prev, workTimer: newState }))}
         />
         <Timer
           label="Rest"
-          initialTime={restTime}
+          timerState={appState.restTimer}
+          initialTime={appState.restTime}
           onTimeChange={(newTime) => handleTimeChange(newTime, false)}
           onTimerComplete={persistTimerData}
+          updateTimerState={(newState) => setAppState((prev) => ({ ...prev, restTimer: newState }))}
         />
       </div>
     </div>
