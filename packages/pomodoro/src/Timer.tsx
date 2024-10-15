@@ -4,12 +4,17 @@ interface TimerProps {
   label: string;
   initialTime: number;
   onTimeChange: (newTime: number) => void;
-  token: string;
+  onTimerComplete: (timerData: {
+    sessionType: string;
+    duration: number;
+    completedAt: string;
+  }) => void;
 }
 
-function Timer({ label, initialTime, onTimeChange, token }: TimerProps) {
+function Timer({ label, initialTime, onTimeChange, onTimerComplete }: TimerProps) {
   const [time, setTime] = useState(initialTime * 60);
   const [isActive, setIsActive] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   useEffect(() => {
     let interval: number | undefined;
@@ -22,56 +27,44 @@ function Timer({ label, initialTime, onTimeChange, token }: TimerProps) {
       clearInterval(interval);
       playSound();
       setIsActive(false);
-      persistTimerData();
+      completeTimer(initialTime * 60);
     }
 
     return () => clearInterval(interval);
   }, [isActive, time]);
 
   const toggleTimer = () => {
+    if (!isActive) {
+      setStartTime(Date.now());
+    }
     setIsActive(!isActive);
   };
 
   const resetTimer = () => {
     setIsActive(false);
     setTime(initialTime * 60);
+    setStartTime(null);
+  };
+
+  const finishTimer = () => {
+    if (startTime) {
+      const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+      completeTimer(elapsedTime);
+    }
+    resetTimer();
+  };
+
+  const completeTimer = (duration: number) => {
+    onTimerComplete({
+      sessionType: label.toLowerCase(),
+      duration: Math.floor(duration / 60), // Convert seconds to minutes
+      completedAt: new Date().toISOString(),
+    });
   };
 
   const playSound = () => {
-    const audio = new Audio(
-      "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"
-    );
+    const audio = new Audio(window.location.origin + "/gong.mp3");
     audio.play();
-  };
-
-  const persistTimerData = async () => {
-    const timerData = {
-      sessionType: label.toLowerCase(),
-      duration: initialTime,
-      completedAt: new Date().toISOString(),
-    };
-
-    try {
-      const response = await fetch("/api/files/pomodoro.jsonl", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          method: "append",
-          content: JSON.stringify(timerData),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to persist timer data");
-      }
-
-      console.log("Timer data persisted successfully");
-    } catch (error) {
-      console.error("Error persisting timer data:", error);
-    }
   };
 
   const formatTime = (seconds: number) => {
@@ -97,6 +90,9 @@ function Timer({ label, initialTime, onTimeChange, token }: TimerProps) {
       <div className="controls">
         <button onClick={toggleTimer}>{isActive ? "Pause" : "Start"}</button>
         <button onClick={resetTimer}>Reset</button>
+        <button onClick={finishTimer} disabled={!isActive && !startTime}>
+          Finish
+        </button>
       </div>
     </div>
   );
