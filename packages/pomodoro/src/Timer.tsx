@@ -4,9 +4,10 @@ interface TimerProps {
   label: string;
   initialTime: number;
   onTimeChange: (newTime: number) => void;
+  token: string;
 }
 
-function Timer({ label, initialTime, onTimeChange }: TimerProps) {
+function Timer({ label, initialTime, onTimeChange, token }: TimerProps) {
   const [time, setTime] = useState(initialTime * 60);
   const [isActive, setIsActive] = useState(false);
 
@@ -21,6 +22,7 @@ function Timer({ label, initialTime, onTimeChange }: TimerProps) {
       clearInterval(interval);
       playSound();
       setIsActive(false);
+      persistTimerData();
     }
 
     return () => clearInterval(interval);
@@ -40,6 +42,36 @@ function Timer({ label, initialTime, onTimeChange }: TimerProps) {
       "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"
     );
     audio.play();
+  };
+
+  const persistTimerData = async () => {
+    const timerData = {
+      sessionType: label.toLowerCase(),
+      duration: initialTime,
+      completedAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch("/api/files/pomodoro.jsonl", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          method: "append",
+          content: JSON.stringify(timerData),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to persist timer data");
+      }
+
+      console.log("Timer data persisted successfully");
+    } catch (error) {
+      console.error("Error persisting timer data:", error);
+    }
   };
 
   const formatTime = (seconds: number) => {
