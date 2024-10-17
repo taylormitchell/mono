@@ -71,7 +71,7 @@ program
     const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
     const path = getOrCreateDailyNote(date);
     if (shouldOpen) {
-      execSync(`cursor ${path}`);
+      openFile(path);
     }
   });
 
@@ -81,7 +81,7 @@ program
   .action((dateOrOffset) => {
     const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
     const path = getOrCreateWeeklyNote(date);
-    execSync(`cursor ${path}`);
+    openFile(path);
   });
 
 program
@@ -89,7 +89,7 @@ program
   .description("Open or create this month's note")
   .action(() => {
     const path = getOrCreateMonthlyNote();
-    execSync(`cursor ${path}`);
+    openFile(path);
   });
 
 program
