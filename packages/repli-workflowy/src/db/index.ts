@@ -1,11 +1,10 @@
-import { z } from "zod";
 import { generateId } from "./utils";
-import { Operation, Database, NodeSchema, RelationSchema, TreeSchema, ModelSchema } from "./types";
+import { Operation, Database, Namespace, Transaction } from "./types";
 import { IndexedDbDatabase } from "./indexeddb";
 
-type Subscription = (tx: DbProxy) => void | Promise<void>;
-type MutationCallback = (tx: DbProxy) => void | Promise<void>;
-type QueryCallback<T> = (tx: DbProxy) => T | Promise<T>;
+type Subscription = (tx: Transaction) => void | Promise<void>;
+type MutationCallback = (tx: Transaction) => void | Promise<void>;
+type QueryCallback<T> = (tx: Transaction) => T | Promise<T>;
 
 const createDep = {
   object: (namespace: string, id: string, part: "key" | "value") => {
@@ -76,23 +75,21 @@ export class ClientDatabase {
   }
 
   private async runSubscription(callback: Subscription) {
-    const db = await this.db;
-    const dx = new DbProxy(db);
+    const dx = createProxyTransaction(this.db);
     await callback(dx);
-    this.subscribers.set(callback, { deps: dx.getReads() });
+    const deps = operationsToDependencies(dx.getOperations());
+    this.subscribers.set(callback, { deps });
   }
 
   // TODO: need mutex to handle concurrency
   async mutate(callback: MutationCallback): Promise<Mutation> {
     // Pass proxy db to callback to collect operations
-    const db = this.db;
-    const dx = new DbProxy(db);
-
+    const dx = createProxyTransaction(this.db);
     await callback(dx);
 
     // Populate the operations with data needed for undo
     const operations = dx.getOperations();
-    const dbTrx = await db.transaction();
+    const dbTrx = await this.db.transaction();
     for (const op of operations) {
       if (op.type === "update" || op.type === "delete") {
         op.prevData = await dbTrx.get(op.namespace, op.id);
@@ -105,7 +102,7 @@ export class ClientDatabase {
         await dbTrx.put(op.namespace, op.id, op.data);
       } else if (op.type === "delete") {
         await dbTrx.delete(op.namespace, op.id);
-      } else if (op.type === "create") {
+      } else if (op.type === "put") {
         await dbTrx.put(op.namespace, op.id, op.data);
       }
     }
@@ -121,13 +118,13 @@ export class ClientDatabase {
     this.optimisticMutations.push(mutation);
 
     // Notify subscribers
-    this.notifySubscribers(dx.getWrites());
+    const writeOperations = operations.filter((op) => op.isWrite);
+    this.notifySubscribers(operationsToDependencies(writeOperations));
     return mutation;
   }
 
   async query<T>(callback: QueryCallback<T>): Promise<T> {
-    const dx = new DbProxy(this.db, { mode: "readonly" });
-    return callback(dx);
+    return callback(createProxyTransaction(this.db));
   }
 
   private async notifySubscribers(affectedDeps: Set<Dep>): Promise<void> {
@@ -142,91 +139,52 @@ export class ClientDatabase {
   }
 }
 
-// TODO should implement the same Database interface and just have extra getOperations
-export class DbProxy {
-  private db: Database;
-  private operations: Operation[] = [];
-  private reads: Set<Dep> = new Set();
-  private writes: Set<Dep> = new Set();
-  nodes: ReturnType<typeof this.createCRUDOperations<typeof NodeSchema>>;
-  relations: ReturnType<typeof this.createCRUDOperations<typeof RelationSchema>>;
-  trees: ReturnType<typeof this.createCRUDOperations<typeof TreeSchema>>;
-  mode: "readonly" | "readwrite";
+function createProxyTransaction(db: Database): Transaction & { getOperations: () => Operation[] } {
+  const operations: Operation[] = [];
+  let done = false;
 
-  constructor(db: Database, options: { mode: "readonly" | "readwrite" } = { mode: "readwrite" }) {
-    this.db = db;
-    this.nodes = this.createCRUDOperations(NodeSchema);
-    this.relations = this.createCRUDOperations(RelationSchema);
-    this.trees = this.createCRUDOperations(TreeSchema);
-    this.mode = options.mode;
-  }
+  return {
+    async get(store: Namespace, key: string): Promise<any> {
+      if (done) throw new Error("Transaction already completed");
+      operations.push({ type: "get", namespace: store, id: key, isWrite: false });
+      return db.get(store, key);
+    },
 
-  private createCRUDOperations<S extends ModelSchema>(schema: S) {
-    type DataType = z.infer<S>;
-    type GetterOptions = { dep: boolean };
-    const namespace = schema.shape.namespace.value;
-    return {
-      update: (data: Omit<DataType, "namespace">) => {
-        if (this.mode === "readonly") {
-          throw new Error("Cannot write in readonly mode");
-        }
-        this.writes.add(createDep.object(namespace, data.id, "value"));
-        this.writes.add(createDep.namespace(namespace, "values"));
-        this.operations.push({ type: "update", namespace, id: data.id, data });
-      },
-      delete: (id: string) => {
-        if (this.mode === "readonly") {
-          throw new Error("Cannot write in readonly mode");
-        }
-        this.writes.add(createDep.object(namespace, id, "key"));
-        this.writes.add(createDep.namespace(namespace, "keys"));
-        this.operations.push({ type: "delete", namespace, id });
-      },
-      create: (data: Omit<DataType, "namespace">) => {
-        if (this.mode === "readonly") {
-          throw new Error("Cannot write in readonly mode");
-        }
-        this.writes.add(createDep.object(namespace, data.id, "key"));
-        this.writes.add(createDep.object(namespace, data.id, "value"));
-        this.writes.add(createDep.namespace(namespace, "values"));
-        this.writes.add(createDep.namespace(namespace, "keys"));
-        this.operations.push({ type: "create", namespace, id: data.id, data });
-      },
-      get: async (id: string, options: GetterOptions = { dep: true }): Promise<DataType> => {
-        if (options.dep) {
-          this.reads.add(createDep.object(namespace, id, "value"));
-          this.reads.add(createDep.object(namespace, id, "key"));
-        }
-        return this.db.get(namespace, id);
-      },
-      getAll: async (options: GetterOptions = { dep: true }): Promise<DataType[]> => {
-        if (options.dep) {
-          this.reads.add(createDep.namespace(namespace, "values"));
-          this.reads.add(createDep.namespace(namespace, "keys"));
-        }
-        return this.db.getAll(namespace);
-      },
-      getAllKeys: async (options: GetterOptions = { dep: true }): Promise<string[]> => {
-        if (options.dep) {
-          this.reads.add(createDep.namespace(namespace, "keys"));
-        }
-        const keys = await this.db.getAllKeys(namespace);
-        return keys.map((key) => key.toString());
-      },
-    };
-  }
+    async getAll(store: Namespace): Promise<any[]> {
+      if (done) throw new Error("Transaction already completed");
+      operations.push({ type: "getAll", namespace: store, isWrite: false });
+      return db.getAll(store);
+    },
 
-  getOperations() {
-    return this.operations;
-  }
+    async getAllKeys(store: Namespace): Promise<string[]> {
+      if (done) throw new Error("Transaction already completed");
+      operations.push({ type: "getAllKeys", namespace: store, isWrite: false });
+      return db.getAllKeys(store);
+    },
 
-  getReads() {
-    return new Set(this.reads);
-  }
+    async put(store: Namespace, key: string, value: any): Promise<void> {
+      if (done) throw new Error("Transaction already completed");
+      operations.push({ type: "put", namespace: store, id: key, data: value, isWrite: true });
+    },
 
-  getWrites() {
-    return new Set(this.writes);
-  }
+    async delete(store: Namespace, key: string): Promise<void> {
+      if (done) throw new Error("Transaction already completed");
+      operations.push({ type: "delete", namespace: store, id: key, isWrite: true });
+    },
+
+    async update(store: Namespace, key: string, value: any): Promise<void> {
+      if (done) throw new Error("Transaction already completed");
+      operations.push({ type: "update", namespace: store, id: key, data: value, isWrite: true });
+    },
+
+    async done(): Promise<void> {
+      done = true;
+    },
+
+    getOperations(): Operation[] {
+      return operations;
+    },
+  };
 }
 
 // Helper function to create a new database instance
@@ -236,3 +194,32 @@ export function init(): ClientDatabase {
 }
 
 export class ServerDatabase {}
+
+export function operationsToDependencies(operations: Operation[]): Set<string> {
+  const dependencies = new Set<string>();
+
+  for (const operation of operations) {
+    const { type, namespace, id } = operation;
+
+    switch (type) {
+      case "create":
+      case "update":
+        dependencies.add(createDep.object(namespace, id, "value"));
+        dependencies.add(createDep.namespace(namespace, "values"));
+        dependencies.add(createDep.namespace(namespace, "keys"));
+        break;
+      case "delete":
+        dependencies.add(createDep.object(namespace, id, "value"));
+        dependencies.add(createDep.object(namespace, id, "key"));
+        dependencies.add(createDep.namespace(namespace, "values"));
+        dependencies.add(createDep.namespace(namespace, "keys"));
+        break;
+      case "get":
+        dependencies.add(createDep.object(namespace, id, "value"));
+        dependencies.add(createDep.object(namespace, id, "key"));
+        break;
+    }
+  }
+
+  return dependencies;
+}
