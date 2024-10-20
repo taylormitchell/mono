@@ -33,14 +33,14 @@ export type SchemaToOperations<T extends z.ZodType> = {
     namespace: z.infer<T>["namespace"];
     id: string;
     data: z.infer<T>;
-    prevData?: z.infer<T>;
+    prevData: z.infer<T>;
     isWrite: true;
   };
   delete: {
     type: "delete";
     namespace: z.infer<T>["namespace"];
     id: string;
-    prevData?: z.infer<T>;
+    prevData: z.infer<T>;
     isWrite: true;
   };
   put: {
