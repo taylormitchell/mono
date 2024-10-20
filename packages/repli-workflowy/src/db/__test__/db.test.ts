@@ -1,5 +1,6 @@
-import { ClientDatabase, ServerDatabase } from "../index";
 import { expect, describe, it, beforeEach } from "bun:test";
+import { ClientDatabase } from "../client";
+import { ServerDatabase } from "../server";
 import { MapDatabase } from "./map-db";
 
 describe("client db", () => {
@@ -29,13 +30,15 @@ describe("sync", () => {
     });
   });
 
-  it("basic sync", async () => {
+  it("basic sync 1", async () => {
     // client mutate
-    const mutation = await clientDb.mutate((dx) => {
-      dx.put("nodes", "1", { id: "1", text: "test" });
-      dx.put("nodes", "2", { id: "2", text: "test2" });
-      dx.delete("nodes", "1");
+    console.log("calling mutate");
+    const mutation = await clientDb.mutate(async (dx) => {
+      await dx.put("nodes", "1", { id: "1", text: "test" });
+      await dx.put("nodes", "2", { id: "2", text: "test2" });
+      await dx.delete("nodes", "1");
     });
+    console.log("mutate done", mutation);
     expect(mutation.mutationId).toBe(1);
     expect(await clientDb.query((dx) => dx.get("nodes", "1"))).toBeFalsy();
     expect(await clientDb.query((dx) => dx.get("nodes", "2"))).toEqual({ id: "2", text: "test2" });

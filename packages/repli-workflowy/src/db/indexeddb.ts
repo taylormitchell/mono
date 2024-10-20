@@ -35,6 +35,10 @@ export class IndexedDbDatabase implements Database {
         const s = trx.objectStore(store);
         await s.delete(key);
       },
+      update: async (store: Namespace, key: string, value: any) => {
+        const s = trx.objectStore(store);
+        await s.put(value, key);
+      },
       done: () => trx.done,
     };
   }
@@ -55,6 +59,11 @@ export class IndexedDbDatabase implements Database {
   }
 
   async put(store: Namespace, key: string, value: any) {
+    const db = await this.db;
+    await db.put(store, value, key);
+  }
+
+  async update(store: Namespace, key: string, value: any) {
     const db = await this.db;
     await db.put(store, value, key);
   }

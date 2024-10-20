@@ -66,6 +66,8 @@ export type MyDBSchema = {
 export type Namespace = ModelSchema["shape"]["namespace"]["value"];
 export const namespaces: Namespace[] = ["nodes", "relations", "trees"];
 
+export type Dep = string;
+
 export interface Transaction {
   get: (store: Namespace, key: string) => Promise<any>;
   getAll: (store: Namespace) => Promise<any[]>;
@@ -89,3 +91,9 @@ export interface Database {
 export function isWriteOperation(operation: Operation) {
   return operation.type === "put" || operation.type === "update" || operation.type === "delete";
 }
+
+export type Mutation = {
+  clientId: string;
+  mutationId: number;
+  operations: Operation[];
+};

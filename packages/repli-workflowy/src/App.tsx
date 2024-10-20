@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, useRef } from "react";
-import { init, Node, Relation } from "./db";
+import { init, Node, Relation } from "./db/client";
 import { generateNodeId, generateRelationId } from "./db/utils";
 import { generateKeyBetween } from "fractional-indexing";
 
