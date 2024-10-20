@@ -1,5 +1,5 @@
-import { ClientDatabase } from "../index";
-import { expect, describe, it } from "bun:test";
+import { ClientDatabase, ServerDatabase } from "../index";
+import { expect, describe, it, beforeEach } from "bun:test";
 import { MapDatabase } from "./map-db";
 
 describe("client db", () => {
@@ -13,31 +13,102 @@ describe("client db", () => {
   });
 });
 
-// describe("sync", () => {
-//   const serverDb = new ServerDatabase();
-//   const clientDb = new ClientDatabase({
-//     pushHandler: async (mutations: Mutation[]) => {
-//       await serverDb.applyClientMutations(mutations);
-//     },
-//     pullHandler: async ({ clientId, lastCVRId }: { clientId: string; lastCVRId: string }) => {
-//       return serverDb.generatePatch(lastCVRId, clientId);
-//     },
-//   });
+describe("sync", () => {
+  let serverDb: ServerDatabase;
+  let clientDb: ClientDatabase;
 
-//   it("basic", async () => {
-//     const mutation = await clientDb.mutate((dx) => {
-//       dx.put("notes", "1", { name: "test" });
-//     });
-//     const note = await clientDb.query((dx) => dx.get("notes", "1"));
-//     expect(note).toEqual({ id: "1", name: "test" });
+  beforeEach(() => {
+    serverDb = new ServerDatabase(new MapDatabase());
+    clientDb = new ClientDatabase(new MapDatabase(), {
+      push: async (mutations) => {
+        await serverDb.applyClientMutations(mutations);
+      },
+      pull: async ({ clientId, dbVersionAtLastSync }) => {
+        return serverDb.generatePatch(dbVersionAtLastSync, clientId);
+      },
+    });
+  });
 
-//     // push to server
-//     await clientDb.push();
-//     const serverNote = await serverDb.get("notes", "1");
-//     expect(serverNote).toEqual({ id: "1", name: "test" });
+  it("basic sync", async () => {
+    // client mutate
+    const mutation = await clientDb.mutate((dx) => {
+      dx.put("nodes", "1", { id: "1", text: "test" });
+      dx.put("nodes", "2", { id: "2", text: "test2" });
+      dx.delete("nodes", "1");
+    });
+    expect(mutation.mutationId).toBe(1);
+    expect(await clientDb.query((dx) => dx.get("nodes", "1"))).toBeFalsy();
+    expect(await clientDb.query((dx) => dx.get("nodes", "2"))).toEqual({ id: "2", text: "test2" });
 
-//     // pull from server
-//     await clientDb.pull();
-//     console.log(clientDb.pendingMutations);
-//   });
-// });
+    // push
+    await clientDb.push();
+
+    // mutate again
+    await clientDb.mutate((dx) => {
+      dx.put("nodes", "1", { id: "1", text: "test-updated" });
+    });
+
+    await clientDb.push();
+
+    // pull
+    await clientDb.pull();
+
+    // check client and server data match
+    const expectedData = {
+      version: 2,
+      nodes: {
+        "1": { id: "1", text: "test-updated" },
+        "2": { id: "2", text: "test2" },
+      },
+      relations: {},
+      trees: {},
+    };
+    expect(await clientDb.dump()).toEqual(expectedData);
+    expect(await serverDb.dump()).toEqual(expectedData);
+  });
+
+  it("basic sync 2", async () => {
+    // mutate and push
+    await clientDb.mutate((dx) => {
+      dx.put("nodes", "1", { id: "1", text: "test" });
+    });
+    await clientDb.push();
+
+    // mutation without push, and then pull
+    await clientDb.mutate((dx) => {
+      dx.put("nodes", "2", { id: "2", text: "test" });
+    });
+    await clientDb.pull();
+
+    // expect we still have the mutation
+    expect(await clientDb.query((dx) => dx.getAllKeys("nodes"))).toEqual(["1", "2"]);
+  });
+
+  it("two clients", async () => {
+    const clientDb2 = new ClientDatabase(new MapDatabase(), {
+      push: async (mutations) => {
+        await serverDb.applyClientMutations(mutations);
+      },
+      pull: async ({ clientId, dbVersionAtLastSync }) => {
+        return serverDb.generatePatch(dbVersionAtLastSync, clientId);
+      },
+    });
+
+    // client 1 mutate and push
+    await clientDb.mutate((dx) => {
+      dx.put("nodes", "1", { id: "1", text: "test" });
+    });
+    await clientDb.push();
+
+    // client 2 mutate and push
+    await clientDb2.mutate((dx) => {
+      dx.put("nodes", "2", { id: "2", text: "test2" });
+    });
+    await clientDb2.push();
+
+    // pull and check data match
+    await clientDb.pull();
+    await clientDb2.pull();
+    expect(await clientDb.dump()).toEqual(await clientDb2.dump());
+  });
+});

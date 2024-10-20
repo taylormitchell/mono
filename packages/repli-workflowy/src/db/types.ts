@@ -33,27 +33,25 @@ export type SchemaToOperations<T extends z.ZodType> = {
     namespace: z.infer<T>["namespace"];
     id: string;
     data: z.infer<T>;
-    prevData: z.infer<T>;
-    isWrite: true;
+    prevData?: z.infer<T>;
   };
   delete: {
     type: "delete";
     namespace: z.infer<T>["namespace"];
     id: string;
-    prevData: z.infer<T>;
-    isWrite: true;
+    prevData?: z.infer<T>;
   };
   put: {
     type: "put";
     namespace: z.infer<T>["namespace"];
     id: string;
     data: z.infer<T>;
-    isWrite: true;
   };
-  get: { type: "get"; namespace: z.infer<T>["namespace"]; id: string; isWrite: false };
-  getAll: { type: "getAll"; namespace: z.infer<T>["namespace"]; isWrite: false };
-  getAllKeys: { type: "getAllKeys"; namespace: z.infer<T>["namespace"]; isWrite: false };
+  get: { type: "get"; namespace: z.infer<T>["namespace"]; id: string };
+  getAll: { type: "getAll"; namespace: z.infer<T>["namespace"] };
+  getAllKeys: { type: "getAllKeys"; namespace: z.infer<T>["namespace"] };
 };
+
 export type Operation = {
   [S in ModelSchema as S["shape"]["namespace"]["value"]]: SchemaToOperations<S>[keyof SchemaToOperations<S>];
 }[ModelSchema["shape"]["namespace"]["value"]];
@@ -86,4 +84,8 @@ export interface Database {
   put: (store: Namespace, key: string, value: any) => Promise<void>;
   delete: (store: Namespace, key: string) => Promise<void>;
   update: (store: Namespace, key: string, value: any) => Promise<void>;
+}
+
+export function isWriteOperation(operation: Operation) {
+  return operation.type === "put" || operation.type === "update" || operation.type === "delete";
 }

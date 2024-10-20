@@ -1,5 +1,5 @@
 import { generateId } from "./utils";
-import { Operation, Database, Namespace, Transaction } from "./types";
+import { Operation, Database, Namespace, Transaction, isWriteOperation } from "./types";
 import { IndexedDbDatabase } from "./indexeddb";
 
 type Subscription = (tx: Transaction) => void | Promise<void>;
@@ -68,7 +68,7 @@ export class ClientDatabase {
       push: (mutations: Mutation[]) => Promise<void>;
       pull: (params: { clientId: string; dbVersionAtLastSync: number }) => Promise<{
         clientId: string;
-        patch: ServerPatch[];
+        patch: Operation[];
         lastMutationId: number;
         dbVersion: number;
       }>;
@@ -86,23 +86,20 @@ export class ClientDatabase {
       dbVersionAtLastSync: this.lastSyncVersion,
     });
 
-    // roll back all local mutations
-    const reversedPatch = reverseOperations(this.localMutations.map((m) => m.operations).flat());
-    await this.applyOperations(reversedPatch);
+    const operations: Operation[] = [];
+    // add roll back operations
+    operations.push(...reverseOperations(this.localMutations.map((m) => m.operations).flat()));
+    // add patch operations from server
+    operations.push(...patch);
+    // add local mutations that the server hasn't seen yet
+    const unseenMutations = this.localMutations.filter((m) => m.mutationId > lastMutationId);
+    operations.push(...unseenMutations.map((m) => m.operations).flat());
+    // apply
+    await this.applyOperations(operations);
 
-    // apply patch from server
-    await this.applyOperations(patch);
-
-    // re-apply all local mutations that the server hasn't seen yet
-    const lastSeenMutationIndex = this.localMutations.findIndex(
-      (m) => m.mutationId === lastMutationId
-    );
-    const unseenMutations = this.localMutations.slice(lastSeenMutationIndex);
-    await this.applyOperations(unseenMutations.map((m) => m.operations).flat());
-
-    // reset optimistic mutations
-    this.localMutations = unseenMutations;
+    this.localMutations = this.localMutations.slice(lastMutationId);
     this.lastSyncVersion = dbVersion;
+    this.notifySubscribers(operationsToDependencies(operations));
   }
 
   subscribe(callback: Subscription) {
@@ -116,7 +113,7 @@ export class ClientDatabase {
   private async applyOperations(operations: Operation[]) {
     const trx = await this.db.transaction();
     for (const operation of operations) {
-      if (operation.isWrite) {
+      if (isWriteOperation(operation)) {
         if (operation.type === "update") {
           await trx.update(operation.namespace, operation.id, operation.data);
         } else if (operation.type === "put") {
@@ -180,11 +177,13 @@ export class ClientDatabase {
     const trx = await this.db.transaction();
     const dump: Record<string, any> = {
       version: this.lastSyncVersion,
-      lastMutationIndex: this.lastMutationId,
     };
     for (const namespace of ["nodes", "relations", "trees"] as const) {
       const allData = await trx.getAll(namespace);
-      dump[namespace] = allData;
+      dump[namespace] = allData.reduce((acc, curr) => {
+        acc[curr.id] = curr;
+        return acc;
+      }, {} as Record<string, any>);
     }
     await trx.done();
     return dump;
@@ -263,19 +262,6 @@ export function init(): ClientDatabase {
   return new ClientDatabase(db);
 }
 
-type ServerPatch =
-  | {
-      type: "upsert";
-      namespace: Namespace;
-      id: string;
-      data: any;
-    }
-  | {
-      type: "delete";
-      namespace: Namespace;
-      id: string;
-    };
-
 export class ServerDatabase {
   private db: Database;
   private version: number = 0;
@@ -301,15 +287,17 @@ export class ServerDatabase {
       for (const op of mutation.operations) {
         if (op.type === "update") {
           await trx.update(op.namespace, op.id, op.data);
-          updatedIds.add(op.id);
+          this.updatedAtVersion[op.id] = newVersion;
+          delete this.deletedAtVersion[op.id];
         } else if (op.type === "delete") {
           await trx.delete(op.namespace, op.id);
-          deletedIds.add(op.id);
-          updatedIds.add(op.id);
+          this.updatedAtVersion[op.id] = newVersion;
+          this.deletedAtVersion[op.id] = newVersion;
         } else if (op.type === "put") {
           await trx.put(op.namespace, op.id, op.data);
-          createdIds.add(op.id);
-          updatedIds.add(op.id);
+          this.createdAtVersion[op.id] = newVersion;
+          this.updatedAtVersion[op.id] = newVersion;
+          delete this.deletedAtVersion[op.id];
         } else {
           continue;
         }
@@ -329,37 +317,29 @@ export class ServerDatabase {
     }
   }
 
-  async generatePatch(version: number, clientId: string) {
-    const patch: ServerPatch[] = [];
+  async generatePatch(clientVersion: number, clientId: string) {
+    const patch: Operation[] = [];
 
-    if (version < this.version) {
-      const trx = await this.db.transaction();
+    if (clientVersion < this.version) {
       for (const namespace of ["nodes", "relations", "trees"] as const) {
-        const allKeys = await trx.getAllKeys(namespace);
-
+        const allKeys = await this.db.getAllKeys(namespace);
         for (const id of allKeys) {
-          const createdAt = this.createdAtVersion[id] || 0;
+          const deletedAt = this.deletedAtVersion[id];
           const updatedAt = this.updatedAtVersion[id] || 0;
-          const deletedAt = this.deletedAtVersion[id] || Infinity;
-
-          if (createdAt > version && createdAt <= this.version) {
-            const data = await trx.get(namespace, id);
-            patch.push({ type: "upsert", namespace, id, data });
-          } else if (updatedAt > version && updatedAt <= this.version && deletedAt > this.version) {
-            const data = await trx.get(namespace, id);
-            patch.push({ type: "upsert", namespace, id, data });
-          } else if (deletedAt > version && deletedAt <= this.version) {
+          if (deletedAt && deletedAt > clientVersion) {
             patch.push({ type: "delete", namespace, id });
+          } else if (updatedAt > clientVersion) {
+            const data = await this.db.get(namespace, id);
+            patch.push({ type: "put", namespace, id, data });
           }
         }
       }
-      await trx.done();
     }
 
     return {
       clientId,
       patch,
-      lastMutationIndex: this.lastMutationByClient[clientId] || 0,
+      lastMutationId: this.lastMutationByClient[clientId] || 0,
       dbVersion: this.version,
     };
   }
@@ -372,7 +352,10 @@ export class ServerDatabase {
 
     for (const namespace of ["nodes", "relations", "trees"] as const) {
       const allData = await trx.getAll(namespace);
-      dump[namespace] = allData;
+      dump[namespace] = allData.reduce((acc, curr) => {
+        acc[curr.id] = curr;
+        return acc;
+      }, {} as Record<string, any>);
     }
 
     await trx.done();
@@ -413,7 +396,7 @@ export function operationsToDependencies(operations: Operation[]): Set<string> {
 export function reverseOperations(operations: Operation[]): Operation[] {
   const reversed: Operation[] = [];
   for (const operation of operations.toReversed()) {
-    if (!operation.isWrite) {
+    if (!isWriteOperation(operation)) {
       // ignore reads
       continue;
     }
