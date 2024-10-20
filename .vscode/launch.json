@@ -20,6 +20,24 @@
       "env": {},
       "args": [],
       "internalConsoleOptions": "openOnSessionStart"
+    },
+    {
+      "type": "node",
+      "name": "vscode-jest-tests.v2.taylors-tech",
+      "request": "launch",
+      "args": [
+        "--runInBand",
+        "--watchAll=false",
+        "--testNamePattern",
+        "${jest.testNamePattern}",
+        "--runTestsByPath",
+        "${jest.testFile}"
+      ],
+      "cwd": "/Users/taylormitchell/Code/taylors-tech",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true,
+      "program": "/Users/taylormitchell/Code/taylors-tech/node_modules/.bin/jest"
     }
   ]
 }
