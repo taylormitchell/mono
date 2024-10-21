@@ -1,5 +1,6 @@
 import { Database, Mutation, Operation } from "./types";
 
+// TODO maybe make a wrapper around sqlite
 export class ServerDatabase {
   private db: Database;
   private version: number = 0;

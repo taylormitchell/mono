@@ -15,8 +15,9 @@ type MutationCallback = (tx: Transaction) => void | Promise<void>;
 type QueryCallback<T> = (tx: Transaction) => T | Promise<T>;
 
 export class ClientDatabase {
-  private subscribers: Map<Subscription, { deps: Set<Dep> }> = new Map();
   private clientId = generateId();
+  private subscribers: Map<Subscription, { deps: Set<Dep> }> = new Map();
+  // TODO persist this stuff
   private lastSyncVersion = 0;
   private lastMutationId = 0;
   private localMutations: Mutation[] = [];
@@ -38,6 +39,7 @@ export class ClientDatabase {
     await this.syncHandlers?.push(this.localMutations);
   }
 
+  // TODO prevent both tabs from pulling
   async pull() {
     if (!this.syncHandlers) return;
     const { patch, lastMutationId, dbVersion } = await this.syncHandlers.pull({
