@@ -58,7 +58,7 @@ class Store {
   loadProject(project: Project) {
     let model = this.projects.get(project.id);
     if (model) {
-      model.assign(project);
+      model.unsafeAssign(project);
     } else {
       model = new ProjectModel(this, project);
       this.projects.set(project.id, model);
@@ -79,7 +79,7 @@ class Store {
     // Create/populate issue model
     let model = this.issues.get(issue.id);
     if (model) {
-      model.assign({ ...issue, project });
+      model.unsafeAssign({ ...issue, project });
     } else {
       model = new IssueModel(this, { ...issue, project });
       this.issues.set(issue.id, model);
@@ -171,7 +171,7 @@ class IssueModel implements Model {
   store: Store;
   id: string;
   relations: Collection<RelationModel>;
-  project: ProjectModel | null;
+  private _project: ProjectModel | null;
   placeholder: boolean;
 
   constructor(
@@ -184,34 +184,31 @@ class IssueModel implements Model {
   ) {
     this.store = store;
     this.id = id;
-    this.project = project;
+    this._project = project;
     this.placeholder = placeholder;
     this.relations = new Collection<RelationModel>(store, id);
-    this.makeTracked();
   }
 
-  makeTracked() {
-    let _project = this.project;
-    Object.defineProperty(this, "project", {
-      get: () => _project,
-      set: (v) => {
-        if (this.project) {
-          this.project.issues.delete(this);
-        }
-        _project = v;
-        if (v) {
-          v.issues.add(this);
-        }
-        this.store.uncommittedChanges.push({
-          type: "update",
-          oldProps: { project: _project },
-          newProps: { project: v },
-        });
-      },
+  get project() {
+    return this._project;
+  }
+
+  set project(project: ProjectModel | null) {
+    if (this._project) {
+      this._project.issues.delete(this);
+    }
+    this._project = project;
+    if (project) {
+      project.issues.add(this);
+    }
+    this.store.uncommittedChanges.push({
+      type: "update",
+      oldProps: { project: this._project },
+      newProps: { project },
     });
   }
 
-  assign({
+  unsafeAssign({
     id,
     project,
     placeholder = false,
@@ -221,20 +218,8 @@ class IssueModel implements Model {
     placeholder?: boolean;
   }) {
     this.id = id;
-    this.project = project;
+    this._project = project;
     this.placeholder = placeholder;
-  }
-}
-
-// TODO this can probably be generalized
-// defining this outside the class feels right
-function assignIssueToProject(issue: IssueModel, project: ProjectModel | null) {
-  if (issue.project) {
-    issue.project.issues.delete(issue);
-  }
-  issue.project = project;
-  if (project) {
-    project.issues.add(issue);
   }
 }
 
@@ -242,7 +227,7 @@ class ProjectModel implements Model {
   store: Store;
   id: string;
   title: string;
-  issues: Collection<IssueModel>;
+  issues: Set<IssueModel>;
   placeholder: boolean;
 
   constructor(
@@ -253,10 +238,18 @@ class ProjectModel implements Model {
     this.id = id;
     this.title = title;
     this.placeholder = placeholder;
-    this.issues = new Collection<IssueModel>(store, id);
+    this.issues = new Set();
   }
 
-  assign({ id, title, placeholder = false }: { id: string; title: string; placeholder?: boolean }) {
+  unsafeAssign({
+    id,
+    title,
+    placeholder = false,
+  }: {
+    id: string;
+    title: string;
+    placeholder?: boolean;
+  }) {
     this.id = id;
     this.title = title;
     this.placeholder = placeholder;
