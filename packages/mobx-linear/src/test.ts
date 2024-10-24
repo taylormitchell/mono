@@ -2,7 +2,7 @@ import { action, makeObservable, observable, reaction, runInAction, toJS } from 
 
 type Update = {
   operation: "update";
-  model: "project" | "issue";
+  model: ModelName;
   id: string;
   oldProps: Record<string, any>;
   newProps: Record<string, any>;
@@ -10,29 +10,29 @@ type Update = {
 
 type Create = {
   operation: "create";
-  model: "project" | "issue";
+  model: ModelName;
   id: string;
   props: Record<string, any>;
 };
 
 type Delete = {
   operation: "delete";
-  model: "project" | "issue";
+  model: ModelName;
   id: string;
 };
 
-type Action = Update | Create | Delete;
+type Event = Update | Create | Delete;
 
 class Store {
   issues: Map<string, IssueModel> = new Map();
   projects: Map<string, ProjectModel> = new Map();
+  relations: Map<string, RelationModel> = new Map();
   trackingChanges: boolean = true;
-  //   relations: Map<string, RelationModel> = new Map();
 
   // TODO rather than calling `commit` or something, can mobx autocommit for me after an action completes?
   // I *think* reactions delay running until an entire action completes, so if processing the changes is
   // done instead an action, will that autocommit it?
-  uncommittedChanges: Action[] = [];
+  uncommittedChanges: Event[] = [];
   // Using an observable number to trigger a reaction b/c if we track the change array,
   // the reaction will need to modify it too (clear it) which you're not supposed to do
   // inside reactions.
@@ -45,6 +45,7 @@ class Store {
       loadIssue: action,
       createIssue: action,
       createProject: action,
+      loadRelation: action,
     });
     reaction(
       () => this.changeCount,
@@ -55,7 +56,7 @@ class Store {
     );
   }
 
-  addChange(change: Action) {
+  addChange(change: Event) {
     if (this.trackingChanges) {
       this.changeCount++;
       this.uncommittedChanges.push(change);
@@ -98,6 +99,34 @@ class Store {
     return model;
   }
 
+  loadRelation(relation: RelationData) {
+    this.trackingChanges = false;
+    let model = this.relations.get(relation.id);
+    if (model) {
+      model.populatePlaceholder(relation);
+    } else {
+      // TODO feels like a lot of fiddly work to remember to do. but maybe it's fine?
+      const fromIssue =
+        this.issues.get(relation.fromId) || IssueModel.createPlaceholder(this, relation.fromId);
+      const toIssue =
+        this.issues.get(relation.toId) || IssueModel.createPlaceholder(this, relation.toId);
+      if (!this.issues.has(relation.fromId)) {
+        this.issues.set(relation.fromId, fromIssue);
+      }
+      if (!this.issues.has(relation.toId)) {
+        this.issues.set(relation.toId, toIssue);
+      }
+      model = new RelationModel(this, relation.id, {
+        from: fromIssue,
+        to: toIssue,
+        placeholder: false,
+      });
+      this.relations.set(relation.id, model);
+    }
+    this.trackingChanges = true;
+    return model;
+  }
+
   createIssue(id: string, props: Partial<IssueState>) {
     if (this.issues.has(id)) {
       throw new Error(`Issue with id ${id} already exists`);
@@ -122,9 +151,29 @@ class Store {
     this.addChange({ operation: "create", model: "project", id, props: serializeState(props) });
     return project;
   }
+
+  createRelation(
+    id: string,
+    props: Omit<RelationState, "placeholder"> & { placeholder?: boolean }
+  ) {
+    if (this.relations.has(id)) {
+      throw new Error(`Relation with id ${id} already exists`);
+    }
+    this.trackingChanges = false;
+    const relation = new RelationModel(this, id, props);
+    this.trackingChanges = true;
+    this.relations.set(id, relation);
+    this.addChange({
+      operation: "create",
+      model: "relation",
+      id,
+      props: serializeState(props),
+    });
+    return relation;
+  }
 }
 
-type ModelName = "issue" | "project";
+type ModelName = "issue" | "project" | "relation";
 
 abstract class BaseModel {
   abstract id: string;
@@ -132,9 +181,11 @@ abstract class BaseModel {
   abstract name: ModelName;
 }
 
-type Model = IssueModel | ProjectModel;
+type Model = IssueModel | ProjectModel | RelationModel;
 function isModel(value: unknown): value is Model {
-  return value instanceof IssueModel || value instanceof ProjectModel;
+  return (
+    value instanceof IssueModel || value instanceof ProjectModel || value instanceof RelationModel
+  );
 }
 
 type Project = {
@@ -151,6 +202,7 @@ type IssueData = {
 type IssueState = {
   project: ProjectModel | null;
   placeholder: boolean;
+  relations: Set<RelationModel>;
 };
 
 class IssueModel implements BaseModel {
@@ -166,11 +218,11 @@ class IssueModel implements BaseModel {
   constructor(
     store: Store,
     id: string,
-    { project = null, placeholder = false }: Partial<IssueState>
+    { project = null, placeholder = false, relations = new Set() }: Partial<IssueState>
   ) {
     this.store = store;
     this.id = id;
-    this._state = makeTracking({ project, placeholder }, this);
+    this._state = makeTracking({ project, placeholder, relations }, this);
     moveIssueToProject(this, project);
   }
 
@@ -186,12 +238,20 @@ class IssueModel implements BaseModel {
     moveIssueToProject(this, project);
   }
 
+  get relations() {
+    return this._state.relations.values();
+  }
+
   static createPlaceholder(store: Store, id: string) {
     return new IssueModel(store, id, { project: null, placeholder: true });
   }
 
   populatePlaceholder(props: Partial<IssueState>) {
+    if (!this.placeholder) {
+      throw new Error("Cannot populate a non-placeholder issue");
+    }
     Object.assign(this._state, props);
+    this._state.placeholder = false;
   }
 }
 
@@ -202,6 +262,24 @@ function moveIssueToProject(issue: IssueModel, project: ProjectModel | null) {
   issue._state.project = project;
   if (project) {
     project._state.issues.add(issue);
+  }
+}
+
+function updateRelationIssues(
+  relation: RelationModel,
+  { from, to }: { from?: IssueModel; to?: IssueModel }
+) {
+  if (from !== undefined) {
+    const oldFrom = relation._state.from;
+    oldFrom._state.relations.delete(relation);
+    relation._state.from = from;
+    from._state.relations.add(relation);
+  }
+  if (to !== undefined) {
+    const oldTo = relation._state.to;
+    oldTo._state.relations.delete(relation);
+    relation._state.to = to;
+    to._state.relations.add(relation);
   }
 }
 
@@ -261,7 +339,11 @@ class ProjectModel implements BaseModel {
   }
 
   populatePlaceholder(props: Partial<ProjectState>) {
+    if (!this.placeholder) {
+      throw new Error("Cannot populate a non-placeholder project");
+    }
     Object.assign(this._state, props);
+    this._state.placeholder = false;
   }
 
   getIssues() {
@@ -313,82 +395,83 @@ function serializeState(state: Record<string, any>) {
   return serialized;
 }
 
-// class RelationModel implements Model {
-//   store: Store;
-//   placeholder: boolean;
-//   id: string;
-//   source: IssueModel;
-//   target: IssueModel;
-//   type: RelationType;
-//   updatedAt: Date;
-//   createdAt: Date;
-//   sourceIssues: Collection<IssueModel>;
-//   targetIssues: Collection<IssueModel>;
+type RelationType = "related-to" | "blocks";
 
-//   constructor(
-//     store: Store,
-//     {
-//       id,
-//       from,
-//       to,
-//       type,
-//       createdAt = new Date(),
-//       updatedAt = new Date(),
-//       placeholder = false,
-//     }: {
-//       id: string;
-//       from: IssueModel;
-//       to: IssueModel;
-//       type: RelationType;
-//       createdAt?: Date;
-//       updatedAt?: Date;
-//       placeholder?: boolean;
-//     }
-//   ) {
-//     this.store = store;
-//     this.id = id;
-//     this.source = from;
-//     this.target = to;
-//     this.type = type;
-//     this.createdAt = createdAt;
-//     this.updatedAt = updatedAt;
-//     this.placeholder = placeholder;
-//     this.sourceIssues = new Collection<IssueModel>(store, id);
-//     this.targetIssues = new Collection<IssueModel>(store, id);
-//   }
+type RelationData = {
+  id: string;
+  fromId: string;
+  toId: string;
+  type: RelationType;
+};
 
-//   assign({
-//     id,
-//     from,
-//     to,
-//     type,
-//     createdAt,
-//     updatedAt,
-//     placeholder,
-//   }: {
-//     id: string;
-//     from: IssueModel;
-//     to: IssueModel;
-//     type: RelationType;
-//     createdAt: Date;
-//     updatedAt: Date;
-//     placeholder: boolean;
-//   }) {
-//     this.id = id;
-//     this.source = from;
-//     this.target = to;
-//     this.type = type;
-//     this.createdAt = createdAt;
-//     this.updatedAt = updatedAt;
-//     this.placeholder = placeholder;
-//   }
-// }
+type RelationState = {
+  from: IssueModel;
+  to: IssueModel;
+  placeholder: boolean;
+};
+
+class RelationModel implements BaseModel {
+  readonly name = "relation";
+  store: Store;
+  id: string;
+  _state: RelationState;
+
+  constructor(
+    store: Store,
+    id: string,
+    { from, to, placeholder = false }: Partial<RelationState> & { from: IssueModel; to: IssueModel }
+  ) {
+    this.store = store;
+    this.id = id;
+    this._state = makeTracking({ from, to, placeholder }, this);
+    updateRelationIssues(this, { from, to });
+  }
+
+  get from(): IssueModel {
+    return this._state.from;
+  }
+
+  set from(issue: IssueModel) {
+    updateRelationIssues(this, { from: issue });
+  }
+
+  get to(): IssueModel {
+    return this._state.to;
+  }
+
+  set to(issue: IssueModel) {
+    updateRelationIssues(this, { to: issue });
+  }
+
+  get placeholder(): boolean {
+    return this._state.placeholder;
+  }
+
+  static createPlaceholder(
+    store: Store,
+    id: string,
+    from: IssueModel,
+    to: IssueModel
+  ): RelationModel {
+    return new RelationModel(store, id, { from, to, placeholder: true });
+  }
+
+  populatePlaceholder(data: RelationData) {
+    if (!this.placeholder) {
+      throw new Error("Cannot populate a non-placeholder relation");
+    }
+    Object.assign(this._state, data);
+    this._state.placeholder = false;
+  }
+}
 
 function test() {
   const store = new Store();
 
+  const relation1 = store.loadRelation({ id: "1", fromId: "1", toId: "2", type: "related-to" });
   const issue1 = store.loadIssue({ id: "1", projectId: "1", title: "Issue 1" });
   const issue2 = store.loadIssue({ id: "2", projectId: "1", title: "Issue 2" });
+  const issue3 = store.loadIssue({ id: "3", projectId: "1", title: "Issue 3" });
   const project1 = store.loadProject({ id: "1", title: "Project 1" });
   const project2 = store.loadProject({ id: "2", title: "Project 2" });
 
@@ -400,8 +483,12 @@ function test() {
   });
 
   runInAction(() => {
-    store.createIssue("3", { project: project1, placeholder: false });
     store.createProject("3", { title: "Project 3", placeholder: false });
+  });
+
+  runInAction(() => {
+    relation1.to = issue3;
+    const relation2 = store.createRelation("2", { from: issue1, to: issue3 });
   });
 }
 
