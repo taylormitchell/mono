@@ -1,3 +1,4 @@
+import { generateKeyBetween } from "fractional-indexing";
 import { action, makeObservable, observable, reaction, runInAction, toJS } from "mobx";
 
 type Update = {
@@ -173,7 +174,7 @@ class Store {
   }
 }
 
-type ModelName = "issue" | "project" | "relation";
+type ModelName = "issue" | "project" | "relation" | "view";
 
 abstract class BaseModel {
   abstract id: string;
@@ -181,7 +182,7 @@ abstract class BaseModel {
   abstract name: ModelName;
 }
 
-type Model = IssueModel | ProjectModel | RelationModel;
+type Model = IssueModel | ProjectModel | RelationModel | ViewModel;
 function isModel(value: unknown): value is Model {
   return (
     value instanceof IssueModel || value instanceof ProjectModel || value instanceof RelationModel
@@ -197,12 +198,14 @@ type IssueData = {
   id: string;
   projectId: string | null;
   title: string;
+  createdAt: number;
 };
 
 type IssueState = {
   project: ProjectModel | null;
   placeholder: boolean;
   relations: Set<RelationModel>;
+  createdAt: number;
 };
 
 class IssueModel implements BaseModel {
@@ -240,6 +243,10 @@ class IssueModel implements BaseModel {
 
   get relations() {
     return this._state.relations.values();
+  }
+
+  get createdAt() {
+    return this._state.createdAt;
   }
 
   static createPlaceholder(store: Store, id: string) {
@@ -462,6 +469,106 @@ class RelationModel implements BaseModel {
     }
     Object.assign(this._state, data);
     this._state.placeholder = false;
+  }
+}
+
+type ViewData = {
+  id: string;
+  projectId: string;
+  issueIdToPosition: Record<string, string>;
+};
+
+type ViewState = {
+  project: ProjectModel; // later this'll be a query
+  // The project defines the set of issues (and later the query). This
+  // just assigns positions to issues.
+  issueIdToPosition: Record<string, string>;
+};
+
+type Position = string;
+
+function generatePositionBetween(a: Position | null, b: Position | null): Position {
+  if (a === null && b === null) {
+    return Date.now().toString() + "-" + generateKeyBetween(null, null);
+  } else if (a && b) {
+    const aParts = a.split("-");
+    const bParts = b.split("-");
+    if (aParts[0] === bParts[0]) {
+      return aParts[0] + "-" + generateKeyBetween(aParts[1], bParts[1]);
+    } else {
+      return aParts[0] + "-" + generateKeyBetween(aParts[1], null);
+    }
+  } else if (b && a === null) {
+    const datePart = b.split("-")[0];
+    return datePart + "-" + generateKeyBetween(null, b);
+  } else if (a && b === null) {
+    const datePart = a.split("-")[0];
+    return datePart + "-" + generateKeyBetween(a, null);
+  } else {
+    // TODO why can't do this in typescript?
+    throw new Error("Invalid arguments to generatePosition");
+  }
+}
+
+function generatePosition(issue: IssueModel): Position {
+  return issue.createdAt.toString() + "-" + generateKeyBetween(null, null);
+}
+
+function sortPosition(a: Position, b: Position) {
+  return a.localeCompare(b);
+}
+
+class ViewModel implements BaseModel {
+  readonly name = "view";
+  store: Store;
+  id: string;
+  _state: ViewState;
+
+  constructor(store: Store, id: string, { project, issueIdToPosition }: ViewState) {
+    this.store = store;
+    this.id = id;
+    // TODO maybe should have more granular tracking of maps?
+    this._state = makeTracking({ project, issueIdToPosition }, this);
+  }
+
+  getPositionedIssues() {
+    return Array.from(this._state.project.getIssues()).map((issue) => ({
+      issue,
+      position: this._state.issueIdToPosition[issue.id] ?? generatePosition(issue),
+    }));
+  }
+
+  moveIssueAfter(issue: IssueModel, before: IssueModel) {
+    const sortedIssues = this.getPositionedIssues().sort((a, b) =>
+      sortPosition(a.position, b.position)
+    );
+    if (
+      !sortedIssues.some((v) => v.issue === before) ||
+      !sortedIssues.some((v) => v.issue === issue)
+    ) {
+      throw new Error("Issue not found in view");
+    }
+
+    const indexBefore = sortedIssues.findIndex((v) => v.issue === before);
+    const indexAfter = indexBefore + 1;
+    const beforePositioned = sortedIssues[indexBefore];
+    const afterPositioned = sortedIssues[indexAfter];
+
+    const newIssueIdToPosition = { ...this._state.issueIdToPosition };
+
+    newIssueIdToPosition[issue.id] = generatePositionBetween(
+      afterPositioned.position,
+      beforePositioned.position
+    );
+    // If either of the issues before/after had ephemeral positions, update them now
+    if (!this._state.issueIdToPosition[beforePositioned.issue.id]) {
+      newIssueIdToPosition[beforePositioned.issue.id] = beforePositioned.position;
+    }
+    if (!this._state.issueIdToPosition[afterPositioned.issue.id]) {
+      newIssueIdToPosition[afterPositioned.issue.id] = afterPositioned.position;
+    }
+
+    this._state.issueIdToPosition = newIssueIdToPosition;
   }
 }
 
