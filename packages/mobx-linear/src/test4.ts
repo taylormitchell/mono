@@ -1,11 +1,12 @@
-import { makeAutoObservable } from "mobx";
+import { autorun, observable, runInAction } from "mobx";
 
-class Test {
-  name = "test";
-  constructor() {
-    makeAutoObservable(this);
-  }
-}
+const values = observable.array([]);
 
-const test = new Test();
-test.name = "test2";
+autorun(() => {
+  console.log(values.slice());
+});
+
+runInAction(() => {
+  values.push(1);
+  values.push(2);
+});

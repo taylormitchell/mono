@@ -1,16 +1,23 @@
+import { autorun, observable, runInAction, toJS } from "mobx";
+
 type Update = {
-  type: "update";
+  operation: "update";
+  model: "project" | "issue";
+  id: string;
   oldProps: Record<string, any>;
   newProps: Record<string, any>;
 };
 
 type Create = {
-  type: "create";
+  operation: "create";
+  model: "project" | "issue";
+  id: string;
   props: Record<string, any>;
 };
 
 type Delete = {
-  type: "delete";
+  operation: "delete";
+  model: "project" | "issue";
   id: string;
 };
 
@@ -19,39 +26,28 @@ type Action = Update | Create | Delete;
 class Store {
   issues: Map<string, IssueModel> = new Map();
   projects: Map<string, ProjectModel> = new Map();
+  trackingChanges: boolean = true;
   //   relations: Map<string, RelationModel> = new Map();
 
   // TODO rather than calling `commit` or something, can mobx autocommit for me after an action completes?
   // I *think* reactions delay running until an entire action completes, so if processing the changes is
   // done instead an action, will that autocommit it?
-  uncommittedChanges: Action[] = [];
+  uncommittedChanges: Action[] = observable.array();
 
-  //   loadRelation(relation: Relation) {
-  //     // Get source and target issues
-  //     let from = this.issues.get(relation.fromId);
-  //     let to = this.issues.get(relation.toId);
-  //     if (!from) {
-  //       from = new IssueModel(this, { id: relation.fromId, project: null });
-  //       this.issues.set(relation.fromId, from);
-  //     }
-  //     if (!to) {
-  //       to = new IssueModel(this, { id: relation.toId, project: null });
-  //       this.issues.set(relation.toId, to);
-  //     }
-  //     // Create/populate relation model
-  //     let relationModel = this.relations.get(relation.id);
-  //     if (relationModel) {
-  //       relationModel.assign({ ...relation, from, to, placeholder: false });
-  //     } else {
-  //       relationModel = new RelationModel(this, { ...relation, from, to });
-  //       this.relations.set(relation.id, relationModel);
-  //     }
-  //     // Add to collections
-  //     from.relations.add(relationModel);
-  //     to.relations.add(relationModel);
-  //     relationModel.sourceIssues.add(from);
-  //     relationModel.targetIssues.add(to);
-  //   }
+  constructor() {
+    // makeObservable(this, {
+    //   uncommittedChanges: observable.shallow,
+    // });
+    autorun(() => {
+      console.log(toJS(this.uncommittedChanges.slice().map((v) => toJS(v))));
+    });
+  }
+
+  addChange(change: Action) {
+    if (this.trackingChanges) {
+      this.uncommittedChanges.push(change);
+    }
+  }
 
   loadProject(project: Project) {
     let model = this.projects.get(project.id);
@@ -83,10 +79,10 @@ class Store {
       this.issues.set(issue.id, model);
     }
     // Add to project collection
-    if (project) {
-      // should this be done inside the issue model?
-      project._issues.add(model);
-    }
+    // if (project) {
+    //   // should this be done inside the issue model?
+    //   project._issues.add(model);
+    // }
     return model;
   }
 }
@@ -107,23 +103,17 @@ type Issue = {
   title: string;
 };
 
-type RelationType = "related" | "blocks";
-
-type Relation = {
-  id: string;
-  fromId: string;
-  toId: string;
-  type: RelationType;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
 class IssueModel implements Model {
   store: Store;
-  id: string;
-  //   relations: Set<RelationModel>;
-  private _project: ProjectModel | null;
-  placeholder: boolean;
+  _project: ProjectModel | null = null;
+  // todo maybe something like this makes it easier to track changes
+  // on all props. then I have fancy getters and setters on the class
+  // instance which do compound operations like setProjectAndAddToCollection
+  private state: {
+    id: string;
+    project: ProjectModel | null;
+    placeholder: boolean;
+  };
 
   constructor(
     store: Store,
@@ -134,17 +124,34 @@ class IssueModel implements Model {
     }: { id: string; project: ProjectModel | null; placeholder?: boolean }
   ) {
     this.store = store;
-    this.id = id;
-    this._project = project;
-    this.placeholder = placeholder;
-    // this.relations = new Collection<RelationModel>(store, id);
+    this.state = new Proxy(
+      { id, project, placeholder },
+      {
+        set: (target, prop, value) => {
+          store.addChange({
+            operation: "update",
+            model: "issue",
+            id,
+            oldProps: { [prop as string]: target[prop as keyof typeof target] },
+            newProps: { [prop]: value },
+          });
+          target[prop as keyof typeof target] = value;
+          return true;
+        },
+      }
+    );
+    this._project = this.setProjectAndAddToCollection(project);
   }
 
-  get project() {
-    return this._project;
+  get id() {
+    return this.state.id;
   }
 
-  set project(project: ProjectModel | null) {
+  get placeholder() {
+    return this.state.placeholder;
+  }
+
+  private setProjectAndAddToCollection(project: ProjectModel | null) {
     if (this._project) {
       this._project._issues.delete(this);
     }
@@ -152,8 +159,19 @@ class IssueModel implements Model {
     if (project) {
       project._issues.add(this);
     }
-    this.store.uncommittedChanges.push({
-      type: "update",
+    return project;
+  }
+
+  get project() {
+    return this._project;
+  }
+
+  set project(project: ProjectModel | null) {
+    this.setProjectAndAddToCollection(project);
+    this.store.addChange({
+      operation: "update",
+      model: "issue",
+      id: this.id,
       oldProps: { project: this._project },
       newProps: { project },
     });
@@ -168,6 +186,28 @@ class IssueModel implements Model {
     this._project = props.project;
     this.placeholder = true;
   }
+}
+
+function setProjectAndAddToCollection(
+  store: Store,
+  issue: IssueModel,
+  project: ProjectModel | null
+) {
+  if (issue._project) {
+    issue._project._issues.delete(issue);
+  }
+  issue._project = project;
+  if (project) {
+    project._issues.add(issue);
+  }
+  store.addChange({
+    operation: "update",
+    model: "issue",
+    id: issue.id,
+    oldProps: { project: issue._project },
+    newProps: { project },
+  });
+  return { project, issue };
 }
 
 class ProjectModel implements Model {
@@ -295,31 +335,21 @@ class ProjectModel implements Model {
 function test() {
   const store = new Store();
 
-  // Load relation before we have the connected issues
-  //   store.loadRelation({
-  //     id: "rel1",
-  //     fromId: "1",
-  //     toId: "2",
-  //     type: "blocks",
-  //     createdAt: new Date(),
-  //     updatedAt: new Date(),
-  //   });
-
   store.loadIssue({ id: "1", projectId: "1", title: "Issue 1" });
   store.loadIssue({ id: "2", projectId: "1", title: "Issue 2" });
   store.loadProject({ id: "1", title: "Project 1" });
   store.loadProject({ id: "2", title: "Project 2" });
 
-  // Verify that the relations are correctly established
-  //   const relation = store.relations.get("rel1");
-  //   console.assert(relation?.source.id === "1", "Relation should have from issue 1");
-  //   console.assert(relation?.target.id === "2", "Relation should have to issue 2");
-
-  const issue1 = store.issues.get("1");
-  if (issue1) {
-    issue1.project = store.projects.get("2") ?? null;
-  }
-  console.assert(issue1?.project?.id === "2", "Issue 1 should be assigned to project 2");
+  runInAction(() => {
+    const issue1 = store.issues.get("1");
+    if (issue1) {
+      issue1.project = store.projects.get("2") ?? null;
+    }
+    const issue2 = store.issues.get("2");
+    if (issue2) {
+      issue2.project = store.projects.get("1") ?? null;
+    }
+  });
 }
 
 test();
