@@ -1,44 +1,59 @@
 import { generateKeyBetween } from "fractional-indexing";
 import { makeAutoObservable, reaction, runInAction, toJS } from "mobx";
+import { ModelData, ModelName, Event, IssueData, IssueSchema, UpdateEvent, UpdateEventProps } from "./types";
+import { z } from "zod";
 
-type SetEvent = {
-  operation: "set";
-  model: ModelName;
-  id: string;
-  oldProps: Record<string, any>; // should require all props or null
-  newProps: Record<string, any>; // should require all props
-};
+/**
+ * TODOs
+ * - Define the serialized state schemas for each model.
+ * - Derive the serialized events from the serialized state schemas.
+ * - Have function to take the serialized event, deserialize the refs, and apply the change to the model.
+ * - ^ is this right?
+ */
 
-type UpdateEvent = {
-  operation: "update";
-  model: ModelName;
-  id: string;
-  /**
-   * TODO maybe should be this way? that way you know all
-   * the keys match b/w old/new
-   * props: {
-   *    [key: string]: { old: any, new: any }
-   * }
-   */
-  oldProps: Record<string, any>;
-  newProps: Record<string, any>;
-};
-
-type CreateEvent = {
-  operation: "create";
-  model: ModelName;
-  id: string;
-  props: Record<string, any>;
-};
-
-type DeleteEvent = {
-  operation: "delete";
-  model: ModelName;
-  id: string;
-  oldProps: Record<string, any>;
-};
-
-type Event = UpdateEvent | CreateEvent | DeleteEvent | SetEvent;
+function reverseEvent<T extends ModelData>(event: Event<T>): Event<T> {
+  switch (event.operation) {
+    case "create":
+      return {
+        operation: "delete",
+        model: event.model,
+        id: event.id,
+        oldProps: event.props,
+      };
+    case "update":
+      return {
+        operation: "update",
+        model: event.model,
+        id: event.id,
+        oldProps: event.newProps,
+        newProps: event.oldProps,
+      };
+    case "delete":
+      return {
+        operation: "create",
+        model: event.model,
+        id: event.id,
+        props: event.oldProps,
+      };
+    case "set":
+      if (event.oldProps) {
+        return {
+          operation: "set",
+          model: event.model,
+          id: event.id,
+          oldProps: event.newProps,
+          newProps: event.oldProps,
+        };
+      } else {
+        return {
+          operation: "delete",
+          model: event.model,
+          id: event.id,
+          oldProps: event.newProps,
+        };
+      }
+  }
+}
 
 class Store {
   issues: Map<string, IssueModel> = new Map();
@@ -47,7 +62,10 @@ class Store {
   views: Map<string, ViewModel> = new Map();
   trackingChanges: boolean = true;
 
-  uncommittedChanges: Event[] = [];
+  undoStack: Event[][] = [];
+  redoStack: Event[][] = [];
+
+  uncommittedChanges: Event<ModelData>[] = [];
   // Using an observable number to trigger a reaction b/c if we track the change array,
   // the reaction will need to modify it too (clear it) which you're not supposed to do
   // inside reactions.
@@ -61,15 +79,71 @@ class Store {
       () => this.changeCount,
       () => {
         console.log(toJS(this.uncommittedChanges.slice().map((v) => toJS(v))));
+        this.undoStack.push(this.uncommittedChanges.slice());
+        this.redoStack = [];
         this.uncommittedChanges = [];
       }
     );
   }
 
-  addChange(change: Event) {
+  undo() {
+    const events = this.undoStack.pop();
+    if (events) {
+      const reversedEvents = events.reverse().map(reverseEvent);
+    }
+  }
+
+  addChange<T extends ModelData>(change: Event<T>) {
     if (this.trackingChanges) {
       this.changeCount++;
       this.uncommittedChanges.push(change);
+    }
+  }
+
+  applyChange(change: Event) {
+    switch (change.operation) {
+      case "create":
+        if (change.model === "project") {
+          this.createProject(change.id, {
+            title: change.props.title,
+          });
+        } else if (change.model === "issue") {
+          this.createIssue(change.id, {
+            project: this.getOrCreateProject(change.props.projectId),
+            title: change.props.title,
+            createdAt: change.props.createdAt,
+          });
+        } else if (change.model === "relation") {
+          this.createRelation(change.id, {
+            from: this.getOrCreateIssue(change.props.fromId),
+            to: this.getOrCreateIssue(change.props.toId),
+          });
+        }
+        break;
+      case "update":
+        if (change.model === "project") {
+          const project = this.projects.get(change.id);
+          if (!project) {
+            throw new Error(`Project with id ${change.id} does not exist`);
+          }
+          project._state.title = change.newProps.title;
+        } else if (change.model === "issue") {
+          this.updateIssue(change.id, {
+            title: change.newProps.title,
+          });
+        } else if (change.model === "relation") {
+          this.updateRelation(change.id, {
+            from: change.newProps.fromId,
+            to: change.newProps.toId,
+          });
+        }
+        break;
+      case "delete":
+        this.deleteModel(change);
+        break;
+      case "set":
+        this.setModel(change);
+        break;
     }
   }
 
@@ -299,9 +373,28 @@ class Store {
     });
     this.relations.delete(id);
   }
-}
 
-type ModelName = "issue" | "project" | "relation" | "view" | "view-issue-position";
+  deserializeState<T extends ProjectData | IssueData | RelationData>(
+    state: T
+  ): T extends ProjectData
+    ? ProjectState
+    : T extends IssueData
+    ? IssueState
+    : T extends RelationData
+    ? RelationState
+    : never {
+    const deserialized: Record<string, any> = {};
+    for (const key in state) {
+      const modelName = foreignKeys[key];
+      if (modelName) {
+        deserialized[key] = this.getOrCreateModel(modelName, state[key]);
+      } else {
+        deserialized[key] = state[key];
+      }
+    }
+    return deserialized;
+  }
+}
 
 abstract class BaseModel {
   abstract id: string;
@@ -312,53 +405,56 @@ abstract class BaseModel {
 type Model = IssueModel | ProjectModel | RelationModel | ViewModel;
 function isModel(value: unknown): value is Model {
   return (
-    value instanceof IssueModel || value instanceof ProjectModel || value instanceof RelationModel
+    value instanceof IssueModel ||
+    value instanceof ProjectModel ||
+    value instanceof RelationModel ||
+    value instanceof ViewModel
   );
 }
 
-type Project = {
-  id: string;
-  title: string;
-};
+const IssueStateSchema = IssueSchema.omit({ id: true, model: true, projectId: true }).extend({
+  project: z.custom<ProjectModel | null>(),
+  relations: z.custom<Set<RelationModel>>(),
+});
 
-type IssueData = {
-  id: string;
-  projectId: string | null;
-  title: string;
-  createdAt: number;
-};
+type IssueState = z.infer<typeof IssueStateSchema>;
 
-type IssueState = {
-  project: ProjectModel | null;
-  placeholder: boolean;
-  relations: Set<RelationModel>;
-  createdAt: number;
-};
+const IssuePropsSchema = IssueSchema.omit({ id: true, model: true, projectId: true }).extend({
+  project: z.custom<ProjectModel | null>(),
+});
+type IssueProps = z.infer<typeof IssuePropsSchema>;
 
 class IssueModel implements BaseModel {
   readonly name = "issue";
   store: Store;
   id: string;
-  // todo maybe something like this makes it easier to track changes
-  // on all props. then I have fancy getters and setters on the class
-  // instance which do compound operations like setProjectAndAddToCollection
-  // TODO semi private state. better way?
-  _state: IssueState;
+  _internal: {
+    // TODO semi private state. better way?
+    props: IssueProps;
+    relations: Set<RelationModel>;
+    placeholder: boolean;
+  };
 
   constructor(
     store: Store,
     id: string,
-    {
-      project = null,
-      placeholder = false,
-      relations = new Set(),
-      createdAt = Date.now(),
-    }: Partial<IssueState>
+    { state, placeholder = false }: { state: Partial<IssueState>; placeholder?: boolean }
   ) {
     this.store = store;
     this.id = id;
-    this._state = makeTracking({ project, placeholder, relations, createdAt }, this);
-    moveIssueToProject(this, project);
+    this.placeholder = placeholder;
+    this._state = makeTracking(
+      {
+        title: "",
+        project: null,
+        relations: new Set(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        ...state,
+      },
+      this
+    );
+    moveIssueToProject(this, this._state.project);
   }
 
   get placeholder() {
@@ -502,7 +598,38 @@ function isKeyOf<T extends Record<string, any>>(prop: unknown, obj: T): prop is 
   return typeof prop === "string" && prop in obj;
 }
 
-function makeTracking<T extends Record<string, any>>(initialState: T, model: BaseModel): T {
+
+function serializeIssueProps(props: IssueProps) {
+  return Object.fromEntries(
+    Object.entries(props).map(([key, value]) => {
+      if (key === "project") {
+        return ["projectId", (value as ProjectModel).id]; // TODO a little sketch
+      }
+      return [key, value];
+    })
+  ) satisfies UpdateEventProps<IssueData>;
+}
+
+function trackIssueProps(initialState: IssueProps, model: IssueModel): IssueProps {
+  return new Proxy(initialState, {
+    set: (target, prop, value) => {
+      if (isKeyOf(prop, target)) {
+        const oldProps = serializeState({ [prop]: target[prop] });
+        const newProps = serializeState({ [prop]: value });
+        const event: UpdateEvent<IssueData> = {
+          operation: "update",
+          model: model.name,
+          id: model.id,
+          props: 
+        };
+        (target as any)[prop] = value;
+      }
+      return true;
+    },
+  });
+}
+
+function makeTracking<T extends ModelData>(initialState: T, model: BaseModel): T {
   return new Proxy(initialState, {
     set: (target, prop, value) => {
       if (isKeyOf(prop, target)) {
@@ -748,8 +875,15 @@ function test() {
   const store = new Store();
 
   store.load({
-    projects: [{ id: "1", title: "Project 1" }],
-    issues: [{ id: "1", projectId: "1", title: "Issue 1", createdAt: 1 }],
+    projects: [
+      { id: "1", title: "Project 1" },
+      { id: "2", title: "Project 2" },
+    ],
+    issues: [
+      { id: "1", projectId: "1", title: "Issue 1", createdAt: 1 },
+      { id: "2", projectId: "2", title: "Issue 2", createdAt: 2 },
+      { id: "3", projectId: "2", title: "Issue 3", createdAt: 3 },
+    ],
     relations: [{ id: "1", fromId: "1", toId: "2", type: "related-to" }],
     views: [{ id: "1", projectId: "1", issueIdToPosition: {} }],
     viewIssuePositions: [],
