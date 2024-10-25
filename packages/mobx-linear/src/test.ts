@@ -1,38 +1,52 @@
 import { generateKeyBetween } from "fractional-indexing";
-import { action, makeObservable, observable, reaction, runInAction, toJS } from "mobx";
+import { makeAutoObservable, reaction, runInAction, toJS } from "mobx";
 
-type Update = {
+type SetEvent = {
+  operation: "set";
+  model: ModelName;
+  id: string;
+  oldProps: Record<string, any>; // should require all props or null
+  newProps: Record<string, any>; // should require all props
+};
+
+type UpdateEvent = {
   operation: "update";
   model: ModelName;
   id: string;
+  /**
+   * TODO maybe should be this way? that way you know all
+   * the keys match b/w old/new
+   * props: {
+   *    [key: string]: { old: any, new: any }
+   * }
+   */
   oldProps: Record<string, any>;
   newProps: Record<string, any>;
 };
 
-type Create = {
+type CreateEvent = {
   operation: "create";
   model: ModelName;
   id: string;
   props: Record<string, any>;
 };
 
-type Delete = {
+type DeleteEvent = {
   operation: "delete";
   model: ModelName;
   id: string;
+  oldProps: Record<string, any>;
 };
 
-type Event = Update | Create | Delete;
+type Event = UpdateEvent | CreateEvent | DeleteEvent | SetEvent;
 
 class Store {
   issues: Map<string, IssueModel> = new Map();
   projects: Map<string, ProjectModel> = new Map();
   relations: Map<string, RelationModel> = new Map();
+  views: Map<string, ViewModel> = new Map();
   trackingChanges: boolean = true;
 
-  // TODO rather than calling `commit` or something, can mobx autocommit for me after an action completes?
-  // I *think* reactions delay running until an entire action completes, so if processing the changes is
-  // done instead an action, will that autocommit it?
   uncommittedChanges: Event[] = [];
   // Using an observable number to trigger a reaction b/c if we track the change array,
   // the reaction will need to modify it too (clear it) which you're not supposed to do
@@ -40,13 +54,8 @@ class Store {
   changeCount: number = 0;
 
   constructor() {
-    makeObservable(this, {
-      changeCount: observable,
-      loadProject: action,
-      loadIssue: action,
-      createIssue: action,
-      createProject: action,
-      loadRelation: action,
+    makeAutoObservable(this, {
+      uncommittedChanges: false,
     });
     reaction(
       () => this.changeCount,
@@ -64,7 +73,7 @@ class Store {
     }
   }
 
-  loadProject(project: Project) {
+  private loadProject(project: Project) {
     this.trackingChanges = false;
     let model = this.projects.get(project.id);
     if (model) {
@@ -77,18 +86,9 @@ class Store {
     return model;
   }
 
-  loadIssue(issue: IssueData) {
+  private loadIssue(issue: IssueData) {
     this.trackingChanges = false;
-    // Get project
-    let project: ProjectModel | null = null;
-    if (issue.projectId) {
-      project = this.projects.get(issue.projectId) ?? null;
-      if (!project) {
-        project = ProjectModel.createPlaceholder(this, issue.projectId);
-        this.projects.set(issue.projectId, project);
-      }
-    }
-    // Create/populate issue model
+    const project = issue.projectId ? this.getOrCreateProject(issue.projectId) : null;
     let model = this.issues.get(issue.id);
     if (model) {
       model.populatePlaceholder({ ...issue, project });
@@ -100,32 +100,117 @@ class Store {
     return model;
   }
 
-  loadRelation(relation: RelationData) {
+  private loadRelation(data: RelationData) {
     this.trackingChanges = false;
-    let model = this.relations.get(relation.id);
-    if (model) {
-      model.populatePlaceholder(relation);
+    let relation = this.relations.get(data.id);
+    if (relation) {
+      relation.populatePlaceholder(data);
     } else {
-      // TODO feels like a lot of fiddly work to remember to do. but maybe it's fine?
-      const fromIssue =
-        this.issues.get(relation.fromId) || IssueModel.createPlaceholder(this, relation.fromId);
-      const toIssue =
-        this.issues.get(relation.toId) || IssueModel.createPlaceholder(this, relation.toId);
-      if (!this.issues.has(relation.fromId)) {
-        this.issues.set(relation.fromId, fromIssue);
-      }
-      if (!this.issues.has(relation.toId)) {
-        this.issues.set(relation.toId, toIssue);
-      }
-      model = new RelationModel(this, relation.id, {
-        from: fromIssue,
-        to: toIssue,
+      relation = new RelationModel(this, data.id, {
+        from: this.getOrCreateIssue(data.fromId),
+        to: this.getOrCreateIssue(data.toId),
         placeholder: false,
       });
-      this.relations.set(relation.id, model);
+      this.relations.set(data.id, relation);
     }
     this.trackingChanges = true;
-    return model;
+    return relation;
+  }
+
+  private loadView(data: ViewData) {
+    this.trackingChanges = false;
+    const project = data.projectId ? this.getOrCreateProject(data.projectId) : null;
+    const view = this.getOrCreateView(data.id, { project });
+    this.trackingChanges = true;
+    return view;
+  }
+
+  private loadViewIssuePosition(data: ViewIssuePositionData) {
+    this.trackingChanges = false;
+    const model = this.getOrCreateView(data.viewId);
+    const issue = this.getOrCreateIssue(data.issueId);
+    model.setIssuePosition(issue, data.position);
+    this.trackingChanges = true;
+  }
+
+  load({
+    projects = [],
+    issues = [],
+    relations = [],
+    views = [],
+    viewIssuePositions = [],
+  }: {
+    projects?: ProjectData[];
+    issues?: IssueData[];
+    relations?: RelationData[];
+    views?: ViewData[];
+    viewIssuePositions?: ViewIssuePositionData[];
+  }) {
+    this.trackingChanges = false;
+    try {
+      for (const project of projects) {
+        this.loadProject(project);
+      }
+      for (const issue of issues) {
+        this.loadIssue(issue);
+      }
+      for (const relation of relations) {
+        this.loadRelation(relation);
+      }
+      for (const view of views) {
+        this.loadView(view);
+      }
+      for (const viewIssuePosition of viewIssuePositions) {
+        this.loadViewIssuePosition(viewIssuePosition);
+      }
+    } catch (e) {
+      this.projects.clear();
+      this.issues.clear();
+      this.relations.clear();
+      this.views.clear();
+      throw e;
+    } finally {
+      this.trackingChanges = true;
+    }
+  }
+
+  private getOrCreateIssue(id: string, props?: IssueState) {
+    let issue = this.issues.get(id);
+    if (issue) {
+      return issue;
+    } else if (props) {
+      issue = new IssueModel(this, id, props);
+      this.issues.set(id, issue);
+      return issue;
+    } else {
+      issue = IssueModel.createPlaceholder(this, id);
+      this.issues.set(id, issue);
+      return issue;
+    }
+  }
+
+  private getOrCreateView(id: string, props?: ViewState) {
+    let model = this.views.get(id);
+    if (model) {
+      return model;
+    } else {
+      model = props ? new ViewModel(this, id, props) : ViewModel.createPlaceholder(this, id);
+      this.views.set(id, model);
+      return model;
+    }
+  }
+
+  private getOrCreateProject(id: string, props?: ProjectState) {
+    let project = this.projects.get(id);
+    if (project) {
+      return project;
+    } else {
+      project = props
+        ? new ProjectModel(this, id, props)
+        : ProjectModel.createPlaceholder(this, id);
+      this.projects.set(id, project);
+      return project;
+    }
   }
 
   createIssue(id: string, props: Partial<IssueState>) {
@@ -172,9 +257,51 @@ class Store {
     });
     return relation;
   }
+
+  deleteIssue(id: string) {
+    const issue = this.issues.get(id);
+    if (!issue) {
+      throw new Error(`Issue with id ${id} does not exist`);
+    }
+    this.addChange({
+      operation: "delete",
+      model: "issue",
+      id,
+      oldProps: serializeState(issue._state),
+    });
+    this.issues.delete(id);
+  }
+
+  deleteProject(id: string) {
+    const project = this.projects.get(id);
+    if (!project) {
+      throw new Error(`Project with id ${id} does not exist`);
+    }
+    this.addChange({
+      operation: "delete",
+      model: "project",
+      id,
+      oldProps: serializeState(project._state),
+    });
+    this.projects.delete(id);
+  }
+
+  deleteRelation(id: string) {
+    const relation = this.relations.get(id);
+    if (!relation) {
+      throw new Error(`Relation with id ${id} does not exist`);
+    }
+    this.addChange({
+      operation: "delete",
+      model: "relation",
+      id,
+      oldProps: serializeState(relation._state),
+    });
+    this.relations.delete(id);
+  }
 }
 
-type ModelName = "issue" | "project" | "relation" | "view";
+type ModelName = "issue" | "project" | "relation" | "view" | "view-issue-position";
 
 abstract class BaseModel {
   abstract id: string;
@@ -221,11 +348,16 @@ class IssueModel implements BaseModel {
   constructor(
     store: Store,
     id: string,
-    { project = null, placeholder = false, relations = new Set() }: Partial<IssueState>
+    {
+      project = null,
+      placeholder = false,
+      relations = new Set(),
+      createdAt = Date.now(),
+    }: Partial<IssueState>
   ) {
     this.store = store;
     this.id = id;
-    this._state = makeTracking({ project, placeholder, relations }, this);
+    this._state = makeTracking({ project, placeholder, relations, createdAt }, this);
     moveIssueToProject(this, project);
   }
 
@@ -353,7 +485,7 @@ class ProjectModel implements BaseModel {
     this._state.placeholder = false;
   }
 
-  getIssues() {
+  getIssues(): IterableIterator<IssueModel> {
     return this._state.issues.values();
   }
 
@@ -474,15 +606,20 @@ class RelationModel implements BaseModel {
 
 type ViewData = {
   id: string;
-  projectId: string;
+  projectId: string | null;
   issueIdToPosition: Record<string, string>;
 };
 
 type ViewState = {
-  project: ProjectModel; // later this'll be a query
+  project: ProjectModel | null; // later this'll be a query
   // The project defines the set of issues (and later the query). This
   // just assigns positions to issues.
-  issueIdToPosition: Record<string, string>;
+};
+
+type ViewIssuePositionData = {
+  viewId: string;
+  issueId: string;
+  position: Position;
 };
 
 type Position = string;
@@ -523,18 +660,45 @@ class ViewModel implements BaseModel {
   store: Store;
   id: string;
   _state: ViewState;
+  issueIdToPosition: Record<string, Position> = {};
+  placeholder: boolean;
 
-  constructor(store: Store, id: string, { project, issueIdToPosition }: ViewState) {
+  constructor(
+    store: Store,
+    id: string,
+    { project = null, placeholder = false }: Partial<ViewState> & { placeholder?: boolean }
+  ) {
     this.store = store;
     this.id = id;
-    // TODO maybe should have more granular tracking of maps?
-    this._state = makeTracking({ project, issueIdToPosition }, this);
+    this._state = makeTracking({ project }, this);
+    this.placeholder = placeholder;
+  }
+
+  setIssuePosition(issue: IssueModel, position: Position) {
+    this.store.addChange({
+      operation: "set",
+      model: "view-issue-position",
+      id: this.id + "-" + issue.id,
+      oldProps: { viewId: this.id, issueId: issue.id, position: this.issueIdToPosition[issue.id] },
+      newProps: { viewId: this.id, issueId: issue.id, position },
+    });
+    this.issueIdToPosition[issue.id] = position;
+  }
+
+  removeIssuePosition(issue: IssueModel) {
+    this.store.addChange({
+      operation: "delete",
+      model: "view-issue-position",
+      id: this.id + "-" + issue.id,
+      oldProps: { viewId: this.id, issueId: issue.id, position: this.issueIdToPosition[issue.id] },
+    });
+    delete this.issueIdToPosition[issue.id];
   }
 
   getPositionedIssues() {
-    return Array.from(this._state.project.getIssues()).map((issue) => ({
+    return Array.from(this._state.project?.getIssues() ?? []).map((issue) => ({
       issue,
-      position: this._state.issueIdToPosition[issue.id] ?? generatePosition(issue),
+      position: this.issueIdToPosition[issue.id] ?? generatePosition(issue),
     }));
   }
 
@@ -554,33 +718,48 @@ class ViewModel implements BaseModel {
     const beforePositioned = sortedIssues[indexBefore];
     const afterPositioned = sortedIssues[indexAfter];
 
-    const newIssueIdToPosition = { ...this._state.issueIdToPosition };
-
-    newIssueIdToPosition[issue.id] = generatePositionBetween(
-      afterPositioned.position,
-      beforePositioned.position
+    this.setIssuePosition(
+      issue,
+      generatePositionBetween(afterPositioned.position, beforePositioned.position)
     );
     // If either of the issues before/after had ephemeral positions, update them now
     if (!this._state.issueIdToPosition[beforePositioned.issue.id]) {
-      newIssueIdToPosition[beforePositioned.issue.id] = beforePositioned.position;
+      this.setIssuePosition(beforePositioned.issue, beforePositioned.position);
     }
     if (!this._state.issueIdToPosition[afterPositioned.issue.id]) {
-      newIssueIdToPosition[afterPositioned.issue.id] = afterPositioned.position;
+      this.setIssuePosition(afterPositioned.issue, afterPositioned.position);
     }
+  }
 
-    this._state.issueIdToPosition = newIssueIdToPosition;
+  static createPlaceholder(store: Store, id: string) {
+    return new ViewModel(store, id, { project: null, placeholder: true });
+  }
+
+  populatePlaceholder(props: Partial<ViewState>) {
+    if (!this.placeholder) {
+      throw new Error("Cannot populate a non-placeholder view");
+    }
+    Object.assign(this._state, props);
+    this.placeholder = false;
   }
 }
 
 function test() {
   const store = new Store();
 
-  const relation1 = store.loadRelation({ id: "1", fromId: "1", toId: "2", type: "related-to" });
-  const issue1 = store.loadIssue({ id: "1", projectId: "1", title: "Issue 1" });
-  const issue2 = store.loadIssue({ id: "2", projectId: "1", title: "Issue 2" });
-  const issue3 = store.loadIssue({ id: "3", projectId: "1", title: "Issue 3" });
-  const project1 = store.loadProject({ id: "1", title: "Project 1" });
-  const project2 = store.loadProject({ id: "2", title: "Project 2" });
+  store.load({
+    projects: [{ id: "1", title: "Project 1" }],
+    issues: [{ id: "1", projectId: "1", title: "Issue 1", createdAt: 1 }],
+    relations: [{ id: "1", fromId: "1", toId: "2", type: "related-to" }],
+    views: [{ id: "1", projectId: "1", issueIdToPosition: {} }],
+    viewIssuePositions: [],
+  });
+  const issue1 = store.issues.get("1")!;
+  const issue2 = store.issues.get("2")!;
+  const issue3 = store.issues.get("3")!;
+  const project1 = store.projects.get("1")!;
+  const project2 = store.projects.get("2")!;
+  const relation1 = store.relations.get("1")!;
 
   runInAction(() => {
     issue1.project = project2;
@@ -595,7 +774,7 @@ function test() {
 
   runInAction(() => {
     relation1.to = issue3;
-    const relation2 = store.createRelation("2", { from: issue1, to: issue3 });
+    store.createRelation("2", { from: issue1, to: issue3 });
   });
 }
 
