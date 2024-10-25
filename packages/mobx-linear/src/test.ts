@@ -1,14 +1,16 @@
 import { generateKeyBetween } from "fractional-indexing";
-import { makeAutoObservable, reaction, runInAction, toJS } from "mobx";
-import { ModelData, ModelName, Event, IssueData, IssueSchema, UpdateEvent, UpdateEventProps } from "./types";
-import { z } from "zod";
+import { get, makeAutoObservable, reaction, runInAction, set, toJS } from "mobx";
+import { ModelData, ModelName, Event, IssueData, IssueSchema, UpdateEvent, IssueProps } from "./types";
+import { string, z } from "zod";
 
 /**
  * TODOs
- * - Define the serialized state schemas for each model.
- * - Derive the serialized events from the serialized state schemas.
- * - Have function to take the serialized event, deserialize the refs, and apply the change to the model.
- * - ^ is this right?
+ * - DONE Define the serialized state schemas for each model.
+ * - DONE Derive the serialized events from the serialized state schemas.
+ * - Methods for serializing and deserializing props and tracking changes.
+ *   For now, don't get fancy with these. Just do it right on the models.
+ *   The models are then responsible for knowing how to map b/w ids and models
+ *   (e.g. which foreign key maps to which model?)
  */
 
 function reverseEvent<T extends ModelData>(event: Event<T>): Event<T> {
@@ -412,25 +414,34 @@ function isModel(value: unknown): value is Model {
   );
 }
 
-const IssueStateSchema = IssueSchema.omit({ id: true, model: true, projectId: true }).extend({
-  project: z.custom<ProjectModel | null>(),
-  relations: z.custom<Set<RelationModel>>(),
-});
+const IssuePropsRefdSchema = IssueSchema.shape.props.omit({ projectId: true }).extend({
+    project: z.custom<ProjectModel | null>(),
+})
 
-type IssueState = z.infer<typeof IssueStateSchema>;
-
-const IssuePropsSchema = IssueSchema.omit({ id: true, model: true, projectId: true }).extend({
-  project: z.custom<ProjectModel | null>(),
-});
-type IssueProps = z.infer<typeof IssuePropsSchema>;
+type IssuePropsRefd = z.infer<typeof IssuePropsRefdSchema>;
 
 class IssueModel implements BaseModel {
   readonly name = "issue";
   store: Store;
   id: string;
+  /**
+   * Why like this?
+   * 
+   * The _internal is used for anything that is not part of the public interface.
+   * These things *are* accessible, but should not be used outside the model.
+   * 
+   * We could make them private, and then expose interfaces to the store to access
+   * them as needed, but that's more work than I want right now.
+   * 
+   * We could also just prefix props, relations, and placeholder with an underscore,
+   * but I think this is more clear.
+   * 
+   * The proxy around props isn't needed either. Like we could have helper functions
+   * for updating them. But I like the readability you get when our other functions
+   * just read/write the props directly.
+   */
   _internal: {
-    // TODO semi private state. better way?
-    props: IssueProps;
+    props: IssuePropsRefd;
     relations: Set<RelationModel>;
     placeholder: boolean;
   };
@@ -438,23 +449,65 @@ class IssueModel implements BaseModel {
   constructor(
     store: Store,
     id: string,
-    { state, placeholder = false }: { state: Partial<IssueState>; placeholder?: boolean }
+    { state, placeholder = false }: { state: Partial<IssuePropsRefd>; placeholder?: boolean }
   ) {
     this.store = store;
     this.id = id;
-    this.placeholder = placeholder;
-    this._state = makeTracking(
-      {
-        title: "",
-        project: null,
+    this._internal = {
+        props: this.makePropProxy({
+            title: "",
+            project: null,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            ...state,
+        }),
         relations: new Set(),
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        ...state,
-      },
-      this
-    );
-    moveIssueToProject(this, this._state.project);
+        placeholder,
+    }
+    moveIssueToProject(this, this._internal.props.project);
+  }
+
+  serializeProps(props: IssuePropsRefd) {
+    return {
+        title: props.title,
+        projectId: props.project?.id ?? null,
+        createdAt: props.createdAt,
+        updatedAt: props.updatedAt,
+    } satisfies IssueProps;
+    }
+
+  deserializeProps(props: IssueProps) {
+    return {
+        title: props.title,
+        project: props.projectId ? this.store.projects.get(props.projectId) ?? null : null,
+        createdAt: props.createdAt,
+        updatedAt: props.updatedAt,
+    } satisfies IssuePropsRefd;
+  }
+
+
+  private makePropProxy(initialState: IssuePropsRefd) {
+    return new Proxy(initialState, {
+        set: (target, prop, value) => {
+          if (isKeyOf(prop, target)) {
+            const oldProps = this.serializeProps(target);
+            const newProps = this.serializeProps({ ...target, [prop]: value });
+            this.store.addChange({
+              operation: "update",
+              model: "issue",
+              id: this.id,
+              props: {
+                [prop]: {
+                  old: oldProps[prop],
+                  new: newProps[prop],
+                },
+              }),
+            });
+            (target as any)[prop] = value;
+          }
+          return true;
+        },
+      });
   }
 
   get placeholder() {
@@ -599,7 +652,7 @@ function isKeyOf<T extends Record<string, any>>(prop: unknown, obj: T): prop is 
 }
 
 
-function serializeIssueProps(props: IssueProps) {
+function serializeIssueProps(props: IssuePropsRefd): IssueProps {
   return Object.fromEntries(
     Object.entries(props).map(([key, value]) => {
       if (key === "project") {
@@ -607,7 +660,7 @@ function serializeIssueProps(props: IssueProps) {
       }
       return [key, value];
     })
-  ) satisfies UpdateEventProps<IssueData>;
+  ) as IssueProps; // TODO sketch?
 }
 
 function trackIssueProps(initialState: IssueProps, model: IssueModel): IssueProps {
