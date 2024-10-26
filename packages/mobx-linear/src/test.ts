@@ -1,6 +1,18 @@
 import { generateKeyBetween } from "fractional-indexing";
-import { makeAutoObservable, reaction, runInAction, toJS } from "mobx";
-import { ModelData, ModelName, Event, IssueData, IssueSchema, UpdateEvent, IssueProps } from "./types";
+import { makeAutoObservable, reaction, runInAction } from "mobx";
+import {
+  ModelName,
+  Event,
+  IssueData,
+  IssueSchema,
+  IssueProps,
+  ProjectData,
+  ProjectProps,
+  ProjectSchema,
+  RelationData,
+  RelationSchema,
+  RelationProps,
+} from "./types";
 import { z } from "zod";
 
 /**
@@ -13,15 +25,10 @@ import { z } from "zod";
  *   (e.g. which foreign key maps to which model?)
  */
 
-function reverseEvent<T extends ModelData>(event: Event<T>): Event<T> {
+function reverseEvent<K extends ModelName>(event: Event<K>): Event<K> {
   switch (event.operation) {
     case "create":
-      return {
-        operation: "delete",
-        model: event.model,
-        id: event.id,
-        oldProps: event.props,
-      };
+      return { operation: "delete", model: event.model, id: event.id, props: event.props };
     case "update":
       return {
         operation: "update",
@@ -32,28 +39,22 @@ function reverseEvent<T extends ModelData>(event: Event<T>): Event<T> {
       };
     case "delete":
       return {
-        operation: "create",
+        operation: "update",
         model: event.model,
         id: event.id,
-        props: event.oldProps,
+        oldProps: event.props,
+        newProps: event.props,
       };
     case "set":
-      if (event.oldProps) {
-        return {
-          operation: "set",
-          model: event.model,
-          id: event.id,
-          oldProps: event.newProps,
-          newProps: event.oldProps,
-        };
-      } else {
-        return {
-          operation: "delete",
-          model: event.model,
-          id: event.id,
-          oldProps: event.newProps,
-        };
-      }
+      return {
+        operation: "set",
+        model: event.model,
+        id: event.id,
+        oldProps: event.newProps,
+        newProps: event.oldProps,
+      };
+    default:
+      return event satisfies never;
   }
 }
 
@@ -64,13 +65,14 @@ class Store {
   views: Map<string, ViewModel> = new Map();
   trackingChanges: boolean = true;
 
-  undoStack: Event[][] = [];
-  redoStack: Event[][] = [];
+  undoStack: Event<ModelName>[][] = [];
+  redoStack: Event<ModelName>[][] = [];
 
-  uncommittedChanges: Event[] = [];
+  uncommittedChanges: Event<ModelName>[] = [];
   // Using an observable number to trigger a reaction b/c if we track the change array,
   // the reaction will need to modify it too (clear it) which you're not supposed to do
   // inside reactions.
+  // TODO not sure about this. sketch I need to do it in applyUntrackedChange?
   changeCount: number = 0;
 
   constructor() {
@@ -80,7 +82,6 @@ class Store {
     reaction(
       () => this.changeCount,
       () => {
-        console.log(toJS(this.uncommittedChanges.slice().map((v) => toJS(v))));
         this.undoStack.push(this.uncommittedChanges.slice());
         this.redoStack = [];
         this.uncommittedChanges = [];
@@ -92,102 +93,179 @@ class Store {
     const events = this.undoStack.pop();
     if (events) {
       const reversedEvents = events.reverse().map(reverseEvent);
+      for (const event of reversedEvents) {
+        this.applyChange(event);
+      }
+      this.changeCount++;
+      this.redoStack.push(reversedEvents);
     }
   }
 
-  addChange(change: Event) {
+  redo() {
+    const events = this.redoStack.pop();
+    if (events) {
+      for (const event of events) {
+        this.applyChange(event);
+      }
+      this.changeCount++;
+      this.undoStack.push(events);
+    }
+  }
+
+  addChange<K extends ModelName>(change: Event<K>) {
     if (this.trackingChanges) {
       this.changeCount++;
       this.uncommittedChanges.push(change);
     }
   }
 
-  applyUntrackedChange(change: Event) {
-    this.trackingChanges = false;
+  /**
+   * @throws if a referenced model does not exist
+   */
+  applyChange<K extends ModelName>(change: Event<K>) {
     switch (change.operation) {
       case "create":
-        if (change.model === "project") {
-          this.createProject(change.id, {
-            title: change.props.title,
-          });
-        } else if (change.model === "issue") {
-          this.createIssue(change.id, {
-            project: this.getOrCreateProject(change.props.projectId),
-            title: change.props.title,
-            createdAt: change.props.createdAt,
-          });
-        } else if (change.model === "relation") {
-          this.createRelation(change.id, {
-            from: this.getOrCreateIssue(change.props.fromId),
-            to: this.getOrCreateIssue(change.props.toId),
-          });
+        switch (change.model) {
+          case "project":
+            this.createProject(change.id, change.props);
+            break;
+          case "issue":
+            this.createIssue(change.id, change.props);
+            break;
+          case "relation":
+            this.createRelation(change.id, change.props);
+            break;
         }
         break;
       case "update":
-        if (change.model === "project") {
-          const project = this.projects.get(change.id);
-          if (!project) {
-            throw new Error(`Project with id ${change.id} does not exist`);
+        switch (change.model) {
+          case "project": {
+            const project = this.projects.get(change.id);
+            if (!project) {
+              throw new Error(`Project with id ${change.id} does not exist`);
+            }
+            project.updateProps(change.newProps);
+            break;
           }
-          project._state.title = change.newProps.title;
-        } else if (change.model === "issue") {
-          this.updateIssue(change.id, {
-            title: change.newProps.title,
-          });
-        } else if (change.model === "relation") {
-          this.updateRelation(change.id, {
-            from: change.newProps.fromId,
-            to: change.newProps.toId,
-          });
+          case "issue": {
+            const issue = this.issues.get(change.id);
+            if (!issue) {
+              throw new Error(`Issue with id ${change.id} does not exist`);
+            }
+            issue.updateProps(change.newProps);
+            break;
+          }
+          case "relation": {
+            const relation = this.relations.get(change.id);
+            if (!relation) {
+              throw new Error(`Relation with id ${change.id} does not exist`);
+            }
+            relation.updateProps(change.newProps);
+            break;
+          }
         }
         break;
       case "delete":
-        this.deleteModel(change);
+        switch (change.model) {
+          case "project":
+            this.deleteProject(change.id);
+            break;
+          case "issue":
+            this.deleteIssue(change.id);
+            break;
+          case "relation":
+            this.deleteRelation(change.id);
+            break;
+        }
         break;
       case "set":
-        this.setModel(change);
+        switch (change.model) {
+          case "project": {
+            if (change.newProps === null) {
+              this.deleteProject(change.id);
+            } else {
+              const project = this.projects.get(change.id);
+              if (!project) {
+                this.createProject(change.id, change.newProps);
+              } else {
+                project.updateProps(project.deserializeProps(change.newProps));
+              }
+            }
+            break;
+          }
+          case "issue": {
+            if (change.newProps === null) {
+              this.deleteIssue(change.id);
+            } else {
+              const issue = this.issues.get(change.id);
+              if (!issue) {
+                this.createIssue(change.id, change.newProps);
+              } else {
+                issue.updateProps(issue.deserializeProps(change.newProps));
+              }
+            }
+            break;
+          }
+          case "relation": {
+            if (change.newProps === null) {
+              this.deleteRelation(change.id);
+            } else {
+              const relation = this.relations.get(change.id);
+              if (!relation) {
+                this.createRelation(change.id, change.newProps);
+              } else {
+                relation.updateProps(relation.deserializeProps(change.newProps));
+              }
+            }
+            break;
+          }
+        }
         break;
+      default:
+        change satisfies never;
     }
-    this.trackingChanges = true;
   }
 
-  private loadProject(project: Project) {
+  private loadProject(data: ProjectData) {
     this.trackingChanges = false;
-    let model = this.projects.get(project.id);
-    if (model) {
-      model.populatePlaceholder(project);
+    let project = this.projects.get(data.id);
+    if (project) {
+      project.populatePlaceholder(project.deserializeProps(data.props));
     } else {
-      model = new ProjectModel(this, project.id, project);
-      this.projects.set(project.id, model);
+      project = new ProjectModel(this, data.id, { state: data.props });
+      this.projects.set(data.id, project);
     }
     this.trackingChanges = true;
-    return model;
+    return project;
   }
 
-  private loadIssue(issue: IssueData) {
+  private loadIssue(data: IssueData) {
     this.trackingChanges = false;
-    const project = issue.projectId ? this.getOrCreateProject(issue.projectId) : null;
-    let model = this.issues.get(issue.id);
-    if (model) {
-      model.populatePlaceholder({ ...issue, project });
+    const project = data.props.projectId ? this.getOrCreateProject(data.props.projectId) : null;
+    const props = { ...data.props, project };
+    let issue = this.issues.get(data.id);
+    if (issue) {
+      issue.populatePlaceholder(props);
     } else {
-      model = new IssueModel(this, issue.id, { ...issue, project });
-      this.issues.set(issue.id, model);
+      issue = new IssueModel(this, data.id, { state: props });
+      this.issues.set(data.id, issue);
     }
     this.trackingChanges = true;
-    return model;
+    return issue;
   }
 
   private loadRelation(data: RelationData) {
     this.trackingChanges = false;
     let relation = this.relations.get(data.id);
     if (relation) {
-      relation.populatePlaceholder(data);
+      relation.populatePlaceholder(relation.deserializeProps(data.props));
     } else {
       relation = new RelationModel(this, data.id, {
-        from: this.getOrCreateIssue(data.fromId),
-        to: this.getOrCreateIssue(data.toId),
-        placeholder: false,
+        state: {
+          ...data.props,
+          from: this.getOrCreateIssue(data.props.fromId),
+          to: this.getOrCreateIssue(data.props.toId),
+        },
       });
       this.relations.set(data.id, relation);
     }
@@ -252,12 +330,12 @@ class Store {
     }
   }
 
-  private getOrCreateIssue(id: string, props?: IssueState) {
+  private getOrCreateIssue(id: string, props?: Partial<IssuePropsRefd>) {
     let issue = this.issues.get(id);
     if (issue) {
       return issue;
     } else if (props) {
-      issue = new IssueModel(this, id, props);
+      issue = new IssueModel(this, id, { state: props });
       this.issues.set(id, issue);
       return issue;
     } else {
@@ -267,7 +345,7 @@ class Store {
     }
   }
 
-  private getOrCreateView(id: string, props?: ViewState) {
+  private getOrCreateView(id: string, props?: Partial<ViewState>) {
     let model = this.views.get(id);
     if (model) {
       return model;
@@ -278,60 +356,79 @@ class Store {
     }
   }
 
-  private getOrCreateProject(id: string, props?: ProjectState) {
+  private getOrCreateProject(id: string, props?: Partial<ProjectPropsRefd>) {
     let project = this.projects.get(id);
     if (project) {
       return project;
     } else {
       project = props
-        ? new ProjectModel(this, id, props)
+        ? new ProjectModel(this, id, { state: props })
         : ProjectModel.createPlaceholder(this, id);
       this.projects.set(id, project);
       return project;
     }
   }
 
-  createIssue(id: string, props: Partial<IssueState>) {
+  private getOrCreateRelation(id: string, props?: Partial<RelationPropsRefd>) {
+    let relation = this.relations.get(id);
+    if (relation) {
+      return relation;
+    } else {
+      relation = props
+        ? new RelationModel(this, id, { state: props })
+        : RelationModel.createPlaceholder(this, id);
+      this.relations.set(id, relation);
+      return relation;
+    }
+  }
+
+  createIssue(id: string, props: IssuePropsRefd) {
     if (this.issues.has(id)) {
       throw new Error(`Issue with id ${id} already exists`);
     }
     this.trackingChanges = false;
-    const issue = new IssueModel(this, id, props);
+    const issue = new IssueModel(this, id, { state: props });
     this.trackingChanges = true;
-    // TODO maybe this should be done inside the constructor?
     this.issues.set(id, issue);
-    this.addChange({ operation: "create", model: "issue", id, props: serializeState(props) });
+    this.addChange({
+      operation: "create",
+      model: "issue",
+      id,
+      props: issue.serializeProps(props),
+    });
     return issue;
   }
 
-  createProject(id: string, props: Partial<ProjectState>) {
+  createProject(id: string, props: Partial<ProjectPropsRefd>) {
     if (this.projects.has(id)) {
       throw new Error(`Project with id ${id} already exists`);
     }
     this.trackingChanges = false;
-    const project = new ProjectModel(this, id, props);
+    const project = new ProjectModel(this, id, { state: props });
     this.trackingChanges = true;
     this.projects.set(id, project);
-    this.addChange({ operation: "create", model: "project", id, props: serializeState(props) });
+    this.addChange({
+      operation: "create",
+      model: "project",
+      id,
+      props: this.serializeProps(props),
+    });
     return project;
   }
 
-  createRelation(
-    id: string,
-    props: Omit<RelationState, "placeholder"> & { placeholder?: boolean }
-  ) {
+  createRelation(id: string, props: Partial<RelationPropsRefd>) {
     if (this.relations.has(id)) {
       throw new Error(`Relation with id ${id} already exists`);
     }
     this.trackingChanges = false;
-    const relation = new RelationModel(this, id, props);
+    const relation = new RelationModel(this, id, { state: props });
     this.trackingChanges = true;
     this.relations.set(id, relation);
     this.addChange({
       operation: "create",
       model: "relation",
       id,
-      props: serializeState(props),
+      props: this.serializeProps(props),
     });
     return relation;
   }
@@ -345,7 +442,7 @@ class Store {
       operation: "delete",
       model: "issue",
       id,
-      oldProps: serializeState(issue._state),
+      oldProps: this.serializeProps(issue._state),
     });
     this.issues.delete(id);
   }
@@ -359,7 +456,7 @@ class Store {
       operation: "delete",
       model: "project",
       id,
-      oldProps: serializeState(project._state),
+      oldProps: this.serializeProps(project._state),
     });
     this.projects.delete(id);
   }
@@ -373,30 +470,9 @@ class Store {
       operation: "delete",
       model: "relation",
       id,
-      oldProps: serializeState(relation._state),
+      oldProps: this.serializeProps(relation._state),
     });
     this.relations.delete(id);
-  }
-
-  deserializeState<T extends ProjectData | IssueData | RelationData>(
-    state: T
-  ): T extends ProjectData
-    ? ProjectState
-    : T extends IssueData
-    ? IssueState
-    : T extends RelationData
-    ? RelationState
-    : never {
-    const deserialized: Record<string, any> = {};
-    for (const key in state) {
-      const modelName = foreignKeys[key];
-      if (modelName) {
-        deserialized[key] = this.getOrCreateModel(modelName, state[key]);
-      } else {
-        deserialized[key] = state[key];
-      }
-    }
-    return deserialized;
   }
 }
 
@@ -406,19 +482,9 @@ abstract class BaseModel {
   abstract name: ModelName;
 }
 
-type Model = IssueModel | ProjectModel | RelationModel | ViewModel;
-function isModel(value: unknown): value is Model {
-  return (
-    value instanceof IssueModel ||
-    value instanceof ProjectModel ||
-    value instanceof RelationModel ||
-    value instanceof ViewModel
-  );
-}
-
 const IssuePropsRefdSchema = IssueSchema.shape.props.omit({ projectId: true }).extend({
-    project: z.custom<ProjectModel | null>(),
-})
+  project: z.custom<ProjectModel | null>(),
+});
 
 type IssuePropsRefd = z.infer<typeof IssuePropsRefdSchema>;
 
@@ -428,16 +494,16 @@ class IssueModel implements BaseModel {
   id: string;
   /**
    * Why like this?
-   * 
+   *
    * The _internal is used for anything that is not part of the public interface.
    * These things *are* accessible, but should not be used outside the model.
-   * 
+   *
    * We could make them private, and then expose interfaces to the store to access
    * them as needed, but that's more work than I want right now.
-   * 
+   *
    * We could also just prefix props, relations, and placeholder with an underscore,
    * but I think this is more clear.
-   * 
+   *
    * The proxy around props isn't needed either. Like we could have helper functions
    * for updating them. But I like the readability you get when our other functions
    * just read/write the props directly.
@@ -456,62 +522,98 @@ class IssueModel implements BaseModel {
     this.store = store;
     this.id = id;
     this._internal = {
-        props: {
-            title: "",
-            project: null,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            ...state,
-        },
-        relations: new Set(),
-        placeholder,
-    }
+      props: {
+        title: "",
+        project: null,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        ...state,
+      },
+      relations: new Set(),
+      placeholder,
+    };
     moveIssueToProject(this, this._internal.props.project);
   }
 
-  serializeProps(props: IssuePropsRefd) {
-    return {
-        title: props.title,
-        projectId: props.project?.id ?? null,
-        createdAt: props.createdAt,
-        updatedAt: props.updatedAt,
-    } satisfies IssueProps;
+  serializeProps(props: Partial<IssuePropsRefd>): Partial<IssueProps> {
+    const serialized = {} as Partial<IssueProps>;
+    for (const key in props) {
+      const typedKey = key as keyof IssuePropsRefd;
+      switch (typedKey) {
+        case "title":
+          serialized.title = props.title;
+          break;
+        case "createdAt":
+          serialized.createdAt = props.createdAt;
+          break;
+        case "updatedAt":
+          serialized.updatedAt = props.updatedAt;
+          break;
+        case "project":
+          serialized.projectId = props.project?.id ?? null;
+          break;
+        default:
+          typedKey satisfies never;
+      }
     }
+    return serialized;
+  }
 
-  deserializeProps(props: IssueProps) {
-    return {
-        title: props.title,
-        project: props.projectId ? this.store.projects.get(props.projectId) ?? null : null,
-        createdAt: props.createdAt,
-        updatedAt: props.updatedAt,
-    } satisfies IssuePropsRefd;
+  /**
+   * @throws if a referenced model does not exist
+   */
+  deserializeProps(props: Partial<IssueProps>) {
+    const deserialized: Partial<IssuePropsRefd> = {};
+    for (const key in props) {
+      const typedKey = key as keyof IssueProps;
+      switch (typedKey) {
+        case "title":
+          deserialized.title = props.title;
+          break;
+        case "createdAt":
+          deserialized.createdAt = props.createdAt;
+          break;
+        case "updatedAt":
+          deserialized.updatedAt = props.updatedAt;
+          break;
+        case "projectId": {
+          const project = props.projectId ? this.store.projects.get(props.projectId) : null;
+          if (project === undefined) {
+            throw new Error(`Project with id ${props.projectId} does not exist`);
+          }
+          deserialized.project = project;
+          break;
+        }
+        default:
+          typedKey satisfies never;
+      }
+    }
+    return deserialized;
   }
 
   updateProps(props: Partial<IssuePropsRefd>) {
-    const changes: { [key: string]: { old: any; new: any } } = {};
-    for (const [key, value] of Object.entries(props)) {
+    const oldProps = {} as any;
+    for (const key in props) {
       if (key in this._internal.props) {
-        changes[key] = {
-          old: this._internal.props[key as keyof IssuePropsRefd],
-          new: value
-        };
+        oldProps[key] = this._internal.props[key as keyof IssuePropsRefd];
       }
     }
     this.store.addChange({
       operation: "update",
       model: "issue",
       id: this.id,
-      props: changes,
+      oldProps: IssuePropsRefdSchema.parse(oldProps),
+      newProps: IssuePropsRefdSchema.parse(props),
     });
     Object.assign(this._internal.props, props);
   }
 
   get placeholder() {
-    return this._state.placeholder;
+    return this._internal.placeholder;
   }
 
   get project() {
-    return this._state.project;
+    return this._internal.props.project;
   }
 
   set project(project: ProjectModel | null) {
@@ -519,33 +621,33 @@ class IssueModel implements BaseModel {
   }
 
   get relations() {
-    return this._state.relations.values();
+    return this._internal.relations.values();
   }
 
   get createdAt() {
-    return this._state.createdAt;
+    return this._internal.props.createdAt;
   }
 
   static createPlaceholder(store: Store, id: string) {
-    return new IssueModel(store, id, { project: null, placeholder: true });
+    return new IssueModel(store, id, { state: { project: null }, placeholder: true });
   }
 
-  populatePlaceholder(props: Partial<IssueState>) {
+  populatePlaceholder(props: Partial<IssuePropsRefd>) {
     if (!this.placeholder) {
       throw new Error("Cannot populate a non-placeholder issue");
     }
-    Object.assign(this._state, props);
-    this._state.placeholder = false;
+    this.updateProps(props);
+    this._internal.placeholder = false;
   }
 }
 
 function moveIssueToProject(issue: IssueModel, project: ProjectModel | null) {
-  if (issue._state.project) {
-    issue._state.project._state.issues.delete(issue);
+  if (issue.project) {
+    issue.project._internal.issues.delete(issue);
   }
-  issue._state.project = project;
+  issue._internal.props.project = project;
   if (project) {
-    project._state.issues.add(issue);
+    project._internal.issues.add(issue);
   }
 }
 
@@ -554,84 +656,108 @@ function updateRelationIssues(
   { from, to }: { from?: IssueModel; to?: IssueModel }
 ) {
   if (from !== undefined) {
-    const oldFrom = relation._state.from;
-    oldFrom._state.relations.delete(relation);
-    relation._state.from = from;
-    from._state.relations.add(relation);
+    const oldFrom = relation._internal.props.from;
+    oldFrom._internal.relations.delete(relation);
+    relation._internal.props.from = from;
+    from._internal.relations.add(relation);
   }
   if (to !== undefined) {
-    const oldTo = relation._state.to;
-    oldTo._state.relations.delete(relation);
-    relation._state.to = to;
-    to._state.relations.add(relation);
+    const oldTo = relation._internal.props.to;
+    oldTo._internal.relations.delete(relation);
+    relation._internal.props.to = to;
+    to._internal.relations.add(relation);
   }
 }
 
-type ProjectData = {
-  id: string;
-  title: string;
-};
+const ProjectPropsRefdSchema = ProjectSchema.shape.props;
 
-type ProjectState = {
-  title: string;
-  placeholder: boolean;
-  issues: Set<IssueModel>;
-};
+type ProjectPropsRefd = z.infer<typeof ProjectPropsRefdSchema>;
 
 class ProjectModel implements BaseModel {
   readonly name = "project";
   store: Store;
   id: string;
-  /**
-   * For now, we're using _ prefix for private-by-convention fields. These are still accessible
-   * but should only be used internally. Later I'd like to find a clean way to do this while
-   * making it actually private, but this is easier for now.
-   *
-   * Why put here an not a seperate model on store?
-   * it's nice to have this on the model itself, rather than a issuesByProjectId collection
-   * can then we know it always exists
-   */
-  _state: ProjectState;
+  _internal: {
+    props: ProjectProps;
+    issues: Set<IssueModel>;
+    placeholder: boolean;
+  };
 
-  constructor(store: Store, id: string, { title, placeholder = false }: Partial<ProjectState>) {
+  constructor(
+    store: Store,
+    id: string,
+    { state, placeholder = false }: { state: Partial<ProjectProps>; placeholder?: boolean }
+  ) {
     this.store = store;
     this.id = id;
-    this._state = makeTracking(
-      { title: title || "", placeholder, issues: new Set<IssueModel>() },
-      this
-    );
+    this._internal = {
+      props: {
+        title: "",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        deletedAt: null,
+        ...state,
+      },
+      issues: new Set<IssueModel>(),
+      placeholder,
+    };
+  }
+
+  serializeProps(props: Partial<ProjectPropsRefd>): Partial<ProjectProps> {
+    return props;
+  }
+
+  deserializeProps(props: Partial<ProjectProps>): Partial<ProjectPropsRefd> {
+    return props;
+  }
+
+  updateProps(props: Partial<ProjectProps>) {
+    const oldProps = {} as any;
+    for (const key in props) {
+      if (key in this._internal.props) {
+        oldProps[key] = this._internal.props[key as keyof ProjectProps];
+      }
+    }
+    this.store.addChange({
+      operation: "update",
+      model: "project",
+      id: this.id,
+      oldProps: ProjectPropsRefdSchema.parse(oldProps),
+      newProps: ProjectPropsRefdSchema.parse(props),
+    });
+    Object.assign(this._internal.props, props);
   }
 
   get title() {
-    return this._state.title;
+    return this._internal.props.title;
   }
 
   set title(value: string) {
-    this._state.title = value;
+    this.updateProps({ title: value });
   }
 
   get placeholder() {
-    return this._state.placeholder;
+    return this._internal.placeholder;
   }
 
   set placeholder(value: boolean) {
-    this._state.placeholder = value;
+    this._internal.placeholder = value;
   }
 
   static createPlaceholder(store: Store, id: string) {
-    return new ProjectModel(store, id, { title: "unknown", placeholder: true });
+    return new ProjectModel(store, id, { state: {}, placeholder: true });
   }
 
-  populatePlaceholder(props: Partial<ProjectState>) {
+  populatePlaceholder(props: Partial<ProjectPropsRefd>) {
     if (!this.placeholder) {
       throw new Error("Cannot populate a non-placeholder project");
     }
-    Object.assign(this._state, props);
-    this._state.placeholder = false;
+    this.updateProps(props);
+    this._internal.placeholder = false;
   }
 
   getIssues(): IterableIterator<IssueModel> {
-    return this._state.issues.values();
+    return this._internal.issues.values();
   }
 
   addIssue(issue: IssueModel) {
@@ -643,123 +769,140 @@ class ProjectModel implements BaseModel {
   }
 }
 
-function isKeyOf<T extends Record<string, any>>(prop: unknown, obj: T): prop is keyof T & string {
-  return typeof prop === "string" && prop in obj;
-}
-
-
-function serializeIssueProps(props: IssuePropsRefd): IssueProps {
-  return Object.fromEntries(
-    Object.entries(props).map(([key, value]) => {
-      if (key === "project") {
-        return ["projectId", (value as ProjectModel).id]; // TODO a little sketch
-      }
-      return [key, value];
-    })
-  ) as IssueProps; // TODO sketch?
-}
-
-function trackIssueProps(initialState: IssueProps, model: IssueModel): IssueProps {
-  return new Proxy(initialState, {
-    set: (target, prop, value) => {
-      if (isKeyOf(prop, target)) {
-        const oldProps = serializeState({ [prop]: target[prop] });
-        const newProps = serializeState({ [prop]: value });
-        const event: UpdateEvent<IssueData> = {
-          operation: "update",
-          model: model.name,
-          id: model.id,
-          props: 
-        };
-        (target as any)[prop] = value;
-      }
-      return true;
-    },
+const RelationPropsRefdSchema = RelationSchema.shape.props
+  .omit({ fromId: true, toId: true })
+  .extend({
+    from: z.custom<IssueModel>(),
+    to: z.custom<IssueModel>(),
   });
-}
 
-function makeTracking<T extends ModelData>(initialState: T, model: BaseModel): T {
-  return new Proxy(initialState, {
-    set: (target, prop, value) => {
-      if (isKeyOf(prop, target)) {
-        const oldProps = serializeState({ [prop]: target[prop] });
-        const newProps = serializeState({ [prop]: value });
-        model.store.addChange({
-          operation: "update",
-          model: model.name,
-          id: model.id,
-          oldProps,
-          newProps,
-        });
-        (target as any)[prop] = value;
-      }
-      return true;
-    },
-  });
-}
-
-function serializeState(state: Record<string, any>) {
-  const serialized: Record<string, any> = {};
-  for (const key in state) {
-    if (isModel(state[key])) {
-      serialized[`${key}Id`] = state[key].id;
-    } else {
-      serialized[key] = state[key];
-    }
-  }
-  return serialized;
-}
-
-type RelationType = "related-to" | "blocks";
-
-type RelationData = {
-  id: string;
-  fromId: string;
-  toId: string;
-  type: RelationType;
-};
-
-type RelationState = {
-  from: IssueModel;
-  to: IssueModel;
-  placeholder: boolean;
-};
+type RelationPropsRefd = z.infer<typeof RelationPropsRefdSchema>;
 
 class RelationModel implements BaseModel {
   readonly name = "relation";
   store: Store;
   id: string;
-  _state: RelationState;
+  _internal: {
+    props: RelationPropsRefd;
+    placeholder: boolean;
+  };
 
   constructor(
     store: Store,
     id: string,
-    { from, to, placeholder = false }: Partial<RelationState> & { from: IssueModel; to: IssueModel }
+    { state, placeholder = false }: { state: RelationPropsRefd; placeholder?: boolean }
   ) {
     this.store = store;
     this.id = id;
-    this._state = makeTracking({ from, to, placeholder }, this);
+    this._internal = {
+      props: { ...state },
+      placeholder,
+    };
     updateRelationIssues(this, { from, to });
   }
 
+  serializeProps(props: Partial<RelationPropsRefd>): Partial<RelationProps> {
+    const serialized: Partial<RelationProps> = {};
+    for (const key in props) {
+      const typedKey = key as keyof RelationPropsRefd;
+      if (props[typedKey] === undefined) continue;
+      switch (typedKey) {
+        case "from":
+          serialized.fromId = props[typedKey].id;
+          break;
+        case "to":
+          serialized.toId = props[typedKey].id;
+          break;
+        case "createdAt":
+          serialized.createdAt = props[typedKey];
+          break;
+        case "updatedAt":
+          serialized.updatedAt = props[typedKey];
+          break;
+        case "deletedAt":
+          serialized.deletedAt = props[typedKey];
+          break;
+        default:
+          typedKey satisfies never;
+      }
+    }
+    return serialized;
+  }
+
+  deserializeProps(props: Partial<RelationProps>): Partial<RelationPropsRefd> {
+    const deserialized: Partial<RelationPropsRefd> = {};
+    for (const key in props) {
+      const typedKey = key as keyof RelationProps;
+      if (props[typedKey] === undefined) continue;
+      switch (typedKey) {
+        case "fromId": {
+          const issue = this.store.issues.get(props[typedKey]);
+          if (issue === undefined) {
+            throw new Error(`Issue with id ${props[typedKey]} does not exist`);
+          }
+          deserialized.from = issue;
+          break;
+        }
+        case "toId": {
+          const issue = this.store.issues.get(props[typedKey]);
+          if (issue === undefined) {
+            throw new Error(`Issue with id ${props[typedKey]} does not exist`);
+          }
+          deserialized.to = issue;
+          break;
+        }
+        case "createdAt":
+          deserialized.createdAt = props[typedKey];
+          break;
+        case "updatedAt":
+          deserialized.updatedAt = props[typedKey];
+          break;
+        case "deletedAt":
+          deserialized.deletedAt = props[typedKey];
+          break;
+        default:
+          typedKey satisfies never;
+      }
+    }
+    return deserialized;
+  }
+
+  updateProps(props: Partial<RelationPropsRefd>) {
+    const oldProps = {} as any;
+    for (const key in props) {
+      if (key in this._internal.props) {
+        oldProps[key] = this._internal.props[key as keyof RelationPropsRefd];
+      }
+    }
+    this.store.addChange({
+      operation: "update",
+      model: "relation",
+      id: this.id,
+      oldProps: RelationPropsRefdSchema.parse(oldProps),
+      newProps: RelationPropsRefdSchema.parse(props),
+    });
+    Object.assign(this._internal.props, props);
+    updateRelationIssues(this, props);
+  }
+
   get from(): IssueModel {
-    return this._state.from;
+    return this._internal.props.from;
   }
 
   set from(issue: IssueModel) {
-    updateRelationIssues(this, { from: issue });
+    this.updateProps({ from: issue });
   }
 
   get to(): IssueModel {
-    return this._state.to;
+    return this._internal.props.to;
   }
 
   set to(issue: IssueModel) {
-    updateRelationIssues(this, { to: issue });
+    this.updateProps({ to: issue });
   }
 
   get placeholder(): boolean {
-    return this._state.placeholder;
+    return this._internal.placeholder;
   }
 
   static createPlaceholder(
@@ -768,15 +911,25 @@ class RelationModel implements BaseModel {
     from: IssueModel,
     to: IssueModel
   ): RelationModel {
-    return new RelationModel(store, id, { from, to, placeholder: true });
+    const now = Date.now();
+    return new RelationModel(store, id, {
+      state: {
+        from,
+        to,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      },
+      placeholder: true,
+    });
   }
 
-  populatePlaceholder(data: RelationData) {
+  populatePlaceholder(data: RelationPropsRefd) {
     if (!this.placeholder) {
       throw new Error("Cannot populate a non-placeholder relation");
     }
-    Object.assign(this._state, data);
-    this._state.placeholder = false;
+    this.updateProps(data);
+    this._internal.placeholder = false;
   }
 }
 

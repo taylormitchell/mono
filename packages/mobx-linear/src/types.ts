@@ -7,6 +7,7 @@ export const ProjectSchema = z.object({
     title: z.string(),
     createdAt: z.number(),
     updatedAt: z.number(),
+    deletedAt: z.number().nullable(),
   }),
 });
 
@@ -18,6 +19,7 @@ export const IssueSchema = z.object({
     title: z.string(),
     createdAt: z.number(),
     updatedAt: z.number(),
+    deletedAt: z.number().nullable(),
   }),
 });
 
@@ -29,6 +31,7 @@ export const RelationSchema = z.object({
     toId: z.string(),
     createdAt: z.number(),
     updatedAt: z.number(),
+    deletedAt: z.number().nullable(),
   }),
 });
 
@@ -36,53 +39,57 @@ export type ProjectData = z.infer<typeof ProjectSchema>;
 
 export type IssueData = z.infer<typeof IssueSchema>;
 
+export type RelationData = z.infer<typeof RelationSchema>;
+
 export type IssueProps = z.infer<typeof IssueSchema.shape.props>;
 
-export type RelationData = z.infer<typeof RelationSchema>;
+export type ProjectProps = z.infer<typeof ProjectSchema.shape.props>;
+
+export type RelationProps = z.infer<typeof RelationSchema.shape.props>;
 
 export const ModelNames = ["project", "issue", "relation"] as const;
 
-type ModelSchemas = {
+export type ModelSchemas = {
   project: typeof ProjectSchema;
   issue: typeof IssueSchema;
   relation: typeof RelationSchema;
 };
 
-type UpdateEvent = {
-  [K in keyof ModelSchemas]: {
-    operation: "update";
-    model: K;
-    id: string;
-    props: Partial<z.infer<ModelSchemas[K]["shape"]["props"]>>;
-  };
-}[keyof ModelSchemas];
+export type ModelName = (typeof ModelNames)[number];
 
-type CreateEvent = {
-  [K in keyof ModelSchemas]: {
-    operation: "create";
-    model: K;
-    id: string;
-    props: z.infer<ModelSchemas[K]["shape"]["props"]>;
-  };
-}[keyof ModelSchemas];
+export type UpdateEvent<K extends keyof ModelSchemas> = {
+  operation: "update";
+  model: K;
+  id: string;
+  // TODO: maybe do { [key: string]: { old: any; new: any } }
+  oldProps: Partial<z.infer<ModelSchemas[K]["shape"]["props"]>>;
+  newProps: Partial<z.infer<ModelSchemas[K]["shape"]["props"]>>;
+};
 
-type DeleteEvent = {
-  [K in keyof ModelSchemas]: {
-    operation: "delete";
-    model: K;
-    id: string;
-    props: z.infer<ModelSchemas[K]["shape"]["props"]>;
-  };
-}[keyof ModelSchemas];
+export type CreateEvent<K extends keyof ModelSchemas> = {
+  operation: "create";
+  model: K;
+  id: string;
+  props: z.infer<ModelSchemas[K]["shape"]["props"]>;
+};
 
-type SetEvent = {
-  [K in keyof ModelSchemas]: {
-    operation: "set";
-    model: K;
-    id: string;
-    oldProps: z.infer<ModelSchemas[K]["shape"]["props"]> | null;
-    newProps: z.infer<ModelSchemas[K]["shape"]["props"]> | null;
-  };
-}[keyof ModelSchemas];
+export type DeleteEvent<K extends keyof ModelSchemas> = {
+  operation: "delete";
+  model: K;
+  id: string;
+  props: z.infer<ModelSchemas[K]["shape"]["props"]>;
+};
 
-export type Event = UpdateEvent | CreateEvent | DeleteEvent | SetEvent;
+export type SetEvent<K extends keyof ModelSchemas> = {
+  operation: "set";
+  model: K;
+  id: string;
+  oldProps: z.infer<ModelSchemas[K]["shape"]["props"]> | null;
+  newProps: z.infer<ModelSchemas[K]["shape"]["props"]> | null;
+};
+
+export type Event<K extends keyof ModelSchemas> =
+  | UpdateEvent<K>
+  | CreateEvent<K>
+  | DeleteEvent<K>
+  | SetEvent<K>;
