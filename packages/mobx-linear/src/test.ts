@@ -1,5 +1,4 @@
-import { generateKeyBetween } from "fractional-indexing";
-import { makeAutoObservable, reaction, runInAction } from "mobx";
+import { reaction, runInAction, makeAutoObservable, autorun, toJS } from "mobx";
 import {
   ModelName,
   Event,
@@ -12,23 +11,22 @@ import {
   RelationData,
   RelationSchema,
   RelationProps,
+  RelationPropsSchema,
 } from "./types";
 import { z } from "zod";
 
-/**
- * TODOs
- * - DONE Define the serialized state schemas for each model.
- * - DONE Derive the serialized events from the serialized state schemas.
- * - Methods for serializing and deserializing props and tracking changes.
- *   For now, don't get fancy with these. Just do it right on the models.
- *   The models are then responsible for knowing how to map b/w ids and models
- *   (e.g. which foreign key maps to which model?)
- */
-
-function reverseEvent<K extends ModelName>(event: Event<K>): Event<K> {
+function reverseEvent(event: Event): Event {
   switch (event.operation) {
     case "create":
-      return { operation: "delete", model: event.model, id: event.id, props: event.props };
+      switch (event.model) {
+        case "project":
+          return { operation: "delete", model: "project", id: event.id, props: event.props };
+        case "issue":
+          return { operation: "delete", model: "issue", id: event.id, props: event.props };
+        case "relation":
+          return { operation: "delete", model: "relation", id: event.id, props: event.props };
+      }
+      break;
     case "update":
       return {
         operation: "update",
@@ -46,15 +44,34 @@ function reverseEvent<K extends ModelName>(event: Event<K>): Event<K> {
         newProps: event.props,
       };
     case "set":
-      return {
-        operation: "set",
-        model: event.model,
-        id: event.id,
-        oldProps: event.newProps,
-        newProps: event.oldProps,
-      };
-    default:
-      return event satisfies never;
+      switch (event.model) {
+        case "project":
+          return {
+            operation: "set",
+            model: event.model,
+            id: event.id,
+            oldProps: event.newProps,
+            newProps: event.oldProps,
+          };
+        case "issue":
+          return {
+            operation: "set",
+            model: event.model,
+            id: event.id,
+            oldProps: event.newProps,
+            newProps: event.oldProps,
+          };
+        case "relation":
+          return {
+            operation: "set",
+            model: event.model,
+            id: event.id,
+            oldProps: event.newProps,
+            newProps: event.oldProps,
+          };
+        default:
+          return event satisfies never;
+      }
   }
 }
 
@@ -62,13 +79,12 @@ class Store {
   issues: Map<string, IssueModel> = new Map();
   projects: Map<string, ProjectModel> = new Map();
   relations: Map<string, RelationModel> = new Map();
-  views: Map<string, ViewModel> = new Map();
-  trackingChanges: boolean = true;
+  private trackingChanges: boolean = true;
 
-  undoStack: Event<ModelName>[][] = [];
-  redoStack: Event<ModelName>[][] = [];
+  undoStack: Event[][] = [];
+  redoStack: Event[][] = [];
 
-  uncommittedChanges: Event<ModelName>[] = [];
+  uncommittedChanges: Event[] = [];
   // Using an observable number to trigger a reaction b/c if we track the change array,
   // the reaction will need to modify it too (clear it) which you're not supposed to do
   // inside reactions.
@@ -82,6 +98,7 @@ class Store {
     reaction(
       () => this.changeCount,
       () => {
+        // console.log(this.uncommittedChanges.map((e) => toJS(e)));
         this.undoStack.push(this.uncommittedChanges.slice());
         this.redoStack = [];
         this.uncommittedChanges = [];
@@ -112,55 +129,60 @@ class Store {
     }
   }
 
-  addChange<K extends ModelName>(change: Event<K>) {
+  addChange(change: Event) {
     if (this.trackingChanges) {
       this.changeCount++;
       this.uncommittedChanges.push(change);
     }
   }
 
+  private applyRemoteChange(change: Event) {
+    this.trackingChanges = false;
+    try {
+      this.applyChange(change);
+    } finally {
+      this.trackingChanges = true;
+    }
+  }
+
+  /**
   /**
    * @throws if a referenced model does not exist
    */
-  applyChange<K extends ModelName>(change: Event<K>) {
+  private applyChange(change: Event) {
     switch (change.operation) {
       case "create":
         switch (change.model) {
           case "project":
-            this.createProject(change.id, change.props);
+            ProjectModel.create(this, change.id, ProjectModel.deserializeProps(this, change.props));
             break;
           case "issue":
-            this.createIssue(change.id, change.props);
+            IssueModel.create(this, change.id, IssueModel.deserializeProps(this, change.props));
             break;
           case "relation":
-            this.createRelation(change.id, change.props);
+            RelationModel.create(
+              this,
+              change.id,
+              RelationModel.deserializeProps(this, change.props)
+            );
             break;
         }
         break;
       case "update":
         switch (change.model) {
           case "project": {
-            const project = this.projects.get(change.id);
-            if (!project) {
-              throw new Error(`Project with id ${change.id} does not exist`);
-            }
-            project.updateProps(change.newProps);
+            const project = ProjectModel.getOrThrow(this, change.id);
+            project.update(ProjectModel.deserializePartialProps(this, change.newProps));
             break;
           }
           case "issue": {
-            const issue = this.issues.get(change.id);
-            if (!issue) {
-              throw new Error(`Issue with id ${change.id} does not exist`);
-            }
-            issue.updateProps(change.newProps);
+            const issue = IssueModel.getOrThrow(this, change.id);
+            issue.update(IssueModel.deserializePartialProps(this, change.newProps));
             break;
           }
           case "relation": {
-            const relation = this.relations.get(change.id);
-            if (!relation) {
-              throw new Error(`Relation with id ${change.id} does not exist`);
-            }
-            relation.updateProps(change.newProps);
+            const relation = RelationModel.getOrThrow(this, change.id);
+            relation.update(RelationModel.deserializePartialProps(this, change.newProps));
             break;
           }
         }
@@ -168,13 +190,13 @@ class Store {
       case "delete":
         switch (change.model) {
           case "project":
-            this.deleteProject(change.id);
+            ProjectModel.getOrThrow(this, change.id).delete();
             break;
           case "issue":
-            this.deleteIssue(change.id);
+            IssueModel.getOrThrow(this, change.id).delete();
             break;
           case "relation":
-            this.deleteRelation(change.id);
+            RelationModel.getOrThrow(this, change.id).delete();
             break;
         }
         break;
@@ -182,40 +204,25 @@ class Store {
         switch (change.model) {
           case "project": {
             if (change.newProps === null) {
-              this.deleteProject(change.id);
+              ProjectModel.getOrThrow(this, change.id).delete();
             } else {
-              const project = this.projects.get(change.id);
-              if (!project) {
-                this.createProject(change.id, change.newProps);
-              } else {
-                project.updateProps(project.deserializeProps(change.newProps));
-              }
+              ProjectModel.set(this, { model: "project", id: change.id, props: change.newProps });
             }
             break;
           }
           case "issue": {
             if (change.newProps === null) {
-              this.deleteIssue(change.id);
+              IssueModel.getOrThrow(this, change.id).delete();
             } else {
-              const issue = this.issues.get(change.id);
-              if (!issue) {
-                this.createIssue(change.id, change.newProps);
-              } else {
-                issue.updateProps(issue.deserializeProps(change.newProps));
-              }
+              IssueModel.set(this, { model: "issue", id: change.id, props: change.newProps });
             }
             break;
           }
           case "relation": {
             if (change.newProps === null) {
-              this.deleteRelation(change.id);
+              RelationModel.getOrThrow(this, change.id).delete();
             } else {
-              const relation = this.relations.get(change.id);
-              if (!relation) {
-                this.createRelation(change.id, change.newProps);
-              } else {
-                relation.updateProps(relation.deserializeProps(change.newProps));
-              }
+              RelationModel.set(this, { model: "relation", id: change.id, props: change.newProps });
             }
             break;
           }
@@ -226,253 +233,34 @@ class Store {
     }
   }
 
-  private loadProject(data: ProjectData) {
-    this.trackingChanges = false;
-    let project = this.projects.get(data.id);
-    if (project) {
-      project.populatePlaceholder(project.deserializeProps(data.props));
-    } else {
-      project = new ProjectModel(this, data.id, { state: data.props });
-      this.projects.set(data.id, project);
-    }
-    this.trackingChanges = true;
-    return project;
-  }
-
-  private loadIssue(data: IssueData) {
-    this.trackingChanges = false;
-    const project = data.props.projectId ? this.getOrCreateProject(data.props.projectId) : null;
-    const props = { ...data.props, project };
-    let issue = this.issues.get(data.id);
-    if (issue) {
-      issue.populatePlaceholder(props);
-    } else {
-      issue = new IssueModel(this, data.id, { state: props });
-      this.issues.set(data.id, issue);
-    }
-    this.trackingChanges = true;
-    return issue;
-  }
-
-  private loadRelation(data: RelationData) {
-    this.trackingChanges = false;
-    let relation = this.relations.get(data.id);
-    if (relation) {
-      relation.populatePlaceholder(relation.deserializeProps(data.props));
-    } else {
-      relation = new RelationModel(this, data.id, {
-        state: {
-          ...data.props,
-          from: this.getOrCreateIssue(data.props.fromId),
-          to: this.getOrCreateIssue(data.props.toId),
-        },
-      });
-      this.relations.set(data.id, relation);
-    }
-    this.trackingChanges = true;
-    return relation;
-  }
-
-  private loadView(data: ViewData) {
-    this.trackingChanges = false;
-    const project = data.projectId ? this.getOrCreateProject(data.projectId) : null;
-    const view = this.getOrCreateView(data.id, { project });
-    this.trackingChanges = true;
-    return view;
-  }
-
-  private loadViewIssuePosition(data: ViewIssuePositionData) {
-    this.trackingChanges = false;
-    const model = this.getOrCreateView(data.viewId);
-    const issue = this.getOrCreateIssue(data.issueId);
-    model.setIssuePosition(issue, data.position);
-    this.trackingChanges = true;
-  }
-
   load({
     projects = [],
     issues = [],
     relations = [],
-    views = [],
-    viewIssuePositions = [],
   }: {
     projects?: ProjectData[];
     issues?: IssueData[];
     relations?: RelationData[];
-    views?: ViewData[];
-    viewIssuePositions?: ViewIssuePositionData[];
   }) {
     this.trackingChanges = false;
     try {
       for (const project of projects) {
-        this.loadProject(project);
+        ProjectModel.set(this, project, "create-placeholder");
       }
       for (const issue of issues) {
-        this.loadIssue(issue);
+        IssueModel.set(this, issue, "create-placeholder");
       }
       for (const relation of relations) {
-        this.loadRelation(relation);
-      }
-      for (const view of views) {
-        this.loadView(view);
-      }
-      for (const viewIssuePosition of viewIssuePositions) {
-        this.loadViewIssuePosition(viewIssuePosition);
+        RelationModel.set(this, relation, "create-placeholder");
       }
     } catch (e) {
       this.projects.clear();
       this.issues.clear();
       this.relations.clear();
-      this.views.clear();
       throw e;
     } finally {
       this.trackingChanges = true;
     }
-  }
-
-  private getOrCreateIssue(id: string, props?: Partial<IssuePropsRefd>) {
-    let issue = this.issues.get(id);
-    if (issue) {
-      return issue;
-    } else if (props) {
-      issue = new IssueModel(this, id, { state: props });
-      this.issues.set(id, issue);
-      return issue;
-    } else {
-      issue = IssueModel.createPlaceholder(this, id);
-      this.issues.set(id, issue);
-      return issue;
-    }
-  }
-
-  private getOrCreateView(id: string, props?: Partial<ViewState>) {
-    let model = this.views.get(id);
-    if (model) {
-      return model;
-    } else {
-      model = props ? new ViewModel(this, id, props) : ViewModel.createPlaceholder(this, id);
-      this.views.set(id, model);
-      return model;
-    }
-  }
-
-  private getOrCreateProject(id: string, props?: Partial<ProjectPropsRefd>) {
-    let project = this.projects.get(id);
-    if (project) {
-      return project;
-    } else {
-      project = props
-        ? new ProjectModel(this, id, { state: props })
-        : ProjectModel.createPlaceholder(this, id);
-      this.projects.set(id, project);
-      return project;
-    }
-  }
-
-  private getOrCreateRelation(id: string, props?: Partial<RelationPropsRefd>) {
-    let relation = this.relations.get(id);
-    if (relation) {
-      return relation;
-    } else {
-      relation = props
-        ? new RelationModel(this, id, { state: props })
-        : RelationModel.createPlaceholder(this, id);
-      this.relations.set(id, relation);
-      return relation;
-    }
-  }
-
-  createIssue(id: string, props: IssuePropsRefd) {
-    if (this.issues.has(id)) {
-      throw new Error(`Issue with id ${id} already exists`);
-    }
-    this.trackingChanges = false;
-    const issue = new IssueModel(this, id, { state: props });
-    this.trackingChanges = true;
-    this.issues.set(id, issue);
-    this.addChange({
-      operation: "create",
-      model: "issue",
-      id,
-      props: issue.serializeProps(props),
-    });
-    return issue;
-  }
-
-  createProject(id: string, props: Partial<ProjectPropsRefd>) {
-    if (this.projects.has(id)) {
-      throw new Error(`Project with id ${id} already exists`);
-    }
-    this.trackingChanges = false;
-    const project = new ProjectModel(this, id, { state: props });
-    this.trackingChanges = true;
-    this.projects.set(id, project);
-    this.addChange({
-      operation: "create",
-      model: "project",
-      id,
-      props: this.serializeProps(props),
-    });
-    return project;
-  }
-
-  createRelation(id: string, props: Partial<RelationPropsRefd>) {
-    if (this.relations.has(id)) {
-      throw new Error(`Relation with id ${id} already exists`);
-    }
-    this.trackingChanges = false;
-    const relation = new RelationModel(this, id, { state: props });
-    this.trackingChanges = true;
-    this.relations.set(id, relation);
-    this.addChange({
-      operation: "create",
-      model: "relation",
-      id,
-      props: this.serializeProps(props),
-    });
-    return relation;
-  }
-
-  deleteIssue(id: string) {
-    const issue = this.issues.get(id);
-    if (!issue) {
-      throw new Error(`Issue with id ${id} does not exist`);
-    }
-    this.addChange({
-      operation: "delete",
-      model: "issue",
-      id,
-      oldProps: this.serializeProps(issue._state),
-    });
-    this.issues.delete(id);
-  }
-
-  deleteProject(id: string) {
-    const project = this.projects.get(id);
-    if (!project) {
-      throw new Error(`Project with id ${id} does not exist`);
-    }
-    this.addChange({
-      operation: "delete",
-      model: "project",
-      id,
-      oldProps: this.serializeProps(project._state),
-    });
-    this.projects.delete(id);
-  }
-
-  deleteRelation(id: string) {
-    const relation = this.relations.get(id);
-    if (!relation) {
-      throw new Error(`Relation with id ${id} does not exist`);
-    }
-    this.addChange({
-      operation: "delete",
-      model: "relation",
-      id,
-      oldProps: this.serializeProps(relation._state),
-    });
-    this.relations.delete(id);
   }
 }
 
@@ -517,95 +305,28 @@ class IssueModel implements BaseModel {
   constructor(
     store: Store,
     id: string,
-    { state, placeholder = false }: { state: Partial<IssuePropsRefd>; placeholder?: boolean }
+    { state, placeholder = false }: { state: IssuePropsRefd; placeholder?: boolean }
   ) {
     this.store = store;
     this.id = id;
     this._internal = {
-      props: {
-        title: "",
-        project: null,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        ...state,
-      },
+      props: { ...state },
       relations: new Set(),
       placeholder,
     };
-    moveIssueToProject(this, this._internal.props.project);
-  }
-
-  serializeProps(props: Partial<IssuePropsRefd>): Partial<IssueProps> {
-    const serialized = {} as Partial<IssueProps>;
-    for (const key in props) {
-      const typedKey = key as keyof IssuePropsRefd;
-      switch (typedKey) {
-        case "title":
-          serialized.title = props.title;
-          break;
-        case "createdAt":
-          serialized.createdAt = props.createdAt;
-          break;
-        case "updatedAt":
-          serialized.updatedAt = props.updatedAt;
-          break;
-        case "project":
-          serialized.projectId = props.project?.id ?? null;
-          break;
-        default:
-          typedKey satisfies never;
-      }
-    }
-    return serialized;
-  }
-
-  /**
-   * @throws if a referenced model does not exist
-   */
-  deserializeProps(props: Partial<IssueProps>) {
-    const deserialized: Partial<IssuePropsRefd> = {};
-    for (const key in props) {
-      const typedKey = key as keyof IssueProps;
-      switch (typedKey) {
-        case "title":
-          deserialized.title = props.title;
-          break;
-        case "createdAt":
-          deserialized.createdAt = props.createdAt;
-          break;
-        case "updatedAt":
-          deserialized.updatedAt = props.updatedAt;
-          break;
-        case "projectId": {
-          const project = props.projectId ? this.store.projects.get(props.projectId) : null;
-          if (project === undefined) {
-            throw new Error(`Project with id ${props.projectId} does not exist`);
-          }
-          deserialized.project = project;
-          break;
+    makeAutoObservable(this._internal);
+    // Reaction to track when the project changes
+    reaction(
+      () => this._internal.props.project,
+      (project, oldProject) => {
+        if (oldProject) {
+          oldProject._internal.issues.delete(this);
         }
-        default:
-          typedKey satisfies never;
+        if (project) {
+          project._internal.issues.add(this);
+        }
       }
-    }
-    return deserialized;
-  }
-
-  updateProps(props: Partial<IssuePropsRefd>) {
-    const oldProps = {} as any;
-    for (const key in props) {
-      if (key in this._internal.props) {
-        oldProps[key] = this._internal.props[key as keyof IssuePropsRefd];
-      }
-    }
-    this.store.addChange({
-      operation: "update",
-      model: "issue",
-      id: this.id,
-      oldProps: IssuePropsRefdSchema.parse(oldProps),
-      newProps: IssuePropsRefdSchema.parse(props),
-    });
-    Object.assign(this._internal.props, props);
+    );
   }
 
   get placeholder() {
@@ -617,7 +338,7 @@ class IssueModel implements BaseModel {
   }
 
   set project(project: ProjectModel | null) {
-    moveIssueToProject(this, project);
+    this.update({ project });
   }
 
   get relations() {
@@ -628,44 +349,183 @@ class IssueModel implements BaseModel {
     return this._internal.props.createdAt;
   }
 
-  static createPlaceholder(store: Store, id: string) {
-    return new IssueModel(store, id, { state: { project: null }, placeholder: true });
-  }
-
-  populatePlaceholder(props: Partial<IssuePropsRefd>) {
-    if (!this.placeholder) {
-      throw new Error("Cannot populate a non-placeholder issue");
+  static create(store: Store, id: string, props: IssuePropsRefd) {
+    if (store.issues.has(id)) {
+      throw new Error(`Issue with id ${id} already exists`);
     }
-    this.updateProps(props);
-    this._internal.placeholder = false;
+    const issue = new IssueModel(store, id, { state: props });
+    store.issues.set(id, issue);
+    store.addChange({
+      operation: "create",
+      model: "issue",
+      id,
+      props: IssueModel.serializeProps(props),
+    });
+    return issue;
   }
-}
 
-function moveIssueToProject(issue: IssueModel, project: ProjectModel | null) {
-  if (issue.project) {
-    issue.project._internal.issues.delete(issue);
+  static createPlaceholder(store: Store, id: string) {
+    if (store.issues.has(id)) {
+      throw new Error(`Issue with id ${id} already exists`);
+    }
+    const now = Date.now();
+    const issue = new IssueModel(store, id, {
+      state: {
+        title: "",
+        project: null,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      },
+      placeholder: true,
+    });
+    store.issues.set(id, issue);
+    return issue;
   }
-  issue._internal.props.project = project;
-  if (project) {
-    project._internal.issues.add(issue);
-  }
-}
 
-function updateRelationIssues(
-  relation: RelationModel,
-  { from, to }: { from?: IssueModel; to?: IssueModel }
-) {
-  if (from !== undefined) {
-    const oldFrom = relation._internal.props.from;
-    oldFrom._internal.relations.delete(relation);
-    relation._internal.props.from = from;
-    from._internal.relations.add(relation);
+  static getOrCreatePlaceholder(store: Store, id: string, props?: IssuePropsRefd) {
+    return store.issues.get(id) ?? props === undefined
+      ? IssueModel.createPlaceholder(store, id)
+      : IssueModel.create(store, id, props);
   }
-  if (to !== undefined) {
-    const oldTo = relation._internal.props.to;
-    oldTo._internal.relations.delete(relation);
-    relation._internal.props.to = to;
-    to._internal.relations.add(relation);
+
+  static getOrThrow(store: Store, id: string) {
+    const issue = store.issues.get(id);
+    if (!issue) {
+      throw new Error(`Issue with id ${id} does not exist`);
+    }
+    return issue;
+  }
+
+  update(props: Partial<IssuePropsRefd>) {
+    const oldProps = {} as any;
+    for (const key in props) {
+      if (key in this._internal.props) {
+        oldProps[key] = this._internal.props[key as keyof IssuePropsRefd];
+      }
+    }
+    Object.assign(this._internal.props, props);
+    this.store.addChange({
+      operation: "update",
+      model: "issue",
+      id: this.id,
+      oldProps: IssueModel.serializePartialProps(oldProps),
+      newProps: IssueModel.serializePartialProps(props),
+    });
+  }
+
+  delete() {
+    this.store.addChange({
+      operation: "delete",
+      model: "issue",
+      id: this.id,
+      props: IssueModel.serializeProps(this._internal.props),
+    });
+    this.store.issues.delete(this.id);
+  }
+
+  static #serializePartialProps(props: Partial<IssuePropsRefd>): Partial<IssueProps> {
+    const serialized = {} as Partial<IssueProps>;
+    for (const key in props) {
+      const typedKey = key as keyof IssuePropsRefd;
+      if (props[typedKey] === undefined) continue;
+      switch (typedKey) {
+        case "title":
+          serialized.title = props.title;
+          break;
+        case "createdAt":
+          serialized.createdAt = props.createdAt;
+          break;
+        case "updatedAt":
+          serialized.updatedAt = props.updatedAt;
+          break;
+        case "deletedAt":
+          serialized.deletedAt = props.deletedAt;
+          break;
+        case "project":
+          serialized.projectId = props.project?.id ?? null;
+          break;
+        default:
+          typedKey satisfies never;
+      }
+    }
+    return serialized;
+  }
+
+  static serializePartialProps(props: Partial<IssuePropsRefd>): Partial<IssueProps> {
+    return IssueModel.#serializePartialProps(props);
+  }
+
+  static serializeProps(props: IssuePropsRefd): IssueProps {
+    return IssueSchema.shape.props.parse(IssueModel.#serializePartialProps(props));
+  }
+
+  static #deserializePartialProps(
+    store: Store,
+    props: Partial<IssueProps>,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): Partial<IssuePropsRefd> {
+    const deserialized: Partial<IssuePropsRefd> = {};
+    for (const key in props) {
+      const typedKey = key as keyof IssueProps;
+      if (props[typedKey] === undefined) continue;
+      switch (typedKey) {
+        case "projectId":
+          if (props.projectId) {
+            deserialized.project =
+              onMissing === "create-placeholder"
+                ? ProjectModel.getOrCreatePlaceholder(store, props.projectId)
+                : ProjectModel.getOrThrow(store, props.projectId);
+          } else {
+            deserialized.project = null;
+          }
+          break;
+        case "createdAt":
+          deserialized[typedKey] = props[typedKey];
+          break;
+        case "updatedAt":
+          deserialized[typedKey] = props[typedKey];
+          break;
+        case "deletedAt":
+          deserialized[typedKey] = props[typedKey];
+          break;
+        case "title":
+          deserialized[typedKey] = props[typedKey];
+          break;
+        default:
+          typedKey satisfies never;
+      }
+    }
+    return deserialized;
+  }
+
+  static deserializePartialProps(
+    store: Store,
+    props: Partial<IssueProps>,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): Partial<IssuePropsRefd> {
+    return IssueModel.#deserializePartialProps(store, props, onMissing);
+  }
+
+  static deserializeProps(
+    store: Store,
+    props: IssueProps,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): IssuePropsRefd {
+    return IssuePropsRefdSchema.parse(IssueModel.#deserializePartialProps(store, props, onMissing));
+  }
+
+  static set(store: Store, data: IssueData, onMissing: "create-placeholder" | "error" = "error") {
+    const props = IssueModel.deserializeProps(store, data.props, onMissing);
+    let issue = store.issues.get(data.id);
+    if (issue) {
+      issue.update(props);
+      issue._internal.placeholder = false;
+    } else {
+      issue = new IssueModel(store, data.id, { state: props });
+      store.issues.set(data.id, issue);
+    }
+    return issue;
   }
 }
 
@@ -678,7 +538,7 @@ class ProjectModel implements BaseModel {
   store: Store;
   id: string;
   _internal: {
-    props: ProjectProps;
+    props: ProjectPropsRefd;
     issues: Set<IssueModel>;
     placeholder: boolean;
   };
@@ -686,86 +546,171 @@ class ProjectModel implements BaseModel {
   constructor(
     store: Store,
     id: string,
-    { state, placeholder = false }: { state: Partial<ProjectProps>; placeholder?: boolean }
+    { state, placeholder = false }: { state: ProjectPropsRefd; placeholder?: boolean }
   ) {
     this.store = store;
     this.id = id;
     this._internal = {
-      props: {
-        title: "",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        deletedAt: null,
-        ...state,
-      },
+      props: { ...state },
       issues: new Set<IssueModel>(),
       placeholder,
     };
-  }
-
-  serializeProps(props: Partial<ProjectPropsRefd>): Partial<ProjectProps> {
-    return props;
-  }
-
-  deserializeProps(props: Partial<ProjectProps>): Partial<ProjectPropsRefd> {
-    return props;
-  }
-
-  updateProps(props: Partial<ProjectProps>) {
-    const oldProps = {} as any;
-    for (const key in props) {
-      if (key in this._internal.props) {
-        oldProps[key] = this._internal.props[key as keyof ProjectProps];
-      }
-    }
-    this.store.addChange({
-      operation: "update",
-      model: "project",
-      id: this.id,
-      oldProps: ProjectPropsRefdSchema.parse(oldProps),
-      newProps: ProjectPropsRefdSchema.parse(props),
-    });
-    Object.assign(this._internal.props, props);
-  }
-
-  get title() {
-    return this._internal.props.title;
-  }
-
-  set title(value: string) {
-    this.updateProps({ title: value });
+    makeAutoObservable(this._internal);
   }
 
   get placeholder() {
     return this._internal.placeholder;
   }
 
-  set placeholder(value: boolean) {
-    this._internal.placeholder = value;
-  }
-
-  static createPlaceholder(store: Store, id: string) {
-    return new ProjectModel(store, id, { state: {}, placeholder: true });
-  }
-
-  populatePlaceholder(props: Partial<ProjectPropsRefd>) {
-    if (!this.placeholder) {
-      throw new Error("Cannot populate a non-placeholder project");
-    }
-    this.updateProps(props);
-    this._internal.placeholder = false;
-  }
-
-  getIssues(): IterableIterator<IssueModel> {
+  get issues() {
     return this._internal.issues.values();
   }
 
-  addIssue(issue: IssueModel) {
-    moveIssueToProject(issue, this);
+  get createdAt() {
+    return this._internal.props.createdAt;
+  }
+
+  get title() {
+    return this._internal.props.title;
+  }
+
+  set title(title: string) {
+    this.update({ title });
   }
 
   removeIssue(issue: IssueModel) {
-    moveIssueToProject(issue, null);
+    issue.project = null;
+  }
+
+  addIssue(issue: IssueModel) {
+    issue.project = this;
+  }
+
+  static create(store: Store, id: string, props: ProjectPropsRefd) {
+    if (store.projects.has(id)) {
+      throw new Error(`Project with id ${id} already exists`);
+    }
+    const project = new ProjectModel(store, id, { state: props });
+    store.projects.set(id, project);
+    store.addChange({
+      operation: "create",
+      model: "project",
+      id,
+      props: ProjectModel.serializeProps(props),
+    });
+    return project;
+  }
+
+  static createPlaceholder(store: Store, id: string) {
+    if (store.projects.has(id)) {
+      throw new Error(`Project with id ${id} already exists`);
+    }
+    const now = Date.now();
+    const project = new ProjectModel(store, id, {
+      state: {
+        title: "",
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      },
+      placeholder: true,
+    });
+    store.projects.set(id, project);
+    return project;
+  }
+
+  static getOrCreatePlaceholder(store: Store, id: string, props?: ProjectPropsRefd) {
+    return (
+      store.projects.get(id) ??
+      (props === undefined
+        ? ProjectModel.createPlaceholder(store, id)
+        : ProjectModel.create(store, id, props))
+    );
+  }
+
+  static getOrThrow(store: Store, id: string) {
+    const project = store.projects.get(id);
+    if (!project) {
+      throw new Error(`Project with id ${id} does not exist`);
+    }
+    return project;
+  }
+
+  update(props: Partial<ProjectPropsRefd>) {
+    const oldProps = {} as any;
+    for (const key in props) {
+      if (key in this._internal.props) {
+        oldProps[key] = this._internal.props[key as keyof ProjectPropsRefd];
+      }
+    }
+    Object.assign(this._internal.props, props);
+    this.store.addChange({
+      operation: "update",
+      model: "project",
+      id: this.id,
+      oldProps: ProjectModel.serializePartialProps(oldProps),
+      newProps: ProjectModel.serializePartialProps(props),
+    });
+  }
+
+  delete() {
+    this.store.projects.delete(this.id);
+    this.store.addChange({
+      operation: "delete",
+      model: "project",
+      id: this.id,
+      props: ProjectModel.serializeProps(this._internal.props),
+    });
+  }
+
+  static #serializePartialProps(props: Partial<ProjectPropsRefd>): Partial<ProjectProps> {
+    return props;
+  }
+
+  static serializePartialProps(props: Partial<ProjectPropsRefd>): Partial<ProjectProps> {
+    return ProjectModel.#serializePartialProps(props);
+  }
+
+  static serializeProps(props: ProjectPropsRefd): ProjectProps {
+    return ProjectSchema.shape.props.parse(ProjectModel.#serializePartialProps(props));
+  }
+
+  static #deserializePartialProps(
+    store: Store,
+    props: Partial<ProjectProps>,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): Partial<ProjectPropsRefd> {
+    return props;
+  }
+
+  static deserializePartialProps(
+    store: Store,
+    props: Partial<ProjectProps>,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): Partial<ProjectPropsRefd> {
+    return ProjectModel.#deserializePartialProps(store, props, onMissing);
+  }
+
+  static deserializeProps(
+    store: Store,
+    props: ProjectProps,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): ProjectPropsRefd {
+    return ProjectPropsRefdSchema.parse(
+      ProjectModel.#deserializePartialProps(store, props, onMissing)
+    );
+  }
+
+  static set(store: Store, data: ProjectData, onMissing: "create-placeholder" | "error" = "error") {
+    const props = ProjectModel.deserializeProps(store, data.props, onMissing);
+    let project = store.projects.get(data.id);
+    if (project) {
+      project.update(props);
+      project._internal.placeholder = false;
+    } else {
+      project = ProjectModel.create(store, data.id, props);
+    }
+    return project;
   }
 }
 
@@ -795,17 +740,121 @@ class RelationModel implements BaseModel {
     this.store = store;
     this.id = id;
     this._internal = {
-      props: { ...state },
+      props: state,
       placeholder,
     };
-    updateRelationIssues(this, { from, to });
+    makeAutoObservable(this._internal);
+    reaction(
+      () => this._internal.props.from,
+      (from, oldFrom) => {
+        if (oldFrom) {
+          oldFrom._internal.relations.delete(this);
+        }
+        if (from) {
+          from._internal.relations.add(this);
+        }
+      },
+      { fireImmediately: true }
+    );
+    reaction(
+      () => this._internal.props.to,
+      (to, oldTo) => {
+        if (oldTo) {
+          oldTo._internal.relations.delete(this);
+        }
+        if (to) {
+          to._internal.relations.add(this);
+        }
+      },
+      { fireImmediately: true }
+    );
   }
 
-  serializeProps(props: Partial<RelationPropsRefd>): Partial<RelationProps> {
-    const serialized: Partial<RelationProps> = {};
+  get placeholder(): boolean {
+    return this._internal.placeholder;
+  }
+
+  get createdAt() {
+    return this._internal.props.createdAt;
+  }
+
+  update(props: Partial<RelationPropsRefd>) {
+    const oldProps = {} as any;
+    for (const key in props) {
+      if (key in this._internal.props) {
+        oldProps[key] = this._internal.props[key as keyof RelationPropsRefd];
+      }
+    }
+    Object.assign(this._internal.props, props);
+    this.store.addChange({
+      operation: "update",
+      model: "relation",
+      id: this.id,
+      oldProps: RelationModel.serializePartialProps(oldProps),
+      newProps: RelationModel.serializePartialProps(props),
+    });
+  }
+
+  delete() {
+    this.store.relations.delete(this.id);
+    this.store.addChange({
+      operation: "delete",
+      model: "relation",
+      id: this.id,
+      props: RelationModel.serializeProps(this._internal.props),
+    });
+  }
+
+  static create(store: Store, id: string, props: RelationPropsRefd) {
+    if (store.relations.has(id)) {
+      throw new Error(`Relation with id ${id} already exists`);
+    }
+    const relation = new RelationModel(store, id, { state: props });
+    store.relations.set(id, relation);
+    store.addChange({
+      operation: "create",
+      model: "relation",
+      id,
+      props: RelationModel.serializeProps(props),
+    });
+    return relation;
+  }
+
+  static createPlaceholder(store: Store, id: string, from: IssueModel, to: IssueModel) {
+    if (store.relations.has(id)) {
+      throw new Error(`Relation with id ${id} already exists`);
+    }
+    const now = Date.now();
+    const relation = new RelationModel(store, id, {
+      state: { createdAt: now, updatedAt: now, deletedAt: null, from, to },
+      placeholder: true,
+    });
+    store.relations.set(id, relation);
+    return relation;
+  }
+
+  static getOrCreatePlaceholder(store: Store, id: string, props?: RelationPropsRefd) {
+    return (
+      store.relations.get(id) ??
+      (props === undefined
+        ? RelationModel.createPlaceholder(store, id, props!.from, props!.to)
+        : RelationModel.create(store, id, props))
+    );
+  }
+
+  static getOrThrow(store: Store, id: string) {
+    const relation = store.relations.get(id);
+    if (!relation) {
+      throw new Error(`Relation with id ${id} does not exist`);
+    }
+    return relation;
+  }
+
+  static #serializePartialProps(props: Partial<RelationPropsRefd>) {
+    const serialized = {} as Partial<RelationProps>;
     for (const key in props) {
       const typedKey = key as keyof RelationPropsRefd;
-      if (props[typedKey] === undefined) continue;
+      if (!props[typedKey]) continue;
       switch (typedKey) {
         case "from":
           serialized.fromId = props[typedKey].id;
@@ -829,36 +878,44 @@ class RelationModel implements BaseModel {
     return serialized;
   }
 
-  deserializeProps(props: Partial<RelationProps>): Partial<RelationPropsRefd> {
+  static serializePartialProps(props: Partial<RelationPropsRefd>): Partial<RelationProps> {
+    return RelationModel.#serializePartialProps(props);
+  }
+
+  static serializeProps(props: RelationPropsRefd): RelationProps {
+    return RelationPropsSchema.parse(RelationModel.#serializePartialProps(props));
+  }
+
+  static #deserializePartialProps(
+    store: Store,
+    props: Partial<RelationProps>,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): Partial<RelationPropsRefd> {
     const deserialized: Partial<RelationPropsRefd> = {};
     for (const key in props) {
       const typedKey = key as keyof RelationProps;
-      if (props[typedKey] === undefined) continue;
+      if (!props[typedKey]) continue;
       switch (typedKey) {
-        case "fromId": {
-          const issue = this.store.issues.get(props[typedKey]);
-          if (issue === undefined) {
-            throw new Error(`Issue with id ${props[typedKey]} does not exist`);
-          }
-          deserialized.from = issue;
+        case "fromId":
+          deserialized.from =
+            onMissing === "create-placeholder"
+              ? IssueModel.getOrCreatePlaceholder(store, props[typedKey])
+              : IssueModel.getOrThrow(store, props[typedKey]);
           break;
-        }
-        case "toId": {
-          const issue = this.store.issues.get(props[typedKey]);
-          if (issue === undefined) {
-            throw new Error(`Issue with id ${props[typedKey]} does not exist`);
-          }
-          deserialized.to = issue;
+        case "toId":
+          deserialized.to =
+            onMissing === "create-placeholder"
+              ? IssueModel.getOrCreatePlaceholder(store, props[typedKey])
+              : IssueModel.getOrThrow(store, props[typedKey]);
           break;
-        }
         case "createdAt":
-          deserialized.createdAt = props[typedKey];
+          deserialized[typedKey] = props[typedKey];
           break;
         case "updatedAt":
-          deserialized.updatedAt = props[typedKey];
+          deserialized[typedKey] = props[typedKey];
           break;
         case "deletedAt":
-          deserialized.deletedAt = props[typedKey];
+          deserialized[typedKey] = props[typedKey];
           break;
         default:
           typedKey satisfies never;
@@ -867,235 +924,102 @@ class RelationModel implements BaseModel {
     return deserialized;
   }
 
-  updateProps(props: Partial<RelationPropsRefd>) {
-    const oldProps = {} as any;
-    for (const key in props) {
-      if (key in this._internal.props) {
-        oldProps[key] = this._internal.props[key as keyof RelationPropsRefd];
-      }
-    }
-    this.store.addChange({
-      operation: "update",
-      model: "relation",
-      id: this.id,
-      oldProps: RelationPropsRefdSchema.parse(oldProps),
-      newProps: RelationPropsRefdSchema.parse(props),
-    });
-    Object.assign(this._internal.props, props);
-    updateRelationIssues(this, props);
-  }
-
-  get from(): IssueModel {
-    return this._internal.props.from;
-  }
-
-  set from(issue: IssueModel) {
-    this.updateProps({ from: issue });
-  }
-
-  get to(): IssueModel {
-    return this._internal.props.to;
-  }
-
-  set to(issue: IssueModel) {
-    this.updateProps({ to: issue });
-  }
-
-  get placeholder(): boolean {
-    return this._internal.placeholder;
-  }
-
-  static createPlaceholder(
+  static deserializePartialProps(
     store: Store,
-    id: string,
-    from: IssueModel,
-    to: IssueModel
-  ): RelationModel {
-    const now = Date.now();
-    return new RelationModel(store, id, {
-      state: {
-        from,
-        to,
-        createdAt: now,
-        updatedAt: now,
-        deletedAt: null,
-      },
-      placeholder: true,
-    });
+    props: Partial<RelationProps>,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): Partial<RelationPropsRefd> {
+    return RelationModel.#deserializePartialProps(store, props, onMissing);
   }
 
-  populatePlaceholder(data: RelationPropsRefd) {
-    if (!this.placeholder) {
-      throw new Error("Cannot populate a non-placeholder relation");
-    }
-    this.updateProps(data);
-    this._internal.placeholder = false;
-  }
-}
-
-type ViewData = {
-  id: string;
-  projectId: string | null;
-  issueIdToPosition: Record<string, string>;
-};
-
-type ViewState = {
-  project: ProjectModel | null; // later this'll be a query
-  // The project defines the set of issues (and later the query). This
-  // just assigns positions to issues.
-};
-
-type ViewIssuePositionData = {
-  viewId: string;
-  issueId: string;
-  position: Position;
-};
-
-type Position = string;
-
-function generatePositionBetween(a: Position | null, b: Position | null): Position {
-  if (a === null && b === null) {
-    return Date.now().toString() + "-" + generateKeyBetween(null, null);
-  } else if (a && b) {
-    const aParts = a.split("-");
-    const bParts = b.split("-");
-    if (aParts[0] === bParts[0]) {
-      return aParts[0] + "-" + generateKeyBetween(aParts[1], bParts[1]);
-    } else {
-      return aParts[0] + "-" + generateKeyBetween(aParts[1], null);
-    }
-  } else if (b && a === null) {
-    const datePart = b.split("-")[0];
-    return datePart + "-" + generateKeyBetween(null, b);
-  } else if (a && b === null) {
-    const datePart = a.split("-")[0];
-    return datePart + "-" + generateKeyBetween(a, null);
-  } else {
-    // TODO why can't do this in typescript?
-    throw new Error("Invalid arguments to generatePosition");
-  }
-}
-
-function generatePosition(issue: IssueModel): Position {
-  return issue.createdAt.toString() + "-" + generateKeyBetween(null, null);
-}
-
-function sortPosition(a: Position, b: Position) {
-  return a.localeCompare(b);
-}
-
-class ViewModel implements BaseModel {
-  readonly name = "view";
-  store: Store;
-  id: string;
-  _state: ViewState;
-  issueIdToPosition: Record<string, Position> = {};
-  placeholder: boolean;
-
-  constructor(
+  static deserializeProps(
     store: Store,
-    id: string,
-    { project = null, placeholder = false }: Partial<ViewState> & { placeholder?: boolean }
+    props: RelationProps,
+    onMissing: "create-placeholder" | "error" = "error"
+  ): RelationPropsRefd {
+    return RelationPropsRefdSchema.parse(
+      RelationModel.#deserializePartialProps(store, props, onMissing)
+    );
+  }
+
+  static set(
+    store: Store,
+    data: RelationData,
+    onMissing: "create-placeholder" | "error" = "error"
   ) {
-    this.store = store;
-    this.id = id;
-    this._state = makeTracking({ project }, this);
-    this.placeholder = placeholder;
-  }
-
-  setIssuePosition(issue: IssueModel, position: Position) {
-    this.store.addChange({
-      operation: "set",
-      model: "view-issue-position",
-      id: this.id + "-" + issue.id,
-      oldProps: { viewId: this.id, issueId: issue.id, position: this.issueIdToPosition[issue.id] },
-      newProps: { viewId: this.id, issueId: issue.id, position },
-    });
-    this.issueIdToPosition[issue.id] = position;
-  }
-
-  removeIssuePosition(issue: IssueModel) {
-    this.store.addChange({
-      operation: "delete",
-      model: "view-issue-position",
-      id: this.id + "-" + issue.id,
-      oldProps: { viewId: this.id, issueId: issue.id, position: this.issueIdToPosition[issue.id] },
-    });
-    delete this.issueIdToPosition[issue.id];
-  }
-
-  getPositionedIssues() {
-    return Array.from(this._state.project?.getIssues() ?? []).map((issue) => ({
-      issue,
-      position: this.issueIdToPosition[issue.id] ?? generatePosition(issue),
-    }));
-  }
-
-  moveIssueAfter(issue: IssueModel, before: IssueModel) {
-    const sortedIssues = this.getPositionedIssues().sort((a, b) =>
-      sortPosition(a.position, b.position)
-    );
-    if (
-      !sortedIssues.some((v) => v.issue === before) ||
-      !sortedIssues.some((v) => v.issue === issue)
-    ) {
-      throw new Error("Issue not found in view");
+    const props = RelationModel.deserializeProps(store, data.props, onMissing);
+    let relation = store.relations.get(data.id);
+    if (relation) {
+      relation.update(props);
+      relation._internal.placeholder = false;
+    } else {
+      relation = RelationModel.create(store, data.id, props);
     }
-
-    const indexBefore = sortedIssues.findIndex((v) => v.issue === before);
-    const indexAfter = indexBefore + 1;
-    const beforePositioned = sortedIssues[indexBefore];
-    const afterPositioned = sortedIssues[indexAfter];
-
-    this.setIssuePosition(
-      issue,
-      generatePositionBetween(afterPositioned.position, beforePositioned.position)
-    );
-    // If either of the issues before/after had ephemeral positions, update them now
-    if (!this._state.issueIdToPosition[beforePositioned.issue.id]) {
-      this.setIssuePosition(beforePositioned.issue, beforePositioned.position);
-    }
-    if (!this._state.issueIdToPosition[afterPositioned.issue.id]) {
-      this.setIssuePosition(afterPositioned.issue, afterPositioned.position);
-    }
+    return relation;
   }
+}
 
-  static createPlaceholder(store: Store, id: string) {
-    return new ViewModel(store, id, { project: null, placeholder: true });
-  }
+function createProjectProps(props: Partial<ProjectProps>): ProjectProps {
+  return { createdAt: Date.now(), updatedAt: Date.now(), title: "", deletedAt: null, ...props };
+}
 
-  populatePlaceholder(props: Partial<ViewState>) {
-    if (!this.placeholder) {
-      throw new Error("Cannot populate a non-placeholder view");
-    }
-    Object.assign(this._state, props);
-    this.placeholder = false;
-  }
+function createIssueProps(props: Partial<IssueProps>): IssueProps {
+  return {
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    title: "",
+    deletedAt: null,
+    projectId: null,
+    ...props,
+  };
+}
+
+function createRelationProps(
+  props: Partial<RelationProps> & { fromId: string; toId: string }
+): RelationProps {
+  return { createdAt: Date.now(), updatedAt: Date.now(), deletedAt: null, ...props };
 }
 
 function test() {
   const store = new Store();
-
-  store.load({
-    projects: [
-      { id: "1", title: "Project 1" },
-      { id: "2", title: "Project 2" },
-    ],
-    issues: [
-      { id: "1", projectId: "1", title: "Issue 1", createdAt: 1 },
-      { id: "2", projectId: "2", title: "Issue 2", createdAt: 2 },
-      { id: "3", projectId: "2", title: "Issue 3", createdAt: 3 },
-    ],
-    relations: [{ id: "1", fromId: "1", toId: "2", type: "related-to" }],
-    views: [{ id: "1", projectId: "1", issueIdToPosition: {} }],
-    viewIssuePositions: [],
+  const project1 = ProjectModel.set(store, {
+    id: "1",
+    model: "project",
+    props: createProjectProps({ title: "Project 1" }),
   });
-  const issue1 = store.issues.get("1")!;
-  const issue2 = store.issues.get("2")!;
-  const issue3 = store.issues.get("3")!;
-  const project1 = store.projects.get("1")!;
-  const project2 = store.projects.get("2")!;
-  const relation1 = store.relations.get("1")!;
+  const project2 = ProjectModel.set(store, {
+    id: "2",
+    model: "project",
+    props: createProjectProps({ title: "Project 2" }),
+  });
+  const issue1 = IssueModel.set(store, {
+    id: "1",
+    model: "issue",
+    props: createIssueProps({ title: "Issue 1", projectId: "1" }),
+  });
+  const issue2 = IssueModel.set(store, {
+    id: "2",
+    model: "issue",
+    props: createIssueProps({ title: "Issue 2", projectId: "2" }),
+  });
+  //   const issue3 = IssueModel.set(store, {
+  //     id: "3",
+  //     model: "issue",
+  //     props: createIssueProps({ title: "Issue 3", projectId: "2" }),
+  //   });
+  //   const relation1 = RelationModel.set(store, {
+  //     id: "1",
+  //     model: "relation",
+  //     props: createRelationProps({ fromId: "1", toId: "2" }),
+  //   });
+
+  autorun(() => {
+    console.log("issue1.project", toJS(issue1.project));
+  });
+
+  autorun(() => {
+    console.log("issue2.project", toJS(issue2.project));
+  });
 
   runInAction(() => {
     issue1.project = project2;
@@ -1104,14 +1028,14 @@ function test() {
     project2.removeIssue(issue1);
   });
 
-  runInAction(() => {
-    store.createProject("3", { title: "Project 3", placeholder: false });
-  });
+  //   runInAction(() => {
+  //     ProjectModel.create(store, "3", { title: "Project 3", placeholder: false });
+  //   });
 
-  runInAction(() => {
-    relation1.to = issue3;
-    store.createRelation("2", { from: issue1, to: issue3 });
-  });
+  //   runInAction(() => {
+  //     relation1.update({ to: issue3 });
+  //     RelationModel.create(store, "2", { from: issue1, to: issue3 });
+  //   });
 }
 
 test();

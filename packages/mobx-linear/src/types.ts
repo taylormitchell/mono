@@ -41,11 +41,17 @@ export type IssueData = z.infer<typeof IssueSchema>;
 
 export type RelationData = z.infer<typeof RelationSchema>;
 
-export type IssueProps = z.infer<typeof IssueSchema.shape.props>;
+export const ProjectPropsSchema = ProjectSchema.shape.props;
 
-export type ProjectProps = z.infer<typeof ProjectSchema.shape.props>;
+export const IssuePropsSchema = IssueSchema.shape.props;
 
-export type RelationProps = z.infer<typeof RelationSchema.shape.props>;
+export const RelationPropsSchema = RelationSchema.shape.props;
+
+export type IssueProps = z.infer<typeof IssuePropsSchema>;
+
+export type ProjectProps = z.infer<typeof ProjectPropsSchema>;
+
+export type RelationProps = z.infer<typeof RelationPropsSchema>;
 
 export const ModelNames = ["project", "issue", "relation"] as const;
 
@@ -88,8 +94,22 @@ export type SetEvent<K extends keyof ModelSchemas> = {
   newProps: z.infer<ModelSchemas[K]["shape"]["props"]> | null;
 };
 
-export type Event<K extends keyof ModelSchemas> =
-  | UpdateEvent<K>
-  | CreateEvent<K>
-  | DeleteEvent<K>
-  | SetEvent<K>;
+export type Event =
+  | ({ model: "project" } & (
+      | UpdateEvent<"project">
+      | CreateEvent<"project">
+      | DeleteEvent<"project">
+      | SetEvent<"project">
+    ))
+  | ({ model: "issue" } & (
+      | UpdateEvent<"issue">
+      | CreateEvent<"issue">
+      | DeleteEvent<"issue">
+      | SetEvent<"issue">
+    ))
+  | ({ model: "relation" } & (
+      | UpdateEvent<"relation">
+      | CreateEvent<"relation">
+      | DeleteEvent<"relation">
+      | SetEvent<"relation">
+    ));
