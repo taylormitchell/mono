@@ -21,17 +21,31 @@ export const IssueSchema = z.object({
   }),
 });
 
+export const RelationSchema = z.object({
+  model: z.literal("relation"),
+  id: z.string(),
+  props: z.object({
+    fromId: z.string(),
+    toId: z.string(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  }),
+});
+
 export type ProjectData = z.infer<typeof ProjectSchema>;
 
 export type IssueData = z.infer<typeof IssueSchema>;
 
 export type IssueProps = z.infer<typeof IssueSchema.shape.props>;
 
-export const ModelNames = ["project", "issue"] as const;
+export type RelationData = z.infer<typeof RelationSchema>;
+
+export const ModelNames = ["project", "issue", "relation"] as const;
 
 type ModelSchemas = {
   project: typeof ProjectSchema;
   issue: typeof IssueSchema;
+  relation: typeof RelationSchema;
 };
 
 type UpdateEvent = {
@@ -70,3 +84,5 @@ type SetEvent = {
     newProps: z.infer<ModelSchemas[K]["shape"]["props"]> | null;
   };
 }[keyof ModelSchemas];
+
+export type Event = UpdateEvent | CreateEvent | DeleteEvent | SetEvent;

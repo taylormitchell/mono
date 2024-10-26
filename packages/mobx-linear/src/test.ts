@@ -1,7 +1,7 @@
 import { generateKeyBetween } from "fractional-indexing";
-import { get, makeAutoObservable, reaction, runInAction, set, toJS } from "mobx";
+import { makeAutoObservable, reaction, runInAction, toJS } from "mobx";
 import { ModelData, ModelName, Event, IssueData, IssueSchema, UpdateEvent, IssueProps } from "./types";
-import { string, z } from "zod";
+import { z } from "zod";
 
 /**
  * TODOs
@@ -67,7 +67,7 @@ class Store {
   undoStack: Event[][] = [];
   redoStack: Event[][] = [];
 
-  uncommittedChanges: Event<ModelData>[] = [];
+  uncommittedChanges: Event[] = [];
   // Using an observable number to trigger a reaction b/c if we track the change array,
   // the reaction will need to modify it too (clear it) which you're not supposed to do
   // inside reactions.
@@ -95,14 +95,15 @@ class Store {
     }
   }
 
-  addChange<T extends ModelData>(change: Event<T>) {
+  addChange(change: Event) {
     if (this.trackingChanges) {
       this.changeCount++;
       this.uncommittedChanges.push(change);
     }
   }
 
-  applyChange(change: Event) {
+  applyUntrackedChange(change: Event) {
+    this.trackingChanges = false;
     switch (change.operation) {
       case "create":
         if (change.model === "project") {
@@ -147,6 +148,7 @@ class Store {
         this.setModel(change);
         break;
     }
+    this.trackingChanges = true;
   }
 
   private loadProject(project: Project) {
@@ -454,13 +456,13 @@ class IssueModel implements BaseModel {
     this.store = store;
     this.id = id;
     this._internal = {
-        props: this.makePropProxy({
+        props: {
             title: "",
             project: null,
             createdAt: Date.now(),
             updatedAt: Date.now(),
             ...state,
-        }),
+        },
         relations: new Set(),
         placeholder,
     }
@@ -485,29 +487,23 @@ class IssueModel implements BaseModel {
     } satisfies IssuePropsRefd;
   }
 
-
-  private makePropProxy(initialState: IssuePropsRefd) {
-    return new Proxy(initialState, {
-        set: (target, prop, value) => {
-          if (isKeyOf(prop, target)) {
-            const oldProps = this.serializeProps(target);
-            const newProps = this.serializeProps({ ...target, [prop]: value });
-            this.store.addChange({
-              operation: "update",
-              model: "issue",
-              id: this.id,
-              props: {
-                [prop]: {
-                  old: oldProps[prop],
-                  new: newProps[prop],
-                },
-              }),
-            });
-            (target as any)[prop] = value;
-          }
-          return true;
-        },
-      });
+  updateProps(props: Partial<IssuePropsRefd>) {
+    const changes: { [key: string]: { old: any; new: any } } = {};
+    for (const [key, value] of Object.entries(props)) {
+      if (key in this._internal.props) {
+        changes[key] = {
+          old: this._internal.props[key as keyof IssuePropsRefd],
+          new: value
+        };
+      }
+    }
+    this.store.addChange({
+      operation: "update",
+      model: "issue",
+      id: this.id,
+      props: changes,
+    });
+    Object.assign(this._internal.props, props);
   }
 
   get placeholder() {
