@@ -28,7 +28,14 @@ function noMod(e: KeyboardEvent) {
 
 // Main Issues List View Component
 const IssuesView = observer(() => {
+  const [filter, setFilter] = useState<{ projectId?: string; search?: string }>({});
   const issues = Array.from(store.issues.values());
+
+  const filteredIssues = issues.filter((issue) => {
+    if (filter.projectId !== undefined && issue.project?.id !== filter.projectId) return false;
+    if (filter.search && !issue.title.includes(filter.search)) return false;
+    return true;
+  });
 
   const handleCreateIssue = useCallback(
     action(() => {
@@ -71,6 +78,28 @@ const IssuesView = observer(() => {
             <button className="text-gray-500 hover:text-gray-700">
               <MoreHorizontal size={20} />
             </button>
+            <input
+              type="text"
+              placeholder="Search"
+              value={filter.search}
+              onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+            />
+            <select
+              onChange={(e) => {
+                const projectId = e.target.value || undefined;
+                setFilter({ projectId });
+              }}
+              value={filter?.projectId ?? ""}
+              className="text-sm border border-gray-300 rounded-md px-2 py-1"
+            >
+              <option value="">All Projects</option>
+              {Array.from(store.projects.values()).map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+            k{" "}
           </div>
           <button
             onClick={handleCreateIssue}
@@ -82,7 +111,7 @@ const IssuesView = observer(() => {
 
         {/* Issues List */}
         <div className="bg-white rounded-lg shadow">
-          {issues.map((issue) => (
+          {filteredIssues.map((issue) => (
             <IssueListItem
               key={issue.id}
               issue={issue}
@@ -136,7 +165,7 @@ const IssueEditorModal = observer(
     // Add keyboard handler
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        if (e.key === "Enter") {
           onClose();
         }
       };
