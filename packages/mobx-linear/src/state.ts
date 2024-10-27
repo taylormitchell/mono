@@ -13,70 +13,27 @@ import {
   RelationProps,
   RelationPropsSchema,
   RelationSchema,
+  reverseEvent,
 } from "./types";
 
-// TODO for some reason bun debugging doesn't work if this is enabled
-// function reverseEvent(event: Event2): Event2 {
-//   switch (event.operation) {
-//     case "create":
-//       switch (event.model) {
-//         case "project":
-//           return { operation: "delete", model: "project", id: event.id, props: event.props };
-//         case "issue":
-//           return { operation: "delete", model: "issue", id: event.id, props: event.props };
-//         case "relation":
-//           return { operation: "delete", model: "relation", id: event.id, props: event.props };
-//       }
-//       break;
-//     case "update":
-//       return {
-//         operation: "update",
-//         model: event.model,
-//         id: event.id,
-//         oldProps: event.newProps,
-//         newProps: event.oldProps,
-//       };
-//     case "delete":
-//       return {
-//         operation: "update",
-//         model: event.model,
-//         id: event.id,
-//         oldProps: event.props,
-//         newProps: event.props,
-//       };
-//     case "set":
-//       switch (event.model) {
-//         case "project":
-//           return {
-//             operation: "set",
-//             model: event.model,
-//             id: event.id,
-//             oldProps: event.newProps,
-//             newProps: event.oldProps,
-//           };
-//         case "issue":
-//           return {
-//             operation: "set",
-//             model: event.model,
-//             id: event.id,
-//             oldProps: event.newProps,
-//             newProps: event.oldProps,
-//           };
-//         case "relation":
-//           return {
-//             operation: "set",
-//             model: event.model,
-//             id: event.id,
-//             oldProps: event.newProps,
-//             newProps: event.oldProps,
-//           };
-//         default:
-//           return event satisfies never;
-//       }
-//   }
-// }
+// Define types with references to other models resolved
 
-class Store {
+const IssuePropsRefdSchema = IssueSchema.shape.props.omit({ projectId: true }).extend({
+  project: z.custom<ProjectModel | null>(),
+});
+type IssuePropsRefd = z.infer<typeof IssuePropsRefdSchema>;
+const ProjectPropsRefdSchema = ProjectSchema.shape.props;
+type ProjectPropsRefd = z.infer<typeof ProjectPropsRefdSchema>;
+const RelationPropsRefdSchema = RelationSchema.shape.props
+  .omit({ fromId: true, toId: true })
+  .extend({
+    from: z.custom<IssueModel>(),
+    to: z.custom<IssueModel>(),
+  });
+
+type RelationPropsRefd = z.infer<typeof RelationPropsRefdSchema>;
+
+export class Store {
   issues: Map<string, IssueModel> = new Map();
   projects: Map<string, ProjectModel> = new Map();
   relations: Map<string, RelationModel> = new Map();
@@ -263,6 +220,18 @@ class Store {
       this.trackingChanges = true;
     }
   }
+
+  createIssue(partialProps: Partial<IssuePropsRefd>) {
+    return IssueModel.create(this, uuid(), partialProps);
+  }
+
+  createProject(partialProps: Partial<ProjectPropsRefd>) {
+    return ProjectModel.create(this, uuid(), partialProps);
+  }
+
+  createRelation(partialProps: Partial<RelationPropsRefd> & { from: IssueModel; to: IssueModel }) {
+    return RelationModel.create(this, uuid(), partialProps);
+  }
 }
 
 abstract class BaseModel {
@@ -270,51 +239,7 @@ abstract class BaseModel {
   abstract name: ModelName;
 }
 
-const IssuePropsRefdSchema = IssueSchema.shape.props.omit({ projectId: true }).extend({
-  project: z.custom<ProjectModel | null>(),
-});
-
-type IssuePropsRefd = z.infer<typeof IssuePropsRefdSchema>;
-
-function maintainOneToManyRelation<K, T>({
-  singleEntity,
-  getRelatedEntity,
-  getRelatedEntityCollection,
-}: {
-  singleEntity: K;
-  getRelatedEntity: () => T;
-  getRelatedEntityCollection: (obj: T) => Set<K> | undefined;
-}) {
-  // on project change, update the set of issues on the project
-  const dispose1 = reaction(getRelatedEntity, (obj, oldObj) => {
-    if (oldObj) {
-      getRelatedEntityCollection(oldObj)?.delete(singleEntity);
-    }
-    if (obj) {
-      getRelatedEntityCollection(obj)?.add(singleEntity);
-    }
-  });
-  // on delete, remove the issue from the project
-  const dispose2 = reaction(
-    () => singleEntity._internal.deleted,
-    (deleted) => {
-      if (deleted) {
-        const obj = getRelatedEntity();
-        getRelatedEntityCollection(obj)?.delete(singleEntity);
-        // should go here? or call on delete? then we lose
-        // the ability for this reaction to fire on the delete
-        dispose1();
-        dispose2();
-      }
-    }
-  );
-  return () => {
-    dispose1();
-    dispose2();
-  };
-}
-
-class IssueModel implements BaseModel {
+export class IssueModel implements BaseModel {
   readonly name = "issue";
   private store: Store;
   readonly id: string;
@@ -336,7 +261,8 @@ class IssueModel implements BaseModel {
    */
   _internal: {
     props: IssuePropsRefd;
-    relations: Set<RelationModel>;
+    relationsFrom: Set<RelationModel>;
+    relationsTo: Set<RelationModel>;
     placeholder: boolean;
     deleted: boolean;
   };
@@ -350,37 +276,17 @@ class IssueModel implements BaseModel {
     this.id = id;
     this._internal = {
       props: { ...state },
-      relations: new Set(),
+      relationsFrom: new Set(),
+      relationsTo: new Set(),
       placeholder,
       deleted: false,
     };
     makeAutoObservable(this._internal);
-    // on project change, update the set of issues on the project
-    maintainOneToManyRelation({
-      singleEntity: this,
-      getRelatedEntity: () => this._internal.props.project,
-      getRelatedEntityCollection: (project) => project?._internal.issues,
+    linkToCollection<IssueModel, ProjectModel | null>({
+      item: this,
+      getRef: (issue) => issue._internal.props.project,
+      getCollection: (project) => project?._internal.issues,
     });
-    // reaction(
-    //   () => this._internal.props.project,
-    //   (project, oldProject) => {
-    //     if (oldProject) {
-    //       oldProject._internal.issues.delete(this);
-    //     }
-    //     if (project) {
-    //       project._internal.issues.add(this);
-    //     }
-    //   }
-    // );
-    // // on delete, remove the issue from the project
-    // reaction(
-    //   () => this._internal.deleted,
-    //   (deleted) => {
-    //     if (deleted) {
-    //       this._internal.props.project = null;
-    //     }
-    //   }
-    // );
   }
 
   get placeholder() {
@@ -398,11 +304,6 @@ class IssueModel implements BaseModel {
     this.update({ project });
   }
 
-  get relations() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
-    return this._internal.relations.values();
-  }
-
   get createdAt() {
     if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.props.createdAt;
@@ -416,6 +317,21 @@ class IssueModel implements BaseModel {
   set title(title: string) {
     if (this._internal.deleted) throw new Error("Issue is deleted");
     this.update({ title });
+  }
+
+  get relationsFrom() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    return this._internal.relationsFrom.values();
+  }
+
+  get relationsTo() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    return this._internal.relationsTo.values();
+  }
+
+  get relations() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    return [...this._internal.relationsFrom, ...this._internal.relationsTo];
   }
 
   update(props: Partial<IssuePropsRefd>) {
@@ -439,19 +355,27 @@ class IssueModel implements BaseModel {
   delete() {
     if (this._internal.deleted) throw new Error("Issue is deleted");
     this._internal.deleted = true;
+    this.store.issues.delete(this.id);
     this.store.addChange({
       operation: "delete",
       model: "issue",
       id: this.id,
       props: IssueModel.serializeProps(this._internal.props),
     });
-    this.store.issues.delete(this.id);
   }
 
-  static create(store: Store, id: string, props: IssuePropsRefd) {
+  static create(store: Store, id: string, partialProps: Partial<IssuePropsRefd>) {
     if (store.issues.has(id)) {
       throw new Error(`Issue with id ${id} already exists`);
     }
+    const props = {
+      title: "",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deletedAt: null,
+      project: null,
+      ...partialProps,
+    };
     const issue = new IssueModel(store, id, { state: props });
     store.issues.set(id, issue);
     store.addChange({
@@ -601,11 +525,7 @@ class IssueModel implements BaseModel {
   }
 }
 
-const ProjectPropsRefdSchema = ProjectSchema.shape.props;
-
-type ProjectPropsRefd = z.infer<typeof ProjectPropsRefdSchema>;
-
-class ProjectModel implements BaseModel {
+export class ProjectModel implements BaseModel {
   readonly name = "project";
   private store: Store;
   readonly id: string;
@@ -658,10 +578,17 @@ class ProjectModel implements BaseModel {
     issue.project = this;
   }
 
-  static create(store: Store, id: string, props: ProjectPropsRefd) {
+  static create(store: Store, id: string, partialProps: Partial<ProjectPropsRefd>) {
     if (store.projects.has(id)) {
       throw new Error(`Project with id ${id} already exists`);
     }
+    const props = {
+      title: "",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deletedAt: null,
+      ...partialProps,
+    };
     const project = new ProjectModel(store, id, { state: props });
     store.projects.set(id, project);
     store.addChange({
@@ -786,16 +713,7 @@ class ProjectModel implements BaseModel {
   }
 }
 
-const RelationPropsRefdSchema = RelationSchema.shape.props
-  .omit({ fromId: true, toId: true })
-  .extend({
-    from: z.custom<IssueModel>(),
-    to: z.custom<IssueModel>(),
-  });
-
-type RelationPropsRefd = z.infer<typeof RelationPropsRefdSchema>;
-
-class RelationModel implements BaseModel {
+export class RelationModel implements BaseModel {
   readonly name = "relation";
   private store: Store;
   readonly id: string;
@@ -816,30 +734,16 @@ class RelationModel implements BaseModel {
       placeholder,
     };
     makeAutoObservable(this._internal);
-    reaction(
-      () => this._internal.props.from,
-      (from, oldFrom) => {
-        if (oldFrom) {
-          oldFrom._internal.relations.delete(this);
-        }
-        if (from) {
-          from._internal.relations.add(this);
-        }
-      },
-      { fireImmediately: true }
-    );
-    reaction(
-      () => this._internal.props.to,
-      (to, oldTo) => {
-        if (oldTo) {
-          oldTo._internal.relations.delete(this);
-        }
-        if (to) {
-          to._internal.relations.add(this);
-        }
-      },
-      { fireImmediately: true }
-    );
+    linkToCollection<RelationModel, IssueModel>({
+      item: this,
+      getRef: (item) => item._internal.props.from,
+      getCollection: (from) => from?._internal.relationsFrom,
+    });
+    linkToCollection<RelationModel, IssueModel>({
+      item: this,
+      getRef: (item) => item._internal.props.to,
+      getCollection: (to) => to?._internal.relationsTo,
+    });
   }
 
   get placeholder(): boolean {
@@ -1040,6 +944,53 @@ class RelationModel implements BaseModel {
   }
 }
 
+export function uuid() {
+  return crypto.randomUUID();
+}
+
+function linkToCollection<K, T>({
+  item,
+  getRef,
+  getCollection,
+}: {
+  item: K;
+  getRef: (obj: K) => T;
+  getCollection: (obj: T) => Set<K> | undefined;
+}) {
+  // on project change, update the set of issues on the project
+  const dispose1 = reaction(
+    () => getRef(item),
+    (obj, oldObj) => {
+      if (oldObj) {
+        getCollection(oldObj)?.delete(item);
+      }
+      if (obj) {
+        getCollection(obj)?.add(item);
+      }
+    },
+    { fireImmediately: true }
+  );
+  // on delete, remove the issue from the project
+  const dispose2 = reaction(
+    () => item._internal.deleted,
+    (deleted) => {
+      if (deleted) {
+        const obj = getRef(item);
+        getCollection(obj)?.delete(item);
+        // should go here? or call on delete? then we lose
+        // the ability for this reaction to fire on the delete
+        dispose1();
+        dispose2();
+      }
+    },
+    { fireImmediately: true }
+  );
+  return () => {
+    dispose1();
+    dispose2();
+  };
+}
+
 function createProjectProps(props: Partial<ProjectProps>): ProjectProps {
   return { createdAt: Date.now(), updatedAt: Date.now(), title: "", deletedAt: null, ...props };
 }
@@ -1094,19 +1045,48 @@ function test() {
     props: createRelationProps({ fromId: "1", toId: "2" }),
   });
 
+  // autorun(() => {
+  //   console.log({
+  //     "project1.issues": toJS(Array.from(project1.issues).map((i) => i.id)),
+  //   });
+  // });
+
   autorun(() => {
     console.log({
-      "issue1.title": toJS(issue1.title),
+      "issue1.relationsFrom": toJS(Array.from(issue1.relationsFrom).map((r) => r.id)),
+    });
+  });
+
+  autorun(() => {
+    console.log({
+      "issue1.relationsTo": toJS(Array.from(issue1.relationsTo).map((r) => r.id)),
     });
   });
 
   runInAction(() => {
-    issue1.title = "Issue 1 (updated)";
+    const relation2 = RelationModel.set(store, {
+      id: "2",
+      model: "relation",
+      props: createRelationProps({ fromId: "1", toId: "3" }),
+    });
+    const relation3 = RelationModel.set(store, {
+      id: "3",
+      model: "relation",
+      props: createRelationProps({ fromId: "2", toId: "1" }),
+    });
   });
 
-  runInAction(() => {
-    issue1.delete();
-  });
+  // runInAction(() => {
+  //   issue1.project = project2;
+  // });
+
+  // runInAction(() => {
+  //   issue2.project = project1;
+  // });
+
+  // runInAction(() => {
+  //   issue1.delete();
+  // });
 
   // autorun(() => {
   //   console.log("issue3.relations", toJS(Array.from(issue3.relations).map((r) => r.id)));
@@ -1123,5 +1103,3 @@ function test() {
   //   RelationModel.create(store, "2", { from: issue1, to: issue3 });
   // });
 }
-
-test();

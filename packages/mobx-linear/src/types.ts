@@ -113,3 +113,64 @@ export type Event =
       | DeleteEvent<"relation">
       | SetEvent<"relation">
     ));
+
+export function reverseEvent(event: Event): Event {
+  switch (event.operation) {
+    case "create":
+      switch (event.model) {
+        case "project":
+          return { operation: "delete", model: "project", id: event.id, props: event.props };
+        case "issue":
+          return { operation: "delete", model: "issue", id: event.id, props: event.props };
+        case "relation":
+          return { operation: "delete", model: "relation", id: event.id, props: event.props };
+        default:
+          return event satisfies never;
+      }
+    case "update":
+      return {
+        operation: "update",
+        model: event.model,
+        id: event.id,
+        oldProps: event.newProps,
+        newProps: event.oldProps,
+      };
+    case "delete":
+      return {
+        operation: "update",
+        model: event.model,
+        id: event.id,
+        oldProps: event.props,
+        newProps: event.props,
+      };
+    case "set":
+      switch (event.model) {
+        case "project":
+          return {
+            operation: "set",
+            model: event.model,
+            id: event.id,
+            oldProps: event.newProps,
+            newProps: event.oldProps,
+          };
+        case "issue":
+          return {
+            operation: "set",
+            model: event.model,
+            id: event.id,
+            oldProps: event.newProps,
+            newProps: event.oldProps,
+          };
+        case "relation":
+          return {
+            operation: "set",
+            model: event.model,
+            id: event.id,
+            oldProps: event.newProps,
+            newProps: event.oldProps,
+          };
+        default:
+          return event satisfies never;
+      }
+  }
+}

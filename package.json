@@ -1,7 +1,8 @@
 {
   "name": "taylor",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "!packages/mobx-linear"
   ],
   "scripts": {
     "publish-repo": "bash scripts/publish-repo.sh"
