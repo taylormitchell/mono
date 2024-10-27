@@ -1,7 +1,7 @@
 import { makeAutoObservable, reaction, runInAction } from "mobx";
 import {
   ModelName,
-  Event,
+  Event2,
   IssueData,
   IssueSchema,
   IssueProps,
@@ -24,7 +24,7 @@ import { z } from "zod";
  *   (e.g. which foreign key maps to which model?)
  */
 
-function reverseEvent(event: Event): Event {
+function reverseEvent(event: Event2): Event2 {
   switch (event.operation) {
     case "create":
       switch (event.model) {
@@ -90,10 +90,10 @@ class Store {
   relations: Map<string, RelationModel> = new Map();
   trackingChanges: boolean = true;
 
-  undoStack: Event[][] = [];
-  redoStack: Event[][] = [];
+  undoStack: Event2[][] = [];
+  redoStack: Event2[][] = [];
 
-  uncommittedChanges: Event[] = [];
+  uncommittedChanges: Event2[] = [];
   // Using an observable number to trigger a reaction b/c if we track the change array,
   // the reaction will need to modify it too (clear it) which you're not supposed to do
   // inside reactions.
@@ -137,7 +137,7 @@ class Store {
     }
   }
 
-  addChange(change: Event) {
+  addChange(change: Event2) {
     if (this.trackingChanges) {
       this.changeCount++;
       this.uncommittedChanges.push(change);
@@ -147,7 +147,7 @@ class Store {
   /**
    * @throws if a referenced model does not exist
    */
-  applyChange(change: Event) {
+  applyChange(change: Event2) {
     switch (change.operation) {
       case "create":
         switch (change.model) {

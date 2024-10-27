@@ -1,79 +1,80 @@
-import { reaction, runInAction, makeAutoObservable, autorun, toJS } from "mobx";
+import { makeAutoObservable, reaction, autorun, toJS, runInAction } from "mobx";
+import { z } from "zod";
 import {
-  ModelName,
   Event,
   IssueData,
-  IssueSchema,
   IssueProps,
+  IssueSchema,
+  ModelName,
   ProjectData,
   ProjectProps,
   ProjectSchema,
   RelationData,
-  RelationSchema,
   RelationProps,
   RelationPropsSchema,
+  RelationSchema,
 } from "./types";
-import { z } from "zod";
 
-function reverseEvent(event: Event): Event {
-  switch (event.operation) {
-    case "create":
-      switch (event.model) {
-        case "project":
-          return { operation: "delete", model: "project", id: event.id, props: event.props };
-        case "issue":
-          return { operation: "delete", model: "issue", id: event.id, props: event.props };
-        case "relation":
-          return { operation: "delete", model: "relation", id: event.id, props: event.props };
-      }
-      break;
-    case "update":
-      return {
-        operation: "update",
-        model: event.model,
-        id: event.id,
-        oldProps: event.newProps,
-        newProps: event.oldProps,
-      };
-    case "delete":
-      return {
-        operation: "update",
-        model: event.model,
-        id: event.id,
-        oldProps: event.props,
-        newProps: event.props,
-      };
-    case "set":
-      switch (event.model) {
-        case "project":
-          return {
-            operation: "set",
-            model: event.model,
-            id: event.id,
-            oldProps: event.newProps,
-            newProps: event.oldProps,
-          };
-        case "issue":
-          return {
-            operation: "set",
-            model: event.model,
-            id: event.id,
-            oldProps: event.newProps,
-            newProps: event.oldProps,
-          };
-        case "relation":
-          return {
-            operation: "set",
-            model: event.model,
-            id: event.id,
-            oldProps: event.newProps,
-            newProps: event.oldProps,
-          };
-        default:
-          return event satisfies never;
-      }
-  }
-}
+// TODO for some reason bun debugging doesn't work if this is enabled
+// function reverseEvent(event: Event2): Event2 {
+//   switch (event.operation) {
+//     case "create":
+//       switch (event.model) {
+//         case "project":
+//           return { operation: "delete", model: "project", id: event.id, props: event.props };
+//         case "issue":
+//           return { operation: "delete", model: "issue", id: event.id, props: event.props };
+//         case "relation":
+//           return { operation: "delete", model: "relation", id: event.id, props: event.props };
+//       }
+//       break;
+//     case "update":
+//       return {
+//         operation: "update",
+//         model: event.model,
+//         id: event.id,
+//         oldProps: event.newProps,
+//         newProps: event.oldProps,
+//       };
+//     case "delete":
+//       return {
+//         operation: "update",
+//         model: event.model,
+//         id: event.id,
+//         oldProps: event.props,
+//         newProps: event.props,
+//       };
+//     case "set":
+//       switch (event.model) {
+//         case "project":
+//           return {
+//             operation: "set",
+//             model: event.model,
+//             id: event.id,
+//             oldProps: event.newProps,
+//             newProps: event.oldProps,
+//           };
+//         case "issue":
+//           return {
+//             operation: "set",
+//             model: event.model,
+//             id: event.id,
+//             oldProps: event.newProps,
+//             newProps: event.oldProps,
+//           };
+//         case "relation":
+//           return {
+//             operation: "set",
+//             model: event.model,
+//             id: event.id,
+//             oldProps: event.newProps,
+//             newProps: event.oldProps,
+//           };
+//         default:
+//           return event satisfies never;
+//       }
+//   }
+// }
 
 class Store {
   issues: Map<string, IssueModel> = new Map();
@@ -266,7 +267,6 @@ class Store {
 
 abstract class BaseModel {
   abstract id: string;
-  abstract store: Store;
   abstract name: ModelName;
 }
 
@@ -276,10 +276,48 @@ const IssuePropsRefdSchema = IssueSchema.shape.props.omit({ projectId: true }).e
 
 type IssuePropsRefd = z.infer<typeof IssuePropsRefdSchema>;
 
+function maintainOneToManyRelation<K, T>({
+  singleEntity,
+  getRelatedEntity,
+  getRelatedEntityCollection,
+}: {
+  singleEntity: K;
+  getRelatedEntity: () => T;
+  getRelatedEntityCollection: (obj: T) => Set<K> | undefined;
+}) {
+  // on project change, update the set of issues on the project
+  const dispose1 = reaction(getRelatedEntity, (obj, oldObj) => {
+    if (oldObj) {
+      getRelatedEntityCollection(oldObj)?.delete(singleEntity);
+    }
+    if (obj) {
+      getRelatedEntityCollection(obj)?.add(singleEntity);
+    }
+  });
+  // on delete, remove the issue from the project
+  const dispose2 = reaction(
+    () => singleEntity._internal.deleted,
+    (deleted) => {
+      if (deleted) {
+        const obj = getRelatedEntity();
+        getRelatedEntityCollection(obj)?.delete(singleEntity);
+        // should go here? or call on delete? then we lose
+        // the ability for this reaction to fire on the delete
+        dispose1();
+        dispose2();
+      }
+    }
+  );
+  return () => {
+    dispose1();
+    dispose2();
+  };
+}
+
 class IssueModel implements BaseModel {
   readonly name = "issue";
-  store: Store;
-  id: string;
+  private store: Store;
+  readonly id: string;
   /**
    * Why like this?
    *
@@ -300,6 +338,7 @@ class IssueModel implements BaseModel {
     props: IssuePropsRefd;
     relations: Set<RelationModel>;
     placeholder: boolean;
+    deleted: boolean;
   };
 
   constructor(
@@ -313,40 +352,100 @@ class IssueModel implements BaseModel {
       props: { ...state },
       relations: new Set(),
       placeholder,
+      deleted: false,
     };
     makeAutoObservable(this._internal);
-    // Reaction to track when the project changes
-    reaction(
-      () => this._internal.props.project,
-      (project, oldProject) => {
-        if (oldProject) {
-          oldProject._internal.issues.delete(this);
-        }
-        if (project) {
-          project._internal.issues.add(this);
-        }
-      }
-    );
+    // on project change, update the set of issues on the project
+    maintainOneToManyRelation({
+      singleEntity: this,
+      getRelatedEntity: () => this._internal.props.project,
+      getRelatedEntityCollection: (project) => project?._internal.issues,
+    });
+    // reaction(
+    //   () => this._internal.props.project,
+    //   (project, oldProject) => {
+    //     if (oldProject) {
+    //       oldProject._internal.issues.delete(this);
+    //     }
+    //     if (project) {
+    //       project._internal.issues.add(this);
+    //     }
+    //   }
+    // );
+    // // on delete, remove the issue from the project
+    // reaction(
+    //   () => this._internal.deleted,
+    //   (deleted) => {
+    //     if (deleted) {
+    //       this._internal.props.project = null;
+    //     }
+    //   }
+    // );
   }
 
   get placeholder() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.placeholder;
   }
 
   get project() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.props.project;
   }
 
   set project(project: ProjectModel | null) {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
     this.update({ project });
   }
 
   get relations() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.relations.values();
   }
 
   get createdAt() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.props.createdAt;
+  }
+
+  get title() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    return this._internal.props.title;
+  }
+
+  set title(title: string) {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    this.update({ title });
+  }
+
+  update(props: Partial<IssuePropsRefd>) {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    const oldProps = {} as any;
+    for (const key in props) {
+      if (key in this._internal.props) {
+        oldProps[key] = this._internal.props[key as keyof IssuePropsRefd];
+      }
+    }
+    Object.assign(this._internal.props, props);
+    this.store.addChange({
+      operation: "update",
+      model: "issue",
+      id: this.id,
+      oldProps: IssueModel.serializePartialProps(oldProps),
+      newProps: IssueModel.serializePartialProps(props),
+    });
+  }
+
+  delete() {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    this._internal.deleted = true;
+    this.store.addChange({
+      operation: "delete",
+      model: "issue",
+      id: this.id,
+      props: IssueModel.serializeProps(this._internal.props),
+    });
+    this.store.issues.delete(this.id);
   }
 
   static create(store: Store, id: string, props: IssuePropsRefd) {
@@ -395,33 +494,6 @@ class IssueModel implements BaseModel {
       throw new Error(`Issue with id ${id} does not exist`);
     }
     return issue;
-  }
-
-  update(props: Partial<IssuePropsRefd>) {
-    const oldProps = {} as any;
-    for (const key in props) {
-      if (key in this._internal.props) {
-        oldProps[key] = this._internal.props[key as keyof IssuePropsRefd];
-      }
-    }
-    Object.assign(this._internal.props, props);
-    this.store.addChange({
-      operation: "update",
-      model: "issue",
-      id: this.id,
-      oldProps: IssueModel.serializePartialProps(oldProps),
-      newProps: IssueModel.serializePartialProps(props),
-    });
-  }
-
-  delete() {
-    this.store.addChange({
-      operation: "delete",
-      model: "issue",
-      id: this.id,
-      props: IssueModel.serializeProps(this._internal.props),
-    });
-    this.store.issues.delete(this.id);
   }
 
   static #serializePartialProps(props: Partial<IssuePropsRefd>): Partial<IssueProps> {
@@ -535,8 +607,8 @@ type ProjectPropsRefd = z.infer<typeof ProjectPropsRefdSchema>;
 
 class ProjectModel implements BaseModel {
   readonly name = "project";
-  store: Store;
-  id: string;
+  private store: Store;
+  readonly id: string;
   _internal: {
     props: ProjectPropsRefd;
     issues: Set<IssueModel>;
@@ -725,8 +797,8 @@ type RelationPropsRefd = z.infer<typeof RelationPropsRefdSchema>;
 
 class RelationModel implements BaseModel {
   readonly name = "relation";
-  store: Store;
-  id: string;
+  private store: Store;
+  readonly id: string;
   _internal: {
     props: RelationPropsRefd;
     placeholder: boolean;
@@ -805,10 +877,20 @@ class RelationModel implements BaseModel {
     });
   }
 
-  static create(store: Store, id: string, props: RelationPropsRefd) {
+  static create(
+    store: Store,
+    id: string,
+    partialProps: Partial<RelationPropsRefd> & { from: IssueModel; to: IssueModel }
+  ) {
     if (store.relations.has(id)) {
       throw new Error(`Relation with id ${id} already exists`);
     }
+    const props = {
+      createdAt: partialProps.createdAt ?? Date.now(),
+      updatedAt: partialProps.updatedAt ?? Date.now(),
+      deletedAt: partialProps.deletedAt ?? null,
+      ...partialProps,
+    };
     const relation = new RelationModel(store, id, { state: props });
     store.relations.set(id, relation);
     store.addChange({
@@ -854,7 +936,7 @@ class RelationModel implements BaseModel {
     const serialized = {} as Partial<RelationProps>;
     for (const key in props) {
       const typedKey = key as keyof RelationPropsRefd;
-      if (!props[typedKey]) continue;
+      if (props[typedKey] === undefined) continue;
       switch (typedKey) {
         case "from":
           serialized.fromId = props[typedKey].id;
@@ -894,7 +976,7 @@ class RelationModel implements BaseModel {
     const deserialized: Partial<RelationPropsRefd> = {};
     for (const key in props) {
       const typedKey = key as keyof RelationProps;
-      if (!props[typedKey]) continue;
+      if (props[typedKey] === undefined) continue;
       switch (typedKey) {
         case "fromId":
           deserialized.from =
@@ -937,9 +1019,8 @@ class RelationModel implements BaseModel {
     props: RelationProps,
     onMissing: "create-placeholder" | "error" = "error"
   ): RelationPropsRefd {
-    return RelationPropsRefdSchema.parse(
-      RelationModel.#deserializePartialProps(store, props, onMissing)
-    );
+    const deserialized = RelationModel.#deserializePartialProps(store, props, onMissing);
+    return RelationPropsRefdSchema.parse(deserialized);
   }
 
   static set(
@@ -1002,40 +1083,45 @@ function test() {
     model: "issue",
     props: createIssueProps({ title: "Issue 2", projectId: "2" }),
   });
-  //   const issue3 = IssueModel.set(store, {
-  //     id: "3",
-  //     model: "issue",
-  //     props: createIssueProps({ title: "Issue 3", projectId: "2" }),
-  //   });
-  //   const relation1 = RelationModel.set(store, {
-  //     id: "1",
-  //     model: "relation",
-  //     props: createRelationProps({ fromId: "1", toId: "2" }),
-  //   });
-
-  autorun(() => {
-    console.log("issue1.project", toJS(issue1.project));
+  const issue3 = IssueModel.set(store, {
+    id: "3",
+    model: "issue",
+    props: createIssueProps({ title: "Issue 3", projectId: "2" }),
+  });
+  const relation1 = RelationModel.set(store, {
+    id: "1",
+    model: "relation",
+    props: createRelationProps({ fromId: "1", toId: "2" }),
   });
 
   autorun(() => {
-    console.log("issue2.project", toJS(issue2.project));
+    console.log({
+      "issue1.title": toJS(issue1.title),
+    });
   });
 
   runInAction(() => {
-    issue1.project = project2;
-    issue2.project = project2;
-    project1.title = "Project 1 (updated)";
-    project2.removeIssue(issue1);
+    issue1.title = "Issue 1 (updated)";
   });
 
-  //   runInAction(() => {
-  //     ProjectModel.create(store, "3", { title: "Project 3", placeholder: false });
-  //   });
+  runInAction(() => {
+    issue1.delete();
+  });
 
-  //   runInAction(() => {
-  //     relation1.update({ to: issue3 });
-  //     RelationModel.create(store, "2", { from: issue1, to: issue3 });
-  //   });
+  // autorun(() => {
+  //   console.log("issue3.relations", toJS(Array.from(issue3.relations).map((r) => r.id)));
+  // });
+
+  // runInAction(() => {
+  //   project1.title = "Project 1 (updated)";
+  //   issue1.project = project2;
+  //   project2.removeIssue(issue1);
+  // });
+
+  // runInAction(() => {
+  //   relation1.update({ to: issue3 });
+  //   RelationModel.create(store, "2", { from: issue1, to: issue3 });
+  // });
 }
 
 test();
