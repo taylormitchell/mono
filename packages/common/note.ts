@@ -9,21 +9,64 @@ export function getTemplatePath(name: string) {
   return path.resolve(getRootDir(), "templates", name + ".md");
 }
 
+function replaceTemplate(props: TemplateProps) {
+  const { name, doc, start } = props;
+  const contentBeforeTemplate = doc.slice(0, start);
+  const lastNewlineIndex = contentBeforeTemplate.lastIndexOf("\n");
+  const whitespace =
+    lastNewlineIndex === -1
+      ? contentBeforeTemplate.slice(0)
+      : contentBeforeTemplate.slice(lastNewlineIndex + 1);
+  const fullPath = getTemplatePath(name.trim());
+  if (fs.existsSync(fullPath)) {
+    const templateContent = fs.readFileSync(fullPath, "utf-8");
+    const processedContent = processTemplate(templateContent);
+    return processedContent
+      .split("\n")
+      .map((line, i) => (i === 0 ? line : whitespace + line))
+      .join("\n");
+  }
+  return name;
+}
+
+type TemplateProps = {
+  start: number;
+  end: number;
+  name: string;
+  doc: string;
+};
+
 export function processTemplate(content: string): string {
-  return content
-    .replace("{{date}}", new Date().toDateString())
-    .replace(/([ \t]*)\{\{>\s*(.+?)\}\}/g, (match, whitespace, templateName) => {
-      const fullPath = getTemplatePath(templateName.trim());
-      if (fs.existsSync(fullPath)) {
-        const templateContent = fs.readFileSync(fullPath, "utf-8");
-        const processedContent = processTemplate(templateContent);
-        return processedContent
-          .split("\n")
-          .map((line) => whitespace + line)
-          .join("\n");
+  const view = {
+    date: new Date().toDateString(),
+    "morning-routine": (props: TemplateProps) => replaceTemplate(props),
+    "start-of-workday-routine": (props: TemplateProps) => replaceTemplate(props),
+    "end-of-workday-routine": (props: TemplateProps) => replaceTemplate(props),
+    "inbox-list": (props: TemplateProps) => replaceTemplate(props),
+    "sketch-out-my-day": (props: TemplateProps) => replaceTemplate(props),
+    "weekly-planning": (props: TemplateProps) => {
+      const today = new Date();
+      if (today.getDay() === 1) {
+        return "- [ ] do weekly planning";
       }
-      return match; // Return original if template not found
-    });
+      return "";
+    },
+  };
+  return content.replace(/{{([^{}]+)}}/g, (match, templateName, offset, doc) => {
+    const handler = view[templateName.trim() as keyof typeof view];
+    if (handler === undefined) {
+      return match;
+    } else if (typeof handler === "function") {
+      return handler({
+        name: templateName.trim(),
+        doc,
+        start: offset,
+        end: offset + match.length,
+      });
+    } else {
+      return handler;
+    }
+  });
 }
 
 export function createFile(filepath: string, content: string = "") {
