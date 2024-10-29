@@ -16,6 +16,22 @@ import {
   reverseEvent,
 } from "./types";
 
+/**
+ * TODO An alternative model:
+ * - Classes are dumber. They hold state, are reactive, and emit events.
+ * - Maintaining the one-to-many collections is done through the store. The store watches
+ * for relevant events and updates the collections accordingly.
+ * - ^ We do this instead of reactions because we don't want reactions to update observables,
+ * which causes 2 renders.
+ * - Maybe specify the properties and one-to-many relationship with decorators? They just need
+ * to register which properties on which models are related to which others. I think I had it
+ * working well enough to do that. The debugging problem was separate.
+ * - Maybe remove the deleted flag. When an object is added/created through the store, the store
+ * can set up a proxy around it that throws an error when any of the deleted object's properties
+ * are accessed. It's "deleted" which it's not in the respective map.
+ *
+ */
+
 // Define types with references to other models resolved
 
 const IssuePropsRefdSchema = IssueSchema.shape.props.omit({ projectId: true }).extend({
@@ -239,21 +255,6 @@ abstract class BaseModel {
   abstract name: ModelName;
 }
 
-function property<T>(target: any, key: string) {
-  const internalKey = `_internal`;
-
-  Object.defineProperty(target, key, {
-    get(this: { [key: string]: any }) {
-      if (this[internalKey].deleted) throw new Error(`${this.constructor.name} is deleted`);
-      return this[internalKey].props[key];
-    },
-    set(this: { [key: string]: any }, value: T) {
-      if (this[internalKey].deleted) throw new Error(`${this.constructor.name} is deleted`);
-      this.update({ [key]: value });
-    },
-  });
-}
-
 export class IssueModel implements BaseModel {
   readonly name = "issue";
   private store: Store;
@@ -297,6 +298,9 @@ export class IssueModel implements BaseModel {
       deleted: false,
     };
     makeAutoObservable(this._internal);
+    /**
+     * TODO Shouldn't use reaction for this cause it causes 2 renders.
+     */
     linkToCollection<IssueModel, ProjectModel | null>({
       item: this,
       getRef: (issue) => issue._internal.props.project,
@@ -305,45 +309,42 @@ export class IssueModel implements BaseModel {
   }
 
   get placeholder() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.placeholder;
   }
 
-  @property
-  project: ProjectModel | null = null;
+  get project() {
+    return this._internal.props.project;
+  }
+
+  set project(project: ProjectModel | null) {
+    this.update({ project });
+  }
 
   get createdAt() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.props.createdAt;
   }
 
   set createdAt(createdAt: number) {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     this.update({ createdAt });
   }
 
   get title() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.props.title;
   }
 
   set title(title: string) {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     this.update({ title });
   }
 
   get relationsFrom() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.relationsFrom.values();
   }
 
   get relationsTo() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.relationsTo.values();
   }
 
   get relations() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
     return [...this._internal.relationsFrom, ...this._internal.relationsTo];
   }
 
@@ -377,6 +378,9 @@ export class IssueModel implements BaseModel {
     });
   }
 
+  /**
+   * TODO maybe put proxy here to prevent access to deleted issues?
+   */
   static create(store: Store, id: string, partialProps: Partial<IssuePropsRefd>) {
     if (store.issues.has(id)) {
       throw new Error(`Issue with id ${id} already exists`);

@@ -9,14 +9,14 @@
       "request": "launch",
       "name": "Launch Chrome against localhost",
       "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}"
+      "webRoot": "${workspaceFolder}/packages/mobx-linear"
     },
     {
       "type": "bun",
       "request": "launch",
       "name": "Run TypeScript with Bun",
       "program": "${file}",
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/packages/mobx-linear",
       "env": {},
       "args": [],
       "internalConsoleOptions": "openOnSessionStart"

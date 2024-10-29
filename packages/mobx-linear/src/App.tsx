@@ -17,37 +17,6 @@ import { useEffect } from "react";
 const store = new Store();
 const viewStore = new ViewStore();
 
-function Log(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-  const originalMethod = descriptor.value;
-  descriptor.value = function (...args: any[]) {
-    console.log(`Calling ${propertyKey} with`, args);
-    return originalMethod.apply(this, args);
-  };
-}
-
-function Log2(target: any, propertyKey: string) {
-  console.log("Log2", target, propertyKey);
-}
-
-class Greeter {
-  static model = "Greeter";
-
-  @Log
-  greet(name: string) {
-    return `Hello, ${name}!`;
-  }
-
-  @Log2
-  name: string = "World";
-}
-
-const greeter = new Greeter();
-greeter.greet("World");
-
-console.log(greeter.name);
-greeter.name = "John";
-console.log(greeter.name);
-
 const App = () => {
   return <IssuesView />;
 };
