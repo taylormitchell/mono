@@ -2,7 +2,8 @@
   "name": "taylor",
   "workspaces": [
     "packages/*",
-    "!packages/mobx-linear"
+    "!packages/mobx-linear",
+    "!packages/typescript-decorators"
   ],
   "scripts": {
     "publish-repo": "bash scripts/publish-repo.sh"

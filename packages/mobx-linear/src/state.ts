@@ -239,6 +239,21 @@ abstract class BaseModel {
   abstract name: ModelName;
 }
 
+function property<T>(target: any, key: string) {
+  const internalKey = `_internal`;
+
+  Object.defineProperty(target, key, {
+    get(this: { [key: string]: any }) {
+      if (this[internalKey].deleted) throw new Error(`${this.constructor.name} is deleted`);
+      return this[internalKey].props[key];
+    },
+    set(this: { [key: string]: any }, value: T) {
+      if (this[internalKey].deleted) throw new Error(`${this.constructor.name} is deleted`);
+      this.update({ [key]: value });
+    },
+  });
+}
+
 export class IssueModel implements BaseModel {
   readonly name = "issue";
   private store: Store;
@@ -294,19 +309,17 @@ export class IssueModel implements BaseModel {
     return this._internal.placeholder;
   }
 
-  get project() {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
-    return this._internal.props.project;
-  }
-
-  set project(project: ProjectModel | null) {
-    if (this._internal.deleted) throw new Error("Issue is deleted");
-    this.update({ project });
-  }
+  @property
+  project: ProjectModel | null = null;
 
   get createdAt() {
     if (this._internal.deleted) throw new Error("Issue is deleted");
     return this._internal.props.createdAt;
+  }
+
+  set createdAt(createdAt: number) {
+    if (this._internal.deleted) throw new Error("Issue is deleted");
+    this.update({ createdAt });
   }
 
   get title() {
