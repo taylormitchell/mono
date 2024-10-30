@@ -30,6 +30,8 @@ import {
  * can set up a proxy around it that throws an error when any of the deleted object's properties
  * are accessed. It's "deleted" which it's not in the respective map.
  *
+ * TODO play with https://trpc.io/ or alternative for the api and client
+ *
  */
 
 // Define types with references to other models resolved
