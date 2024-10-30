@@ -3,7 +3,8 @@
   "workspaces": [
     "packages/*",
     "!packages/mobx-linear",
-    "!packages/typescript-decorators"
+    "!packages/typescript-decorators",
+    "!packages/wedding-site"
   ],
   "scripts": {
     "publish-repo": "bash scripts/publish-repo.sh"
