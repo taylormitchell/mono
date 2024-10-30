@@ -17,20 +17,7 @@ import {
 } from "./types";
 
 /**
- * TODO An alternative model:
- * - Classes are dumber. They hold state, are reactive, and emit events.
- * - Maintaining the one-to-many collections is done through the store. The store watches
- * for relevant events and updates the collections accordingly.
- * - ^ We do this instead of reactions because we don't want reactions to update observables,
- * which causes 2 renders.
- * - Maybe specify the properties and one-to-many relationship with decorators? They just need
- * to register which properties on which models are related to which others. I think I had it
- * working well enough to do that. The debugging problem was separate.
- * - Maybe remove the deleted flag. When an object is added/created through the store, the store
- * can set up a proxy around it that throws an error when any of the deleted object's properties
- * are accessed. It's "deleted" which it's not in the respective map.
- *
- * TODO play with https://trpc.io/ or alternative for the api and client
+
  *
  */
 

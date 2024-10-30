@@ -1,50 +1,23 @@
-# React + TypeScript + Vite
+# MobX Linear
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+TODO I was imagining have a proxy around the objects. but then there are two proxies, right? the mobx one and mine (is that right?). if that's the case, that feels weird. Is there a way to hook into the mobx proxy?
+- How are proxies with proxies handled?
+- Can decorators on properties really not be used to add additional functionality on get/set?
+- Is there a way to hook into the mobx proxy?
 
-Currently, two official plugins are available:
+TODO An alternative model:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Classes are dumber. They hold state, are reactive, and emit events.
+- Maintaining the one-to-many collections is done through the store. The store watches
+for relevant events and updates the collections accordingly.
+- ^ We do this instead of reactions because we don't want reactions to update observables,
+which causes 2 renders.
+- Maybe specify the properties and one-to-many relationship with decorators? They just need
+to register which properties on which models are related to which others. I think I had it
+working well enough to do that. The debugging problem was separate.
+- Maybe remove the deleted flag. When an object is added/created through the store, the store
+can set up a proxy around it that throws an error when any of the deleted object's properties
+are accessed. It's "deleted" which it's not in the respective map.
 
-## Expanding the ESLint configuration
+TODO play with https://trpc.io/ or alternative for the api and client
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
-
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
