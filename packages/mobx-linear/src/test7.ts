@@ -24,6 +24,11 @@ class Store {
   issues: Map<string, Issue> = new Map();
   projects: Map<string, Project> = new Map();
 
+  events: any[] = [];
+  emitEvent(event: any) {
+    this.events.push(event);
+  }
+
   triggersEnabled = true;
   withTriggersDisabled<T>(fn: () => T) {
     const prev = this.triggersEnabled;
@@ -49,7 +54,7 @@ class Store {
           const key = prop as keyof typeof target;
           switch (key) {
             case "title":
-              console.log({
+              this.emitEvent({
                 operation: "update",
                 model: "issue",
                 id: target.id,
@@ -59,7 +64,7 @@ class Store {
               target[key] = value;
               return true;
             case "project": {
-              console.log({
+              this.emitEvent({
                 operation: "update",
                 model: "issue",
                 id: target.id,
@@ -96,7 +101,14 @@ class Store {
         model: "project",
         id: props.id,
         title: "",
-        issues: this.createCollection<Issue>({ parentId: props.id, foreignKey: "project" }),
+        issues: this.createCollection<Issue>({
+          setForeignKeyToNull: (issue) => {
+            issue.project = null;
+          },
+          setForeignKeyToThis: (issue) => {
+            issue.project = project;
+          },
+        }),
       },
       {
         get: (target, prop) => {
@@ -106,7 +118,7 @@ class Store {
           const key = prop as keyof typeof target;
           switch (key) {
             case "title":
-              console.log({
+              this.emitEvent({
                 operation: "update",
                 model: "project",
                 id: target.id,
@@ -128,11 +140,11 @@ class Store {
   }
 
   createCollection<T>({
-    parentId,
-    foreignKey,
+    setForeignKeyToNull,
+    setForeignKeyToThis,
   }: {
-    parentId: string;
-    foreignKey: keyof T;
+    setForeignKeyToNull: (item: T) => void;
+    setForeignKeyToThis: (item: T) => void;
   }): Collection<T> {
     const map = new Map<string, T>();
     return {
@@ -143,7 +155,7 @@ class Store {
         if (this.triggersEnabled) {
           this.withTriggersDisabled(() => {
             if (prev) {
-              prev[foreignKey] = null;
+              setForeignKeyToNull(prev);
             }
           });
         }
@@ -153,17 +165,19 @@ class Store {
         map.set(key, value);
         if (this.triggersEnabled) {
           this.withTriggersDisabled(() => {
-            if (prev && prev[foreignKey]) {
-              prev[foreignKey] = null;
+            if (prev) {
+              setForeignKeyToNull(prev);
             }
             if (value) {
-              value[foreignKey] = parentId;
+              setForeignKeyToThis(value);
             }
           });
         }
       },
       keys: () => map.keys(),
-      size: map.size,
+      get size() {
+        return map.size;
+      },
     };
   }
 }
@@ -172,10 +186,17 @@ const store = new Store();
 
 const issue = store.createIssue({ id: "issue1", project: null });
 const project = store.createProject({ id: "project1" });
+const project2 = store.createProject({ id: "project2" });
 
 issue.title = "issue 1";
 project.title = "project 1";
 issue.project = project;
 project.issues.delete("issue1");
+console.log("after assigning then deleting");
 console.log(project.issues.size);
-console.log(issue.project);
+console.log(issue.project?.id);
+
+issue.project = project2;
+console.log("after assigning to another project");
+console.log(project2.issues.size);
+console.log(issue.project?.id);
