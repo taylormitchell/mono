@@ -23,6 +23,17 @@
     },
     {
       "type": "node",
+      "request": "launch",
+      "name": "Run Current File with tsx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["tsx"],
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
       "name": "vscode-jest-tests.v2.taylors-tech",
       "request": "launch",
       "args": [

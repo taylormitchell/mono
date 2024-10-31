@@ -1,4 +1,4 @@
-import { autorun, observable, reaction, runInAction } from "mobx";
+import { observable, reaction } from "mobx";
 
 let events: any[] = [];
 const eventsDirty = observable.box(false);
@@ -45,36 +45,6 @@ const Property = (
   };
 };
 
-/**
- * When I use this one and do
- * `@WithLogs @observable accessor title = "test";`
- * The first value of title is undefined. When I set it later,
- * it says it's going from undefined to "test".
- */
-const WithLogs = (target: any, context: ClassAccessorDecoratorContext) => {
-  return {
-    get() {
-      const value = target.get?.call(this);
-      console.log(`Getting on ${this.constructor.name}.${String(context.name)}:`, value);
-      return value;
-    },
-    set(newValue: any) {
-      const oldValue = target.get?.call(this);
-      console.log(
-        `Setting on ${this.constructor.name}.${String(context.name)} from:`,
-        oldValue,
-        "to:",
-        newValue
-      );
-      target.set?.call(this, newValue);
-    },
-    init(value: any) {
-      console.log(`Initializing on ${this.constructor.name}.${String(context.name)}`);
-      return target.init?.call(this, value);
-    },
-  };
-};
-
 class Test {
   @Property
   accessor title = "test";
@@ -84,16 +54,3 @@ class Test {
 }
 
 const test = new Test();
-
-autorun(() => {
-  console.log(test.title);
-});
-
-runInAction(() => {
-  test.title = "test2";
-  test.createdAt = new Date();
-});
-
-runInAction(() => {
-  test.title = "test3";
-});
