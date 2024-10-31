@@ -4,7 +4,8 @@
     "packages/*",
     "!packages/mobx-linear",
     "!packages/typescript-decorators",
-    "!packages/wedding-site"
+    "!packages/wedding-site",
+    "!packages/temp"
   ],
   "scripts": {
     "publish-repo": "bash scripts/publish-repo.sh"

@@ -1,5 +1,9 @@
 # MobX Linear
 
+TODO see /Code/temp
+
+TODO play around with decorators again
+
 TODO I was imagining have a proxy around the objects. but then there are two proxies, right? the mobx one and mine (is that right?). if that's the case, that feels weird. Is there a way to hook into the mobx proxy?
 - How are proxies with proxies handled?
 - Can decorators on properties really not be used to add additional functionality on get/set?
