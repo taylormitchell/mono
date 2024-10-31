@@ -11,23 +11,29 @@ const ObservableWithLogs = (target: any, context: ClassAccessorDecoratorContext)
   return {
     get() {
       const value = observableResult.get?.call(this);
-      console.log(`Getting ${String(context.name)}:`, value);
+      console.log(`Getting on ${this.constructor.name}.${String(context.name)}:`, value);
       return value;
     },
     set(newValue: any) {
       const oldValue = observableResult.get?.call(this);
-      console.log(`Setting ${String(context.name)} from:`, oldValue, "to:", newValue);
+      console.log(
+        `Setting on ${this.constructor.name}.${String(context.name)} from:`,
+        oldValue,
+        "to:",
+        newValue
+      );
       observableResult.set?.call(this, newValue);
     },
     init(value: any) {
-      console.log(`Initializing ${String(context.name)}`, { this: this, context });
+      console.log(`Initializing on ${this.constructor.name}.${String(context.name)}`);
       return observableResult.init?.call(this, value);
     },
   };
 };
 
 class Test {
-  @ObservableWithLogs accessor title = "test";
+  @ObservableWithLogs
+  accessor title = "test";
 }
 
 const test = new Test();
