@@ -13,6 +13,15 @@ function emitEvent(event: Event) {
 type Subscriber = (event: Event) => void;
 const subscribers = new Set<Subscriber>();
 
+const foreignKeyRelations = new Map<
+  string,
+  {
+    from: string;
+    to: string;
+    foreignKey: string;
+  }
+>();
+
 function subscribe(subscriber: Subscriber) {
   subscribers.add(subscriber);
   return () => subscribers.delete(subscriber);
@@ -60,63 +69,90 @@ const Property = (
   };
 };
 
-const ForeignKey = (
-  target: ClassAccessorDecoratorTarget<any, any>,
-  context: ClassAccessorDecoratorContext
-) => {
-  const observableResult = observable(target, context);
-  if (!observableResult) {
-    throw new Error("Failed to apply observable decorator");
-  }
-  // const keyName = `${String(context.name)}Id`;
-  const keyName = String(context.name);
-  return {
-    get() {
-      return observableResult.get?.call(this);
-    },
-    set(newValue: Model | null) {
-      const oldValue: Model | null = observableResult.get?.call(this);
-      emitEvent({
-        object: this,
-        operation: "update",
-        propKey: keyName,
-        oldValue,
-        newValue,
-      });
-      observableResult.set?.call(this, newValue);
-    },
-    init(value: unknown) {
-      return observableResult.init?.call(this, value);
-    },
+const ForeignKey = ({ name, to }: { name: string; to: string }) => {
+  return (
+    target: ClassAccessorDecoratorTarget<any, any>,
+    context: ClassAccessorDecoratorContext
+  ) => {
+    const observableResult = observable(target, context);
+    if (!observableResult) {
+      throw new Error("Failed to apply observable decorator");
+    }
+    // const keyName = `${String(context.name)}Id`;
+    const keyName = String(context.name);
+    return {
+      get() {
+        return observableResult.get?.call(this);
+      },
+      set(newValue: Model | null) {
+        const oldValue: Model | null = observableResult.get?.call(this);
+        emitEvent({
+          object: this,
+          operation: "update",
+          propKey: keyName,
+          oldValue,
+          newValue,
+        });
+        observableResult.set?.call(this, newValue);
+      },
+      init(value: unknown) {
+        if (!foreignKeyRelations.has(name)) {
+          foreignKeyRelations.set(name, {
+            from: this.constructor.name,
+            to,
+            foreignKey: keyName,
+          });
+        }
+        return observableResult.init?.call(this, value);
+      },
+    };
   };
 };
 
 class Backlinks<T extends Model> {
   private set = new Set<T>();
-  unsubscribe: () => void;
+  unsubscribe: (() => void) | null = null;
 
-  constructor(private owner: Model, private childModel: string, private foreignKey: keyof T) {
-    this.unsubscribe = subscribe((event) => {
-      if (
-        event.object.model === this.childModel &&
-        event.operation === "update" &&
-        event.propKey === this.foreignKey
-      ) {
-        if (event.oldValue && event.oldValue === this.owner && this.set.has(event.object)) {
-          this.set.delete(event.object);
+  constructor(private owner: Model, private foreignKeyRelation: string) {
+    this.setupSubscription();
+  }
+
+  setupSubscription() {
+    if (this.unsubscribe) {
+      return;
+    }
+    const relation = foreignKeyRelations.get(this.foreignKeyRelation);
+    if (relation) {
+      this.unsubscribe = subscribe((event) => {
+        if (
+          event.object.model === relation.from &&
+          event.operation === "update" &&
+          event.propKey === relation.foreignKey
+        ) {
+          if (event.oldValue && event.oldValue === this.owner && this.set.has(event.object)) {
+            this.set.delete(event.object);
+          }
+          if (event.newValue && event.newValue === this.owner && !this.set.has(event.object)) {
+            this.set.add(event.object);
+          }
         }
-        if (event.newValue && event.newValue === this.owner && !this.set.has(event.object)) {
-          this.set.add(event.object);
-        }
-      }
-    });
+      });
+    }
   }
 
   add(value: T): void {
+    this.setupSubscription();
+    if (!this.unsubscribe) {
+      throw new Error("Trying to use backlinks without corresponding foreign key relation");
+    }
     value[this.foreignKey] = this.owner;
   }
 
   remove(value: T): void {
+    this.setupSubscription();
+    if (!this.unsubscribe) {
+      throw new Error("Trying to use backlinks without corresponding foreign key relation");
+    }
     value[this.foreignKey] = null;
   }
 
@@ -142,7 +178,7 @@ class Issue implements Model {
   @Property
   accessor title = "";
 
-  @ForeignKey
+  @ForeignKey({ name: "issue-to-project", to: "project" })
   accessor project: Project | null = null;
 }
 
@@ -157,11 +193,11 @@ class Project implements Model {
 
   constructor(id: string) {
     this.id = id;
-    this.issues = new Backlinks(this, "issue", "project");
+    this.issues = new Backlinks(this, "issue-to-project");
   }
 
   destroy() {
-    this.issues.unsubscribe();
+    this.issues.unsubscribe?.();
   }
 }
 
