@@ -32,26 +32,11 @@ function getModel(model: ModelName, id: string) {
       return relations.get(id);
     case "project":
       return projects.get(id);
-    default:
-      return model satisfies never;
-  }
-}
-
-function modelExists(model: ModelName, id: string) {
-  switch (model) {
-    case "issue":
-      return issues.has(id);
-    case "relation":
-      return relations.has(id);
-    case "project":
-      return projects.has(id);
-    default:
-      return model satisfies never;
   }
 }
 
 function assertModelExists(model: ModelName, id: string) {
-  if (!modelExists(model, id)) {
+  if (!getModel(model, id)) {
     throw new Error(`Model ${model} with id ${id} not found`);
   }
 }
@@ -113,12 +98,15 @@ const ForeignKey = (
 
   return {
     get() {
+      assertModelExists(this.model, this.id);
       return observableResult.get?.call(this);
     },
     set(newValue: Model | null) {
+      assertModelExists(this.model, this.id);
       const oldValue: Model | null = observableResult.get?.call(this);
       emitEvent({
-        object: this,
+        model: this.constructor.name.toLowerCase(),
+        id: (this as any).id,
         operation: "update",
         propKey: keyName,
         oldValue,
@@ -133,22 +121,27 @@ const ForeignKey = (
 };
 
 class Backlinks<T extends Model> implements Iterable<T> {
-  private set = new Set<T>();
+  private map = new Map<string, T>();
   unsubscribe: (() => void) | null = null;
 
   constructor(private owner: Model, private link: { from: string; key: string }) {
     this.unsubscribe = subscribe((event) => {
-      if (event.object.model === link.from) {
+      if (event.model === link.from) {
         if (event.operation === "delete") {
-          if (this.set.has(event.object)) {
-            this.set.delete(event.object);
+          if (this.map.has(event.id)) {
+            this.map.delete(event.id);
           }
         } else if (event.operation === "update" && event.propKey === link.key) {
-          if (event.oldValue && event.oldValue === this.owner && this.set.has(event.object)) {
-            this.set.delete(event.object);
+          if (event.oldValue && event.oldValue === this.owner && this.map.has(event.id)) {
+            this.map.delete(event.id);
           }
-          if (event.newValue && event.newValue === this.owner && !this.set.has(event.object)) {
-            this.set.add(event.object);
+          if (event.newValue && event.newValue === this.owner && !this.map.has(event.id)) {
+            const model = getModel(event.model, event.id);
+            if (model) {
+              this.map.set(model.id, model);
+            } else {
+              console.error(`Model ${event.model} with id ${event.id} not found`);
+            }
           }
         }
       }
@@ -164,15 +157,15 @@ class Backlinks<T extends Model> implements Iterable<T> {
   }
 
   get size(): number {
-    return this.set.size;
+    return this.map.size;
   }
 
   get ids(): string[] {
-    return Array.from(this.set.values()).map((value) => value.id);
+    return Array.from(this.map.values()).map((value) => value.id);
   }
 
   [Symbol.iterator](): Iterator<T> {
-    return this.set[Symbol.iterator]();
+    return this.map.values();
   }
 }
 
@@ -191,9 +184,9 @@ class Issue implements Model {
   @ForeignKey
   accessor project: Project | null = null;
 
-  relationsFrom: Backlinks<Relation> = new Backlinks(this, { from: "relation", key: "from" });
+  relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
 
-  relationsTo: Backlinks<Relation> = new Backlinks(this, { from: "relation", key: "to" });
+  relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
 
   constructor(id: string) {
     this.id = id;
@@ -222,7 +215,7 @@ class Project implements Model {
   @Property
   accessor title = "";
 
-  issues: Backlinks<Issue> = new Backlinks(this, { from: "issue", key: "project" });
+  issues = new Backlinks<Issue>(this, { from: "issue", key: "project" });
 
   constructor(id: string) {
     this.id = id;
