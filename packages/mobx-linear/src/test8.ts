@@ -22,7 +22,9 @@ const issues = new Map<string, Issue>();
 const relations = new Map<string, Relation>();
 const projects = new Map<string, Project>();
 
-function getModel(model: string, id: string) {
+type ModelName = "issue" | "relation" | "project";
+
+function getModel(model: ModelName, id: string) {
   switch (model) {
     case "issue":
       return issues.get(id);
@@ -31,7 +33,26 @@ function getModel(model: string, id: string) {
     case "project":
       return projects.get(id);
     default:
-      throw new Error(`Unknown model ${model}`);
+      return model satisfies never;
+  }
+}
+
+function modelExists(model: ModelName, id: string) {
+  switch (model) {
+    case "issue":
+      return issues.has(id);
+    case "relation":
+      return relations.has(id);
+    case "project":
+      return projects.has(id);
+    default:
+      return model satisfies never;
+  }
+}
+
+function assertModelExists(model: ModelName, id: string) {
+  if (!modelExists(model, id)) {
+    throw new Error(`Model ${model} with id ${id} not found`);
   }
 }
 
@@ -58,13 +79,11 @@ const Property = (
 
   return {
     get() {
-      const model = getModel(this.model, this.id);
-      if (!model) {
-        throw new Error(`Model ${this.model} with id ${this.id} not found`);
-      }
-      return observableResult.get?.call(model);
+      assertModelExists(this.model, this.id);
+      return observableResult.get?.call(this);
     },
     set(newValue: unknown) {
+      assertModelExists(this.model, this.id);
       const oldValue = observableResult.get?.call(this);
       emitEvent({
         operation: "update",
