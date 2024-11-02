@@ -13,18 +13,26 @@ function emitEvent(event: Event) {
 type Subscriber = (event: Event) => void;
 const subscribers = new Set<Subscriber>();
 
-const foreignKeyRelations = new Map<
-  string,
-  {
-    from: string;
-    to: string;
-    foreignKey: string;
-  }
->();
-
 function subscribe(subscriber: Subscriber) {
   subscribers.add(subscriber);
   return () => subscribers.delete(subscriber);
+}
+
+const issues = new Map<string, Issue>();
+const relations = new Map<string, Relation>();
+const projects = new Map<string, Project>();
+
+function getModel(model: string, id: string) {
+  switch (model) {
+    case "issue":
+      return issues.get(id);
+    case "relation":
+      return relations.get(id);
+    case "project":
+      return projects.get(id);
+    default:
+      throw new Error(`Unknown model ${model}`);
+  }
 }
 
 reaction(
@@ -50,7 +58,11 @@ const Property = (
 
   return {
     get() {
-      return observableResult.get?.call(this);
+      const model = getModel(this.model, this.id);
+      if (!model) {
+        throw new Error(`Model ${this.model} with id ${this.id} not found`);
+      }
+      return observableResult.get?.call(model);
     },
     set(newValue: unknown) {
       const oldValue = observableResult.get?.call(this);
@@ -69,78 +81,67 @@ const Property = (
   };
 };
 
-const ForeignKey = ({ name, from, to }: { name: string; from: string; to: string }) => {
-  return (
-    target: ClassAccessorDecoratorTarget<any, any>,
-    context: ClassAccessorDecoratorContext
-  ) => {
-    // const keyName = `${String(context.name)}Id`;
-    const keyName = String(context.name);
-    foreignKeyRelations.set(name, {
-      from, // TODO feels like this shouldn't be needed but don't know how to get it at this point
-      to,
-      foreignKey: String(context.name),
-    });
-    const observableResult = observable(target, context);
-    if (!observableResult) {
-      throw new Error("Failed to apply observable decorator");
-    }
+const ForeignKey = (
+  target: ClassAccessorDecoratorTarget<any, any>,
+  context: ClassAccessorDecoratorContext
+) => {
+  // const keyName = `${String(context.name)}Id`;
+  const keyName = String(context.name);
+  const observableResult = observable(target, context);
+  if (!observableResult) {
+    throw new Error("Failed to apply observable decorator");
+  }
 
-    return {
-      get() {
-        return observableResult.get?.call(this);
-      },
-      set(newValue: Model | null) {
-        const oldValue: Model | null = observableResult.get?.call(this);
-        emitEvent({
-          object: this,
-          operation: "update",
-          propKey: keyName,
-          oldValue,
-          newValue,
-        });
-        observableResult.set?.call(this, newValue);
-      },
-      init(value: unknown) {
-        return observableResult.init?.call(this, value);
-      },
-    };
+  return {
+    get() {
+      return observableResult.get?.call(this);
+    },
+    set(newValue: Model | null) {
+      const oldValue: Model | null = observableResult.get?.call(this);
+      emitEvent({
+        object: this,
+        operation: "update",
+        propKey: keyName,
+        oldValue,
+        newValue,
+      });
+      observableResult.set?.call(this, newValue);
+    },
+    init(value: unknown) {
+      return observableResult.init?.call(this, value);
+    },
   };
 };
 
-class Backlinks<T extends Model> {
+class Backlinks<T extends Model> implements Iterable<T> {
   private set = new Set<T>();
   unsubscribe: (() => void) | null = null;
-  relation: { from: string; to: string; foreignKey: string } | null = null;
 
-  constructor(private owner: Model, private foreignKeyRelation: string) {
-    const relation = foreignKeyRelations.get(this.foreignKeyRelation);
-    if (!relation) {
-      throw new Error(`ForeignKey relation ${this.foreignKeyRelation} not found`);
-    }
-    this.relation = relation;
+  constructor(private owner: Model, private link: { from: string; key: string }) {
     this.unsubscribe = subscribe((event) => {
-      if (
-        event.object.model === relation.from &&
-        event.operation === "update" &&
-        event.propKey === relation.foreignKey
-      ) {
-        if (event.oldValue && event.oldValue === this.owner && this.set.has(event.object)) {
-          this.set.delete(event.object);
-        }
-        if (event.newValue && event.newValue === this.owner && !this.set.has(event.object)) {
-          this.set.add(event.object);
+      if (event.object.model === link.from) {
+        if (event.operation === "delete") {
+          if (this.set.has(event.object)) {
+            this.set.delete(event.object);
+          }
+        } else if (event.operation === "update" && event.propKey === link.key) {
+          if (event.oldValue && event.oldValue === this.owner && this.set.has(event.object)) {
+            this.set.delete(event.object);
+          }
+          if (event.newValue && event.newValue === this.owner && !this.set.has(event.object)) {
+            this.set.add(event.object);
+          }
         }
       }
     });
   }
 
   add(value: T): void {
-    value[this.relation.foreignKey] = this.owner;
+    value[this.link.key] = this.owner;
   }
 
   remove(value: T): void {
-    value[this.relation.foreignKey] = null;
+    value[this.link.key] = null;
   }
 
   get size(): number {
@@ -149,6 +150,10 @@ class Backlinks<T extends Model> {
 
   get ids(): string[] {
     return Array.from(this.set.values()).map((value) => value.id);
+  }
+
+  [Symbol.iterator](): Iterator<T> {
+    return this.set[Symbol.iterator]();
   }
 }
 
@@ -159,14 +164,36 @@ interface Model {
 
 class Issue implements Model {
   readonly model = "issue";
-
-  constructor(readonly id: string) {}
+  readonly id: string;
 
   @Property
   accessor title = "";
 
-  @ForeignKey({ name: "issue-to-project", from: "issue", to: "project" })
+  @ForeignKey
   accessor project: Project | null = null;
+
+  relationsFrom: Backlinks<Relation> = new Backlinks(this, { from: "relation", key: "from" });
+
+  relationsTo: Backlinks<Relation> = new Backlinks(this, { from: "relation", key: "to" });
+
+  constructor(id: string) {
+    this.id = id;
+  }
+}
+
+class Relation implements Model {
+  readonly model = "relation";
+  readonly id: string;
+
+  @ForeignKey
+  accessor from: Issue | null = null;
+
+  @ForeignKey
+  accessor to: Issue | null = null;
+
+  constructor(id: string) {
+    this.id = id;
+  }
 }
 
 class Project implements Model {
@@ -176,11 +203,10 @@ class Project implements Model {
   @Property
   accessor title = "";
 
-  issues: Backlinks<Issue>;
+  issues: Backlinks<Issue> = new Backlinks(this, { from: "issue", key: "project" });
 
   constructor(id: string) {
     this.id = id;
-    this.issues = new Backlinks(this, "issue-to-project");
   }
 
   destroy() {
@@ -188,9 +214,27 @@ class Project implements Model {
   }
 }
 
+function createIssue(id: string) {
+  const issue = new Issue(id);
+  issues.set(id, issue);
+  return issue;
+}
+
+function createProject(id: string) {
+  const project = new Project(id);
+  projects.set(id, project);
+  return project;
+}
+
+function createRelation(id: string) {
+  const relation = new Relation(id);
+  relations.set(id, relation);
+  return relation;
+}
+
 // Test code
-const project1 = new Project("project1");
-const issue1 = new Issue("issue1");
+const project1 = createProject("project1");
+const issue1 = createIssue("issue1");
 
 runInAction(() => {
   issue1.project = project1;
@@ -201,6 +245,16 @@ runInAction(() => {
   project1.issues.remove(issue1);
 });
 console.log("issue1.project", issue1.project);
+
+const relation1 = createRelation("relation1");
+const relation2 = createRelation("relation2");
+runInAction(() => {
+  relation1.from = issue1;
+  relation2.from = issue1;
+});
+for (const relation of issue1.relationsFrom) {
+  console.log("relation", relation);
+}
 
 // runInAction(() => {
 //   issue.title = "issue 1";
