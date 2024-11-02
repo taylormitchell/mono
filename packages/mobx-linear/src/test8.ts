@@ -18,6 +18,12 @@ function subscribe(subscriber: Subscriber) {
   return () => subscribers.delete(subscriber);
 }
 
+const modelMetadata = {
+  issue: {},
+  relation: {},
+  project: {},
+};
+
 const issues = new Map<string, Issue>();
 const relations = new Map<string, Relation>();
 const projects = new Map<string, Project>();
@@ -85,38 +91,43 @@ const Property = (
   };
 };
 
-const ForeignKey = (
-  target: ClassAccessorDecoratorTarget<any, any>,
-  context: ClassAccessorDecoratorContext
-) => {
-  // const keyName = `${String(context.name)}Id`;
-  const keyName = String(context.name);
-  const observableResult = observable(target, context);
-  if (!observableResult) {
-    throw new Error("Failed to apply observable decorator");
-  }
+const ForeignKey = (serializedKeyName?: string) => {
+  return (
+    target: ClassAccessorDecoratorTarget<any, any>,
+    context: ClassAccessorDecoratorContext
+  ) => {
+    // const keyName = `${String(context.name)}Id`;
+    const keyName = String(context.name);
+    const observableResult = observable(target, context);
+    if (!observableResult) {
+      throw new Error("Failed to apply observable decorator");
+    }
 
-  return {
-    get() {
-      assertModelExists(this.model, this.id);
-      return observableResult.get?.call(this);
-    },
-    set(newValue: Model | null) {
-      assertModelExists(this.model, this.id);
-      const oldValue: Model | null = observableResult.get?.call(this);
-      emitEvent({
-        model: this.constructor.name.toLowerCase(),
-        id: (this as any).id,
-        operation: "update",
-        propKey: keyName,
-        oldValue,
-        newValue,
-      });
-      observableResult.set?.call(this, newValue);
-    },
-    init(value: unknown) {
-      return observableResult.init?.call(this, value);
-    },
+    return {
+      get() {
+        assertModelExists(this.model, this.id);
+        return observableResult.get?.call(this);
+      },
+      set(newValue: Model | null) {
+        assertModelExists(this.model, this.id);
+        const oldValue: Model | null = observableResult.get?.call(this);
+        emitEvent({
+          model: this.constructor.name.toLowerCase(),
+          id: (this as any).id,
+          operation: "update",
+          propKey: keyName,
+          oldValue,
+          newValue,
+        });
+        observableResult.set?.call(this, newValue);
+      },
+      init(value: unknown) {
+        if (!modelMetadata[this.model][keyName]) {
+          modelMetadata[this.model][keyName] = serializedKeyName ?? keyName;
+        }
+        return observableResult.init?.call(this, value);
+      },
+    };
   };
 };
 
@@ -181,7 +192,7 @@ class Issue implements Model {
   @Property
   accessor title = "";
 
-  @ForeignKey
+  @ForeignKey()
   accessor project: Project | null = null;
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
@@ -197,10 +208,10 @@ class Relation implements Model {
   readonly model = "relation";
   readonly id: string;
 
-  @ForeignKey
+  @ForeignKey()
   accessor from: Issue | null = null;
 
-  @ForeignKey
+  @ForeignKey()
   accessor to: Issue | null = null;
 
   constructor(id: string) {
