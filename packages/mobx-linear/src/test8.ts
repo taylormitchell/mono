@@ -24,6 +24,18 @@ const modelMetadata = {
   project: {},
 };
 
+function addPropNameMapper(mapper: {
+  model: ModelName;
+  modelProp: string;
+  serializedProp?: string;
+}) {
+  modelMetadata[mapper.model][mapper.modelProp] = mapper.serializedProp ?? mapper.modelProp;
+}
+
+function mapPropName(model: ModelName, prop: string) {
+  return modelMetadata[model][prop] ?? prop;
+}
+
 const issues = new Map<string, Issue>();
 const relations = new Map<string, Relation>();
 const projects = new Map<string, Project>();
@@ -59,35 +71,44 @@ reaction(
 );
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const Property = (
-  target: ClassAccessorDecoratorTarget<any, any>,
-  context: ClassAccessorDecoratorContext
-) => {
-  const observableResult = observable(target, context);
-  if (!observableResult) {
-    throw new Error("Failed to apply observable decorator");
-  }
+const Property = (serializedKeyName?: string) => {
+  return (
+    target: ClassAccessorDecoratorTarget<any, any>,
+    context: ClassAccessorDecoratorContext
+  ) => {
+    const observableResult = observable(target, context);
+    if (!observableResult) {
+      throw new Error("Failed to apply observable decorator");
+    }
+    const keyName = String(context.name);
 
-  return {
-    get() {
-      assertModelExists(this.model, this.id);
-      return observableResult.get?.call(this);
-    },
-    set(newValue: unknown) {
-      assertModelExists(this.model, this.id);
-      const oldValue = observableResult.get?.call(this);
-      emitEvent({
-        operation: "update",
-        model: this.constructor.name.toLowerCase(),
-        id: (this as any).id,
-        oldProps: { [String(context.name)]: oldValue },
-        newProps: { [String(context.name)]: newValue },
-      });
-      observableResult.set?.call(this, newValue);
-    },
-    init(value: unknown) {
-      return observableResult.init?.call(this, value);
-    },
+    return {
+      get() {
+        assertModelExists(this.model, this.id);
+        return observableResult.get?.call(this);
+      },
+      set(newValue: unknown) {
+        assertModelExists(this.model, this.id);
+        const oldValue = observableResult.get?.call(this);
+        emitEvent({
+          operation: "update",
+          model: this.model,
+          id: this.id,
+          propKey: mapPropName(keyName),
+          oldValue,
+          newValue,
+        });
+        observableResult.set?.call(this, newValue);
+      },
+      init(value: unknown) {
+        addPropNameMapper({
+          model: this.model,
+          modelProp: keyName,
+          serializedProp: serializedKeyName,
+        });
+        return observableResult.init?.call(this, value);
+      },
+    };
   };
 };
 
@@ -96,35 +117,36 @@ const ForeignKey = (serializedKeyName?: string) => {
     target: ClassAccessorDecoratorTarget<any, any>,
     context: ClassAccessorDecoratorContext
   ) => {
-    // const keyName = `${String(context.name)}Id`;
-    const keyName = String(context.name);
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to apply observable decorator");
     }
+    const keyName = String(context.name);
 
     return {
       get() {
         assertModelExists(this.model, this.id);
         return observableResult.get?.call(this);
       },
-      set(newValue: Model | null) {
+      set(newValue: unknown) {
         assertModelExists(this.model, this.id);
-        const oldValue: Model | null = observableResult.get?.call(this);
+        const oldValue = observableResult.get?.call(this);
         emitEvent({
-          model: this.constructor.name.toLowerCase(),
-          id: (this as any).id,
           operation: "update",
-          propKey: keyName,
-          oldValue,
-          newValue,
+          model: this.model,
+          id: this.id,
+          propKey: mapPropName(this.model, keyName),
+          oldValue: oldValue?.id ?? null,
+          newValue: newValue?.id ?? null,
         });
         observableResult.set?.call(this, newValue);
       },
       init(value: unknown) {
-        if (!modelMetadata[this.model][keyName]) {
-          modelMetadata[this.model][keyName] = serializedKeyName ?? keyName;
-        }
+        addPropNameMapper({
+          model: this.model,
+          modelProp: keyName,
+          serializedProp: serializedKeyName,
+        });
         return observableResult.init?.call(this, value);
       },
     };
@@ -189,15 +211,15 @@ class Issue implements Model {
   readonly model = "issue";
   readonly id: string;
 
-  @Property
+  @Property()
   accessor title = "";
 
-  @ForeignKey()
+  @ForeignKey("projectId")
   accessor project: Project | null = null;
 
-  relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
+  relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "fromId" });
 
-  relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
+  relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "toId" });
 
   constructor(id: string) {
     this.id = id;
@@ -208,10 +230,10 @@ class Relation implements Model {
   readonly model = "relation";
   readonly id: string;
 
-  @ForeignKey()
+  @ForeignKey("fromId")
   accessor from: Issue | null = null;
 
-  @ForeignKey()
+  @ForeignKey("toId")
   accessor to: Issue | null = null;
 
   constructor(id: string) {
@@ -223,10 +245,10 @@ class Project implements Model {
   readonly model = "project";
   readonly id: string;
 
-  @Property
+  @Property()
   accessor title = "";
 
-  issues = new Backlinks<Issue>(this, { from: "issue", key: "project" });
+  issues = new Backlinks<Issue>(this, { from: "issue", key: "projectId" });
 
   constructor(id: string) {
     this.id = id;
@@ -278,6 +300,8 @@ runInAction(() => {
 for (const relation of issue1.relationsFrom) {
   console.log("relation", relation);
 }
+
+console.log("modelMetadata", modelMetadata);
 
 // runInAction(() => {
 //   issue.title = "issue 1";
