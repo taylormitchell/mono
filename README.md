@@ -1,5 +1,6 @@
-# Mono
+# Home
 
-A monorepo for a bunch of my interconnected personal pro jects.
+A home for all my personal digital life. At the moment it's mainly me personal notes and side projects. 
+
 
 If you're reading this on GitHub, note that this repo is a public mirror of a private repo. 
