@@ -133,6 +133,16 @@ export const LogEntrySchema = z.discriminatedUnion("type", [
       .describe("The healthiness of the food consumed (1-5 scale)"),
     message: MessageSchema,
   }),
+  z.object({
+    type: z.literal("fiber"),
+    datetime: DatetimeSchema,
+    amount: z
+      .union([z.number(), z.string()])
+      .transform((val) => (typeof val === "string" ? parseFloat(val) : val))
+      .default(2.4)
+      .describe("Amount of fiber supplement in grams"),
+    message: MessageSchema,
+  }),
 ]);
 
 export const LOG_TYPES = new Set(LogEntrySchema.options.map((option) => option.shape.type.value));

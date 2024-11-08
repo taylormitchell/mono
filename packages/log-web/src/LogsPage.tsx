@@ -78,6 +78,12 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
           burning: false, // Default burning
           poopType: 4, // Default poop type (middle of the scale)
         });
+      } else if (logType === "fiber") {
+        handleSubmit({
+          type: logType,
+          datetime: new Date(),
+          amount: 2.4, // Default amount
+        });
       } else {
         // For other types (meditated, eye-patch, ankied, workout, custom)
         handleSubmit({
@@ -98,6 +104,7 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
     { type: "coffee", emoji: "☕" },
     { type: "alcohol", emoji: "🍺" },
     { type: "food", emoji: "🍽️" },
+    { type: "fiber", emoji: "🥦" },
     { type: "custom", emoji: "📝" },
   ];
 
