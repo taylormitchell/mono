@@ -1,5 +1,3 @@
 # Home
 
-A home for all my personal digital life. At the moment it's mainly me personal notes and side projects. 
-
-If you're reading this on GitHub, note that this repo is a public mirror of a private repo. 
+A home for my personal digital life. At the moment it's mainly my personal notes and side projects. 
