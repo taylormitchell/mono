@@ -2,14 +2,9 @@ import { Command } from "commander";
 import chalk from "chalk";
 import fs from "fs";
 import path from "path";
-import {
-  getTodos,
-  groupBy,
-  lessThanOrEqualTo,
-  listTodosDueToday,
-} from "@taylor/common/todo/parsers";
-import { getRootDir } from "@taylor/common/data";
-import { Todo } from "@taylor/common/todo/types";
+import { getTodos, groupBy, lessThanOrEqualTo, listTodosDueToday } from "@common/todo/parsers";
+import { getRootDir } from "@common/data";
+import { Todo } from "@common/todo/types";
 chalk.level = 3;
 
 const program = new Command();

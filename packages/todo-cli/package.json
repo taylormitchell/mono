@@ -1,5 +1,5 @@
 {
-  "name": "@taylor/todo-cli",
+  "name": "todo-cli",
   "version": "1.0.0",
   "license": "ISC",
   "author": "Taylor Mitchell <taylor.j.mitchell@gmail.com>",

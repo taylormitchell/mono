@@ -1,5 +1,5 @@
 {
-  "name": "@taylor/note-cli",
+  "name": "note-cli",
   "version": "1.0.0",
   "license": "ISC",
   "author": "Taylor Mitchell <taylor.j.mitchell@gmail.com>",
@@ -13,7 +13,6 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@taylor/common": "^1.0.0",
     "chrono-node": "^1.4.9",
     "commander": "^12.1.0",
     "date-fns": "^3.6.0"

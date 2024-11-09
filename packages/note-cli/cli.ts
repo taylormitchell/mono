@@ -9,11 +9,11 @@ import {
   openFile,
   getOrCreateWeeklyNote,
   getOrCreateMonthlyNote,
-} from "@taylor/common/note";
-import { getRepoRoot, getRootDir } from "@taylor/common/data";
+} from "@common/note";
+import { getRepoRoot, getRootDir } from "@common/data";
 import { readFileSync } from "fs";
-import { addLogEntry, getTodayLogEvents } from "@taylor/common/logs/utils";
-import { LogEntry, parseDuration, formatDuration, LogEntrySchema } from "@taylor/common/logs/types";
+import { addLogEntry, getTodayLogEvents } from "@common/logs/utils";
+import { LogEntry, parseDuration, formatDuration, LogEntrySchema } from "@common/logs/types";
 
 const program = new Command();
 

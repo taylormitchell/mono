@@ -1,13 +1,5 @@
 {
   "name": "taylor",
-  "workspaces": [
-    "packages/*",
-    "!packages/mobx-linear",
-    "!packages/typescript-decorators",
-    "!packages/wedding-site",
-    "!packages/temp",
-    "!packages/markdown-reader"
-  ],
   "scripts": {
     "publish-repo": "bash scripts/publish-repo.sh"
   }

@@ -5,7 +5,7 @@ import {
   validateDatetime,
   validateDuration,
   DrinkAmountStringSchema,
-} from "@taylor/common/logs/types";
+} from "@common/logs/types";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 

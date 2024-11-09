@@ -3,7 +3,7 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@taylor/common/*": ["packages/*"]
+      "@common/*": ["../../packages/common/*"]
     }
   }
 }
