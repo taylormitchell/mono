@@ -33,3 +33,4 @@ alias n="bun /Users/taylormitchell/Code/home/packages/note-cli/cli.ts"
 alias x="clear"
 
 alias hello="echo 'hello2'"
+alias home="cd /Users/taylormitchell/Code/home"
