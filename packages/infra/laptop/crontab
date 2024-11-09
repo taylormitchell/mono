@@ -1,0 +1,9 @@
+# 0 9,14,19 * * *  . ~/.zshrc ;bash ~/Code/configs/scripts/runExportRoam.sh >> ~/Dropbox/data/logs/crontab.log 2>&1
+# 45 9,14,19 * * * . ~/.zshrc ;bash ~/Code/configs/scripts/runAnkifyRoam.sh >> ~/Dropbox/data/logs/crontab.log 2>&1
+# 0 10 * * * bash ~/Code/configs/scripts/ideaflowExportAndAnkify.sh >> ~/Dropbox/data/logs/crontab.log 2>&1
+# 45 8 * * * cd ~/Code/ankify-readwise/dist ;/usr/local/bin/node index.js >> ~/Dropbox/data/logs/crontab.log 2>&1
+# 0 12 * * * cd ~/Code/anki-queue ;node scripts/consume.js >> ~/Dropbox/data/logs/crontab.log 2>&1
+# 30 * * * * /Users/taylormitchell/Code/roam-to-google-calendar/venv/bin/python /Users/taylormitchell/Code/roam-to-google-calendar/src/sync.py >> ~/Dropbox/data/logs/crontab.log 2>&1
+#0 10 * * *  . ~/.zshrc ;bash ~/Code/my-notetaking-app/scripts/backup-data.sh >> ~/Dropbox/data/logs/crontab.log 2>&1
+0 0 * * * cd /Users/taylormitchell/Code/home/packages/kindle-highlights && ~/.bun/bin/bun index.ts >> ~/Dropbox/data/logs/crontab.log 2>&1
+# this comment is here to ensure there's always a newline char after the last job 
