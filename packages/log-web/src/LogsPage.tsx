@@ -126,58 +126,93 @@ export function LogsPage({ jwt }: { jwt: string | null }) {
         })}
       </div>
       {error && <div className="error">{error}</div>}
-      {showModal && (
-        <Modal close={() => setShowModal(false)}>
-          {selectedLogType === "workout" && (
-            <GenericForm title="Workout" type="workout" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "eye-patch" && (
-            <GenericForm title="Eye Patch" type="eye-patch" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "meditated" && (
-            <GenericForm title="Meditation" type="meditated" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "ankied" && (
-            <GenericForm title="Anki" type="ankied" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "custom" && (
-            <GenericForm title="Custom" type="custom" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "poop" && (
-            <PoopForm
-              handleSubmit={(entry) => {
-                handleSubmit(entry);
-                setShowModal(false);
-              }}
-            />
-          )}
-          {selectedLogType === "water" && (
-            <DrinkForm title="Water" type="water" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "coffee" && (
-            <DrinkForm title="Coffee" type="coffee" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "alcohol" && (
-            <DrinkForm title="Alcohol" type="alcohol" handleSubmit={handleSubmit} />
-          )}
-          {selectedLogType === "food" && <FoodForm handleSubmit={handleSubmit} />}
-        </Modal>
+      {showModal && selectedLogType && (
+        <Modal
+          close={() => setShowModal(false)}
+          logType={selectedLogType}
+          handleSubmit={handleSubmit}
+          setShowModal={setShowModal}
+        />
       )}
     </div>
   );
 }
 
-function Modal({ children, close }: { children: React.ReactNode; close: () => void }) {
+function Modal({
+  close,
+  logType,
+  handleSubmit,
+  setShowModal,
+}: {
+  close: () => void;
+  logType: LogType;
+  handleSubmit: (entry: LogEntry) => void;
+  setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   return (
     <div className="modal">
       <div className="modal-content">
         <button className="modal-close" onClick={close}>
           &times;
         </button>
-        {children}
+        {renderForm(logType)}
       </div>
     </div>
   );
+
+  function renderForm(logType: LogType): JSX.Element {
+    switch (logType) {
+      case "workout":
+        return <GenericForm title="Workout" type="workout" handleSubmit={handleSubmit} />;
+
+      case "eye-patch":
+        return <GenericForm title="Eye Patch" type="eye-patch" handleSubmit={handleSubmit} />;
+
+      case "meditated":
+        return <GenericForm title="Meditation" type="meditated" handleSubmit={handleSubmit} />;
+
+      case "ankied":
+        return <GenericForm title="Anki" type="ankied" handleSubmit={handleSubmit} />;
+
+      case "custom":
+        return <GenericForm title="Custom" type="custom" handleSubmit={handleSubmit} />;
+
+      case "poop":
+        return (
+          <PoopForm
+            handleSubmit={(entry) => {
+              handleSubmit(entry);
+              setShowModal(false);
+            }}
+          />
+        );
+
+      case "water":
+        return <DrinkForm title="Water" type="water" handleSubmit={handleSubmit} />;
+
+      case "coffee":
+        return <DrinkForm title="Coffee" type="coffee" handleSubmit={handleSubmit} />;
+
+      case "alcohol":
+        return <DrinkForm title="Alcohol" type="alcohol" handleSubmit={handleSubmit} />;
+
+      case "food":
+        return <FoodForm handleSubmit={handleSubmit} />;
+
+      case "fiber":
+        return (
+          <FiberForm
+            handleSubmit={(entry) => {
+              handleSubmit(entry);
+              setShowModal(false);
+            }}
+          />
+        );
+
+      default:
+        return logType satisfies never;
+    }
+  }
 }
 
 function PoopForm({ handleSubmit }: { handleSubmit: (poop: LogEntry) => void }) {
@@ -550,6 +585,70 @@ function FoodForm({ handleSubmit }: { handleSubmit: (entry: LogEntry) => void })
           max="5"
           value={healthiness !== undefined ? healthiness : 3}
           onChange={(e) => setHealthiness(parseInt(e.target.value))}
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="message">Additional Notes:</label>
+        <textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} />
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+function FiberForm({ handleSubmit }: { handleSubmit: (entry: LogEntry) => void }) {
+  const [amount, setAmount] = useState<number>(2.4);
+  const [datetime, setDatetime] = useState(() => {
+    const dt = new Date()
+      .toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+      .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+)/, "$3-$1-$2T$4:$5");
+    return dt;
+  });
+  const [message, setMessage] = useState<string | undefined>(undefined);
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateDatetime(datetime) || isNaN(amount)) {
+      return;
+    }
+    const entry: LogEntry = {
+      type: "fiber",
+      amount,
+      datetime: new Date(datetime),
+      message,
+    };
+    handleSubmit(entry);
+  };
+
+  return (
+    <form onSubmit={handleFormSubmit}>
+      <h2>Fiber</h2>
+      <div>
+        <label htmlFor="datetime">Date and Time:</label>
+        <input
+          type="datetime-local"
+          id="datetime"
+          value={datetime}
+          onChange={(e) => setDatetime(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="amount">Amount (grams):</label>
+        <input
+          type="number"
+          id="amount"
+          value={amount}
+          onChange={(e) => setAmount(parseFloat(e.target.value))}
+          placeholder="e.g., 2.4"
           required
         />
       </div>
