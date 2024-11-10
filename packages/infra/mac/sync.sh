@@ -33,14 +33,14 @@ REMOTE_TREE=$(git rev-parse origin/main)
 if [ "$MERGE_BASE" != "$LOCAL_TREE" ] && [ "$MERGE_BASE" != "$REMOTE_TREE" ]; then
     # Try to merge without committing to check for conflicts
     if ! git merge-tree "$MERGE_BASE" "$LOCAL_TREE" "$REMOTE_TREE" | grep -q "^+<<<<<<< "; then
-        echo "No conflicts detected, pulling"
-        git pull -q origin main
+        echo "No conflicts detected, merging"
+        git merge -q origin/main
     else
         echo "Potential conflicts detected. Aborting sync."
         exit 1
     fi
 else
-    echo "No remote changes to pull"
+    echo "No remote changes to merge"
 fi
 
 echo "Pushing to origin/main"
