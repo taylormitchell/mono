@@ -7,6 +7,10 @@ const ideas = readFileSync("/Users/taylormitchell/code/home/data/notes/ideas-lis
 // Parse markdown into AST
 const ast = unified().use(remarkParse).parse(ideas);
 
+function getText(node: ListItem) {
+  return node.children[0].children[0].value;
+}
+
 // Iterate over root's direct children that are lists
 ast.children
   .filter((node) => node.type === "list")
