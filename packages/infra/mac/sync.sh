@@ -3,6 +3,8 @@
 # Exit immediately if any command fails
 set -e
 
+echo "Syncing"
+
 # # Check if we're on main branch
 CURRENT_BRANCH=$(git branch --show-current)
 if [ "$CURRENT_BRANCH" != "main" ]; then
