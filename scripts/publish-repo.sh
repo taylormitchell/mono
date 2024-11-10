@@ -4,7 +4,7 @@
 set -e
 
 # Configuration Variables (modify these as needed)
-NEW_REPO_URL="https://github.com/taylormitchell/public-home.git"  # URL of your new public GitHub repository
+NEW_REPO_URL="git@github.com:taylormitchell/public-home.git"  # URL of your new public GitHub repository
 NEW_REPO_PATH="/tmp/public-home"
 
 # Check if the script is run inside a Git repository
