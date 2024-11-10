@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
+import { ListItem } from "mdast";
 
 const ideas = readFileSync("/Users/taylormitchell/code/home/data/notes/ideas-list.md", "utf-8");
 
