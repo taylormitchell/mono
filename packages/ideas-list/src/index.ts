@@ -1,16 +1,11 @@
 import { readFileSync } from "fs";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
-import { ListItem } from "mdast";
 
 const ideas = readFileSync("/Users/taylormitchell/code/home/data/notes/ideas-list.md", "utf-8");
 
 // Parse markdown into AST
 const ast = unified().use(remarkParse).parse(ideas);
-
-function getText(node: ListItem) {
-  return node.children[0].children[0].value;
-}
 
 // Iterate over root's direct children that are lists
 ast.children
