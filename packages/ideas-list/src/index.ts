@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
+import { parseFlexibleJson } from "./parser";
 
 const ideas = readFileSync("/Users/taylormitchell/code/home/data/notes/ideas-list.md", "utf-8");
 
@@ -16,7 +17,7 @@ function extractMetadata(text: string): Record<string, any> {
   return Array.from(matches).reduce((acc, match) => {
     try {
       // Parse the JSON inside the curly braces
-      const metadata = JSON.parse("{" + match[1] + "}");
+      const metadata = parseFlexibleJson("{" + match[1] + "}");
       return { ...acc, ...metadata };
     } catch (e) {
       // If JSON parsing fails, skip this token
