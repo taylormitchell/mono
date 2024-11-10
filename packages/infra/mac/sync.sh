@@ -44,3 +44,5 @@ fi
 
 echo "Pushing to origin/main"
 git push -q origin main
+
+echo "Sync complete"
