@@ -7,6 +7,25 @@ const ideas = readFileSync("/Users/taylormitchell/code/home/data/notes/ideas-lis
 // Parse markdown into AST
 const ast = unified().use(remarkParse).parse(ideas);
 
+function extractMetadata(text: string): Record<string, any> {
+  // Match all instances of {{ ... }}
+  const metadataRegex = /{{([^}]+)}}/g;
+  const matches = text.matchAll(metadataRegex);
+
+  // Merge all metadata objects together
+  return Array.from(matches).reduce((acc, match) => {
+    try {
+      // Parse the JSON inside the curly braces
+      const metadata = JSON.parse(match[1]);
+      return { ...acc, ...metadata };
+    } catch (e) {
+      // If JSON parsing fails, skip this token
+      console.warn(`Failed to parse metadata: ${match[1]}`);
+      return acc;
+    }
+  }, {});
+}
+
 // Iterate over root's direct children that are lists
 ast.children
   .filter((node) => node.type === "list")
@@ -16,7 +35,9 @@ ast.children
       if (item.type === "listItem") {
         const startIndex = item.children[0].position?.start?.offset;
         const endIndex = item.children[item.children.length - 1].position?.end?.offset;
-        console.log(`List item ${i + 1}:`, ideas.slice(startIndex, endIndex));
+        const text = ideas.slice(startIndex, endIndex);
+        const metadata = extractMetadata(text);
+        console.log(text, metadata);
       }
     });
   });
