@@ -29,6 +29,7 @@ Pros:
 Cons:
 - There are a lot more duplicate names in the workspace than would usually be the case, so jumping to files with cmd+p requires more specificity.
 - Developing the rest api which reads, writes, and commits to the same repo the code lives was a pain. Easy to shoot myself in the foot.
+- As a note-taking app, it's user interface isn't nearly as nice as apps like Notion or Obsidian.
 
 
 
