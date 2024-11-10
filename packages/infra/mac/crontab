@@ -1,3 +1,4 @@
-0 0 * * * cd /Users/taylormitchell/Code/home/packages/kindle-highlights && ~/.bun/bin/bun index.ts >> ~/Dropbox/data/logs/crontab.log 2>&1
-* * * * * . /Users/taylormitchell/Code/home/packages/infra/mac/sync.sh >> ~/Dropbox/data/logs/crontab.log 2>&1
+0 0 * * * cd ~/Code/home/packages/kindle-highlights && ~/.bun/bin/bun index.ts | ~/Code/home/packages/infra/mac/log.sh "kindle-highlights"
+# * * * * * . ~/Code/home/packages/infra/mac/sync.sh | ~/Code/home/packages/infra/mac/log.sh "sync"
+
 
