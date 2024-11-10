@@ -15,10 +15,7 @@ instructions to tell cursor it's meant to help me with my notes.
 
 On mobile, I use [Working Copy](https://workingcopy.app/) to access my notes and projects. I've got a few iOS shortcuts set up to quickly create a note or open notes I commonly use.
 
-
-
-
-I keep all my todos interspersed across my notes and packages. I have a [todo cli](/packages/todo-cli/README.md) which can list and filter these todos.
+I'm also using it for my todos. I have them interspersed throughout the repo, and use [todo cli](/packages/todo-cli/README.md) to list and filter them.
 
 The [note cli](/packages/note-cli/README.md) has a few commands to help me quickly create or open notes. I primarily use it to create a "post" note whose filename is just a timestamp and then opens in cursor. I use this to jot down ideas without needing to think about where it's saved. I also have a few commands for creating and opening daily/weekly notes.
 
