@@ -11,16 +11,15 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
 fi
 
 # # Fetch the latest changes without merging
-echo "Fetching latest changes"
+echo "Fetching origin/main"
 git fetch -q origin main
 
-# # Check if there are any uncommitted changes
 if ! git diff --quiet HEAD; then
     echo "Staging all changes"
-    # Stage all changes
-    git add -Aq
-    # Commit with message "save"
-    git commit -mq "save"
+    git add -A
+    git commit -q -m "save"
+else
+    echo "No changes to commit"
 fi
 
 # Check if pulling would result in conflicts
@@ -34,13 +33,13 @@ REMOTE_TREE=$(git rev-parse origin/main)
 if [ "$MERGE_BASE" != "$LOCAL_TREE" ] && [ "$MERGE_BASE" != "$REMOTE_TREE" ]; then
     # Try to merge without committing to check for conflicts
     if ! git merge-tree "$MERGE_BASE" "$LOCAL_TREE" "$REMOTE_TREE" | grep -q "^+<<<<<<< "; then
-        # No conflicts detected, safe to pull
-        git pull origin main
+        echo "No conflicts detected, pulling"
+        git pull -q origin main
     else
         echo "Potential conflicts detected. Aborting sync."
         exit 1
     fi
 fi
 
-# # Push changes to remote
-git push origin main
+echo "Pushing to origin/main"
+git push -q origin main
