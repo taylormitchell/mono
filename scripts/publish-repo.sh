@@ -25,10 +25,10 @@ mkdir "$NEW_REPO_PATH"
 rsync -av --exclude="data" --exclude=".git" --exclude=".github" --exclude=".vscode" --exclude="node_modules" ./ "$NEW_REPO_PATH"
 
 # Create data directory and add .gitignore
-# mkdir -p "$NEW_REPO_PATH/data" && touch "$NEW_REPO_PATH/data/.gitignore"
 mkdir -p "$NEW_REPO_PATH/data"
-echo "# Personal data removed for privacy" > "$NEW_REPO_PATH/data/.gitignore"
-echo "*" >> "$NEW_REPO_PATH/data/.gitignore"
+echo "# Data Directory
+
+This directory has been excluded from the public mirror of this repository." > "$NEW_REPO_PATH/data/README.md"
 
 # Navigate to the new repository directory
 cd "$NEW_REPO_PATH"
