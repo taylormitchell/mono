@@ -19,7 +19,7 @@ I'm also using it for my todos. I have them interspersed throughout the repo, an
 
 I've got a few side-project apps in here. All of them so far are for personal use only. For example I've got a [rest api](/packages/api/README.md) to read and write from this repo, and a few web apps which use it (e.g. [logging app](/packages/log-web/README.md)). A fair number of the projects I started on one day and haven't touched since. I'm not intending this to be a curated list of my best work, but more just a place I can throw anything.
 
-# How it's going
+## How it's going
 
 Pros:
 - I have quick access to all my projects and notes.
@@ -29,17 +29,7 @@ Pros:
 Cons:
 - There are a lot more duplicate names in the workspace than would usually be the case, so jumping to files with cmd+p requires more specificity.
 - Developing the rest api which reads, writes, and commits to the same repo the code lives was a pain. Easy to shoot myself in the foot.
-- As a note-taking app, it's user interface isn't nearly as nice as apps like Notion or Obsidian.
-
-
-
-It's a bit of an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
-
-It's also an experiment in workspace maximalism. I always have the entire repo open in cursor, so I have quick access to all my projects and even notes. This has some pros and cons so far. It's nice to be able to quickly jump between projects and notes. I use cursor to write a lot of code these days, and it's nice to be able to say to it e.g. "Create a component which interfaces with the @api. See @other-project for reference". A downside is that the top result of a cmd+p search isn't always the file I want. Usually you'd only have one README.md or tsconfig.json in a workspace, but now there are lots, so I've needed to teach my fingers to be more specific e.g. type "log README" to jump to the logging repo README.
-
-
-
-
+- As a note-taking app, it's user interface isn't nearly as nice as apps like Notion or Obsidian. I'm also used to having a separation between my code and notes and tabbing between them, so it takes a bit of getting used to to have them mixed together.
 
 ## Dev ops
 
@@ -48,8 +38,3 @@ The [infra](/packages/infra) folder contains some scripts to deploy to my variou
 I have a [sync script](/packages/infra/mac/sync.sh) which automatically commits, pulls, and pushes to github. It runs every minute via a cron job. This would be a crazy set up if working with a team, but for personal stuff I find I'm hardly ever using commits or branches. I just want a history of changes and a remote I can access from anywhere which stays in sync. It'll only sync the main branch, so if I do want to work on something without syncing, I just create a new branch.
 
 The main repo is private, but I publish a public version with private data excluded to [public-home](https://github.com/taylormitchell/public-home) daily using a [github action](.github/workflows/publish-repo.yaml). 
-
-# Archive
-- It's an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
-- It's an experiment in workspace maximalism. What if I just had one workspace open all the time, which included *all* my projects and notes?
-- It's also an experiment in mixing code and data. For example, I've got a [rest api](/packages/api/README.md) which is used for web apps like [this logging app](packages/log-web/README.md). The api is in the repo, and the data it's serving is too. When the logging app posts data, the api appends it to the relevant file and then commits and pushes to the remote repo. This feels super weird when I've got my professional software engineer hat on. But if I think of the repo as just a file system with the added benefit of a git history, then keeping code and data together makes sense. I don't think this set up would work for a team or production apps, but for personal stuff it's working well so far.
