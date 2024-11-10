@@ -11,14 +11,16 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
 fi
 
 # # Fetch the latest changes without merging
+echo "Fetching latest changes"
 git fetch -q origin main
 
 # # Check if there are any uncommitted changes
 if ! git diff --quiet HEAD; then
+    echo "Staging all changes"
     # Stage all changes
-    git add -A
+    git add -Aq
     # Commit with message "save"
-    git commit -m "save"
+    git commit -mq "save"
 fi
 
 # Check if pulling would result in conflicts
