@@ -14,8 +14,8 @@ ast.children
     // Iterate over list items
     list.children.forEach((item, i) => {
       if (item.type === "listItem") {
-        const startIndex = item.position?.start?.offset;
-        const endIndex = item.position?.end?.offset;
+        const startIndex = item.children[0].position?.start?.offset;
+        const endIndex = item.children[item.children.length - 1].position?.end?.offset;
         console.log(`List item ${i + 1}:`, ideas.slice(startIndex, endIndex));
       }
     });
