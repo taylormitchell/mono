@@ -16,3 +16,5 @@ instructions to tell cursor it's meant to help me with my notes
 
 
 Keeping everything in the same repo 
+
+The [infra](/packages/infra) folder contains some scripts to deploy to my mac and ec2 instances. All web apps are deployed to ec2. The cli apps and cron jobs are deployed to my mac.
