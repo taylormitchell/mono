@@ -31,7 +31,7 @@ REMOTE_TREE=$(git rev-parse origin/main)
 # If merge-base is different from either local or remote, we need to check for conflicts
 if [ "$MERGE_BASE" != "$LOCAL_TREE" ] && [ "$MERGE_BASE" != "$REMOTE_TREE" ]; then
     # Try to merge without committing to check for conflicts
-    if ! git merge-tree "$MERGE_BASE" "$LOCAL_TREE" "$REMOTE_TREE" | grep -q "^<<<<<<< "; then
+    if ! git merge-tree "$MERGE_BASE" "$LOCAL_TREE" "$REMOTE_TREE" | grep -q "^+<<<<<<< "; then
         # No conflicts detected, safe to pull
         git pull origin main
     else
