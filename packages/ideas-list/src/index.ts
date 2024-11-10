@@ -16,7 +16,7 @@ function extractMetadata(text: string): Record<string, any> {
   return Array.from(matches).reduce((acc, match) => {
     try {
       // Parse the JSON inside the curly braces
-      const metadata = JSON.parse(match[1]);
+      const metadata = JSON.parse("{" + match[1] + "}");
       return { ...acc, ...metadata };
     } catch (e) {
       // If JSON parsing fails, skip this token
