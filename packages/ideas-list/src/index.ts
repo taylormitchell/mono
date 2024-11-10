@@ -1,7 +1,6 @@
 import { readFileSync } from "fs";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
-import { parseFlexibleJson } from "./parser";
 
 export function parseFlexibleJson(input: string): Record<string, any> {
   // Remove whitespace
@@ -135,7 +134,7 @@ function extractMetadata(text: string): {
   };
 }
 
-const ideas = readFileSync("/Users/taylormitchell/code/home/data/notes/ideas-list.md", "utf-8");
+const ideas = readFileSync("/../../data/notes/ideas-list.md", "utf-8");
 const ast = unified().use(remarkParse).parse(ideas);
 
 // Iterate over root's direct children that are lists
