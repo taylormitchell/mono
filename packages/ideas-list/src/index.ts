@@ -98,14 +98,27 @@ function splitTopLevel(input: string, delimiter: string): string[] {
   return results;
 }
 
-function extractMetadata(text: string): Record<string, any> {
+function extractMetadata(text: string): {
+  metadata: Record<string, any>;
+  positions: Array<{ start: number; end: number }>;
+} {
   // Match all instances of {{ ... }}
   const metadataRegex = /{{([^}]+)}}/g;
   const matches = text.matchAll(metadataRegex);
 
+  const positions: Array<{ start: number; end: number }> = [];
+
   // Merge all metadata objects together
-  return Array.from(matches).reduce((acc, match) => {
+  const metadata = Array.from(matches).reduce((acc, match) => {
     try {
+      // Store the start and end positions
+      if (match.index !== undefined) {
+        positions.push({
+          start: match.index,
+          end: match.index + match[0].length,
+        });
+      }
+
       // Parse the JSON inside the curly braces
       const metadata = parseFlexibleJson("{" + match[1] + "}");
       return { ...acc, ...metadata };
@@ -115,6 +128,11 @@ function extractMetadata(text: string): Record<string, any> {
       return acc;
     }
   }, {});
+
+  return {
+    metadata,
+    positions,
+  };
 }
 
 const ideas = readFileSync("/Users/taylormitchell/code/home/data/notes/ideas-list.md", "utf-8");
@@ -130,7 +148,8 @@ ast.children
         const startIndex = item.children[0].position?.start?.offset;
         const endIndex = item.children[item.children.length - 1].position?.end?.offset;
         const text = ideas.slice(startIndex, endIndex);
-        const metadata = extractMetadata(text);
+        const { metadata, positions } = extractMetadata(text);
+
         console.log(text, metadata);
       }
     });
