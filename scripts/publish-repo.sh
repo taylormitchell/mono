@@ -24,6 +24,11 @@ mkdir "$NEW_REPO_PATH"
 # Use rsync to copy files, excluding the specified directory and the .git directory
 rsync -av --exclude="data" --exclude=".git" --exclude=".github" --exclude=".vscode" --exclude="node_modules" ./ "$NEW_REPO_PATH"
 
+# Create data directory and add .gitignore
+mkdir -p "$NEW_REPO_PATH/data"
+echo "# Personal data removed for privacy" > "$NEW_REPO_PATH/data/.gitignore"
+echo "*" >> "$NEW_REPO_PATH/data/.gitignore"
+
 # Navigate to the new repository directory
 cd "$NEW_REPO_PATH"
 
