@@ -4,8 +4,8 @@
 set -e
 
 # Configuration Variables (modify these as needed)
-NEW_REPO_URL="https://github.com/taylormitchell/mono.git"  # URL of your new public GitHub repository
-NEW_REPO_PATH="/tmp/mono"
+NEW_REPO_URL="https://github.com/taylormitchell/public-mono.git"  # URL of your new public GitHub repository
+NEW_REPO_PATH="/tmp/public-mono"
 
 # Check if the script is run inside a Git repository
 if [ ! -d ".git" ]; then
