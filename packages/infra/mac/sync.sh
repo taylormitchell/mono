@@ -39,6 +39,8 @@ if [ "$MERGE_BASE" != "$LOCAL_TREE" ] && [ "$MERGE_BASE" != "$REMOTE_TREE" ]; th
         echo "Potential conflicts detected. Aborting sync."
         exit 1
     fi
+else
+    echo "No remote changes to pull"
 fi
 
 echo "Pushing to origin/main"
