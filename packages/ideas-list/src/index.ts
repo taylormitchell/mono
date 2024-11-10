@@ -152,7 +152,6 @@ ast.children
 
         // Remove metadata tokens from text
         let cleanText = text;
-        // Process positions from end to start to avoid shifting indices
         for (let i = positions.length - 1; i >= 0; i--) {
           let { start, end } = positions[i];
           // If the metadata is surrounded by spaces, remove one space from the start and end
@@ -160,7 +159,15 @@ ast.children
           cleanText = cleanText.slice(0, start) + cleanText.slice(end);
         }
         cleanText = cleanText.trim();
-        console.log({ cleanText, metadata });
+
+        const lines = cleanText.split("\n");
+        const title = lines[0].trim();
+        const body = lines
+          .slice(1)
+          .map((line) => line.trim())
+          .join("\n");
+
+        console.log({ title, body, data: metadata });
       }
     });
   });
