@@ -2,11 +2,11 @@
 
 A home for my personal digital life. 
 
-This is a fairly new set up, and I'm still figuring out what works and doesn't. But so far I'm thinking of it as an experiment across a few overlapping fronts:
+This is a fairly new set up, and I'm still figuring out what works and doesn't. But so far I'm thinking of it as an experiment across a few overlapping fronts: 
 
-- It's an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
-- It's an experiment in workspace maximalism. What if I just had one workspace open all the time, which included *all* my projects and notes?
-- It's also an experiment in mixing code and data. For example, I've got a [rest api](/packages/api/README.md) which is used for web apps like [this logging app](packages/log-web/README.md). The api is in the repo, and the data it's serving is too. When the logging app posts data, the api appends it to the relevant file and then commits and pushes to the remote repo. This feels super weird when I've got my professional software engineer hat on. But if I think of the repo as just a file system with the added benefit of a git history, then keeping code and data together makes sense. I don't think this set up would work for a team or production apps, but for personal stuff it's working well so far.
+- Mono-repo maximalism: Put as much of my personal files in a single repo as possible.
+- Workspace maximalism: Keep a single cursor workspace open all the time which includes *all* my projects and notes.
+- Code/data mixing: Keep related code and data together. For example, the [rest api](/packages/api/README.md) serves data for the [logging app](/packages/log-web/README.md).
 
 ## How I use it
 
@@ -40,3 +40,7 @@ I have a [sync script](/packages/infra/mac/sync.sh) which automatically commits,
 
 The main repo is private, but I publish a public version with private data excluded to [public-home](https://github.com/taylormitchell/public-home) daily using a [github action](.github/workflows/publish-repo.yaml). 
 
+# Archive
+- It's an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
+- It's an experiment in workspace maximalism. What if I just had one workspace open all the time, which included *all* my projects and notes?
+- It's also an experiment in mixing code and data. For example, I've got a [rest api](/packages/api/README.md) which is used for web apps like [this logging app](packages/log-web/README.md). The api is in the repo, and the data it's serving is too. When the logging app posts data, the api appends it to the relevant file and then commits and pushes to the remote repo. This feels super weird when I've got my professional software engineer hat on. But if I think of the repo as just a file system with the added benefit of a git history, then keeping code and data together makes sense. I don't think this set up would work for a team or production apps, but for personal stuff it's working well so far.
