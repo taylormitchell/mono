@@ -55,7 +55,7 @@ git push -uf origin main
 
 # Clean up the temporary directory
 cd -
-rm -rf "$NEW_REPO_PATH"
+# rm -rf "$NEW_REPO_PATH"
 
 echo "Repository published to $NEW_REPO_URL"
 
