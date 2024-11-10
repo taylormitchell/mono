@@ -11,19 +11,10 @@ This is a fairly new set up, and I'm still figuring out what works and doesn't. 
 ## How I'm using it
 
 So far I've been using it for my notes and side projects. I keep a single cursor workspace open all day with the repo open. In [.cursorrules](.cursorrules) I've added some
-instructions to tell cursor it's meant to help me with my notes 
+instructions to tell cursor it's meant to help me with my notes.
 
+On mobile, I use [Working Copy](https://workingcopy.app/) to access my notes and projects. I've got a few iOS shortcuts set up to quickly create a note or open notes I commonly use.
 
-- I keep the repo open in cursor most of the day. In [.cursorrules](.cursorrules) I've added some
-instructions to tell cursor it's meant to help me with my notes 
-
-
-
-- All my personal notes are in [data](/data).
-- All my side projects are in [packages](/packages).
-- I keep the repo open in cursor most of the day. In [.cursorrules](.cursorrules) I've added some
-instructions to tell cursor it's meant to help me with my notes 
-- I use [Working Copy](https://workingcopy.app/) on iOS to access my notes and projects. I've got a few shortcuts set up to create a quick note or open my daily note.
 
 
 
