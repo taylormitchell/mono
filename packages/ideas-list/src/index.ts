@@ -159,7 +159,8 @@ ast.children
           if (cleanText[start - 1] === " " && cleanText[end] === " ") start--;
           cleanText = cleanText.slice(0, start) + cleanText.slice(end);
         }
-        console.log(text, metadata);
+        cleanText = cleanText.trim();
+        console.log({ cleanText, metadata });
       }
     });
   });
