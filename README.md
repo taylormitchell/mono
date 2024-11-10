@@ -20,3 +20,5 @@ Keeping everything in the same repo
 The [infra](/packages/infra) folder contains some scripts to deploy to my mac and ec2 instances. All web apps are deployed to ec2. The cli apps and cron jobs are deployed to my mac.
 
 I have a [sync script](/packages/infra/mac/sync.sh) which automatically commits, pulls, and pushes to github. It runs every minute via a cron job. This would be a crazy set up if working with a team, but for personal stuff I find I'm hardly ever using commits or branches. I just want a history of changes and a remote I can access from anywhere which stays in sync.
+
+I keep all my todos interspersed across my notes and packages. I have a [todo cli](/packages/todo-cli/README.md) which can list and filter these todso.
