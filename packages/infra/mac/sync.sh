@@ -11,7 +11,7 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
 fi
 
 # # Fetch the latest changes without merging
-git fetch origin main
+git fetch -q origin main
 
 # # Check if there are any uncommitted changes
 if ! git diff --quiet HEAD; then
