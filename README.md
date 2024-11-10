@@ -8,7 +8,16 @@ This is a fairly new set up, and I'm still figuring out what works and doesn't. 
 - Workspace maximalism: Keep a single cursor workspace open all the time which includes *all* my projects and notes.
 - Code/data mixing: Keep related code and data together in the same repo. Apps use files within the repo as a backend whenever possible.
 
-## How I'm use it
+## How I'm using it
+
+So far I've been using it for my notes and side projects. I keep a single cursor workspace open all day with the repo open. In [.cursorrules](.cursorrules) I've added some
+instructions to tell cursor it's meant to help me with my notes 
+
+
+- I keep the repo open in cursor most of the day. In [.cursorrules](.cursorrules) I've added some
+instructions to tell cursor it's meant to help me with my notes 
+
+
 
 - All my personal notes are in [data](/data).
 - All my side projects are in [packages](/packages).
