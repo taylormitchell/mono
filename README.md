@@ -16,7 +16,7 @@ The [infra](/packages/infra) folder contains some scripts to deploy to my variou
 
 I have a [sync script](/packages/infra/mac/sync.sh) which automatically commits, pulls, and pushes to github. It runs every minute via a cron job. This would be a crazy set up if working with a team, but for personal stuff I find I'm hardly ever using commits or branches. I just want a history of changes and a remote I can access from anywhere which stays in sync. It'll only sync the main branch, so if I do want to work on something without syncing, I just create a new branch.
 
-The main repo is private, but I publish a public version to [public-home](https://github.com/taylormitchell/public-home) daily using a [github action](.github/workflows/publish-repo.yaml).
+The main repo is private, but I publish a public version with private data excluded to [public-home](https://github.com/taylormitchell/public-home) daily using a [github action](.github/workflows/publish-repo.yaml). 
 
 ## How I use it
 
