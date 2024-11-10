@@ -1,6 +1,22 @@
 # Home
 
-A home for my personal digital life. At the moment it's mainly my personal notes and side projects. 
+A home for my personal digital life. 
+
+
+It's a bit of an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
+
+
+One kinda wacky thing I'm doing is including app data inside the repo too. For example, I've got a [rest api](/packages/api/README.md) which is used for web apps like [this logging app](packages/log-web/README.md). The api is in the repo, and the data it's serving is too. When the logging app posts data, the api appends it to the relevant file and then commits and pushes to the remote repo.
+
+
+
+One aspect of this that's against the grain of today's best practices in software engineering is intermixing code and data.  
+
+
+
+At the moment it's mainly my personal notes and side projects. A few of the side projects 
+
+
 
 If you're reading this, you're seeing the public version of this repository, which excludes private data,
 including my notes which would usually be in [data](/data).
