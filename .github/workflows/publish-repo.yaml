@@ -1,9 +1,12 @@
 name: Publish Repository
 
 on:
+  schedule:
+    - cron: "0 0 * * *" # Run daily at midnight UTC
   push:
     branches:
       - main
+  workflow_dispatch: # Allows manual triggering from GitHub UI
 
 jobs:
   publish:
