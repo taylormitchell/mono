@@ -17,7 +17,7 @@ On mobile, I use [Working Copy](https://workingcopy.app/) to access my notes and
 
 I'm also using it for my todos. I have them interspersed throughout the repo, and use [todo cli](/packages/todo-cli/README.md) to list and filter them.
 
-The [note cli](/packages/note-cli/README.md) has a few commands to help me quickly create or open notes. I primarily use it to create a "post" note whose filename is just a timestamp and then opens in cursor. I use this to jot down ideas without needing to think about where it's saved. I also have a few commands for creating and opening daily/weekly notes.
+I've got a few side-project apps in here. All of them so far are for personal use only. For example I've got a [rest api](/packages/api/README.md) to read and write from this repo, and a few web apps which use it (e.g. [logging app](/packages/log-web/README.md)). A fair number of the projects I started on one day and haven't touched since. I'm not intending this to be a curated list of my best work, but more just a place I can throw anything.
 
 # How it's going
 
