@@ -12,9 +12,9 @@ ast.children
   .filter((node) => node.type === "list")
   .forEach((list) => {
     // Iterate over list items
-    list.children.forEach((item) => {
+    list.children.forEach((item, i) => {
       if (item.type === "listItem") {
-        console.log("List item children:", item.children);
+        console.log(`List item ${i + 1}:`, item);
       }
     });
   });
