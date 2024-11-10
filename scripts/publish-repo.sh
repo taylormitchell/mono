@@ -4,8 +4,8 @@
 set -e
 
 # Configuration Variables (modify these as needed)
-NEW_REPO_URL="https://github.com/taylormitchell/public-mono.git"  # URL of your new public GitHub repository
-NEW_REPO_PATH="/tmp/public-mono"
+NEW_REPO_URL="https://github.com/taylormitchell/public-home.git"  # URL of your new public GitHub repository
+NEW_REPO_PATH="/tmp/public-home"
 
 # Check if the script is run inside a Git repository
 if [ ! -d ".git" ]; then
@@ -26,9 +26,7 @@ rsync -av --exclude="data" --exclude=".git" --exclude=".github" --exclude=".vsco
 
 # Create data directory and add .gitignore
 mkdir -p "$NEW_REPO_PATH/data"
-echo "# Data Directory
-
-This directory included private data so was excluded from the public mirror" > "$NEW_REPO_PATH/data/README.md"
+echo "This directory included private data so was excluded from the public mirror" > "$NEW_REPO_PATH/data/README.md"
 
 # Navigate to the new repository directory
 cd "$NEW_REPO_PATH"
