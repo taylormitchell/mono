@@ -4,7 +4,7 @@ A home for my personal digital life.
 
 It's a bit of an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
 
-So far it's just my recent personal notes and side projects. 
+So far it's just my recent personal notes and side projects. The notes are usually in [data](/data) but aren't included in the public version of the repo.
 
 One kinda wacky thing I'm doing is including app data inside the repo too. For example, I've got a [rest api](/packages/api/README.md) which is used for web apps like [this logging app](packages/log-web/README.md). The api is in the repo, and the data it's serving is too. When the logging app posts data, the api appends it to the relevant file and then commits and pushes to the remote repo. This feels super weird when I've got my professional software engineer hat on. But if I think of the repo as just a file system with the added benefit of a git history, then keeping code and data together makes sense. I don't think this set up would work for a team or production apps, but for personal stuff it's working well so far.
 
@@ -14,8 +14,7 @@ One kinda wacky thing I'm doing is including app data inside the repo too. For e
 
 
 
-If you're reading this, you're seeing the public version of this repository, which excludes private data,
-including my notes which would usually be in [data](/data).
+
 
 
 
