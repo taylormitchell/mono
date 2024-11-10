@@ -21,6 +21,11 @@ I've got a few side-project apps in here. All of them so far are for personal us
 
 # How it's going
 
+Pros:
+- I have quick access to all my projects and notes.
+- It's easy to provide cursor with the context it needs, which is especially helpful for inter-related projects.
+- It's much easier to add custom commands and workflows compared to web-based note-taking apps.
+
 It's a bit of an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
 
 It's also an experiment in workspace maximalism. I always have the entire repo open in cursor, so I have quick access to all my projects and even notes. This has some pros and cons so far. It's nice to be able to quickly jump between projects and notes. I use cursor to write a lot of code these days, and it's nice to be able to say to it e.g. "Create a component which interfaces with the @api. See @other-project for reference". A downside is that the top result of a cmd+p search isn't always the file I want. Usually you'd only have one README.md or tsconfig.json in a workspace, but now there are lots, so I've needed to teach my fingers to be more specific e.g. type "log README" to jump to the logging repo README.
