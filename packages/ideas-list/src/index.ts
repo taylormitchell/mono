@@ -150,6 +150,15 @@ ast.children
         const text = ideas.slice(startIndex, endIndex);
         const { metadata, positions } = extractMetadata(text);
 
+        // Remove metadata tokens from text
+        let cleanText = text;
+        // Process positions from end to start to avoid shifting indices
+        for (let i = positions.length - 1; i >= 0; i--) {
+          let { start, end } = positions[i];
+          // If the metadata is surrounded by spaces, remove one space from the start and end
+          if (cleanText[start - 1] === " " && cleanText[end] === " ") start--;
+          cleanText = cleanText.slice(0, start) + cleanText.slice(end);
+        }
         console.log(text, metadata);
       }
     });
