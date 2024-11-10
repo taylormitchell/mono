@@ -14,7 +14,7 @@ One kinda wacky thing I'm doing is including app data inside the repo too. For e
 
 The [infra](/packages/infra) folder contains some scripts to deploy to my various machines. All web apps are deployed to a single ec2 instance. The cli apps and cron jobs are deployed to my mac. I've got a couple configs for my pc too.
 
-I have a [sync script](/packages/infra/mac/sync.sh) which automatically commits, pulls, and pushes to github. It runs every minute via a cron job. This would be a crazy set up if working with a team, but for personal stuff I find I'm hardly ever using commits or branches. I just want a history of changes and a remote I can access from anywhere which stays in sync.
+I have a [sync script](/packages/infra/mac/sync.sh) which automatically commits, pulls, and pushes to github. It runs every minute via a cron job. This would be a crazy set up if working with a team, but for personal stuff I find I'm hardly ever using commits or branches. I just want a history of changes and a remote I can access from anywhere which stays in sync. It'll only sync the main branch, so if I do want to work on something without syncing, I just create a new branch.
 
 
 ## How I use it
