@@ -31,30 +31,22 @@ echo "This directory included private data so was excluded from the public mirro
 # Navigate to the new repository directory
 cd "$NEW_REPO_PATH"
 
-# Remove any .git directories that might have been copied (just in case)
+echo "Initializing new Git repository"
 rm -rf .git
-
-# Initialize a new Git repository
 git init
-
-# Rename the main branch to "main"
 git branch -m main
 
-# Add all files to the new repository
+echo "Adding all files to the new repository"
 git add .
-
-# Commit the files
 git commit -m "Public version"
 
-# Add the new remote origin
+echo "Pushing to the public repository"
 git remote add origin "$NEW_REPO_URL"
-
-# Push to the public repository
 git push -uf origin main
 
-# Clean up the temporary directory
+echo "Cleaning up"
 cd -
-# rm -rf "$NEW_REPO_PATH"
+rm -rf "$NEW_REPO_PATH"
 
 echo "Repository published to $NEW_REPO_URL"
 
