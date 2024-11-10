@@ -1,8 +1,8 @@
 # Home
 
-This README is a WIP. 
-
 A home for my personal digital life. 
+
+This is an experiment in a few different things:
 
 It's a bit of an experiment in mono-repo maximalism. What if I put *all* my personal stuff in a single repo? It would get absurdly large if I included all images and videos, but a lot of my digital life exists in the form of text, so it might be reasonable for that. 
 
