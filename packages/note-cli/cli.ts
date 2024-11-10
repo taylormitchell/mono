@@ -14,7 +14,6 @@ import { getRepoRoot, getRootDir } from "@common/data";
 import { readFileSync } from "fs";
 import { addLogEntry, getTodayLogEvents } from "@common/logs/utils";
 import { LogEntry, parseDuration, formatDuration, LogEntrySchema } from "@common/logs/types";
-import { writeFileSync, mkdirSync } from "fs";
 
 const program = new Command();
 
@@ -182,41 +181,6 @@ program
       });
     } else {
       console.log("No log events for today.");
-    }
-  });
-
-program
-  .command("save-url <url>")
-  .description("Download a webpage or PDF, convert to markdown using pandoc, and store in the repo")
-  .action(async (url) => {
-    try {
-      const storageDir = path.join(getRootDir(), "saved-content");
-      mkdirSync(storageDir, { recursive: true });
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const baseFilename = path.join(storageDir, timestamp);
-      const tempFile = `${baseFilename}.temp`;
-
-      // Download the content
-      execSync(`curl -L "${url}" -o "${tempFile}"`);
-
-      // Convert to markdown using pandoc
-      const mdContent = `---
-source_url: ${url}
-date_saved: ${new Date().toISOString()}
----
-
-${execSync(`pandoc -f html -t markdown "${tempFile}"`, { encoding: "utf8" })}`;
-
-      // Save the markdown file
-      writeFileSync(`${baseFilename}.md`, mdContent);
-
-      // Clean up temp file
-      execSync(`rm "${tempFile}"`);
-
-      console.log(`Content saved successfully from: ${url}`);
-    } catch (error) {
-      console.error("Error saving content:", error);
     }
   });
 
