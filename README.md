@@ -10,7 +10,7 @@ So far it's just my recent personal notes and side projects. The notes are usual
 
 One kinda wacky thing I'm doing is including app data inside the repo too. For example, I've got a [rest api](/packages/api/README.md) which is used for web apps like [this logging app](packages/log-web/README.md). The api is in the repo, and the data it's serving is too. When the logging app posts data, the api appends it to the relevant file and then commits and pushes to the remote repo. This feels super weird when I've got my professional software engineer hat on. But if I think of the repo as just a file system with the added benefit of a git history, then keeping code and data together makes sense. I don't think this set up would work for a team or production apps, but for personal stuff it's working well so far.
 
-## Setup
+## Dev ops
 
 The [infra](/packages/infra) folder contains some scripts to deploy to my mac and ec2 instances. All web apps are deployed to ec2. The cli apps and cron jobs are deployed to my mac.
 
