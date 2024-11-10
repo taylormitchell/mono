@@ -6,9 +6,9 @@ This is a fairly new set up, and I'm still figuring out what works and doesn't. 
 
 - Mono-repo maximalism: Put as much of my personal files in a single repo as possible.
 - Workspace maximalism: Keep a single cursor workspace open all the time which includes *all* my projects and notes.
-- Code/data mixing: Keep related code and data together. For example, the [rest api](/packages/api/README.md) serves data for the [logging app](/packages/log-web/README.md).
+- Code/data mixing: Keep related code and data together in the same repo. Apps use files within the repo as a backend whenever possible.
 
-## How I use it
+## How I'm use it
 
 - All my personal notes are in [data](/data).
 - All my side projects are in [packages](/packages).
