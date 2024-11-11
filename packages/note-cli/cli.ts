@@ -52,6 +52,8 @@ program
     p = createPost(p, options.message);
     if (!options.message) {
       openFile(p);
+    } else {
+      console.log(`Created post at ${p}`);
     }
   });
 
