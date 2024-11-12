@@ -104,9 +104,9 @@ program
   });
 
 program
-  .command("diffs")
-  .description("Show diffs of recent changes in notes")
-  .option("--since <time>", "Time range for diffs (e.g., '7 days ago')", "7 days ago")
+  .command("diff")
+  .description("Show diff of recent changes in notes")
+  .option("--since <time>", "Time range for diff (e.g., '7 days ago')", "7 days ago")
   .action((options) => {
     const scriptPath = path.join(__dirname, "scripts", "git-diff.sh");
     const command = `bash "${scriptPath}" "${options.since}"`;

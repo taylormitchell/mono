@@ -16,5 +16,10 @@ Open today's daily note.
 bun cli.ts daily
 ```
 
+Post a quick note.
+
+```
+bun cli.ts post -m <message>
+```
 
 
