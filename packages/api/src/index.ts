@@ -48,12 +48,6 @@ const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
 const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
 const SYNC_ENABLED = parsed?.SYNC_ENABLED === "true";
 const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
-log.info("env:", {
-  AUTH_DISABLED,
-  COMMIT_ON_SAVE,
-  SYNC_ENABLED,
-  ADMIN_PASSWORD,
-});
 
 function commitAndPush(filePath: string, message?: string) {
   message = message || `Save ${filePath}`;
