@@ -23,24 +23,20 @@ curl -X PATCH http://localhost:3077/api/files/path/to/file.md \
   -d '{"method": "append", "content": "\n\nAppended content"}'
 ```
 
-Add a todo to today's note:
+Add log entry:
 ```bash
-curl -X POST http://localhost:3077/api/todos/today \
+curl -X POST http://localhost:3077/api/log \
   -H "Content-Type: application/json" \
-  -d '{"text": "Write documentation", "status": "TODO"}'
+  -d '{
+    "type": "meditated",
+    "datetime": "2024-04-15T14:30:00-04:00",
+    "duration": "20m",
+    "message": "Morning meditation"
+  }'
 ```
 
-Get today's daily note:
-```bash
-curl http://localhost:3077/api/note/daily
-```
 
-Create a new post:
-```bash
-curl -X POST http://localhost:3077/api/note/post/blog \
-  -H "Content-Type: application/json" \
-  -d '{"content": "# My New Post\n\nThis is a blog post."}'
-```
+
 
 
 
