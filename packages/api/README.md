@@ -1,6 +1,8 @@
 # REST API
 
-This is a simple REST API for serving and adding files to my notes. Check out the [logging web app](../log-web/README.md) for an example frontend to this API.
+A REST API for serving and editing files in this [home repo](../../README.md). When changes are made via this API, they are committed to the repo and synced to the server.
+
+For an example frontend to this API, check out the [logging web app](../log-web/README.md).
 
 ## Basic Usage
 
