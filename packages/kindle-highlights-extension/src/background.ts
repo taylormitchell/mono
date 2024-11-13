@@ -63,7 +63,7 @@ async function fetchHighlights(): Promise<void> {
       console.debug("Books with annotations:", booksByAsin);
 
       // Compare with cached books if exists
-      const cachedBooks = await chrome.storage.local.get("cachedBooks");
+      const cachedBooks = (await chrome.storage.local.get("cachedBooks"))?.cachedBooks;
       console.debug("Cached books:", cachedBooks);
       if (cachedBooks) {
         const cachedMap = new Map(Object.entries(cachedBooks));
@@ -83,7 +83,7 @@ async function fetchHighlights(): Promise<void> {
       } else {
         console.log("No cached books found", cachedBooks);
       }
-      await chrome.storage.local.set(Object.fromEntries(booksByAsin));
+      await chrome.storage.local.set({ cachedBooks: Object.fromEntries(booksByAsin) });
 
       // Save annotations
       const bookAnnotations = Array.from(booksByAsin.values())
