@@ -40,34 +40,29 @@ async function fetchHighlights(): Promise<void> {
       const html = await booksResponse.text();
       const books = await parseHtml<Book[]>({ type: "get-books", html });
       console.debug("Number of books:", books.length);
+      const booksByAsin = new Map<string, Book>();
+      books.forEach((book) => {
+        booksByAsin.set(book.asin, book);
+      });
 
       // Get annotations for each book
       console.debug("Getting all annotations");
-      const annotationsGroupedByBook = (
-        await Promise.all(
-          books.map(async (book) => {
-            const response = await fetch(
-              `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
-              {
-                method: "GET",
-              }
-            );
-            const html = await response.text();
-            const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
-            return annotations.map((annotation) => ({ ...annotation, ...book }));
-          })
-        )
-      )
-        .filter((annotations) => annotations.length > 0)
-        .sort((a, b) => {
-          if (a[0].asin < b[0].asin) return -1;
-          if (a[0].asin > b[0].asin) return 1;
-          if (a[0].id < b[0].id) return -1;
-          if (a[0].id > b[0].id) return 1;
-          return 0;
-        });
+      await Promise.all(
+        books.map(async (book) => {
+          const response = await fetch(
+            `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
+            {
+              method: "GET",
+            }
+          );
+          const html = await response.text();
+          const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
+          booksByAsin.set(book.asin, { ...book, annotations });
+        })
+      );
+
       annotationsGroupedByBook.forEach((annotations) => {
-        console.debug(`Book ${annotations[0].asin}: ${annotations.length} annotations`);
+        console.debug(`Book ${annotations.asin}: ${annotations.annotations.length} annotations`);
       });
 
       // Save annotations
