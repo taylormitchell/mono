@@ -64,6 +64,7 @@ async function fetchHighlights(): Promise<void> {
 
       // Compare with cached books if exists
       const cachedBooks = await chrome.storage.local.get("cachedBooks");
+      console.debug("Cached books:", cachedBooks);
       if (cachedBooks) {
         const cachedMap = new Map(Object.entries(cachedBooks));
         let allMatch = true;
