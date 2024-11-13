@@ -58,7 +58,7 @@ chrome.runtime.onMessage.addListener((message) => {
         el.textContent?.trim().startsWith("By:")
       );
       const author = authorElement?.textContent?.trim().replace(/^By:\s*/, "") ?? "";
-      return { asin, title, author };
+      return { asin, title, author, annotations: [] };
     });
     console.debug("books", books);
 

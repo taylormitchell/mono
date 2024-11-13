@@ -28,6 +28,7 @@ export type Book = {
   asin: string;
   title: string;
   author: string;
+  annotations: Annotation[];
 };
 
 export type Annotation = {
