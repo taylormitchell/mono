@@ -19,10 +19,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "manualSync") {
     fetchHighlights();
-    return true;
   }
 });
 
