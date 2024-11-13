@@ -39,6 +39,7 @@ async function fetchHighlights(): Promise<void> {
       const booksResponse = await fetch("https://read.amazon.com/notebook", { method: "GET" });
       const html = await booksResponse.text();
       const books = await parseHtml<Book[]>({ type: "get-books", html });
+      console.debug("Number of books:", books.length);
 
       // Get annotations for each book
       console.debug("Getting all annotations");
