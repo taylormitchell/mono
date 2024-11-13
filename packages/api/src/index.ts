@@ -1,12 +1,12 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getRootDir } from "@taylor/common/data";
-import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@taylor/common/note";
-import { addTodo, getTodos } from "@taylor/common/todo/parsers";
+import { getRootDir } from "@common/data";
+import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@common/note";
+import { addTodo, getTodos } from "@common/todo/parsers";
 import fs from "fs";
 import path from "path";
-import { deserializeTodo } from "@taylor/common/todo/types";
-import { addLogEntry } from "@taylor/common/logs/utils";
-import { LogEntrySchema } from "@taylor/common/logs/types";
+import { deserializeTodo } from "@common/todo/types";
+import { addLogEntry } from "@common/logs/utils";
+import { LogEntrySchema } from "@common/logs/types";
 import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
 import { execSync } from "child_process";

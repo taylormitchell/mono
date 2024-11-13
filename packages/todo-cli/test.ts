@@ -1,5 +1,5 @@
-import { listTodosDueToday } from "@taylor/common/todo/parsers";
-import { getRootDir } from "@taylor/common/data";
+import { listTodosDueToday } from "@common/todo/parsers";
+import { getRootDir } from "@common/data";
 
 const md = `
 # Some document
