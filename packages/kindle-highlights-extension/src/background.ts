@@ -66,13 +66,18 @@ async function fetchHighlights(): Promise<void> {
       const cachedBooks = await chrome.storage.local.get("cachedBooks");
       if (cachedBooks) {
         const cachedMap = new Map(Object.entries(cachedBooks));
+        let allMatch = true;
         for (const [asin, book] of booksByAsin) {
           const cachedBook = cachedMap.get(asin);
           if (cachedBook && book.annotations.length !== cachedBook.annotations.length) {
             console.log(
               `Book "${book.title}" annotations count changed from ${cachedBook.annotations.length} to ${book.annotations.length}`
             );
+            allMatch = false;
           }
+        }
+        if (allMatch) {
+          console.log("All annotations match cached books");
         }
       } else {
         console.log("No cached books found", cachedBooks);
