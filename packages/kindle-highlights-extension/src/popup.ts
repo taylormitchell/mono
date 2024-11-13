@@ -25,6 +25,23 @@ document.addEventListener("DOMContentLoaded", function () {
       renderBadge();
     });
   });
+
+  // Add sync button handler
+  document.getElementById("syncButton")?.addEventListener("click", async () => {
+    const syncButton = document.getElementById("syncButton") as HTMLButtonElement;
+    syncButton.disabled = true;
+    syncButton.textContent = "Syncing...";
+
+    try {
+      await chrome.runtime.sendMessage({ type: "manualSync" });
+      await renderSyncStatus(); // Update the sync times after successful sync
+    } catch (error) {
+      console.error("Sync failed:", error);
+    } finally {
+      syncButton.disabled = false;
+      syncButton.textContent = "Sync Now";
+    }
+  });
 });
 
 async function renderSyncStatus() {
