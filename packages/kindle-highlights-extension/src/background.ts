@@ -57,14 +57,15 @@ async function fetchHighlights(): Promise<void> {
             return annotations.map((annotation) => ({ ...annotation, ...book }));
           })
         )
-      ).sort((a, b) => {
-        // sort by asin then id
-        if (a[0].asin < b[0].asin) return -1;
-        if (a[0].asin > b[0].asin) return 1;
-        if (a[0].id < b[0].id) return -1;
-        if (a[0].id > b[0].id) return 1;
-        return 0;
-      });
+      )
+        .filter((annotations) => annotations.length > 0)
+        .sort((a, b) => {
+          if (a[0].asin < b[0].asin) return -1;
+          if (a[0].asin > b[0].asin) return 1;
+          if (a[0].id < b[0].id) return -1;
+          if (a[0].id > b[0].id) return 1;
+          return 0;
+        });
       annotationsGroupedByBook.forEach((annotations) => {
         console.debug(`Book ${annotations[0].asin}: ${annotations.length} annotations`);
       });
