@@ -16,7 +16,6 @@
     "readline-sync": "^1.4.10"
   },
   "devDependencies": {
-    "@types/commander": "^2.12.5",
     "@types/readline-sync": "^1.4.8"
   }
 }
