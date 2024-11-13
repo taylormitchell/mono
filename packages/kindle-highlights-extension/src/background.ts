@@ -44,6 +44,7 @@ async function fetchHighlights(): Promise<void> {
       books.forEach((book) => {
         booksByAsin.set(book.asin, book);
       });
+      const htmlByAsin = new Map<string, string>();
 
       // Get annotations for each book
       console.debug("Getting all annotations");
@@ -56,6 +57,7 @@ async function fetchHighlights(): Promise<void> {
             }
           );
           const html = await response.text();
+          htmlByAsin.set(book.asin, html);
           const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
           booksByAsin.set(book.asin, { ...book, annotations });
         })
@@ -74,6 +76,7 @@ async function fetchHighlights(): Promise<void> {
             console.log(
               `Book "${book.title}" annotations count changed from ${cachedBook.annotations.length} to ${book.annotations.length}`
             );
+            console.debug("New html:", htmlByAsin.get(asin));
             allMatch = false;
           }
         }
