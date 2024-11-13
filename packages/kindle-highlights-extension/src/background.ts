@@ -66,7 +66,14 @@ async function fetchHighlights(): Promise<void> {
       const bookAnnotations = Array.from(booksByAsin.values())
         .filter((book) => book.annotations.length > 0)
         .sort((a, b) => a.asin.localeCompare(b.asin))
-        .flatMap((book) => ({ ...book, ...book.annotations }));
+        .flatMap((book) =>
+          book.annotations.map((annotation) => ({
+            ...annotation,
+            asin: book.asin,
+            title: book.title,
+            author: book.author,
+          }))
+        );
       console.debug("Saving annotations", { count: bookAnnotations.length });
       const content = JSON.stringify({ highlights: bookAnnotations }, null, 2);
       const putResponse = await fetch(PUT_HIGHLIGHTS_API_URL, {
