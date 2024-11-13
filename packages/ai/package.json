@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/commander": "^2.12.5",
+    "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "openai": "^4.56.1",
     "readline-sync": "^1.4.10"
