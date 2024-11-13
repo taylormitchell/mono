@@ -43,19 +43,28 @@ async function fetchHighlights(): Promise<void> {
 
       // Get annotations for each book
       console.debug("Getting all annotations");
-      const annotationsGroupedByBook = await Promise.all(
-        books.map(async (book) => {
-          const response = await fetch(
-            `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
-            {
-              method: "GET",
-            }
-          );
-          const html = await response.text();
-          const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
-          return annotations.map((annotation) => ({ ...annotation, ...book }));
-        })
-      );
+      const annotationsGroupedByBook = (
+        await Promise.all(
+          books.map(async (book) => {
+            const response = await fetch(
+              `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
+              {
+                method: "GET",
+              }
+            );
+            const html = await response.text();
+            const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
+            return annotations.map((annotation) => ({ ...annotation, ...book }));
+          })
+        )
+      ).sort((a, b) => {
+        // sort by asin then id
+        if (a[0].asin < b[0].asin) return -1;
+        if (a[0].asin > b[0].asin) return 1;
+        if (a[0].id < b[0].id) return -1;
+        if (a[0].id > b[0].id) return 1;
+        return 0;
+      });
 
       // Log number of annotations per book
       annotationsGroupedByBook.forEach((annotations) => {
