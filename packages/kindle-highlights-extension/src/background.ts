@@ -65,22 +65,12 @@ async function fetchHighlights(): Promise<void> {
         if (a[0].id > b[0].id) return 1;
         return 0;
       });
-
-      // Log number of annotations per book
       annotationsGroupedByBook.forEach((annotations) => {
         console.debug(`Book ${annotations[0].asin}: ${annotations.length} annotations`);
       });
 
-      const bookAnnotations = annotationsGroupedByBook.flat().sort((a, b) => {
-        // sort by asin then id
-        if (a.asin < b.asin) return -1;
-        if (a.asin > b.asin) return 1;
-        if (a.id < b.id) return -1;
-        if (a.id > b.id) return 1;
-        return 0;
-      });
-
       // Save annotations
+      const bookAnnotations = annotationsGroupedByBook.flat();
       console.debug("Saving annotations", { count: bookAnnotations.length });
       const content = JSON.stringify({ highlights: bookAnnotations }, null, 2);
       const putResponse = await fetch(PUT_HIGHLIGHTS_API_URL, {
