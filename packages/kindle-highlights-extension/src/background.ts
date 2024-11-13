@@ -50,13 +50,10 @@ async function fetchHighlights(): Promise<void> {
       console.debug("Getting all annotations");
       await Promise.all(
         books.map(async (book) => {
-          const response = await fetch(
+          const html = await fetchWithRetry(
             `https://read.amazon.com/notebook?asin=${book.asin}&contentLimitState=&`,
-            {
-              method: "GET",
-            }
+            { method: "GET" }
           );
-          const html = await response.text();
           htmlByAsin.set(book.asin, html);
           const annotations = await parseHtml<Annotation[]>({ type: "get-annotations", html });
           booksByAsin.set(book.asin, { ...book, annotations });
@@ -156,4 +153,27 @@ async function parseHtml<T>({
     };
     chrome.runtime.onMessage.addListener(listener);
   });
+}
+
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<string> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      const text = await response.text();
+
+      if (text.includes("HTTP Status 500 – Internal Server Error")) {
+        throw new Error("Server returned 500 error in response body");
+      }
+
+      return text;
+    } catch (error) {
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      console.warn(`Attempt ${attempt} failed, retrying...`, error);
+      // Wait for 1 second before retrying
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  throw new Error("Should never reach here");
 }
