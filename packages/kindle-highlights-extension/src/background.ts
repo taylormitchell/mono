@@ -62,6 +62,21 @@ async function fetchHighlights(): Promise<void> {
       );
       console.debug("Books with annotations:", booksByAsin);
 
+      // Compare with cached books if exists
+      const cachedBooks = await chrome.storage.local.get("cachedBooks");
+      if (cachedBooks) {
+        const cachedMap = new Map(Object.entries(cachedBooks));
+        for (const [asin, book] of booksByAsin) {
+          const cachedBook = cachedMap.get(asin);
+          if (cachedBook && book.annotations.length !== cachedBook.annotations.length) {
+            console.log(
+              `Book "${book.title}" annotations count changed from ${cachedBook.annotations.length} to ${book.annotations.length}`
+            );
+          }
+        }
+      }
+      await chrome.storage.local.set(Object.fromEntries(booksByAsin));
+
       // Save annotations
       const bookAnnotations = Array.from(booksByAsin.values())
         .filter((book) => book.annotations.length > 0)
