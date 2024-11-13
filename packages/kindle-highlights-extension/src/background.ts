@@ -19,6 +19,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "manualSync") {
+    fetchHighlights();
+    return true;
+  }
+});
+
 async function fetchHighlights(): Promise<void> {
   console.log("Fetching annotations");
   return new Promise((resolve, reject) => {
