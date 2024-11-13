@@ -74,6 +74,8 @@ async function fetchHighlights(): Promise<void> {
             );
           }
         }
+      } else {
+        console.log("No cached books found", cachedBooks);
       }
       await chrome.storage.local.set(Object.fromEntries(booksByAsin));
 
