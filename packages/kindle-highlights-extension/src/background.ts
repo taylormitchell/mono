@@ -61,12 +61,15 @@ async function fetchHighlights(): Promise<void> {
         })
       );
 
-      annotationsGroupedByBook.forEach((annotations) => {
-        console.debug(`Book ${annotations.asin}: ${annotations.annotations.length} annotations`);
+      booksByAsin.forEach((book) => {
+        console.debug(`Book ${book.asin}: ${book.annotations.length} annotations`);
       });
 
       // Save annotations
-      const bookAnnotations = annotationsGroupedByBook.flat();
+      const bookAnnotations = Array.from(booksByAsin.values())
+        .filter((book) => book.annotations.length > 0)
+        .sort((a, b) => a.asin.localeCompare(b.asin))
+        .flatMap((book) => ({ ...book, ...book.annotations }));
       console.debug("Saving annotations", { count: bookAnnotations.length });
       const content = JSON.stringify({ highlights: bookAnnotations }, null, 2);
       const putResponse = await fetch(PUT_HIGHLIGHTS_API_URL, {
