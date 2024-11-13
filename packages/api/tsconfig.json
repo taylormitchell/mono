@@ -7,7 +7,7 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@taylor/common/*": ["../common/*"]
+      "@common/*": ["../common/*"]
     }
   },
   "include": ["src/**/*"],
