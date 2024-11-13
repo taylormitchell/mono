@@ -60,9 +60,7 @@ async function fetchHighlights(): Promise<void> {
           booksByAsin.set(book.asin, { ...book, annotations });
         })
       );
-      booksByAsin.forEach((book) => {
-        console.debug(`Book ${book.asin}: ${book.annotations.length} annotations`);
-      });
+      console.debug("Books with annotations:", booksByAsin);
 
       // Save annotations
       const bookAnnotations = Array.from(booksByAsin.values())
