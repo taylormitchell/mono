@@ -42,6 +42,9 @@ const projects = new Map<string, Project>();
 
 type ModelName = "issue" | "relation" | "project";
 
+function getModel(model: "issue", id: string): Issue | undefined;
+function getModel(model: "relation", id: string): Relation | undefined;
+function getModel(model: "project", id: string): Project | undefined;
 function getModel(model: ModelName, id: string) {
   switch (model) {
     case "issue":
@@ -274,4 +277,24 @@ class Project implements Model {
   destroy() {
     this.issues.unsubscribe?.();
   }
+}
+
+function createIssue(id: string, props: { title?: string; project?: Project | null } = {}) {
+  const issue = new Issue(id, props);
+  issues.set(id, issue);
+  return issue;
+}
+
+function loadIssue(id: string, props: { title?: string; projectId?: string | null } = {}) {
+  let project: Project | null = null;
+  if (props.projectId) {
+    project = projects.get(props.projectId) ?? null;
+    if (!project) {
+      project = new Project(props.projectId, { title: "", placeholder: true });
+      projects.set(props.projectId, project);
+    }
+  }
+  const issue = new Issue(id, { ...props, project });
+  issues.set(id, issue);
+  return issue;
 }
