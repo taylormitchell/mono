@@ -1,4 +1,4 @@
-import { observable, reaction, runInAction } from "mobx";
+import { observable, reaction } from "mobx";
 
 type Event = any;
 let events: Event[] = [];
@@ -258,64 +258,3 @@ class Project implements Model {
     this.issues.unsubscribe?.();
   }
 }
-
-function createIssue(id: string) {
-  const issue = new Issue(id);
-  issues.set(id, issue);
-  return issue;
-}
-
-function createProject(id: string) {
-  const project = new Project(id);
-  projects.set(id, project);
-  return project;
-}
-
-function createRelation(id: string) {
-  const relation = new Relation(id);
-  relations.set(id, relation);
-  return relation;
-}
-
-// Test code
-const project1 = createProject("project1");
-const issue1 = createIssue("issue1");
-
-runInAction(() => {
-  issue1.project = project1;
-});
-console.log("project1.issues.ids", project1.issues.ids);
-
-runInAction(() => {
-  project1.issues.remove(issue1);
-});
-console.log("issue1.project", issue1.project);
-
-const relation1 = createRelation("relation1");
-const relation2 = createRelation("relation2");
-runInAction(() => {
-  relation1.from = issue1;
-  relation2.from = issue1;
-});
-for (const relation of issue1.relationsFrom) {
-  console.log("relation", relation);
-}
-
-console.log("modelMetadata", modelMetadata);
-
-// runInAction(() => {
-//   issue.title = "issue 1";
-//   project.title = "project 1";
-//   issue.project = project;
-//   project.issues.delete("issue1");
-// });
-// console.log("after assigning then deleting");
-// console.log("project.issues.size", project.issues.size);
-// console.log("issue.project?.id", issue.project?.id);
-
-// runInAction(() => {
-//   issue.project = project2;
-// });
-// console.log("after assigning to another project");
-// console.log("project2.issues.size", project2.issues.size);
-// console.log("issue.project?.id", issue.project?.id);
