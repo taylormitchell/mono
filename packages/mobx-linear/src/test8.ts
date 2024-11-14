@@ -210,6 +210,7 @@ interface Model {
 class Issue implements Model {
   readonly model = "issue";
   readonly id: string;
+  placeholder = false;
 
   @Property()
   accessor title = "";
@@ -221,14 +222,21 @@ class Issue implements Model {
 
   relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "toId" });
 
-  constructor(id: string) {
+  constructor(
+    id: string,
+    props: { title?: string; project?: Project | null; placeholder?: boolean } = {}
+  ) {
     this.id = id;
+    this.title = props.title ?? "";
+    this.project = props.project ?? null;
+    this.placeholder = props.placeholder ?? false;
   }
 }
 
 class Relation implements Model {
   readonly model = "relation";
   readonly id: string;
+  placeholder = false;
 
   @ForeignKey("fromId")
   accessor from: Issue | null = null;
@@ -236,22 +244,31 @@ class Relation implements Model {
   @ForeignKey("toId")
   accessor to: Issue | null = null;
 
-  constructor(id: string) {
+  constructor(
+    id: string,
+    props: { from?: Issue | null; to?: Issue | null; placeholder?: boolean } = {}
+  ) {
     this.id = id;
+    this.from = props.from ?? null;
+    this.to = props.to ?? null;
+    this.placeholder = props.placeholder ?? false;
   }
 }
 
 class Project implements Model {
   readonly model = "project";
   readonly id: string;
+  placeholder = false;
 
   @Property()
   accessor title = "";
 
   issues = new Backlinks<Issue>(this, { from: "issue", key: "projectId" });
 
-  constructor(id: string) {
+  constructor(id: string, props: { title?: string; placeholder?: boolean } = {}) {
     this.id = id;
+    this.title = props.title ?? "";
+    this.placeholder = props.placeholder ?? false;
   }
 
   destroy() {
