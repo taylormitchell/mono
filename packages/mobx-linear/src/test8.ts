@@ -1,203 +1,222 @@
-import { observable, reaction } from "mobx";
+import { observable, reaction, runInAction } from "mobx";
 
-type Event = any;
-let events: Event[] = [];
-const eventsDirty = observable.box(false);
+type ModelIssueProps = {
+  title: string;
+  project: Project | null;
+  placeholder: boolean;
+};
+
+type SerializedIssue = {
+  id: string;
+  title: string;
+  projectId: string | null;
+};
+
+type ModelProjectProps = {
+  title: string;
+  placeholder: boolean;
+};
+
+type SerializedProject = {
+  id: string;
+  title: string;
+};
+
+type ModelRelationProps = {
+  from: Issue | null;
+  to: Issue | null;
+  placeholder: boolean;
+};
+
+type SerializedRelation = {
+  id: string;
+  fromId: string | null;
+  toId: string | null;
+};
+
+// Basic types
+type ModelName = "issue" | "relation" | "project";
+type Event =
+  | {
+      operation: "create";
+      model: ModelName;
+      id: string;
+      props?: Record<string, unknown>;
+    }
+  | {
+      operation: "update";
+      model: ModelName;
+      id: string;
+      propKey: string;
+      oldValue: unknown;
+      newValue: unknown;
+    }
+  | {
+      operation: "delete";
+      model: ModelName;
+      id: string;
+      props?: Record<string, unknown>;
+    }
+  | {
+      // Used by sync/load to set a model to some state. It's not generated
+      // by a client, so we don't e.g. track it.
+      operation: "set";
+      model: ModelName;
+      id: string;
+      oldProps: Record<string, unknown> | null;
+      newProps: Record<string, unknown> | null;
+    };
+
+// State management
+const models = {
+  issue: new Map<string, Issue>(),
+  project: new Map<string, Project>(),
+  relation: new Map<string, Relation>(),
+};
+
+const undoStack: Event[][] = [];
+const redoStack: Event[][] = [];
+
+let stagedChanges: Event[] = [];
+// We use this to trigger the reactions rather than tracking the array
+// because you're not supposed to mutate arrays in reactions.
+const lastStagedChangeTimestamp = observable.box(0);
+
+let isTrackingChanges = true;
+function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
+  const previous = isTrackingChanges;
+  isTrackingChanges = value;
+  try {
+    return fn();
+  } finally {
+    isTrackingChanges = previous;
+  }
+}
+
+// Event system
+const eventSubscribers = new Set<(event: Event) => void>();
+
 function emitEvent(event: Event) {
-  events.push(event);
-  eventsDirty.set(true);
-  for (const subscriber of subscribers) {
+  if (isTrackingChanges) {
+    stagedChanges.push(event);
+    lastStagedChangeTimestamp.set(Date.now());
+  }
+  for (const subscriber of eventSubscribers) {
     subscriber(event);
   }
 }
-type Subscriber = (event: Event) => void;
-const subscribers = new Set<Subscriber>();
 
-function subscribe(subscriber: Subscriber) {
-  subscribers.add(subscriber);
-  return () => subscribers.delete(subscriber);
-}
-
-class ModelMetadata {
-  private metadata = {
-    issue: {},
-    relation: {},
-    project: {},
-  };
-
-  addPropNameMapper(mapper: { model: ModelName; modelProp: string; serializedProp?: string }) {
-    this.metadata[mapper.model][mapper.modelProp] = mapper.serializedProp ?? mapper.modelProp;
-  }
-
-  mapPropName(model: ModelName, prop: string) {
-    return this.metadata[model][prop] ?? prop;
+function commitChanges() {
+  if (stagedChanges.length > 0) {
+    console.log("Committing changes", stagedChanges);
+    undoStack.push(stagedChanges);
+    redoStack.length = 0;
+    stagedChanges = [];
   }
 }
 
-const modelMetadata = new ModelMetadata();
-
-const issues = new Map<string, Issue>();
-const relations = new Map<string, Relation>();
-const projects = new Map<string, Project>();
-
-type ModelName = "issue" | "relation" | "project";
-
-function getModel(model: "issue", id: string): Issue | undefined;
-function getModel(model: "relation", id: string): Relation | undefined;
-function getModel(model: "project", id: string): Project | undefined;
-function getModel(model: ModelName, id: string) {
-  switch (model) {
-    case "issue":
-      return issues.get(id);
-    case "relation":
-      return relations.get(id);
-    case "project":
-      return projects.get(id);
-  }
-}
-
-function assertModelExists(model: ModelName, id: string) {
-  if (!getModel(model, id)) {
-    throw new Error(`Model ${model} with id ${id} not found`);
-  }
-}
-
+// Set up automatic commit of changes
 reaction(
-  () => eventsDirty.get(),
+  () => lastStagedChangeTimestamp.get(),
   () => {
-    if (eventsDirty.get()) {
-      console.log("Events:", events);
-      events = [];
-      eventsDirty.set(false);
-    }
+    commitChanges();
   }
 );
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const Property = (serializedKeyName?: string) => {
-  return (
-    target: ClassAccessorDecoratorTarget<any, any>,
-    context: ClassAccessorDecoratorContext
-  ) => {
+// Model metadata for property mapping
+const modelMetadata = new Map<string, Map<string, string>>();
+
+function registerPropMapping(model: ModelName, modelProp: string, serializedProp?: string) {
+  if (!modelMetadata.has(model)) {
+    modelMetadata.set(model, new Map());
+  }
+  modelMetadata.get(model)!.set(modelProp, serializedProp ?? modelProp);
+}
+
+function getSerializedProp(model: ModelName, prop: string): string {
+  return modelMetadata.get(model)?.get(prop) ?? prop;
+}
+
+// Property decorators
+const Property = (serializedName?: string) => {
+  return (target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
-    if (!observableResult) {
-      throw new Error("Failed to apply observable decorator");
-    }
-    const keyName = String(context.name);
+    const propName = String(context.name);
 
     return {
       get() {
-        assertModelExists(this.model, this.id);
         return observableResult.get?.call(this);
       },
-      set(newValue: unknown) {
-        assertModelExists(this.model, this.id);
+      set(newValue: any) {
         const oldValue = observableResult.get?.call(this);
         emitEvent({
           operation: "update",
           model: this.model,
           id: this.id,
-          propKey: mapPropName(keyName),
+          propKey: getSerializedProp(this.model, propName),
           oldValue,
           newValue,
         });
         observableResult.set?.call(this, newValue);
       },
-      init(value: unknown) {
-        modelMetadata.addPropNameMapper({
-          model: this.model,
-          modelProp: keyName,
-          serializedProp: serializedKeyName,
-        });
+      init(value: any) {
+        registerPropMapping(this.model, propName, serializedName);
         return observableResult.init?.call(this, value);
       },
     };
   };
 };
 
-const ForeignKey = (serializedKeyName?: string) => {
-  return (
-    target: ClassAccessorDecoratorTarget<any, any>,
-    context: ClassAccessorDecoratorContext
-  ) => {
+const ForeignKey = (serializedName?: string) => {
+  return (target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
-    if (!observableResult) {
-      throw new Error("Failed to apply observable decorator");
-    }
-    const keyName = String(context.name);
+    const propName = String(context.name);
 
     return {
       get() {
-        assertModelExists(this.model, this.id);
         return observableResult.get?.call(this);
       },
-      set(newValue: unknown) {
-        assertModelExists(this.model, this.id);
+      set(newValue: any) {
         const oldValue = observableResult.get?.call(this);
         emitEvent({
           operation: "update",
           model: this.model,
           id: this.id,
-          propKey: mapPropName(this.model, keyName),
+          propKey: getSerializedProp(this.model, propName),
           oldValue: oldValue?.id ?? null,
           newValue: newValue?.id ?? null,
         });
         observableResult.set?.call(this, newValue);
       },
-      init(value: unknown) {
-        modelMetadata.addPropNameMapper({
-          model: this.model,
-          modelProp: keyName,
-          serializedProp: serializedKeyName,
-        });
+      init(value: any) {
+        registerPropMapping(this.model, propName, serializedName);
         return observableResult.init?.call(this, value);
       },
     };
   };
 };
 
+// Backlinks implementation stays mostly the same
 class Backlinks<T extends Model> implements Iterable<T> {
   private map = new Map<string, T>();
   unsubscribe: (() => void) | null = null;
 
-  constructor(private owner: Model, private link: { from: string; key: string }) {
+  constructor(private owner: Model, link: { from: ModelName; key: string }) {
     this.unsubscribe = subscribe((event) => {
       if (event.model === link.from) {
-        if (event.operation === "delete") {
-          if (this.map.has(event.id)) {
-            this.map.delete(event.id);
-          }
+        if (event.operation === "delete" && this.map.has(event.id)) {
+          this.map.delete(event.id);
         } else if (event.operation === "update" && event.propKey === link.key) {
-          if (event.oldValue && event.oldValue === this.owner && this.map.has(event.id)) {
+          if (event.oldValue === this.owner.id) {
             this.map.delete(event.id);
           }
-          if (event.newValue && event.newValue === this.owner && !this.map.has(event.id)) {
-            const model = getModel(event.model, event.id);
-            if (model) {
-              this.map.set(model.id, model);
-            } else {
-              console.error(`Model ${event.model} with id ${event.id} not found`);
-            }
+          if (event.newValue === this.owner.id) {
+            const model = getModel(link.from, event.id);
+            if (model) this.map.set(event.id, model);
           }
         }
       }
     });
-  }
-
-  add(value: T): void {
-    value[this.link.key] = this.owner;
-  }
-
-  remove(value: T): void {
-    value[this.link.key] = null;
-  }
-
-  get size(): number {
-    return this.map.size;
-  }
-
-  get ids(): string[] {
-    return Array.from(this.map.values()).map((value) => value.id);
   }
 
   [Symbol.iterator](): Iterator<T> {
@@ -205,15 +224,22 @@ class Backlinks<T extends Model> implements Iterable<T> {
   }
 }
 
+// Model interfaces and classes
 interface Model {
   id: string;
-  model: string;
+  model: ModelName;
+  placeholder: boolean;
 }
 
 class Issue implements Model {
-  readonly model = "issue";
-  readonly id: string;
+  readonly model = "issue" as const;
   placeholder = false;
+
+  constructor(readonly id: string, props: Partial<ModelIssueProps> = {}) {
+    this.title = props.title ?? "";
+    this.project = props.project ?? null;
+    this.placeholder = props.placeholder ?? false;
+  }
 
   @Property()
   accessor title = "";
@@ -222,24 +248,42 @@ class Issue implements Model {
   accessor project: Project | null = null;
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "fromId" });
-
   relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "toId" });
 
-  constructor(
-    id: string,
-    props: { title?: string; project?: Project | null; placeholder?: boolean } = {}
-  ) {
-    this.id = id;
+  set(props: Partial<ModelIssueProps>) {
     this.title = props.title ?? "";
     this.project = props.project ?? null;
+  }
+}
+
+class Project implements Model {
+  readonly model = "project" as const;
+  placeholder = false;
+
+  constructor(readonly id: string, props: Partial<ModelProjectProps> = {}) {
+    this.title = props.title ?? "";
     this.placeholder = props.placeholder ?? false;
+  }
+
+  @Property()
+  accessor title = "";
+
+  issues = new Backlinks<Issue>(this, { from: "issue", key: "projectId" });
+
+  set(props: Partial<ModelProjectProps>) {
+    this.title = props.title ?? "";
   }
 }
 
 class Relation implements Model {
-  readonly model = "relation";
-  readonly id: string;
+  readonly model = "relation" as const;
   placeholder = false;
+
+  constructor(readonly id: string, props: Partial<ModelRelationProps> = {}) {
+    this.from = props.from ?? null;
+    this.to = props.to ?? null;
+    this.placeholder = props.placeholder ?? false;
+  }
 
   @ForeignKey("fromId")
   accessor from: Issue | null = null;
@@ -247,54 +291,231 @@ class Relation implements Model {
   @ForeignKey("toId")
   accessor to: Issue | null = null;
 
-  constructor(
-    id: string,
-    props: { from?: Issue | null; to?: Issue | null; placeholder?: boolean } = {}
-  ) {
-    this.id = id;
+  set(props: Partial<ModelRelationProps>) {
     this.from = props.from ?? null;
     this.to = props.to ?? null;
-    this.placeholder = props.placeholder ?? false;
   }
 }
 
-class Project implements Model {
-  readonly model = "project";
-  readonly id: string;
-  placeholder = false;
-
-  @Property()
-  accessor title = "";
-
-  issues = new Backlinks<Issue>(this, { from: "issue", key: "projectId" });
-
-  constructor(id: string, props: { title?: string; placeholder?: boolean } = {}) {
-    this.id = id;
-    this.title = props.title ?? "";
-    this.placeholder = props.placeholder ?? false;
-  }
-
-  destroy() {
-    this.issues.unsubscribe?.();
-  }
+// Helper functions
+function getModel(model: ModelName, id: string): Model | undefined {
+  return models[model].get(id);
 }
 
-function createIssue(id: string, props: { title?: string; project?: Project | null } = {}) {
-  const issue = new Issue(id, props);
-  issues.set(id, issue);
-  return issue;
+function subscribe(subscriber: (event: Event) => void) {
+  eventSubscribers.add(subscriber);
+  return () => eventSubscribers.delete(subscriber);
 }
 
-function loadIssue(id: string, props: { title?: string; projectId?: string | null } = {}) {
-  let project: Project | null = null;
-  if (props.projectId) {
-    project = projects.get(props.projectId) ?? null;
-    if (!project) {
-      project = new Project(props.projectId, { title: "", placeholder: true });
-      projects.set(props.projectId, project);
+// Core operations
+function applyEvent(event: Event) {
+  isTrackingChanges = true;
+  try {
+    switch (event.operation) {
+      case "create":
+        createModel(event.model, event.id, event.props ?? {});
+        break;
+      case "update":
+        if (event.propKey) {
+          const model = getModel(event.model, event.id);
+          if (model) {
+            (model as any)[event.propKey] = event.newValue;
+          }
+        }
+        break;
+      case "delete":
+        models[event.model].delete(event.id);
+        break;
+      case "set": {
+        switch (event.model) {
+          case "project": {
+            setProject({ id: event.id, ...event.newProps });
+            break;
+          }
+          case "issue": {
+            setIssue({ id: event.id, ...event.newProps });
+            break;
+          }
+          case "relation": {
+            setRelation({ id: event.id, ...event.newProps });
+            break;
+          }
+        }
+        break;
+      }
+      default:
+        event satisfies never;
     }
+  } finally {
+    isTrackingChanges = false;
   }
-  const issue = new Issue(id, { ...props, project });
-  issues.set(id, issue);
-  return issue;
 }
+
+function createModel(model: "issue", id: string, props: ModelIssueProps): Issue;
+function createModel(model: "project", id: string, props: ModelProjectProps): Project;
+function createModel(model: "relation", id: string, props: ModelRelationProps): Relation;
+function createModel(
+  model: ModelName,
+  id: string,
+  props: ModelIssueProps | ModelProjectProps | ModelRelationProps
+) {
+  switch (model) {
+    case "issue":
+      return createIssue(id, props);
+    case "project":
+      return createProject(id, props);
+    case "relation":
+      return createRelation(id, props);
+    default:
+      return model satisfies never;
+  }
+}
+
+// TODO maybe use serialized props? like ids not objects
+function createProject(id: string, props: Partial<ModelProjectProps>) {
+  const instance = new Project(id, props);
+  models.project.set(id, instance);
+  emitEvent({ operation: "create", model: "project", id, props });
+  return instance;
+}
+
+function createIssue(id: string, props: Partial<ModelIssueProps>) {
+  const instance = new Issue(id, props);
+  models.issue.set(id, instance);
+  emitEvent({ operation: "create", model: "issue", id, props });
+  return instance;
+}
+
+function createRelation(id: string, props: Partial<ModelRelationProps>) {
+  const instance = new Relation(id, props);
+  models.relation.set(id, instance);
+  emitEvent({ operation: "create", model: "relation", id, props });
+  return instance;
+}
+
+function setIssue(props: SerializedIssue) {
+  return withIsTrackingChanges(false, () => {
+    const existing = models.issue.get(props.id);
+    if (existing) {
+      existing.set(props);
+      return existing;
+    } else {
+      let project: Project | null = null;
+      if (props.projectId) {
+        project = models.project.get(props.projectId as string) ?? null;
+        if (!project) {
+          project = new Project(props.projectId as string, {
+            title: "",
+            placeholder: true,
+          });
+          models.project.set(props.projectId as string, project);
+        }
+      }
+      const issue = new Issue(props.id, { ...props, project });
+      models.issue.set(props.id, issue);
+      return issue;
+    }
+  });
+}
+
+function setProject(props: SerializedProject) {
+  return withIsTrackingChanges(false, () => {
+    const existing = models.project.get(props.id);
+    if (existing) {
+      existing.set(props);
+      return existing;
+    } else {
+      const project = new Project(props.id, props);
+      models.project.set(props.id, project);
+      return project;
+    }
+  });
+}
+
+function setRelation(props: SerializedRelation) {
+  return withIsTrackingChanges(false, () => {
+    let from: Issue | null = null;
+    let to: Issue | null = null;
+    if (props.fromId) {
+      from = models.issue.get(props.fromId as string) ?? null;
+      if (!from) {
+        from = new Issue(props.fromId as string, { title: "", placeholder: true });
+        models.issue.set(props.fromId as string, from);
+      }
+    }
+    if (props.toId) {
+      to = models.issue.get(props.toId as string) ?? null;
+      if (!to) {
+        to = new Issue(props.toId as string, { title: "", placeholder: true });
+        models.issue.set(props.toId as string, to);
+      }
+    }
+    const deserializedProps = { ...props, from, to };
+    const existing = models.relation.get(props.id);
+    if (existing) {
+      existing.set(deserializedProps);
+      return existing;
+    } else {
+      const relation = new Relation(props.id, deserializedProps);
+      models.relation.set(props.id, relation);
+      return relation;
+    }
+  });
+}
+
+// Undo/Redo
+function undo() {
+  const changes = undoStack.pop();
+  if (changes) {
+    const reversedChanges = changes.map(reverseEvent).reverse();
+    redoStack.push(reversedChanges);
+    reversedChanges.forEach(applyEvent);
+  }
+}
+
+function redo() {
+  const changes = redoStack.pop();
+  if (changes) {
+    undoStack.push(changes);
+    changes.forEach(applyEvent);
+  }
+}
+
+function reverseEvent(event: Event): Event {
+  switch (event.operation) {
+    case "create":
+      return { operation: "delete", model: event.model, id: event.id };
+    case "delete":
+      return { operation: "create", model: event.model, id: event.id, props: event.props };
+    case "update":
+      return {
+        operation: "update",
+        model: event.model,
+        id: event.id,
+        propKey: event.propKey,
+        oldValue: event.newValue,
+        newValue: event.oldValue,
+      };
+    case "set":
+      return {
+        operation: "set",
+        model: event.model,
+        id: event.id,
+        oldProps: event.newProps,
+        newProps: event.oldProps,
+      };
+    default:
+      return event satisfies never;
+  }
+}
+
+// Load initial data
+const issue1 = setIssue({ id: "i1", title: "Issue 1", projectId: "p1" });
+const project1 = setProject({ id: "p1", title: "Project 1" });
+
+// Make changes
+runInAction(() => {
+  project1.title = "Updated Title";
+});
+
+export { Issue, Project, Relation, createModel, applyEvent, undo, redo, subscribe };

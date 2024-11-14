@@ -1,5 +1,11 @@
 # MobX Linear
 
+- serialized types
+- undo stack
+- apply changes
+- create placeholder
+
+
 TODO see /Code/temp
 
 TODO play around with decorators again
