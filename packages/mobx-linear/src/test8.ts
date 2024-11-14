@@ -18,23 +18,23 @@ function subscribe(subscriber: Subscriber) {
   return () => subscribers.delete(subscriber);
 }
 
-const modelMetadata = {
-  issue: {},
-  relation: {},
-  project: {},
-};
+class ModelMetadata {
+  private metadata = {
+    issue: {},
+    relation: {},
+    project: {},
+  };
 
-function addPropNameMapper(mapper: {
-  model: ModelName;
-  modelProp: string;
-  serializedProp?: string;
-}) {
-  modelMetadata[mapper.model][mapper.modelProp] = mapper.serializedProp ?? mapper.modelProp;
+  addPropNameMapper(mapper: { model: ModelName; modelProp: string; serializedProp?: string }) {
+    this.metadata[mapper.model][mapper.modelProp] = mapper.serializedProp ?? mapper.modelProp;
+  }
+
+  mapPropName(model: ModelName, prop: string) {
+    return this.metadata[model][prop] ?? prop;
+  }
 }
 
-function mapPropName(model: ModelName, prop: string) {
-  return modelMetadata[model][prop] ?? prop;
-}
+const modelMetadata = new ModelMetadata();
 
 const issues = new Map<string, Issue>();
 const relations = new Map<string, Relation>();
@@ -101,7 +101,7 @@ const Property = (serializedKeyName?: string) => {
         observableResult.set?.call(this, newValue);
       },
       init(value: unknown) {
-        addPropNameMapper({
+        modelMetadata.addPropNameMapper({
           model: this.model,
           modelProp: keyName,
           serializedProp: serializedKeyName,
@@ -142,7 +142,7 @@ const ForeignKey = (serializedKeyName?: string) => {
         observableResult.set?.call(this, newValue);
       },
       init(value: unknown) {
-        addPropNameMapper({
+        modelMetadata.addPropNameMapper({
           model: this.model,
           modelProp: keyName,
           serializedProp: serializedKeyName,
