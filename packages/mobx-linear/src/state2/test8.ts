@@ -415,6 +415,7 @@ class Issue implements IModel {
   }
 }
 
+@Model
 class Project implements IModel {
   readonly model = "project" as const;
   placeholder = false;
@@ -434,6 +435,7 @@ class Project implements IModel {
   }
 }
 
+@Model
 class Relation implements IModel {
   readonly model = "relation" as const;
   placeholder = false;
