@@ -305,6 +305,9 @@ const Property = (serializedName?: string) => {
 const ForeignKey = (serializedName?: string) => {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
+    if (!observableResult) {
+      throw new Error("Failed to decorate property");
+    }
     const propName = String(context.name);
 
     return {
