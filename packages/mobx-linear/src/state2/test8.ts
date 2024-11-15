@@ -188,13 +188,13 @@ class Store {
     });
   }
 
-  private getProjectOrCreatePlaceholder(id: string) {
+  getProjectOrCreatePlaceholder(id: string) {
     const project = this.models.project.get(id);
     if (project) return project;
     return new Project(id, { title: "", placeholder: true });
   }
 
-  private getIssueOrCreatePlaceholder(id: string) {
+  getIssueOrCreatePlaceholder(id: string) {
     const issue = this.models.issue.get(id);
     if (issue) return issue;
     return new Issue(id, { title: "", placeholder: true });
@@ -428,7 +428,7 @@ class Project implements IModel {
   readonly id: string;
   placeholder = false;
 
-  constructor(props: Partial<Omit<SerializedProject, "id">> & { id: string }) {
+  constructor(props: ModelProps<SerializedProject>) {
     this.id = props.id;
     this.title = props.title ?? "";
     this.placeholder = props.placeholder ?? false;
