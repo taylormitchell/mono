@@ -345,7 +345,6 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 interface IModel {
   readonly id: string;
   placeholder: boolean;
-  set(props: any): void;
 }
 
 const ModelClassToName = new Map<any, ModelName>();
@@ -428,11 +427,6 @@ class Issue implements IModel {
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
   relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
-
-  set(props: ModelProps<SerializedIssue>) {
-    this.title = props.title ?? "";
-    this.project = props.projectId ? _store.getProjectOrCreatePlaceholder(props.projectId) : null;
-  }
 }
 
 @Model("project")
@@ -449,10 +443,6 @@ class Project implements IModel {
   accessor title = "";
 
   issues = new Backlinks<Issue>(this, { from: "issue", key: "project" });
-
-  set(props: ModelProps<SerializedProject>) {
-    this.title = props.title ?? "";
-  }
 }
 
 @Model("relation")
@@ -470,11 +460,6 @@ class Relation implements IModel {
 
   @ForeignKey("toId")
   accessor to: Issue | null = null;
-
-  set(props: ModelProps<SerializedRelation>) {
-    this.from = resolveRef("issue", props.fromId);
-    this.to = resolveRef("issue", props.toId);
-  }
 }
 
 // Load initial data
