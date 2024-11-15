@@ -142,27 +142,6 @@ class Store {
     this.autoCommitDisposer = null;
   }
 
-  createProject(id: string, props: Partial<ModelProjectProps>) {
-    const project = new Project(id, props);
-    this.models.project.set(id, project);
-    this.emitEvent({ operation: "create", model: "project", id, props });
-    return project;
-  }
-
-  createIssue(id: string, props: Partial<ModelIssueProps>) {
-    const issue = new Issue(id, props);
-    this.models.issue.set(id, issue);
-    this.emitEvent({ operation: "create", model: "issue", id, props });
-    return issue;
-  }
-
-  createRelation(id: string, props: Partial<ModelRelationProps>) {
-    const relation = new Relation(id, props);
-    this.models.relation.set(id, relation);
-    this.emitEvent({ operation: "create", model: "relation", id, props });
-    return relation;
-  }
-
   setIssue(props: SerializedIssue) {
     return this.withEventQueuingDisabled(() => {
       const existing = this.models.issue.get(props.id);
@@ -403,10 +382,8 @@ const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
     return function (id: string, props: any) {
       const inst = new value(id, props);
-      if (_store) {
-        _store.models[inst.model].set(inst.id, inst);
-        _store.emitEvent({ operation: "create", model: inst.model, id, props });
-      }
+      _store.models[inst.model].set(inst.id, inst);
+      _store.emitEvent({ operation: "create", model: inst.model, id, props });
     };
   }
   return value;
