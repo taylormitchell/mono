@@ -47,13 +47,13 @@ class Store {
         case "create":
           switch (event.model) {
             case "project":
-              this.createProject(event.id, event.props ?? {});
+              new Project(event.id, event.props ?? {});
               break;
             case "issue":
-              this.createIssue(event.id, event.props ?? {});
+              new Issue(event.id, event.props ?? {});
               break;
             case "relation":
-              this.createRelation(event.id, event.props ?? {});
+              new Relation(event.id, event.props ?? {});
               break;
             default:
               event.model satisfies never;
@@ -61,7 +61,7 @@ class Store {
           break;
         case "update":
           if (event.propKey) {
-            const model = getModel(event.model, event.id);
+            const model = this.getModel(event.model, event.id);
             if (model) {
               (model as any)[event.propKey] = event.newValue;
             }
