@@ -370,7 +370,7 @@ class Issue implements IModel {
   constructor(props: ModelProps<SerializedIssue>) {
     this.id = props.id;
     this.title = props.title ?? "";
-    this.project = props.projectId ? _store.getProjectOrCreatePlaceholder(props.projectId) : null;
+    this.project = resolveRef("project", props.projectId);
     this.placeholder = props.placeholder ?? false;
   }
 
