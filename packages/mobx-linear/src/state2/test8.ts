@@ -295,13 +295,20 @@ const Property = (serializedName?: string) => {
   };
 };
 
-const ForeignKey = (serializedName?: string) => {
+const keyMap = {
+  project: [],
+  issue: [],
+  relation: [],
+};
+
+const ForeignKey = (serializedKey?: string) => {
   return <T extends Model>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
-    const propKey = serializedName ?? String(context.name);
+    const propKey = serializedKey ?? String(context.name);
+    keyMap[this.model].push({ modelKey: propKey, serializedKey });
 
     return {
       get(this: T) {
@@ -320,6 +327,7 @@ const ForeignKey = (serializedName?: string) => {
         observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
+        const key = keyMap[this.model][propKey];
         observableResult.init?.call(this, value);
       },
     };
