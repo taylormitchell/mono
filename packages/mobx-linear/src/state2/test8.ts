@@ -361,6 +361,7 @@ interface Model {
   id: string;
   model: ModelName;
   placeholder: boolean;
+  set(props: unknown): void;
 }
 
 export type ModelIssueProps = {
@@ -455,18 +456,3 @@ const project1 = store.setProject({ id: "p1", title: "Project 1" });
 runInAction(() => {
   project1.title = "Updated Title";
 });
-
-// Archive
-
-const modelMetadata = new Map<string, Map<string, string>>();
-
-function registerPropMapping(model: ModelName, modelProp: string, serializedProp?: string) {
-  if (!modelMetadata.has(model)) {
-    modelMetadata.set(model, new Map());
-  }
-  modelMetadata.get(model)!.set(modelProp, serializedProp ?? modelProp);
-}
-
-function getSerializedProp(model: ModelName, prop: string): string {
-  return modelMetadata.get(model)?.get(prop) ?? prop;
-}
