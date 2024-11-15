@@ -406,7 +406,10 @@ export type ModelRelationProps = {
 
 function ClassDecorator(cls: any, { kind }: { kind: "class" }) {
   if (kind === "class") {
-    return cls();
+    return (...args: any[]) => {
+      const inst = new cls(...args);
+      return Object.freeze(inst);
+    };
   }
 }
 
