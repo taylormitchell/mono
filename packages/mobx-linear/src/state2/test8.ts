@@ -185,9 +185,7 @@ class Store {
         existing.set(props);
         return existing;
       } else {
-        const project = new Project(props.id, props);
-        this.models.project.set(props.id, project);
-        return project;
+        return this.createProject(props.id, props);
       }
     });
   }
@@ -202,9 +200,7 @@ class Store {
         existing.set(deserializedProps);
         return existing;
       } else {
-        const relation = new Relation(props.id, deserializedProps);
-        this.models.relation.set(props.id, relation);
-        return relation;
+        return this.createRelation(props.id, deserializedProps);
       }
     });
   }
