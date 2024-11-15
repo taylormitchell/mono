@@ -48,9 +48,11 @@ class Store {
   undo() {
     const changes = this.undoStack.pop();
     if (changes) {
-      const reversedChanges = changes.map(this.reverseEvent).reverse();
+      const reversedChanges = changes.map(reverseEvent).reverse();
       this.redoStack.push(reversedChanges);
-      reversedChanges.forEach((event) => this.applyEvent(event));
+      for (const event of reversedChanges) {
+        this.applyEvent(event);
+      }
     }
   }
 
@@ -58,7 +60,9 @@ class Store {
     const changes = this.redoStack.pop();
     if (changes) {
       this.undoStack.push(changes);
-      changes.forEach((event) => this.applyEvent(event));
+      for (const event of changes) {
+        this.applyEvent(event);
+      }
     }
   }
 
