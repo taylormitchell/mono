@@ -350,6 +350,16 @@ interface IModel {
 
 const ModelClassToName = new Map<any, ModelName>();
 
+function getModelName(
+  value: Project | Issue | Relation | typeof Project | typeof Issue | typeof Relation
+): ModelName {
+  if (typeof value === "function") {
+    return ModelClassToName.get(value)!;
+  } else {
+    return ModelClassToName.get(value.constructor)!;
+  }
+}
+
 const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     if (kind === "class") {
