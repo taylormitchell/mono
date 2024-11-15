@@ -10,6 +10,72 @@ import {
   SerializedRelation,
 } from "./types";
 
+class Store {
+  private undoStack: Event[][] = [];
+  private redoStack: Event[][] = [];
+  private stagedChanges: Event[] = [];
+  private lastStagedChangeTimestamp = observable.box(0);
+  private isTrackingChanges = true;
+  private eventSubscribers = new Set<(event: Event) => void>();
+  private autoCommitDisposer: (() => void) | null = null;
+
+  models = {
+    issue: new Map<string, Issue>(),
+    project: new Map<string, Project>(),
+    relation: new Map<string, Relation>(),
+  };
+
+  constructor() {
+    this.startAutoCommit();
+  }
+
+  // Event handling methods
+  private emitEvent(event: Event) {
+    if (this.isTrackingChanges) {
+      this.stagedChanges.push(event);
+      this.lastStagedChangeTimestamp.set(Date.now());
+    }
+    for (const subscriber of this.eventSubscribers) {
+      subscriber(event);
+    }
+  }
+
+  subscribe(subscriber: (event: Event) => void) {
+    this.eventSubscribers.add(subscriber);
+    return () => this.eventSubscribers.delete(subscriber);
+  }
+
+  // Undo/Redo methods
+  undo() {
+    const changes = this.undoStack.pop();
+    if (changes) {
+      const reversedChanges = changes.map(this.reverseEvent).reverse();
+      this.redoStack.push(reversedChanges);
+      reversedChanges.forEach((event) => this.applyEvent(event));
+    }
+  }
+
+  redo() {
+    const changes = this.redoStack.pop();
+    if (changes) {
+      this.undoStack.push(changes);
+      changes.forEach((event) => this.applyEvent(event));
+    }
+  }
+
+  startAutoCommit() {
+    this.autoCommitDisposer = reaction(
+      () => this.lastStagedChangeTimestamp.get(),
+      () => this.commit()
+    );
+  }
+
+  stopAutoCommit() {
+    this.autoCommitDisposer?.();
+    this.autoCommitDisposer = null;
+  }
+}
+
 // Event system
 
 const undoStack: Event[][] = [];
