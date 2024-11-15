@@ -275,13 +275,6 @@ class Backlinks<T extends Model> implements Iterable<T> {
 }
 
 // Models
-
-const models = {
-  issue: new Map<string, Issue>(),
-  project: new Map<string, Project>(),
-  relation: new Map<string, Relation>(),
-};
-
 interface Model {
   id: string;
   model: ModelName;
@@ -353,6 +346,8 @@ class Relation implements Model {
     this.to = props.to ?? null;
   }
 }
+
+// CRUD methods
 
 function createModel(model: "issue", id: string, props: ModelIssueProps): Issue;
 function createModel(model: "project", id: string, props: ModelProjectProps): Project;
