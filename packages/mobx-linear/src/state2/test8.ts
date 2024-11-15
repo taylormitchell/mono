@@ -343,6 +343,9 @@ export type ModelRelationProps = {
 const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
     return function (props: any) {
+      if (_store.getModel(props.model, props.id)) {
+        throw new Error(`Model ${props.model} with id ${props.id} already exists`);
+      }
       const inst = new value(props);
       _store.models[inst.model].set(inst.id, inst);
       _store.emitEvent({ operation: "create", model: inst.model, id: inst.id, props });
