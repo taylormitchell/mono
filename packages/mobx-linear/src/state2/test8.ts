@@ -404,16 +404,16 @@ export type ModelRelationProps = {
   placeholder: boolean;
 };
 
-function ClassDecorator(cls: any, { kind }: { kind: "class" }) {
+function freeze(value, { kind }) {
   if (kind === "class") {
-    return (...args: any[]) => {
-      const inst = new cls(...args);
+    return function (...args) {
+      const inst = new value(...args);
       return Object.freeze(inst);
     };
   }
 }
 
-@ClassDecorator
+@freeze
 class Issue implements Model {
   readonly model = "issue" as const;
   placeholder = false;
