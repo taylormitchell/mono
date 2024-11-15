@@ -296,6 +296,14 @@ const Property = (serializedName?: string) => {
 };
 
 const keyMaps: { model: ModelName; modelKey: string; serializedKey: string }[] = [];
+function getSerializedKey(model: ModelName, modelKey: string) {
+  const keyMap = keyMaps.find((k) => k.model === model && k.modelKey === modelKey);
+  return keyMap?.serializedKey ?? modelKey;
+}
+function getModelKey(model: ModelName, serializedKey: string) {
+  const keyMap = keyMaps.find((k) => k.model === model && k.serializedKey === serializedKey);
+  return keyMap?.modelKey ?? serializedKey;
+}
 
 const ForeignKey = (serializedKey?: string) => {
   return <T extends Model>(target: any, context: ClassAccessorDecoratorContext) => {
@@ -322,7 +330,9 @@ const ForeignKey = (serializedKey?: string) => {
         observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
-        keyMaps.push({ model: this.model, modelKey: propKey, serializedKey });
+        if (serializedKey) {
+          keyMaps.push({ model: this.model, modelKey: propKey, serializedKey });
+        }
         observableResult.init?.call(this, value);
       },
     };
