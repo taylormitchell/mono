@@ -404,7 +404,7 @@ export type ModelRelationProps = {
   placeholder: boolean;
 };
 
-const freeze = (value, { kind }) => {
+const freeze = (value, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
     return function (...args) {
       const inst = new value(...args);
