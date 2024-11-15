@@ -163,18 +163,6 @@ class Store {
     return relation;
   }
 
-  private getProjectOrCreatePlaceholder(id: string) {
-    const project = this.models.project.get(id);
-    if (project) return project;
-    return this.createProject(id, { title: "", placeholder: true });
-  }
-
-  private getIssueOrCreatePlaceholder(id: string) {
-    const issue = this.models.issue.get(id);
-    if (issue) return issue;
-    return this.createIssue(id, { title: "", placeholder: true });
-  }
-
   setIssue(props: SerializedIssue) {
     return this.withEventQueuingDisabled(() => {
       const existing = this.models.issue.get(props.id);
@@ -208,22 +196,8 @@ class Store {
 
   setRelation(props: SerializedRelation) {
     return this.withEventQueuingDisabled(() => {
-      let from: Issue | null = null;
-      let to: Issue | null = null;
-      if (props.fromId) {
-        from = this.models.issue.get(props.fromId as string) ?? null;
-        if (!from) {
-          from = new Issue(props.fromId as string, { title: "", placeholder: true });
-          this.models.issue.set(props.fromId as string, from);
-        }
-      }
-      if (props.toId) {
-        to = this.models.issue.get(props.toId as string) ?? null;
-        if (!to) {
-          to = new Issue(props.toId as string, { title: "", placeholder: true });
-          this.models.issue.set(props.toId as string, to);
-        }
-      }
+      const from = props.fromId ? this.getIssueOrCreatePlaceholder(props.fromId) : null;
+      const to = props.toId ? this.getIssueOrCreatePlaceholder(props.toId) : null;
       const deserializedProps = { ...props, from, to };
       const existing = this.models.relation.get(props.id);
       if (existing) {
@@ -235,6 +209,18 @@ class Store {
         return relation;
       }
     });
+  }
+
+  private getProjectOrCreatePlaceholder(id: string) {
+    const project = this.models.project.get(id);
+    if (project) return project;
+    return this.createProject(id, { title: "", placeholder: true });
+  }
+
+  private getIssueOrCreatePlaceholder(id: string) {
+    const issue = this.models.issue.get(id);
+    if (issue) return issue;
+    return this.createIssue(id, { title: "", placeholder: true });
   }
 
   withEventQueuingDisabled<T>(fn: () => T): T {
