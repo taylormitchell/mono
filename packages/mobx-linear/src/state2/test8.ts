@@ -213,7 +213,7 @@ function getModelName(value: any): ModelName {
   return ModelClassToName.get(value)!;
 }
 function getSerializedForeignKey(model: ModelName, modelKey: string) {
-  return ModelProps[model].foreignKeys[modelKey];
+  return ModelProps[model].foreignKeys[modelKey] ?? modelKey;
 }
 
 const Property = (serializedName?: string) => {
