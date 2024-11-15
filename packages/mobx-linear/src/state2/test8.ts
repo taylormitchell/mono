@@ -347,18 +347,17 @@ function resolveRef(model: ModelName, id: string | undefined) {
     const project = _store.models.project.get(id);
     if (project) return project;
     return new Project({ id, title: "", placeholder: true });
-  }
-  if (model === "issue") {
+  } else if (model === "issue") {
     const issue = _store.models.issue.get(id);
     if (issue) return issue;
     return new Issue({ id, title: "", placeholder: true });
-  }
-  if (model === "relation") {
+  } else if (model === "relation") {
     const relation = _store.models.relation.get(id);
     if (relation) return relation;
     return new Relation({ id, fromId: null, toId: null, placeholder: true });
+  } else {
+    return model satisfies never;
   }
-  return null;
 }
 
 @Model
