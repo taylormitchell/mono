@@ -287,7 +287,8 @@ const ForeignKey = (serializedKey?: string) => {
       },
       init(this: T, value: any) {
         if (serializedKey) {
-          ModelProps[this.model].foreignKeys[propKey] = serializedKey;
+          const modelName = ModelClassToName.get(this.constructor);
+          ModelProps[modelName].foreignKeys[propKey] = serializedKey;
         }
         return observableResult.init?.call(this, value);
       },
