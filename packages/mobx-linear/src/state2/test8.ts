@@ -377,12 +377,12 @@ class Issue implements IModel {
   readonly id: string;
   placeholder = false;
 
-  constructor(props: ModelProps<SerializedIssue>) {
-    this.id = props.id;
-    this.title = props.title ?? "";
-    this.project = resolveRef("project", props.projectId);
-    this.placeholder = props.placeholder ?? false;
-  }
+  // constructor(props: ModelProps<SerializedIssue>) {
+  //   this.id = props.id;
+  //   this.title = props.title ?? "";
+  //   this.project = resolveRef("project", props.projectId);
+  //   this.placeholder = props.placeholder ?? false;
+  // }
 
   @Property()
   accessor title = "";
