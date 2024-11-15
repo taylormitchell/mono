@@ -194,7 +194,10 @@ function reverseEvent(event: Event): Event {
 const ModelClassToName = new Map<any, ModelName>();
 const ModelProps: Record<
   ModelName,
-  { properties: Record<string, string>; foreignKeys: Record<string, string> }
+  {
+    properties: Record<string, string>;
+    foreignKeys: Record<string, { model: ModelName; key: string }>;
+  }
 > = {
   project: {
     properties: {},
@@ -213,7 +216,7 @@ function getModelName(value: any): ModelName {
   return ModelClassToName.get(value)!;
 }
 function getSerializedForeignKey(model: ModelName, modelKey: string) {
-  return ModelProps[model].foreignKeys[modelKey] ?? modelKey;
+  return ModelProps[model].foreignKeys[modelKey]?.key ?? modelKey;
 }
 
 const Property = (serializedName?: string) => {
@@ -279,7 +282,10 @@ const ForeignKey = (serializedKey?: string) => {
       init(this: T, value: any) {
         if (serializedKey) {
           const modelName = getModelName(this.constructor);
-          ModelProps[modelName].foreignKeys[modelKey] = serializedKey;
+          ModelProps[modelName].foreignKeys[modelKey] = {
+            model: getModelName(value.constructor),
+            key: serializedKey,
+          };
         }
         return observableResult.init?.call(this, value);
       },
