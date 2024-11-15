@@ -425,8 +425,8 @@ class Relation implements IModel {
 
   constructor(props: ModelProps<SerializedRelation>) {
     this.id = props.id;
-    this.from = props.fromId ? _store.getIssueOrCreatePlaceholder(props.fromId) : null;
-    this.to = props.toId ? _store.getIssueOrCreatePlaceholder(props.toId) : null;
+    this.from = resolveRef("issue", props.fromId);
+    this.to = resolveRef("issue", props.toId);
     this.placeholder = props.placeholder ?? false;
   }
 
@@ -437,8 +437,8 @@ class Relation implements IModel {
   accessor to: Issue | null = null;
 
   set(props: ModelProps<SerializedRelation>) {
-    this.from = props.fromId ? _store.getIssueOrCreatePlaceholder(props.fromId) : null;
-    this.to = props.toId ? _store.getIssueOrCreatePlaceholder(props.toId) : null;
+    this.from = resolveRef("issue", props.fromId);
+    this.to = resolveRef("issue", props.toId);
   }
 }
 
