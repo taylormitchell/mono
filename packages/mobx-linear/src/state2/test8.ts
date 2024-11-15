@@ -1,14 +1,5 @@
 import { observable, reaction, runInAction } from "mobx";
-import {
-  Event,
-  ModelName,
-  ModelIssueProps,
-  ModelProjectProps,
-  ModelRelationProps,
-  SerializedIssue,
-  SerializedProject,
-  SerializedRelation,
-} from "./types";
+import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
 
 class Store {
   private undoStack: Event[][] = [];
