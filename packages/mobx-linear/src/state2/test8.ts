@@ -13,10 +13,14 @@ import {
 class Store {
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
+
   private stagedChanges: Event[] = [];
+
   private eventSubscribers = new Set<(event: Event) => void>();
   private autoCommitDisposer: (() => void) | null = null;
+
   private isTrackingChanges = true;
+
   // We use this to trigger the reactions rather than tracking the array
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
