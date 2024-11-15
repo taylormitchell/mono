@@ -228,12 +228,7 @@ class Store {
   }
 }
 
-let _store: Store | null = null;
-export function init() {
-  if (_store) return _store;
-  _store = new Store();
-  return _store;
-}
+const _store = new Store();
 
 // Helpers
 
@@ -406,11 +401,11 @@ export type ModelRelationProps = {
 
 const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
-    return function (...args: any[]) {
-      const inst = new value(...args);
+    return function (id: string, props: any) {
+      const inst = new value(id, props);
       if (_store) {
         _store.models[inst.model].set(inst.id, inst);
-        _store.emitEvent({ operation: "create", model: inst.model, id: inst.id, props: inst });
+        _store.emitEvent({ operation: "create", model: inst.model, id, props });
       }
     };
   }
