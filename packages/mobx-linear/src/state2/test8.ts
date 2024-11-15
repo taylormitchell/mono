@@ -274,7 +274,7 @@ function reverseEvent(event: Event): Event {
 // Model decorators
 
 const Property = (serializedName?: string) => {
-  return (target: any, context: ClassAccessorDecoratorContext) => {
+  return <T extends Model>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
@@ -282,10 +282,10 @@ const Property = (serializedName?: string) => {
     const propKey = serializedName ?? String(context.name);
 
     return {
-      get() {
+      get(this: T) {
         return observableResult.get?.call(this);
       },
-      set(newValue: any) {
+      set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
         _store?.emitEvent({
           operation: "update",
@@ -302,7 +302,7 @@ const Property = (serializedName?: string) => {
 };
 
 const ForeignKey = (serializedName?: string) => {
-  return (target: any, context: ClassAccessorDecoratorContext) => {
+  return <T extends Model>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
@@ -310,10 +310,10 @@ const ForeignKey = (serializedName?: string) => {
     const propKey = serializedName ?? String(context.name);
 
     return {
-      get() {
+      get(this: T) {
         return observableResult.get?.call(this);
       },
-      set(newValue: any) {
+      set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
         _store?.emitEvent({
           operation: "update",
