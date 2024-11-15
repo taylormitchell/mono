@@ -338,6 +338,16 @@ const Model = (value: any, { kind }: ClassDecoratorContext) => {
   return value;
 };
 
+function resolve(model: "project", id: string | undefined): Project | null;
+function resolve(model: "issue", id: string | undefined): Issue | null;
+function resolve(model: "relation", id: string | undefined): Relation | null;
+function resolve(model: ModelName, id: string | undefined) {
+  if (id) {
+    return _store.getModel(model, id);
+  }
+  return null;
+}
+
 @Model
 class Issue implements IModel {
   readonly model = "issue" as const;
