@@ -327,7 +327,7 @@ class Backlinks<T extends Model> implements Iterable<T> {
   private map = new Map<string, T>();
   unsubscribe: (() => void) | null = null;
 
-  constructor(private owner: Model, link: { from: ModelName; key: string }) {
+  constructor(private owner: Model, private link: { from: ModelName; key: string }) {
     if (!_store) {
       return;
     }
@@ -349,6 +349,14 @@ class Backlinks<T extends Model> implements Iterable<T> {
         }
       }
     });
+  }
+
+  delete(id: string) {
+    const model = this.map.get(id);
+    if (model) {
+      this.map.delete(id);
+      model[this.link.key] = null;
+    }
   }
 
   [Symbol.iterator](): Iterator<T> {
@@ -455,6 +463,7 @@ const project1 = store.setProject({ id: "p1", title: "Project 1" });
 // Make changes
 runInAction(() => {
   project1.title = "Updated Title";
+  project1.issues.delete("i1");
 });
 
 console.log(project1.issues);
