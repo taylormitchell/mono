@@ -408,7 +408,10 @@ const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
     return function (...args: any[]) {
       const inst = new value(...args);
-      return Object.freeze(inst);
+      if (_store) {
+        _store.models[inst.model].set(inst.id, inst);
+        _store.emitEvent({ operation: "create", model: inst.model, id: inst.id, props: inst });
+      }
     };
   }
   return value;
