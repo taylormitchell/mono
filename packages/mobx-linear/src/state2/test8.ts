@@ -318,16 +318,14 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 // Models
 interface IModel {
   readonly id: string;
-  model: ModelName;
   placeholder: boolean;
   set(props: any): void;
 }
 
-const ClassToModelName = {
-  Project: "project",
-  Issue: "issue",
-  Relation: "relation",
-} as const;
+const ClassToModelName = new Map<any, ModelName>();
+ClassToModelName.set(Project, "project");
+ClassToModelName.set(Issue, "issue");
+ClassToModelName.set(Relation, "relation");
 
 const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
@@ -375,7 +373,7 @@ function resolveRef(model: ModelName, id: string | undefined | null) {
 
 @Model
 class Issue implements IModel {
-  readonly model = "issue" as const;
+  static readonly model = "issue" as const;
   readonly id: string;
   placeholder = false;
 
