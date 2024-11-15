@@ -260,6 +260,8 @@ const ForeignKey = (serializedKey?: string) => {
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
+    // TODO Probably shouldn't assign this
+    const referencedModelName = String(context.name);
     const modelKey = String(context.name);
     serializedKey = serializedKey ?? modelKey;
 
@@ -283,7 +285,7 @@ const ForeignKey = (serializedKey?: string) => {
         if (serializedKey) {
           const modelName = getModelName(this.constructor);
           ModelProps[modelName].foreignKeys[modelKey] = {
-            model: getModelName(value.constructor),
+            model: referencedModelName,
             key: serializedKey,
           };
         }
