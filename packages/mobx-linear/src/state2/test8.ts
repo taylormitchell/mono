@@ -73,20 +73,20 @@ class Store {
           }
           break;
         case "delete":
-          models[event.model].delete(event.id);
+          this.models[event.model].delete(event.id);
           break;
         case "set": {
           switch (event.model) {
             case "project": {
-              setProject({ id: event.id, ...event.newProps });
+              this.setProject({ id: event.id, ...event.newProps });
               break;
             }
             case "issue": {
-              setIssue({ id: event.id, ...event.newProps });
+              this.setIssue({ id: event.id, ...event.newProps });
               break;
             }
             case "relation": {
-              setRelation({ id: event.id, ...event.newProps });
+              this.setRelation({ id: event.id, ...event.newProps });
               break;
             }
           }
