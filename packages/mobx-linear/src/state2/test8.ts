@@ -31,6 +31,10 @@ class Store {
     this.startAutoCommit();
   }
 
+  getModel(model: ModelName, id: string): Model | undefined {
+    return this.models[model].get(id);
+  }
+
   emitEvent(event: Event) {
     if (this.isTrackingChanges) {
       this.stagedChanges.push(event);
@@ -38,6 +42,49 @@ class Store {
     }
     for (const subscriber of this.eventSubscribers) {
       subscriber(event);
+    }
+  }
+
+  applyEvent(event: Event) {
+    this.isTrackingChanges = true;
+    try {
+      switch (event.operation) {
+        case "create":
+          createModel(event.model, event.id, event.props ?? {});
+          break;
+        case "update":
+          if (event.propKey) {
+            const model = getModel(event.model, event.id);
+            if (model) {
+              (model as any)[event.propKey] = event.newValue;
+            }
+          }
+          break;
+        case "delete":
+          models[event.model].delete(event.id);
+          break;
+        case "set": {
+          switch (event.model) {
+            case "project": {
+              setProject({ id: event.id, ...event.newProps });
+              break;
+            }
+            case "issue": {
+              setIssue({ id: event.id, ...event.newProps });
+              break;
+            }
+            case "relation": {
+              setRelation({ id: event.id, ...event.newProps });
+              break;
+            }
+          }
+          break;
+        }
+        default:
+          event satisfies never;
+      }
+    } finally {
+      this.isTrackingChanges = false;
     }
   }
 
@@ -112,10 +159,6 @@ function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
   }
 }
 
-// Helper functions
-function getModel(model: ModelName, id: string): Model | undefined {
-  return models[model].get(id);
-}
 function reverseEvent(event: Event): Event {
   switch (event.operation) {
     case "create":
