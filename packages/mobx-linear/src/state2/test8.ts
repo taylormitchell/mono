@@ -338,9 +338,7 @@ const Model = (value: any, { kind }: ClassDecoratorContext) => {
   return value;
 };
 
-function resolveRef(model: "project", id: string | undefined): Project | null;
-function resolveRef(model: "issue", id: string | undefined): Issue | null;
-function resolveRef(model: "relation", id: string | undefined): Relation | null;
+function resolveRef<T extends ModelName>(model: T, id: string | undefined): ModelTypeMap[T] | null;
 function resolveRef(model: ModelName, id: string | undefined) {
   if (!id) return null;
   if (model === "project") {
