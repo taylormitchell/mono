@@ -473,12 +473,20 @@ class Relation implements Model {
 // Load initial data
 const store = init();
 const issue1 = store.setIssue({ id: "i1", title: "Issue 1", projectId: "p1" });
+const issue2 = store.setIssue({ id: "i2", title: "Issue 2", projectId: "p1" });
 const project1 = store.setProject({ id: "p1", title: "Project 1" });
+const project2 = store.setProject({ id: "p2", title: "Project 2" });
 
 // Make changes
 runInAction(() => {
   project1.title = "Updated Title";
   project1.issues.delete("i1");
+});
+
+let relation: Relation | null = null;
+runInAction(() => {
+  issue2.project = project2;
+  relation = store.createRelation("r1", { from: issue1, to: issue2 });
 });
 
 console.log(project1.issues);
