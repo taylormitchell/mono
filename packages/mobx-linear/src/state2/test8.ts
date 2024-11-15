@@ -173,9 +173,7 @@ class Store {
         const project = props.projectId
           ? this.getProjectOrCreatePlaceholder(props.projectId)
           : null;
-        const issue = new Issue(props.id, { ...props, project });
-        this.models.issue.set(props.id, issue);
-        return issue;
+        return this.createIssue(props.id, { ...props, project });
       }
     });
   }
