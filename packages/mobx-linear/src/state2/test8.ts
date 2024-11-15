@@ -336,12 +336,6 @@ class Backlinks<T extends IModel> implements Iterable<T> {
   }
 }
 
-// Models
-interface IModel {
-  readonly id: string;
-  placeholder: boolean;
-}
-
 const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     if (kind === "class") {
@@ -400,6 +394,13 @@ function resolveRef(model: ModelName, id: string | undefined | null) {
   } else {
     return model satisfies never;
   }
+}
+
+// Models
+
+interface IModel {
+  readonly id: string;
+  placeholder: boolean;
 }
 
 @Model("issue")
