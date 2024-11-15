@@ -29,8 +29,7 @@ class Store {
     this.startAutoCommit();
   }
 
-  // Event handling methods
-  private emitEvent(event: Event) {
+  emitEvent(event: Event) {
     if (this.isTrackingChanges) {
       this.stagedChanges.push(event);
       this.lastStagedChangeTimestamp.set(Date.now());
@@ -274,7 +273,7 @@ const Property = (serializedName?: string) => {
       },
       set(newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        emitEvent({
+        store?.emitEvent({
           operation: "update",
           model: this.model,
           id: this.id,
@@ -303,7 +302,7 @@ const ForeignKey = (serializedName?: string) => {
       },
       set(newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        emitEvent({
+        store?.emitEvent({
           operation: "update",
           model: this.model,
           id: this.id,
