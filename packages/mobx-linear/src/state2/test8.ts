@@ -134,6 +134,52 @@ class Store {
     this.autoCommitDisposer?.();
     this.autoCommitDisposer = null;
   }
+
+  createProject(id: string, props: Partial<ModelProjectProps>) {
+    const project = new Project(id, props);
+    this.models.project.set(id, project);
+    this.emitEvent({ operation: "create", model: "project", id, props });
+    return project;
+  }
+
+  createIssue(id: string, props: Partial<ModelIssueProps>) {
+    const issue = new Issue(id, props);
+    this.models.issue.set(id, issue);
+    this.emitEvent({ operation: "create", model: "issue", id, props });
+    return issue;
+  }
+
+  createRelation(id: string, props: Partial<ModelRelationProps>) {
+    const relation = new Relation(id, props);
+    this.models.relation.set(id, relation);
+    this.emitEvent({ operation: "create", model: "relation", id, props });
+    return relation;
+  }
+
+  setIssue(props: SerializedIssue) {
+    return withIsTrackingChanges(false, () => {
+      const existing = models.issue.get(props.id);
+      if (existing) {
+        existing.set(props);
+        return existing;
+      } else {
+        let project: Project | null = null;
+        if (props.projectId) {
+          project = models.project.get(props.projectId as string) ?? null;
+          if (!project) {
+            project = new Project(props.projectId as string, {
+              title: "",
+              placeholder: true,
+            });
+            models.project.set(props.projectId as string, project);
+          }
+        }
+        const issue = new Issue(props.id, { ...props, project });
+        models.issue.set(props.id, issue);
+        return issue;
+      }
+    });
+  }
 }
 
 let store: Store | null = null;
@@ -367,28 +413,6 @@ function createModel(
     default:
       return model satisfies never;
   }
-}
-
-// TODO maybe use serialized props? like ids not objects
-function createProject(id: string, props: Partial<ModelProjectProps>) {
-  const instance = new Project(id, props);
-  models.project.set(id, instance);
-  emitEvent({ operation: "create", model: "project", id, props });
-  return instance;
-}
-
-function createIssue(id: string, props: Partial<ModelIssueProps>) {
-  const instance = new Issue(id, props);
-  models.issue.set(id, instance);
-  emitEvent({ operation: "create", model: "issue", id, props });
-  return instance;
-}
-
-function createRelation(id: string, props: Partial<ModelRelationProps>) {
-  const instance = new Relation(id, props);
-  models.relation.set(id, instance);
-  emitEvent({ operation: "create", model: "relation", id, props });
-  return instance;
 }
 
 function setIssue(props: SerializedIssue) {
