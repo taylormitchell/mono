@@ -240,7 +240,6 @@ class Store {
 }
 
 let _store: Store | null = null;
-
 export function init() {
   if (_store) return _store;
   _store = new Store();
