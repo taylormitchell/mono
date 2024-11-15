@@ -300,10 +300,6 @@ function getSerializedKey(model: ModelName, modelKey: string) {
   const keyMap = keyMaps.find((k) => k.model === model && k.modelKey === modelKey);
   return keyMap?.serializedKey ?? modelKey;
 }
-function getModelKey(model: ModelName, serializedKey: string) {
-  const keyMap = keyMaps.find((k) => k.model === model && k.serializedKey === serializedKey);
-  return keyMap?.modelKey ?? serializedKey;
-}
 
 const ForeignKey = (serializedKey?: string) => {
   return <T extends Model>(target: any, context: ClassAccessorDecoratorContext) => {
