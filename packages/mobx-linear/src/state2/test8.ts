@@ -209,6 +209,12 @@ const ModelProps: Record<
     foreignKeys: {},
   },
 };
+function getModelName(value: any): ModelName {
+  return ModelClassToName.get(value)!;
+}
+function getSerializedForeignKey(model: ModelName, modelKey: string) {
+  return ModelProps[model].foreignKeys[modelKey];
+}
 
 const Property = (serializedName?: string) => {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
@@ -244,12 +250,6 @@ const Property = (serializedName?: string) => {
     };
   };
 };
-
-const keyMaps: { model: ModelName; modelKey: string; serializedKey: string }[] = [];
-function getSerializedKey(model: ModelName, modelKey: string) {
-  const keyMap = keyMaps.find((k) => k.model === model && k.modelKey === modelKey);
-  return keyMap?.serializedKey ?? modelKey;
-}
 
 const ForeignKey = (serializedKey?: string) => {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
@@ -303,7 +303,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
           if (model) this.map.set(event.id, model);
         } else if (
           event.operation === "update" &&
-          event.propKey === getSerializedKey(link.from, link.key)
+          event.propKey === getSerializedForeignKey(link.from, link.key)
         ) {
           if (event.oldValue === this.owner.id) {
             this.map.delete(event.id);
@@ -334,10 +334,6 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 interface IModel {
   readonly id: string;
   placeholder: boolean;
-}
-
-function getModelName(value: any): ModelName {
-  return ModelClassToName.get(value)!;
 }
 
 const Model = (name: ModelName) => {
