@@ -380,14 +380,10 @@ export type ModelRelationProps = {
 
 const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
-    return function (id: string, props: any) {
-      const existing = _store.getModel(value.model, id);
-      if (existing) {
-        return existing;
-      }
-      const inst = new value(id, props);
+    return function (props: any) {
+      const inst = new value(props);
       _store.models[inst.model].set(inst.id, inst);
-      _store.emitEvent({ operation: "create", model: inst.model, id, props });
+      _store.emitEvent({ operation: "create", model: inst.model, id: inst.id, props });
       return inst;
     };
   }
@@ -397,9 +393,11 @@ const Model = (value: any, { kind }: ClassDecoratorContext) => {
 @Model
 class Issue implements IModel {
   readonly model = "issue" as const;
+  readonly id: string;
   placeholder = false;
 
   constructor(props: Partial<Omit<SerializedIssue, "id">> & { id: string }) {
+    this.id = props.id;
     this.title = props.title ?? "";
     this.project = props.projectId ? new Project({ id: props.projectId }) : null;
     this.placeholder = props.placeholder ?? false;
@@ -423,9 +421,11 @@ class Issue implements IModel {
 @Model
 class Project implements IModel {
   readonly model = "project" as const;
+  readonly id: string;
   placeholder = false;
 
   constructor(props: Partial<Omit<SerializedProject, "id">> & { id: string }) {
+    this.id = props.id;
     this.title = props.title ?? "";
     this.placeholder = props.placeholder ?? false;
   }
