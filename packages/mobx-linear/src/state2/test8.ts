@@ -377,6 +377,10 @@ class Issue implements IModel {
   readonly id: string;
   placeholder = false;
 
+  constructor(props: ModelProps<SerializedIssue>) {
+    this.id = props.id;
+  }
+
   // constructor(props: ModelProps<SerializedIssue>) {
   //   this.id = props.id;
   //   this.title = props.title ?? "";
