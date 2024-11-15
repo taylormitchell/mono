@@ -196,7 +196,7 @@ const ModelProps: Record<
   ModelName,
   {
     properties: Record<string, string>;
-    foreignKeys: Record<string, { model: ModelName; key: string }>;
+    foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
   }
 > = {
   project: {
@@ -216,7 +216,7 @@ function getModelName(value: any): ModelName {
   return ModelClassToName.get(value)!;
 }
 function getSerializedForeignKey(model: ModelName, modelKey: string) {
-  return ModelProps[model].foreignKeys[modelKey]?.key ?? modelKey;
+  return ModelProps[model].foreignKeys[modelKey]?.serializedKey ?? modelKey;
 }
 
 const Property = (serializedName?: string) => {
@@ -285,8 +285,8 @@ const ForeignKey = (serializedKey?: string) => {
         if (serializedKey) {
           const modelName = getModelName(this.constructor);
           ModelProps[modelName].foreignKeys[modelKey] = {
-            model: referencedModelName,
-            key: serializedKey,
+            referencedModelName: referencedModelName,
+            serializedKey: serializedKey,
           };
         }
         return observableResult.init?.call(this, value);
@@ -352,7 +352,7 @@ const Model = (name: ModelName) => {
       return function (props: any) {
         const inst = _store.getModel(name, props.id) ?? new value(props);
         Object.entries(ModelProps[name].foreignKeys).forEach(
-          ([modelKey, { model: foreignModel, key: serializedKey }]) => {
+          ([modelKey, { referencedModelName: foreignModel, serializedKey: serializedKey }]) => {
             if (props[serializedKey]) {
               const foreignId = props[serializedKey];
               inst[modelKey] = resolveRef(foreignModel, foreignId);
