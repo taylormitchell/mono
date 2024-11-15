@@ -26,7 +26,7 @@ class Store {
     this.startAutoCommit();
   }
 
-  getModel(model: ModelName, id: string): Model | undefined {
+  getModel(model: ModelName, id: string): IModel | undefined {
     return this.models[model].get(id);
   }
 
@@ -268,7 +268,7 @@ function reverseEvent(event: Event): Event {
 // Model decorators
 
 const Property = (serializedName?: string) => {
-  return <T extends Model>(target: any, context: ClassAccessorDecoratorContext) => {
+  return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
@@ -302,7 +302,7 @@ function getSerializedKey(model: ModelName, modelKey: string) {
 }
 
 const ForeignKey = (serializedKey?: string) => {
-  return <T extends Model>(target: any, context: ClassAccessorDecoratorContext) => {
+  return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
@@ -335,11 +335,11 @@ const ForeignKey = (serializedKey?: string) => {
   };
 };
 
-class Backlinks<T extends Model> implements Iterable<T> {
+class Backlinks<T extends IModel> implements Iterable<T> {
   private map = new Map<string, T>();
   unsubscribe: (() => void) | null = null;
 
-  constructor(private owner: Model, private link: { from: ModelName; key: string }) {
+  constructor(private owner: IModel, private link: { from: ModelName; key: string }) {
     if (!_store) {
       return;
     }
@@ -380,7 +380,7 @@ class Backlinks<T extends Model> implements Iterable<T> {
 }
 
 // Models
-interface Model {
+interface IModel {
   id: string;
   model: ModelName;
   placeholder: boolean;
@@ -404,7 +404,7 @@ export type ModelRelationProps = {
   placeholder: boolean;
 };
 
-const freeze = (value: any, { kind }: ClassDecoratorContext) => {
+const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
     return function (...args: any[]) {
       const inst = new value(...args);
@@ -414,8 +414,8 @@ const freeze = (value: any, { kind }: ClassDecoratorContext) => {
   return value;
 };
 
-@freeze
-class Issue implements Model {
+@Model
+class Issue implements IModel {
   readonly model = "issue" as const;
   placeholder = false;
 
@@ -440,7 +440,7 @@ class Issue implements Model {
   }
 }
 
-class Project implements Model {
+class Project implements IModel {
   readonly model = "project" as const;
   placeholder = false;
 
@@ -459,7 +459,7 @@ class Project implements Model {
   }
 }
 
-class Relation implements Model {
+class Relation implements IModel {
   readonly model = "relation" as const;
   placeholder = false;
 
