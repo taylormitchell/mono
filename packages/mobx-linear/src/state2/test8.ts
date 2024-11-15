@@ -203,6 +203,24 @@ function reverseEvent(event: Event): Event {
 
 // Model decorators
 
+const ModelProps: Record<
+  ModelName,
+  { properties: Record<string, string>; foreignKeys: Record<string, string> }
+> = {
+  project: {
+    properties: {},
+    foreignKeys: {},
+  },
+  issue: {
+    properties: {},
+    foreignKeys: {},
+  },
+  relation: {
+    properties: {},
+    foreignKeys: {},
+  },
+};
+
 const Property = (serializedName?: string) => {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
@@ -227,26 +245,14 @@ const Property = (serializedName?: string) => {
         });
         observableResult.set?.call(this, newValue);
       },
+      init(this: T, value: any) {
+        if (serializedName) {
+          ModelProps[this.model].properties[propKey] = serializedName;
+        }
+        return observableResult.init?.call(this, value);
+      },
     };
   };
-};
-
-const ModelProps: Record<
-  ModelName,
-  { properties: Record<string, string>; foreignKeys: Record<string, string> }
-> = {
-  project: {
-    properties: {},
-    foreignKeys: {},
-  },
-  issue: {
-    properties: {},
-    foreignKeys: {},
-  },
-  relation: {
-    properties: {},
-    foreignKeys: {},
-  },
 };
 
 const keyMaps: { model: ModelName; modelKey: string; serializedKey: string }[] = [];
