@@ -416,12 +416,12 @@ function resolveRef(model: ModelName, id: string | undefined | null) {
 
 @Model("issue")
 class Issue implements IModel {
-  readonly id: string;
-  placeholder = false;
-
   constructor(props: ModelProps<SerializedIssue>) {
     this.id = props.id;
   }
+  readonly id: string;
+
+  placeholder = false;
 
   @Property()
   accessor title = "";
@@ -443,6 +443,7 @@ class Project implements IModel {
   constructor(props: ModelProps<SerializedProject>) {
     this.id = props.id;
   }
+
   readonly id: string;
 
   placeholder = false;
