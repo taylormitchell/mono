@@ -257,7 +257,8 @@ const ForeignKey = (serializedKey?: string) => {
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
-    const propKey = serializedKey ?? String(context.name);
+    const modelKey = String(context.name);
+    serializedKey = serializedKey ?? modelKey;
 
     return {
       get(this: T) {
@@ -269,7 +270,7 @@ const ForeignKey = (serializedKey?: string) => {
           operation: "update",
           model: getModelName(this.constructor),
           id: this.id,
-          propKey,
+          propKey: serializedKey,
           oldValue: oldValue?.id ?? null,
           newValue: newValue?.id ?? null,
         });
@@ -278,7 +279,7 @@ const ForeignKey = (serializedKey?: string) => {
       init(this: T, value: any) {
         if (serializedKey) {
           const modelName = getModelName(this.constructor);
-          ModelProps[modelName].foreignKeys[propKey] = serializedKey;
+          ModelProps[modelName].foreignKeys[modelKey] = serializedKey;
         }
         return observableResult.init?.call(this, value);
       },
