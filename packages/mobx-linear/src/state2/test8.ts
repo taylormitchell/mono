@@ -19,7 +19,7 @@ class Store {
   private eventSubscribers = new Set<(event: Event) => void>();
   private autoCommitDisposer: (() => void) | null = null;
 
-  private isTrackingChanges = true;
+  private isQueuingEventsToPush = true;
 
   // We use this to trigger the reactions rather than tracking the array
   // because you're not supposed to mutate arrays in reactions.
@@ -40,7 +40,7 @@ class Store {
   }
 
   emitEvent(event: Event) {
-    if (this.isTrackingChanges) {
+    if (this.isQueuingEventsToPush) {
       this.stagedChanges.push(event);
       this.lastStagedChangeTimestamp.set(Date.now());
     }
@@ -50,7 +50,7 @@ class Store {
   }
 
   applyEvent(event: Event) {
-    this.isTrackingChanges = true;
+    this.isQueuingEventsToPush = true;
     try {
       switch (event.operation) {
         case "create":
@@ -100,7 +100,7 @@ class Store {
           event satisfies never;
       }
     } finally {
-      this.isTrackingChanges = false;
+      this.isQueuingEventsToPush = false;
     }
   }
 
@@ -173,7 +173,7 @@ class Store {
   }
 
   setIssue(props: SerializedIssue) {
-    return this.withEventTrackingDisabled(() => {
+    return this.withEventQueuingDisabled(() => {
       const existing = this.models.issue.get(props.id);
       if (existing) {
         existing.set(props);
@@ -198,7 +198,7 @@ class Store {
   }
 
   setProject(props: SerializedProject) {
-    return this.withEventTrackingDisabled(() => {
+    return this.withEventQueuingDisabled(() => {
       const existing = this.models.project.get(props.id);
       if (existing) {
         existing.set(props);
@@ -212,7 +212,7 @@ class Store {
   }
 
   setRelation(props: SerializedRelation) {
-    return this.withEventTrackingDisabled(() => {
+    return this.withEventQueuingDisabled(() => {
       let from: Issue | null = null;
       let to: Issue | null = null;
       if (props.fromId) {
@@ -242,13 +242,13 @@ class Store {
     });
   }
 
-  withEventTrackingDisabled<T>(fn: () => T): T {
-    const previous = this.isTrackingChanges;
-    this.isTrackingChanges = false;
+  withEventQueuingDisabled<T>(fn: () => T): T {
+    const previous = this.isQueuingEventsToPush;
+    this.isQueuingEventsToPush = false;
     try {
       return fn();
     } finally {
-      this.isTrackingChanges = previous;
+      this.isQueuingEventsToPush = previous;
     }
   }
 }
