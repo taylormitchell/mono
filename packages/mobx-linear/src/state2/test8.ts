@@ -384,6 +384,23 @@ interface Model {
   placeholder: boolean;
 }
 
+export type ModelIssueProps = {
+  title: string;
+  project: Project | null;
+  placeholder: boolean;
+};
+
+export type ModelProjectProps = {
+  title: string;
+  placeholder: boolean;
+};
+
+export type ModelRelationProps = {
+  from: Issue | null;
+  to: Issue | null;
+  placeholder: boolean;
+};
+
 class Issue implements Model {
   readonly model = "issue" as const;
   placeholder = false;
