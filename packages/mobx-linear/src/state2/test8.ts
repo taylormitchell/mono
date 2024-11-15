@@ -333,7 +333,7 @@ const ForeignKey = (serializedKey?: string) => {
         if (serializedKey) {
           keyMaps.push({ model: this.model, modelKey: propKey, serializedKey });
         }
-        observableResult.init?.call(this, value);
+        return observableResult.init?.call(this, value);
       },
     };
   };
@@ -424,8 +424,8 @@ class Issue implements Model {
   @ForeignKey("projectId")
   accessor project: Project | null = null;
 
-  relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "fromId" });
-  relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "toId" });
+  relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
+  relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
 
   set(props: Partial<ModelIssueProps>) {
     this.title = props.title ?? "";
