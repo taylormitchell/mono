@@ -373,6 +373,9 @@ const Model = (name: ModelName) => {
             inst[key] = props[serializedKey];
           }
         });
+        if (props.placeholder !== undefined) {
+          inst.placeholder = props.placeholder;
+        }
         _store.models[name].set(inst.id, inst);
         _store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
@@ -421,13 +424,6 @@ class Issue implements IModel {
     this.id = props.id;
   }
 
-  // constructor(props: ModelProps<SerializedIssue>) {
-  //   this.id = props.id;
-  //   this.title = props.title ?? "";
-  //   this.project = resolveRef("project", props.projectId);
-  //   this.placeholder = props.placeholder ?? false;
-  // }
-
   @Property()
   accessor title = "";
 
@@ -450,8 +446,6 @@ class Project implements IModel {
 
   constructor(props: ModelProps<SerializedProject>) {
     this.id = props.id;
-    this.title = props.title ?? "";
-    this.placeholder = props.placeholder ?? false;
   }
 
   @Property()
@@ -471,9 +465,6 @@ class Relation implements IModel {
 
   constructor(props: ModelProps<SerializedRelation>) {
     this.id = props.id;
-    this.from = resolveRef("issue", props.fromId);
-    this.to = resolveRef("issue", props.toId);
-    this.placeholder = props.placeholder ?? false;
   }
 
   @ForeignKey("fromId")
