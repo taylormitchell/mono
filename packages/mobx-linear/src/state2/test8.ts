@@ -317,7 +317,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 
 // Models
 interface IModel {
-  id: string;
+  readonly id: string;
   model: ModelName;
   placeholder: boolean;
   set(props: any): void;
