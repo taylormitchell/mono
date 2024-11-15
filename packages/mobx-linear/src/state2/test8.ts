@@ -288,7 +288,7 @@ const ForeignKey = (serializedKey?: string) => {
       },
       init(this: T, value: any) {
         if (serializedKey) {
-          const modelName = ModelClassToName.get(this.constructor);
+          const modelName = getModelName(this.constructor);
           ModelProps[modelName].foreignKeys[propKey] = serializedKey;
         }
         return observableResult.init?.call(this, value);
@@ -350,14 +350,8 @@ interface IModel {
 
 const ModelClassToName = new Map<any, ModelName>();
 
-function getModelName(
-  value: Project | Issue | Relation | typeof Project | typeof Issue | typeof Relation
-): ModelName {
-  if (typeof value === "function") {
-    return ModelClassToName.get(value)!;
-  } else {
-    return ModelClassToName.get(value.constructor)!;
-  }
+function getModelName(value: any): ModelName {
+  return ModelClassToName.get(value)!;
 }
 
 const Model = (name: ModelName) => {
