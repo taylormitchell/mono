@@ -146,58 +146,16 @@ class Store {
     this.autoCommitDisposer = null;
   }
 
-  setIssue(props: SerializedIssue) {
-    return this.withEventQueuingDisabled(() => {
-      const existing = this.models.issue.get(props.id);
-      if (existing) {
-        existing.set(props);
-        return existing;
-      } else {
-        const project = props.projectId
-          ? this.getProjectOrCreatePlaceholder(props.projectId)
-          : null;
-        return new Issue(props.id, { ...props, project });
-      }
-    });
-  }
-
-  setProject(props: SerializedProject) {
-    return this.withEventQueuingDisabled(() => {
-      const existing = this.models.project.get(props.id);
-      if (existing) {
-        existing.set(props);
-        return existing;
-      } else {
-        return new Project(props.id, props);
-      }
-    });
-  }
-
-  setRelation(props: SerializedRelation) {
-    return this.withEventQueuingDisabled(() => {
-      const from = props.fromId ? this.getIssueOrCreatePlaceholder(props.fromId) : null;
-      const to = props.toId ? this.getIssueOrCreatePlaceholder(props.toId) : null;
-      const deserializedProps = { ...props, from, to };
-      const existing = this.models.relation.get(props.id);
-      if (existing) {
-        existing.set(deserializedProps);
-        return existing;
-      } else {
-        return new Relation(props.id, deserializedProps);
-      }
-    });
-  }
-
   getProjectOrCreatePlaceholder(id: string) {
     const project = this.models.project.get(id);
     if (project) return project;
-    return new Project(id, { title: "", placeholder: true });
+    return new Project({ id, title: "", placeholder: true });
   }
 
   getIssueOrCreatePlaceholder(id: string) {
     const issue = this.models.issue.get(id);
     if (issue) return issue;
-    return new Issue(id, { title: "", placeholder: true });
+    return new Issue({ id, title: "", placeholder: true });
   }
 
   withEventQueuingDisabled<T>(fn: () => T): T {
