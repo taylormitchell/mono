@@ -361,7 +361,7 @@ interface Model {
   id: string;
   model: ModelName;
   placeholder: boolean;
-  set(props: unknown): void;
+  set(props: any): void;
 }
 
 export type ModelIssueProps = {
