@@ -334,21 +334,23 @@ class Backlinks<T extends Model> implements Iterable<T> {
   unsubscribe: (() => void) | null = null;
 
   constructor(private owner: Model, link: { from: ModelName; key: string }) {
-    this.unsubscribe = subscribe((event) => {
-      if (event.model === link.from) {
-        if (event.operation === "delete" && this.map.has(event.id)) {
-          this.map.delete(event.id);
-        } else if (event.operation === "update" && event.propKey === link.key) {
-          if (event.oldValue === this.owner.id) {
-            this.map.delete(event.id);
+    this.unsubscribe = _store
+      ? _store.subscribe((event) => {
+          if (event.model === link.from) {
+            if (event.operation === "delete" && this.map.has(event.id)) {
+              this.map.delete(event.id);
+            } else if (event.operation === "update" && event.propKey === link.key) {
+              if (event.oldValue === this.owner.id) {
+                this.map.delete(event.id);
+              }
+              if (event.newValue === this.owner.id) {
+                const model = getModel(link.from, event.id);
+                if (model) this.map.set(event.id, model);
+              }
+            }
           }
-          if (event.newValue === this.owner.id) {
-            const model = getModel(link.from, event.id);
-            if (model) this.map.set(event.id, model);
-          }
-        }
-      }
-    });
+        })
+      : null;
   }
 
   [Symbol.iterator](): Iterator<T> {
