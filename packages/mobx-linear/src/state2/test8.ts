@@ -158,25 +158,70 @@ class Store {
 
   setIssue(props: SerializedIssue) {
     return withIsTrackingChanges(false, () => {
-      const existing = models.issue.get(props.id);
+      const existing = this.models.issue.get(props.id);
       if (existing) {
         existing.set(props);
         return existing;
       } else {
         let project: Project | null = null;
         if (props.projectId) {
-          project = models.project.get(props.projectId as string) ?? null;
+          project = this.models.project.get(props.projectId as string) ?? null;
           if (!project) {
             project = new Project(props.projectId as string, {
               title: "",
               placeholder: true,
             });
-            models.project.set(props.projectId as string, project);
+            this.models.project.set(props.projectId as string, project);
           }
         }
         const issue = new Issue(props.id, { ...props, project });
-        models.issue.set(props.id, issue);
+        this.models.issue.set(props.id, issue);
         return issue;
+      }
+    });
+  }
+
+  setProject(props: SerializedProject) {
+    return withIsTrackingChanges(false, () => {
+      const existing = this.models.project.get(props.id);
+      if (existing) {
+        existing.set(props);
+        return existing;
+      } else {
+        const project = new Project(props.id, props);
+        this.models.project.set(props.id, project);
+        return project;
+      }
+    });
+  }
+
+  setRelation(props: SerializedRelation) {
+    return withIsTrackingChanges(false, () => {
+      let from: Issue | null = null;
+      let to: Issue | null = null;
+      if (props.fromId) {
+        from = this.models.issue.get(props.fromId as string) ?? null;
+        if (!from) {
+          from = new Issue(props.fromId as string, { title: "", placeholder: true });
+          this.models.issue.set(props.fromId as string, from);
+        }
+      }
+      if (props.toId) {
+        to = this.models.issue.get(props.toId as string) ?? null;
+        if (!to) {
+          to = new Issue(props.toId as string, { title: "", placeholder: true });
+          this.models.issue.set(props.toId as string, to);
+        }
+      }
+      const deserializedProps = { ...props, from, to };
+      const existing = this.models.relation.get(props.id);
+      if (existing) {
+        existing.set(deserializedProps);
+        return existing;
+      } else {
+        const relation = new Relation(props.id, deserializedProps);
+        this.models.relation.set(props.id, relation);
+        return relation;
       }
     });
   }
@@ -413,76 +458,6 @@ function createModel(
     default:
       return model satisfies never;
   }
-}
-
-function setIssue(props: SerializedIssue) {
-  return withIsTrackingChanges(false, () => {
-    const existing = models.issue.get(props.id);
-    if (existing) {
-      existing.set(props);
-      return existing;
-    } else {
-      let project: Project | null = null;
-      if (props.projectId) {
-        project = models.project.get(props.projectId as string) ?? null;
-        if (!project) {
-          project = new Project(props.projectId as string, {
-            title: "",
-            placeholder: true,
-          });
-          models.project.set(props.projectId as string, project);
-        }
-      }
-      const issue = new Issue(props.id, { ...props, project });
-      models.issue.set(props.id, issue);
-      return issue;
-    }
-  });
-}
-
-function setProject(props: SerializedProject) {
-  return withIsTrackingChanges(false, () => {
-    const existing = models.project.get(props.id);
-    if (existing) {
-      existing.set(props);
-      return existing;
-    } else {
-      const project = new Project(props.id, props);
-      models.project.set(props.id, project);
-      return project;
-    }
-  });
-}
-
-function setRelation(props: SerializedRelation) {
-  return withIsTrackingChanges(false, () => {
-    let from: Issue | null = null;
-    let to: Issue | null = null;
-    if (props.fromId) {
-      from = models.issue.get(props.fromId as string) ?? null;
-      if (!from) {
-        from = new Issue(props.fromId as string, { title: "", placeholder: true });
-        models.issue.set(props.fromId as string, from);
-      }
-    }
-    if (props.toId) {
-      to = models.issue.get(props.toId as string) ?? null;
-      if (!to) {
-        to = new Issue(props.toId as string, { title: "", placeholder: true });
-        models.issue.set(props.toId as string, to);
-      }
-    }
-    const deserializedProps = { ...props, from, to };
-    const existing = models.relation.get(props.id);
-    if (existing) {
-      existing.set(deserializedProps);
-      return existing;
-    } else {
-      const relation = new Relation(props.id, deserializedProps);
-      models.relation.set(props.id, relation);
-      return relation;
-    }
-  });
 }
 
 // Load initial data
