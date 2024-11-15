@@ -144,7 +144,7 @@ export function init() {
   return store;
 }
 
-// Event system
+// Helpers
 
 function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
   if (!store) {
@@ -185,94 +185,6 @@ function reverseEvent(event: Event): Event {
     default:
       return event satisfies never;
   }
-}
-
-function applyEvent(event: Event) {
-  isTrackingChanges = true;
-  try {
-    switch (event.operation) {
-      case "create":
-        createModel(event.model, event.id, event.props ?? {});
-        break;
-      case "update":
-        if (event.propKey) {
-          const model = getModel(event.model, event.id);
-          if (model) {
-            (model as any)[event.propKey] = event.newValue;
-          }
-        }
-        break;
-      case "delete":
-        models[event.model].delete(event.id);
-        break;
-      case "set": {
-        switch (event.model) {
-          case "project": {
-            setProject({ id: event.id, ...event.newProps });
-            break;
-          }
-          case "issue": {
-            setIssue({ id: event.id, ...event.newProps });
-            break;
-          }
-          case "relation": {
-            setRelation({ id: event.id, ...event.newProps });
-            break;
-          }
-        }
-        break;
-      }
-      default:
-        event satisfies never;
-    }
-  } finally {
-    isTrackingChanges = false;
-  }
-}
-
-// Commit changes
-
-function commit() {
-  if (stagedChanges.length > 0) {
-    console.log("Committing changes", stagedChanges);
-    undoStack.push(stagedChanges);
-    redoStack.length = 0;
-    stagedChanges = [];
-  }
-}
-
-let autoCommitDisposer: (() => void) | null = null;
-
-export function startAutoCommit() {
-  autoCommitDisposer = reaction(
-    () => lastStagedChangeTimestamp.get(),
-    () => {
-      commit();
-    }
-  );
-}
-
-export function stopAutoCommit() {
-  autoCommitDisposer?.();
-  autoCommitDisposer = null;
-}
-
-export function init() {
-  startAutoCommit();
-}
-
-// Model metadata for property mapping
-const modelMetadata = new Map<string, Map<string, string>>();
-
-function registerPropMapping(model: ModelName, modelProp: string, serializedProp?: string) {
-  if (!modelMetadata.has(model)) {
-    modelMetadata.set(model, new Map());
-  }
-  modelMetadata.get(model)!.set(modelProp, serializedProp ?? modelProp);
-}
-
-function getSerializedProp(model: ModelName, prop: string): string {
-  return modelMetadata.get(model)?.get(prop) ?? prop;
 }
 
 // Model decorators
@@ -563,4 +475,17 @@ runInAction(() => {
   project1.title = "Updated Title";
 });
 
-export { Issue, Project, Relation, createModel, applyEvent, undo, redo, subscribe };
+// Archive
+
+const modelMetadata = new Map<string, Map<string, string>>();
+
+function registerPropMapping(model: ModelName, modelProp: string, serializedProp?: string) {
+  if (!modelMetadata.has(model)) {
+    modelMetadata.set(model, new Map());
+  }
+  modelMetadata.get(model)!.set(modelProp, serializedProp ?? modelProp);
+}
+
+function getSerializedProp(model: ModelName, prop: string): string {
+  return modelMetadata.get(model)?.get(prop) ?? prop;
+}
