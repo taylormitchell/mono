@@ -50,7 +50,19 @@ class Store {
     try {
       switch (event.operation) {
         case "create":
-          createModel(event.model, event.id, event.props ?? {});
+          switch (event.model) {
+            case "project":
+              this.createProject(event.id, event.props ?? {});
+              break;
+            case "issue":
+              this.createIssue(event.id, event.props ?? {});
+              break;
+            case "relation":
+              this.createRelation(event.id, event.props ?? {});
+              break;
+            default:
+              event.model satisfies never;
+          }
           break;
         case "update":
           if (event.propKey) {
@@ -435,28 +447,6 @@ class Relation implements Model {
   set(props: Partial<ModelRelationProps>) {
     this.from = props.from ?? null;
     this.to = props.to ?? null;
-  }
-}
-
-// CRUD methods
-
-function createModel(model: "issue", id: string, props: ModelIssueProps): Issue;
-function createModel(model: "project", id: string, props: ModelProjectProps): Project;
-function createModel(model: "relation", id: string, props: ModelRelationProps): Relation;
-function createModel(
-  model: ModelName,
-  id: string,
-  props: ModelIssueProps | ModelProjectProps | ModelRelationProps
-) {
-  switch (model) {
-    case "issue":
-      return createIssue(id, props);
-    case "project":
-      return createProject(id, props);
-    case "relation":
-      return createRelation(id, props);
-    default:
-      return model satisfies never;
   }
 }
 
