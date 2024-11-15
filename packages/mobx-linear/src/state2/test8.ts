@@ -146,18 +146,6 @@ class Store {
     this.autoCommitDisposer = null;
   }
 
-  getProjectOrCreatePlaceholder(id: string) {
-    const project = this.models.project.get(id);
-    if (project) return project;
-    return new Project({ id, title: "", placeholder: true });
-  }
-
-  getIssueOrCreatePlaceholder(id: string) {
-    const issue = this.models.issue.get(id);
-    if (issue) return issue;
-    return new Issue({ id, title: "", placeholder: true });
-  }
-
   withEventQueuingDisabled<T>(fn: () => T): T {
     const previous = this.isQueuingEventsToPush;
     this.isQueuingEventsToPush = false;
