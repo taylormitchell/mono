@@ -25,8 +25,10 @@ class Store {
     relation: new Map<string, Relation>(),
   };
 
-  constructor() {
-    this.startAutoCommit();
+  static init() {
+    const store = new Store();
+    store.startAutoCommit();
+    return store;
   }
 
   // Event handling methods
@@ -74,6 +76,13 @@ class Store {
     this.autoCommitDisposer?.();
     this.autoCommitDisposer = null;
   }
+}
+
+let store: Store | null = null;
+
+function init() {
+  store = new Store();
+  return store;
 }
 
 // Event system
