@@ -276,7 +276,10 @@ function reverseEvent(event: Event): Event {
 const Property = (serializedName?: string) => {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
-    const propName = String(context.name);
+    if (!observableResult) {
+      throw new Error("Failed to decorate property");
+    }
+    const propKey = serializedName ?? String(context.name);
 
     return {
       get() {
@@ -288,15 +291,11 @@ const Property = (serializedName?: string) => {
           operation: "update",
           model: this.model,
           id: this.id,
-          propKey: getSerializedProp(this.model, propName),
+          propKey,
           oldValue,
           newValue,
         });
         observableResult.set?.call(this, newValue);
-      },
-      init(value: any) {
-        registerPropMapping(this.model, propName, serializedName);
-        return observableResult.init?.call(this, value);
       },
     };
   };
@@ -308,7 +307,7 @@ const ForeignKey = (serializedName?: string) => {
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
-    const propName = String(context.name);
+    const propKey = serializedName ?? String(context.name);
 
     return {
       get() {
@@ -320,7 +319,7 @@ const ForeignKey = (serializedName?: string) => {
           operation: "update",
           model: this.model,
           id: this.id,
-          propKey: getSerializedProp(this.model, propName),
+          propKey,
           oldValue: oldValue?.id ?? null,
           newValue: newValue?.id ?? null,
         });
