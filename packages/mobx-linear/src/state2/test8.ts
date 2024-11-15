@@ -440,12 +440,12 @@ class Issue implements IModel {
 
 @Model("project")
 class Project implements IModel {
-  readonly id: string;
-  placeholder = false;
-
   constructor(props: ModelProps<SerializedProject>) {
     this.id = props.id;
   }
+  readonly id: string;
+
+  placeholder = false;
 
   @Property()
   accessor title = "";
@@ -459,12 +459,13 @@ class Project implements IModel {
 
 @Model("relation")
 class Relation implements IModel {
-  readonly id: string;
-  placeholder = false;
-
   constructor(props: ModelProps<SerializedRelation>) {
     this.id = props.id;
   }
+
+  readonly id: string;
+
+  placeholder = false;
 
   @ForeignKey("fromId")
   accessor from: Issue | null = null;
