@@ -1,6 +1,10 @@
 import { observable, reaction, runInAction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
 
+type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelation> = Partial<
+  Omit<T, "id">
+> & { id: string; placeholder?: boolean };
+
 class Store {
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
@@ -396,7 +400,7 @@ class Issue implements IModel {
   readonly id: string;
   placeholder = false;
 
-  constructor(props: Partial<Omit<SerializedIssue, "id">> & { id: string; placeholder?: boolean }) {
+  constructor(props: ModelProps<SerializedIssue>) {
     this.id = props.id;
     this.title = props.title ?? "";
     this.project = props.projectId ? _store.getProjectOrCreatePlaceholder(props.projectId) : null;
