@@ -1,31 +1,12 @@
-import { Project, Issue } from "./test8";
-
-export type ModelIssueProps = {
-  title: string;
-  project: Project | null;
-  placeholder: boolean;
-};
-
 export type SerializedIssue = {
   id: string;
   title: string;
   projectId: string | null;
 };
 
-export type ModelProjectProps = {
-  title: string;
-  placeholder: boolean;
-};
-
 export type SerializedProject = {
   id: string;
   title: string;
-};
-
-export type ModelRelationProps = {
-  from: Issue | null;
-  to: Issue | null;
-  placeholder: boolean;
 };
 
 export type SerializedRelation = {

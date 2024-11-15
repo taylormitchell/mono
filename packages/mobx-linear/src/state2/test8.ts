@@ -323,10 +323,6 @@ const ForeignKey = (serializedName?: string) => {
         });
         observableResult.set?.call(this, newValue);
       },
-      init(value: any) {
-        registerPropMapping(this.model, propName, serializedName);
-        return observableResult.init?.call(this, value);
-      },
     };
   };
 };
