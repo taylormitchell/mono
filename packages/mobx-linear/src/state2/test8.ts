@@ -254,14 +254,12 @@ const Property = (serializedName?: string) => {
   };
 };
 
-const ForeignKey = (serializedKey?: string) => {
+const ForeignKey = (referencedModelName: ModelName, serializedKey?: string) => {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
-    // TODO Probably shouldn't assign this
-    const referencedModelName = String(context.name);
     const modelKey = String(context.name);
     serializedKey = serializedKey ?? modelKey;
 
@@ -417,7 +415,7 @@ class Issue implements IModel {
   @Property()
   accessor title = "";
 
-  @ForeignKey("projectId")
+  @ForeignKey("project", "projectId")
   accessor project: Project | null = null;
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
@@ -450,10 +448,10 @@ class Relation implements IModel {
 
   placeholder = false;
 
-  @ForeignKey("fromId")
+  @ForeignKey("issue", "fromId")
   accessor from: Issue | null = null;
 
-  @ForeignKey("toId")
+  @ForeignKey("issue", "toId")
   accessor to: Issue | null = null;
 }
 
