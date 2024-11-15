@@ -323,6 +323,12 @@ interface IModel {
   set(props: any): void;
 }
 
+const ClassToModelName = {
+  Project: "project",
+  Issue: "issue",
+  Relation: "relation",
+} as const;
+
 const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
     return function (props: any) {
