@@ -97,28 +97,6 @@ export function init() {
 
 // Event system
 
-const undoStack: Event[][] = [];
-const redoStack: Event[][] = [];
-
-// Undo/Redo
-function undo() {
-  const changes = undoStack.pop();
-  if (changes) {
-    const reversedChanges = changes.map(reverseEvent).reverse();
-    redoStack.push(reversedChanges);
-    reversedChanges.forEach(applyEvent);
-  }
-}
-
-function redo() {
-  const changes = redoStack.pop();
-  if (changes) {
-    undoStack.push(changes);
-    changes.forEach(applyEvent);
-  }
-}
-
-let stagedChanges: Event[] = [];
 // We use this to trigger the reactions rather than tracking the array
 // because you're not supposed to mutate arrays in reactions.
 const lastStagedChangeTimestamp = observable.box(0);
@@ -135,16 +113,6 @@ function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
 }
 
 const eventSubscribers = new Set<(event: Event) => void>();
-
-function emitEvent(event: Event) {
-  if (isTrackingChanges) {
-    stagedChanges.push(event);
-    lastStagedChangeTimestamp.set(Date.now());
-  }
-  for (const subscriber of eventSubscribers) {
-    subscriber(event);
-  }
-}
 
 // Helper functions
 function getModel(model: ModelName, id: string): Model | undefined {
