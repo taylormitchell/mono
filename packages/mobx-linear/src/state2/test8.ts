@@ -62,6 +62,14 @@ class Store {
     }
   }
 
+  commit() {
+    if (this.stagedChanges.length > 0) {
+      this.undoStack.push(this.stagedChanges);
+      this.redoStack.length = 0;
+      this.stagedChanges = [];
+    }
+  }
+
   startAutoCommit() {
     this.autoCommitDisposer = reaction(
       () => this.lastStagedChangeTimestamp.get(),
