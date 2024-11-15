@@ -404,6 +404,12 @@ export type ModelRelationProps = {
   placeholder: boolean;
 };
 
+function ClassDecorator(...args: any[]) {
+  const inst = new value(...args);
+  return inst;
+}
+
+@ClassDecorator
 class Issue implements Model {
   readonly model = "issue" as const;
   placeholder = false;
