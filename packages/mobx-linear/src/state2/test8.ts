@@ -16,7 +16,7 @@ class Store {
   private stagedChanges: Event[] = [];
   private eventSubscribers = new Set<(event: Event) => void>();
   private autoCommitDisposer: (() => void) | null = null;
-  isTrackingChanges = true;
+  private isTrackingChanges = true;
   // We use this to trigger the reactions rather than tracking the array
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
@@ -169,7 +169,7 @@ class Store {
   }
 
   setIssue(props: SerializedIssue) {
-    return withIsTrackingChanges(false, () => {
+    return this.withEventTrackingDisabled(() => {
       const existing = this.models.issue.get(props.id);
       if (existing) {
         existing.set(props);
@@ -194,7 +194,7 @@ class Store {
   }
 
   setProject(props: SerializedProject) {
-    return withIsTrackingChanges(false, () => {
+    return this.withEventTrackingDisabled(() => {
       const existing = this.models.project.get(props.id);
       if (existing) {
         existing.set(props);
@@ -208,7 +208,7 @@ class Store {
   }
 
   setRelation(props: SerializedRelation) {
-    return withIsTrackingChanges(false, () => {
+    return this.withEventTrackingDisabled(() => {
       let from: Issue | null = null;
       let to: Issue | null = null;
       if (props.fromId) {
@@ -237,6 +237,16 @@ class Store {
       }
     });
   }
+
+  withEventTrackingDisabled<T>(fn: () => T): T {
+    const previous = this.isTrackingChanges;
+    this.isTrackingChanges = false;
+    try {
+      return fn();
+    } finally {
+      this.isTrackingChanges = previous;
+    }
+  }
 }
 
 let _store: Store | null = null;
@@ -247,19 +257,6 @@ export function init() {
 }
 
 // Helpers
-
-function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
-  if (!_store) {
-    return fn();
-  }
-  const previous = _store.isTrackingChanges;
-  _store.isTrackingChanges = value;
-  try {
-    return fn();
-  } finally {
-    _store.isTrackingChanges = previous;
-  }
-}
 
 function reverseEvent(event: Event): Event {
   switch (event.operation) {
