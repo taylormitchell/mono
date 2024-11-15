@@ -359,10 +359,7 @@ const Model = (name: ModelName) => {
     if (kind === "class") {
       ModelClassToName.set(value, name);
       return function (props: any) {
-        if (_store.getModel(name, props.id)) {
-          throw new Error(`Model ${name} with id ${props.id} already exists`);
-        }
-        const inst = new value(props);
+        const inst = _store.getModel(name, props.id) ?? new value(props);
         Object.entries(ModelProps[name].foreignKeys).forEach(([key, serializedKey]) => {
           if (props[serializedKey]) {
             inst[key] = resolveRef(name, props[serializedKey]);
