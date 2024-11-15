@@ -404,14 +404,14 @@ export type ModelRelationProps = {
   placeholder: boolean;
 };
 
-function freeze(value, { kind }) {
+const freeze: ClassDecorator = (value, { kind }) => {
   if (kind === "class") {
     return function (...args) {
       const inst = new value(...args);
       return Object.freeze(inst);
     };
   }
-}
+};
 
 @freeze
 class Issue implements Model {
