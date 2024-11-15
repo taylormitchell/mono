@@ -404,8 +404,10 @@ export type ModelRelationProps = {
   placeholder: boolean;
 };
 
-function ClassDecorator(...args: any[]) {
-  console.log("ClassDecorator", args);
+function ClassDecorator(cls: any, { kind }: { kind: "class" }) {
+  if (kind === "class") {
+    return cls();
+  }
 }
 
 @ClassDecorator
