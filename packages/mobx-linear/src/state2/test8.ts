@@ -322,24 +322,24 @@ interface IModel {
   set(props: any): void;
 }
 
-const ClassToModelName = new Map<any, ModelName>();
-ClassToModelName.set(Project, "project");
-ClassToModelName.set(Issue, "issue");
-ClassToModelName.set(Relation, "relation");
+const ModelClassToName = new Map<any, ModelName>();
 
-const Model = (value: any, { kind }: ClassDecoratorContext) => {
-  if (kind === "class") {
-    return function (props: any) {
-      if (_store.getModel(props.model, props.id)) {
-        throw new Error(`Model ${props.model} with id ${props.id} already exists`);
-      }
-      const inst = new value(props);
-      _store.models[inst.model].set(inst.id, inst);
-      _store.emitEvent({ operation: "create", model: inst.model, id: inst.id, props });
-      return inst;
-    };
-  }
-  return value;
+const Model = (name: ModelName) => {
+  return (value: any, { kind }: ClassDecoratorContext) => {
+    if (kind === "class") {
+      ModelClassToName.set(value, name);
+      return function (props: any) {
+        if (_store.getModel(props.model, props.id)) {
+          throw new Error(`Model ${props.model} with id ${props.id} already exists`);
+        }
+        const inst = new value(props);
+        _store.models[inst.model].set(inst.id, inst);
+        _store.emitEvent({ operation: "create", model: inst.model, id: inst.id, props });
+        return inst;
+      };
+    }
+    return value;
+  };
 };
 
 type ModelTypeMap = {
@@ -371,7 +371,7 @@ function resolveRef(model: ModelName, id: string | undefined | null) {
   }
 }
 
-@Model
+@Model("issue")
 class Issue implements IModel {
   static readonly model = "issue" as const;
   readonly id: string;
@@ -399,9 +399,8 @@ class Issue implements IModel {
   }
 }
 
-@Model
+@Model("project")
 class Project implements IModel {
-  readonly model = "project" as const;
   readonly id: string;
   placeholder = false;
 
@@ -421,9 +420,8 @@ class Project implements IModel {
   }
 }
 
-@Model
+@Model("relation")
 class Relation implements IModel {
-  readonly model = "relation" as const;
   readonly id: string;
   placeholder = false;
 
