@@ -237,7 +237,7 @@ const Property = (serializedName?: string) => {
         const oldValue = observableResult.get?.call(this);
         _store?.emitEvent({
           operation: "update",
-          model: this.model,
+          model: ModelClassToName.get(this.constructor),
           id: this.id,
           propKey,
           oldValue,
@@ -247,7 +247,8 @@ const Property = (serializedName?: string) => {
       },
       init(this: T, value: any) {
         if (serializedName) {
-          ModelProps[this.model].properties[propKey] = serializedName;
+          const modelName = ModelClassToName.get(this.constructor);
+          ModelProps[modelName].properties[propKey] = serializedName;
         }
         return observableResult.init?.call(this, value);
       },
