@@ -14,10 +14,12 @@ class Store {
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
   private stagedChanges: Event[] = [];
-  private lastStagedChangeTimestamp = observable.box(0);
-  private isTrackingChanges = true;
   private eventSubscribers = new Set<(event: Event) => void>();
   private autoCommitDisposer: (() => void) | null = null;
+  isTrackingChanges = true;
+  // We use this to trigger the reactions rather than tracking the array
+  // because you're not supposed to mutate arrays in reactions.
+  private lastStagedChangeTimestamp = observable.box(0);
 
   models = {
     issue: new Map<string, Issue>(),
@@ -97,18 +99,16 @@ export function init() {
 
 // Event system
 
-// We use this to trigger the reactions rather than tracking the array
-// because you're not supposed to mutate arrays in reactions.
-const lastStagedChangeTimestamp = observable.box(0);
-
-let isTrackingChanges = true;
 function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
-  const previous = isTrackingChanges;
-  isTrackingChanges = value;
+  if (!store) {
+    return fn();
+  }
+  const previous = store.isTrackingChanges;
+  store.isTrackingChanges = value;
   try {
     return fn();
   } finally {
-    isTrackingChanges = previous;
+    store.isTrackingChanges = previous;
   }
 }
 
@@ -116,12 +116,6 @@ function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
 function getModel(model: ModelName, id: string): Model | undefined {
   return models[model].get(id);
 }
-
-function subscribe(subscriber: (event: Event) => void) {
-  eventSubscribers.add(subscriber);
-  return () => eventSubscribers.delete(subscriber);
-}
-
 function reverseEvent(event: Event): Event {
   switch (event.operation) {
     case "create":
