@@ -373,6 +373,9 @@ type ModelTypeMap = {
   relation: Relation;
 };
 
+// TODO: if I register model classes by model name in the decorators
+// then I don't need to reference the classes directly here, I can use
+// the cached model classes by name.
 function resolveRef<T extends ModelName>(
   model: T,
   id: string | undefined | null
