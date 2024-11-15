@@ -447,11 +447,13 @@ class Project implements IModel {
 @Model
 class Relation implements IModel {
   readonly model = "relation" as const;
+  readonly id: string;
   placeholder = false;
 
-  constructor(readonly id: string, props: Partial<ModelRelationProps> = {}) {
-    this.from = props.from ?? null;
-    this.to = props.to ?? null;
+  constructor(props: ModelProps<SerializedRelation>) {
+    this.id = props.id;
+    this.from = props.fromId ? _store.getIssueOrCreatePlaceholder(props.fromId) : null;
+    this.to = props.toId ? _store.getIssueOrCreatePlaceholder(props.toId) : null;
     this.placeholder = props.placeholder ?? false;
   }
 
