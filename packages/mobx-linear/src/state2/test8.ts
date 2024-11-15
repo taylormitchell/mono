@@ -227,26 +227,26 @@ class Store {
   }
 }
 
-let store: Store | null = null;
+let _store: Store | null = null;
 
 export function init() {
-  if (store) return store;
-  store = new Store();
-  return store;
+  if (_store) return _store;
+  _store = new Store();
+  return _store;
 }
 
 // Helpers
 
 function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
-  if (!store) {
+  if (!_store) {
     return fn();
   }
-  const previous = store.isTrackingChanges;
-  store.isTrackingChanges = value;
+  const previous = _store.isTrackingChanges;
+  _store.isTrackingChanges = value;
   try {
     return fn();
   } finally {
-    store.isTrackingChanges = previous;
+    _store.isTrackingChanges = previous;
   }
 }
 
@@ -291,7 +291,7 @@ const Property = (serializedName?: string) => {
       },
       set(newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        store?.emitEvent({
+        _store?.emitEvent({
           operation: "update",
           model: this.model,
           id: this.id,
@@ -320,7 +320,7 @@ const ForeignKey = (serializedName?: string) => {
       },
       set(newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        store?.emitEvent({
+        _store?.emitEvent({
           operation: "update",
           model: this.model,
           id: this.id,
@@ -461,8 +461,9 @@ function createModel(
 }
 
 // Load initial data
-const issue1 = setIssue({ id: "i1", title: "Issue 1", projectId: "p1" });
-const project1 = setProject({ id: "p1", title: "Project 1" });
+const store = init();
+const issue1 = store.setIssue({ id: "i1", title: "Issue 1", projectId: "p1" });
+const project1 = store.setProject({ id: "p1", title: "Project 1" });
 
 // Make changes
 runInAction(() => {
