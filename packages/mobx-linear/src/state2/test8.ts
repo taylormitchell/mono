@@ -20,6 +20,8 @@ class Store {
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
 
+  // TODO: probably don't actually want this and make it get constructed
+  // by the model decorators.
   models = {
     issue: new Map<string, Issue>(),
     project: new Map<string, Project>(),
