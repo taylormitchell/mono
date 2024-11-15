@@ -399,9 +399,9 @@ class Issue implements IModel {
   readonly model = "issue" as const;
   placeholder = false;
 
-  constructor(readonly id: string, props: Partial<ModelIssueProps> = {}) {
+  constructor(props: Partial<Omit<SerializedIssue, "id">> & { id: string }) {
     this.title = props.title ?? "";
-    this.project = props.project ?? null;
+    this.project = props.projectId ? new Project({ id: props.projectId }) : null;
     this.placeholder = props.placeholder ?? false;
   }
 
@@ -425,7 +425,7 @@ class Project implements IModel {
   readonly model = "project" as const;
   placeholder = false;
 
-  constructor(readonly id: string, props: Partial<ModelProjectProps> = {}) {
+  constructor(props: Partial<Omit<SerializedProject, "id">> & { id: string }) {
     this.title = props.title ?? "";
     this.placeholder = props.placeholder ?? false;
   }
