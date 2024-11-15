@@ -338,8 +338,17 @@ const Model = (value: any, { kind }: ClassDecoratorContext) => {
   return value;
 };
 
-function resolveRef<T extends ModelName>(model: T, id: string | undefined): ModelTypeMap[T] | null;
-function resolveRef(model: ModelName, id: string | undefined) {
+type ModelTypeMap = {
+  project: Project;
+  issue: Issue;
+  relation: Relation;
+};
+
+function resolveRef<T extends ModelName>(
+  model: T,
+  id: string | undefined | null
+): ModelTypeMap[T] | null;
+function resolveRef(model: ModelName, id: string | undefined | null) {
   if (!id) return null;
   if (model === "project") {
     const project = _store.models.project.get(id);
