@@ -159,7 +159,7 @@ class Store {
   }
 }
 
-const _store = new Store();
+const store = new Store();
 
 // Helpers
 
@@ -235,7 +235,7 @@ const Property = (serializedName?: string) => {
       },
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        _store?.emitEvent({
+        store?.emitEvent({
           operation: "update",
           model: getModelName(this.constructor),
           id: this.id,
@@ -270,7 +270,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
       },
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        _store?.emitEvent({
+        store?.emitEvent({
           operation: "update",
           model: getModelName(this.constructor),
           id: this.id,
@@ -299,15 +299,15 @@ class Backlinks<T extends IModel> implements Iterable<T> {
   unsubscribe: (() => void) | null = null;
 
   constructor(private owner: IModel, private link: { from: ModelName; key: string }) {
-    if (!_store) {
+    if (!store) {
       return;
     }
-    this.unsubscribe = _store.subscribe((event) => {
+    this.unsubscribe = store.subscribe((event) => {
       if (event.model === link.from) {
         if (event.operation === "delete" && this.map.has(event.id)) {
           this.map.delete(event.id);
         } else if (event.operation === "create") {
-          const model = _store?.getModel(link.from, event.id);
+          const model = store?.getModel(link.from, event.id);
           if (model) this.map.set(event.id, model);
         } else if (
           event.operation === "update" &&
@@ -317,7 +317,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
             this.map.delete(event.id);
           }
           if (event.newValue === this.owner.id) {
-            const model = _store?.getModel(link.from, event.id);
+            const model = store?.getModel(link.from, event.id);
             if (model) this.map.set(event.id, model);
           }
         }
@@ -343,7 +343,7 @@ const Model = (name: ModelName) => {
     if (kind === "class") {
       ModelClassToName.set(value, name);
       return function (props: any) {
-        const inst = _store.getModel(name, props.id) ?? new value(props);
+        const inst = store.getModel(name, props.id) ?? new value(props);
         Object.entries(ModelProps[name].foreignKeys).forEach(
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
             if (props[serializedKey]) {
@@ -360,8 +360,8 @@ const Model = (name: ModelName) => {
         if (props.placeholder !== undefined) {
           inst.placeholder = props.placeholder;
         }
-        _store.models[name].set(inst.id, inst);
-        _store.emitEvent({ operation: "create", model: name, id: inst.id, props });
+        store.models[name].set(inst.id, inst);
+        store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
       };
     }
@@ -385,15 +385,15 @@ function resolveRef<T extends ModelName>(
 function resolveRef(model: ModelName, id: string | undefined | null) {
   if (!id) return null;
   if (model === "project") {
-    const project = _store.models.project.get(id);
+    const project = store.models.project.get(id);
     if (project) return project;
     return new Project({ id, title: "", placeholder: true });
   } else if (model === "issue") {
-    const issue = _store.models.issue.get(id);
+    const issue = store.models.issue.get(id);
     if (issue) return issue;
     return new Issue({ id, title: "", placeholder: true });
   } else if (model === "relation") {
-    const relation = _store.models.relation.get(id);
+    const relation = store.models.relation.get(id);
     if (relation) return relation;
     return new Relation({ id, fromId: null, toId: null, placeholder: true });
   } else {
