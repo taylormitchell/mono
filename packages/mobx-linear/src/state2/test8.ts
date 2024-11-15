@@ -25,10 +25,8 @@ class Store {
     relation: new Map<string, Relation>(),
   };
 
-  static init() {
-    const store = new Store();
-    store.startAutoCommit();
-    return store;
+  constructor() {
+    this.startAutoCommit();
   }
 
   // Event handling methods
@@ -80,7 +78,8 @@ class Store {
 
 let store: Store | null = null;
 
-function init() {
+export function init() {
+  if (store) return store;
   store = new Store();
   return store;
 }
