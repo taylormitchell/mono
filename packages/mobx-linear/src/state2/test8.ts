@@ -405,8 +405,7 @@ export type ModelRelationProps = {
 };
 
 function ClassDecorator(...args: any[]) {
-  const inst = new value(...args);
-  return inst;
+  console.log("ClassDecorator", args);
 }
 
 @ClassDecorator
