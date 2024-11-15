@@ -416,7 +416,6 @@ function resolveRef(model: ModelName, id: string | undefined | null) {
 
 @Model("issue")
 class Issue implements IModel {
-  static readonly model = "issue" as const;
   readonly id: string;
   placeholder = false;
 
