@@ -354,7 +354,10 @@ class Backlinks<T extends Model> implements Iterable<T> {
         } else if (event.operation === "create") {
           const model = _store?.getModel(link.from, event.id);
           if (model) this.map.set(event.id, model);
-        } else if (event.operation === "update" && event.propKey === link.key) {
+        } else if (
+          event.operation === "update" &&
+          event.propKey === getSerializedKey(link.from, link.key)
+        ) {
           if (event.oldValue === this.owner.id) {
             this.map.delete(event.id);
           }
@@ -442,7 +445,7 @@ class Project implements Model {
   @Property()
   accessor title = "";
 
-  issues = new Backlinks<Issue>(this, { from: "issue", key: "projectId" });
+  issues = new Backlinks<Issue>(this, { from: "issue", key: "project" });
 
   set(props: Partial<ModelProjectProps>) {
     this.title = props.title ?? "";
