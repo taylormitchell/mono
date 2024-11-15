@@ -323,23 +323,6 @@ interface IModel {
   set(props: any): void;
 }
 
-export type ModelIssueProps = {
-  title: string;
-  project: Project | null;
-  placeholder: boolean;
-};
-
-export type ModelProjectProps = {
-  title: string;
-  placeholder: boolean;
-};
-
-export type ModelRelationProps = {
-  from: Issue | null;
-  to: Issue | null;
-  placeholder: boolean;
-};
-
 const Model = (value: any, { kind }: ClassDecoratorContext) => {
   if (kind === "class") {
     return function (props: any) {
@@ -377,9 +360,9 @@ class Issue implements IModel {
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
   relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
 
-  set(props: Partial<ModelIssueProps>) {
+  set(props: ModelProps<SerializedIssue>) {
     this.title = props.title ?? "";
-    this.project = props.project ?? null;
+    this.project = props.projectId ? _store.getProjectOrCreatePlaceholder(props.projectId) : null;
   }
 }
 
@@ -400,7 +383,7 @@ class Project implements IModel {
 
   issues = new Backlinks<Issue>(this, { from: "issue", key: "project" });
 
-  set(props: Partial<ModelProjectProps>) {
+  set(props: ModelProps<SerializedProject>) {
     this.title = props.title ?? "";
   }
 }
@@ -424,9 +407,9 @@ class Relation implements IModel {
   @ForeignKey("toId")
   accessor to: Issue | null = null;
 
-  set(props: Partial<ModelRelationProps>) {
-    this.from = props.from ?? null;
-    this.to = props.to ?? null;
+  set(props: ModelProps<SerializedRelation>) {
+    this.from = props.fromId ? _store.getIssueOrCreatePlaceholder(props.fromId) : null;
+    this.to = props.toId ? _store.getIssueOrCreatePlaceholder(props.toId) : null;
   }
 }
 
