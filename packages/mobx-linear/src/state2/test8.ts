@@ -191,6 +191,7 @@ function reverseEvent(event: Event): Event {
 
 // Model decorators
 
+const ModelClassToName = new Map<any, ModelName>();
 const ModelProps: Record<
   ModelName,
   { properties: Record<string, string>; foreignKeys: Record<string, string> }
@@ -334,8 +335,6 @@ interface IModel {
   readonly id: string;
   placeholder: boolean;
 }
-
-const ModelClassToName = new Map<any, ModelName>();
 
 function getModelName(value: any): ModelName {
   return ModelClassToName.get(value)!;
