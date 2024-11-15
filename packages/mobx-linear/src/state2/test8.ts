@@ -152,7 +152,7 @@ class Store {
         const project = props.projectId
           ? this.getProjectOrCreatePlaceholder(props.projectId)
           : null;
-        return this.createIssue(props.id, { ...props, project });
+        return new Issue(props.id, { ...props, project });
       }
     });
   }
@@ -164,7 +164,7 @@ class Store {
         existing.set(props);
         return existing;
       } else {
-        return this.createProject(props.id, props);
+        return new Project(props.id, props);
       }
     });
   }
@@ -179,7 +179,7 @@ class Store {
         existing.set(deserializedProps);
         return existing;
       } else {
-        return this.createRelation(props.id, deserializedProps);
+        return new Relation(props.id, deserializedProps);
       }
     });
   }
@@ -187,13 +187,13 @@ class Store {
   private getProjectOrCreatePlaceholder(id: string) {
     const project = this.models.project.get(id);
     if (project) return project;
-    return this.createProject(id, { title: "", placeholder: true });
+    return new Project(id, { title: "", placeholder: true });
   }
 
   private getIssueOrCreatePlaceholder(id: string) {
     const issue = this.models.issue.get(id);
     if (issue) return issue;
-    return this.createIssue(id, { title: "", placeholder: true });
+    return new Issue(id, { title: "", placeholder: true });
   }
 
   withEventQueuingDisabled<T>(fn: () => T): T {
@@ -457,7 +457,7 @@ class Relation implements IModel {
 }
 
 // Load initial data
-const store = init();
+const store = _store;
 const issue1 = store.setIssue({ id: "i1", title: "Issue 1", projectId: "p1" });
 const issue2 = store.setIssue({ id: "i2", title: "Issue 2", projectId: "p1" });
 const project1 = store.setProject({ id: "p1", title: "Project 1" });
@@ -469,10 +469,10 @@ runInAction(() => {
   project1.issues.delete("i1");
 });
 
-let relation: Relation | null = null;
+const relation: Relation | null = null;
 runInAction(() => {
   issue2.project = project2;
-  relation = store.createRelation("r1", { from: issue1, to: issue2 });
+  // relation = store.setRelation({ id: "r1", from: issue1, to: issue2 });
 });
 
 console.log(project1.issues);
