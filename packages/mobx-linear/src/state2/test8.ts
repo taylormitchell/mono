@@ -338,12 +338,25 @@ const Model = (value: any, { kind }: ClassDecoratorContext) => {
   return value;
 };
 
-function resolve(model: "project", id: string | undefined): Project | null;
-function resolve(model: "issue", id: string | undefined): Issue | null;
-function resolve(model: "relation", id: string | undefined): Relation | null;
-function resolve(model: ModelName, id: string | undefined) {
-  if (id) {
-    return _store.getModel(model, id);
+function resolveRef(model: "project", id: string | undefined): Project | null;
+function resolveRef(model: "issue", id: string | undefined): Issue | null;
+function resolveRef(model: "relation", id: string | undefined): Relation | null;
+function resolveRef(model: ModelName, id: string | undefined) {
+  if (!id) return null;
+  if (model === "project") {
+    const project = _store.models.project.get(id);
+    if (project) return project;
+    return new Project({ id, title: "", placeholder: true });
+  }
+  if (model === "issue") {
+    const issue = _store.models.issue.get(id);
+    if (issue) return issue;
+    return new Issue({ id, title: "", placeholder: true });
+  }
+  if (model === "relation") {
+    const relation = _store.models.relation.get(id);
+    if (relation) return relation;
+    return new Relation({ id, fromId: null, toId: null, placeholder: true });
   }
   return null;
 }
