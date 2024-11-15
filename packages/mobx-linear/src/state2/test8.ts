@@ -396,10 +396,10 @@ class Issue implements IModel {
   readonly id: string;
   placeholder = false;
 
-  constructor(props: Partial<Omit<SerializedIssue, "id">> & { id: string }) {
+  constructor(props: Partial<Omit<SerializedIssue, "id">> & { id: string; placeholder?: boolean }) {
     this.id = props.id;
     this.title = props.title ?? "";
-    this.project = props.projectId ? new Project({ id: props.projectId }) : null;
+    this.project = props.projectId ? _store.getProjectOrCreatePlaceholder(props.projectId) : null;
     this.placeholder = props.placeholder ?? false;
   }
 
