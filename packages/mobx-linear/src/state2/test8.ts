@@ -352,10 +352,10 @@ const Model = (name: ModelName) => {
       return function (props: any) {
         const inst = _store.getModel(name, props.id) ?? new value(props);
         Object.entries(ModelProps[name].foreignKeys).forEach(
-          ([modelKey, { referencedModelName: foreignModel, serializedKey: serializedKey }]) => {
+          ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
             if (props[serializedKey]) {
-              const foreignId = props[serializedKey];
-              inst[modelKey] = resolveRef(foreignModel, foreignId);
+              const referencedId = props[serializedKey];
+              inst[modelKey] = resolveRef(referencedModelName, referencedId);
             }
           }
         );
