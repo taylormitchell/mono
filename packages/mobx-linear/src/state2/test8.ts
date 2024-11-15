@@ -112,8 +112,6 @@ function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
   }
 }
 
-const eventSubscribers = new Set<(event: Event) => void>();
-
 // Helper functions
 function getModel(model: ModelName, id: string): Model | undefined {
   return models[model].get(id);
