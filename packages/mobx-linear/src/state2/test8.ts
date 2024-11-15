@@ -459,3 +459,5 @@ const project1 = store.setProject({ id: "p1", title: "Project 1" });
 runInAction(() => {
   project1.title = "Updated Title";
 });
+
+console.log(project1.issues);
