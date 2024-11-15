@@ -231,18 +231,21 @@ const Property = (serializedName?: string) => {
   };
 };
 
-const ModelProps = {
+const ModelProps: Record<
+  ModelName,
+  { properties: Record<string, string>; foreignKeys: Record<string, string> }
+> = {
   project: {
-    properties: [],
-    foreignKeys: [],
+    properties: {},
+    foreignKeys: {},
   },
   issue: {
-    properties: [],
-    foreignKeys: [],
+    properties: {},
+    foreignKeys: {},
   },
   relation: {
-    properties: [],
-    foreignKeys: [],
+    properties: {},
+    foreignKeys: {},
   },
 };
 
@@ -278,7 +281,7 @@ const ForeignKey = (serializedKey?: string) => {
       },
       init(this: T, value: any) {
         if (serializedKey) {
-          ModelProps[this.model].foreignKeys.push({ modelKey: propKey, serializedKey });
+          ModelProps[this.model].foreignKeys[propKey] = serializedKey;
         }
         return observableResult.init?.call(this, value);
       },
