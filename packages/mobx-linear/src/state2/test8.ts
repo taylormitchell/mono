@@ -237,7 +237,7 @@ const Property = (serializedName?: string) => {
         const oldValue = observableResult.get?.call(this);
         _store?.emitEvent({
           operation: "update",
-          model: ModelClassToName.get(this.constructor),
+          model: getModelName(this.constructor),
           id: this.id,
           propKey,
           oldValue,
@@ -247,7 +247,7 @@ const Property = (serializedName?: string) => {
       },
       init(this: T, value: any) {
         if (serializedName) {
-          const modelName = ModelClassToName.get(this.constructor);
+          const modelName = getModelName(this.constructor);
           ModelProps[modelName].properties[propKey] = serializedName;
         }
         return observableResult.init?.call(this, value);
@@ -278,7 +278,7 @@ const ForeignKey = (serializedKey?: string) => {
         const oldValue = observableResult.get?.call(this);
         _store?.emitEvent({
           operation: "update",
-          model: this.model,
+          model: getModelName(this.constructor),
           id: this.id,
           propKey,
           oldValue: oldValue?.id ?? null,
