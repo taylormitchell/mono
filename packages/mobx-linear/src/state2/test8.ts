@@ -1,81 +1,37 @@
 import { observable, reaction, runInAction } from "mobx";
+import {
+  Event,
+  ModelName,
+  ModelIssueProps,
+  ModelProjectProps,
+  ModelRelationProps,
+  SerializedIssue,
+  SerializedProject,
+  SerializedRelation,
+} from "./types";
 
-type ModelIssueProps = {
-  title: string;
-  project: Project | null;
-  placeholder: boolean;
-};
-
-type SerializedIssue = {
-  id: string;
-  title: string;
-  projectId: string | null;
-};
-
-type ModelProjectProps = {
-  title: string;
-  placeholder: boolean;
-};
-
-type SerializedProject = {
-  id: string;
-  title: string;
-};
-
-type ModelRelationProps = {
-  from: Issue | null;
-  to: Issue | null;
-  placeholder: boolean;
-};
-
-type SerializedRelation = {
-  id: string;
-  fromId: string | null;
-  toId: string | null;
-};
-
-// Basic types
-type ModelName = "issue" | "relation" | "project";
-type Event =
-  | {
-      operation: "create";
-      model: ModelName;
-      id: string;
-      props?: Record<string, unknown>;
-    }
-  | {
-      operation: "update";
-      model: ModelName;
-      id: string;
-      propKey: string;
-      oldValue: unknown;
-      newValue: unknown;
-    }
-  | {
-      operation: "delete";
-      model: ModelName;
-      id: string;
-      props?: Record<string, unknown>;
-    }
-  | {
-      // Used by sync/load to set a model to some state. It's not generated
-      // by a client, so we don't e.g. track it.
-      operation: "set";
-      model: ModelName;
-      id: string;
-      oldProps: Record<string, unknown> | null;
-      newProps: Record<string, unknown> | null;
-    };
-
-// State management
-const models = {
-  issue: new Map<string, Issue>(),
-  project: new Map<string, Project>(),
-  relation: new Map<string, Relation>(),
-};
+// Event system
 
 const undoStack: Event[][] = [];
 const redoStack: Event[][] = [];
+
+// Undo/Redo
+function undo() {
+  const changes = undoStack.pop();
+  if (changes) {
+    const reversedChanges = changes.map(reverseEvent).reverse();
+    redoStack.push(reversedChanges);
+    reversedChanges.forEach(applyEvent);
+  }
+}
+
+function redo() {
+  const changes = redoStack.pop();
+  if (changes) {
+    undoStack.push(changes);
+    changes.forEach(applyEvent);
+  }
+}
 
 let stagedChanges: Event[] = [];
 // We use this to trigger the reactions rather than tracking the array
@@ -93,7 +49,6 @@ function withIsTrackingChanges<T>(value: boolean, fn: () => T): T {
   }
 }
 
-// Event system
 const eventSubscribers = new Set<(event: Event) => void>();
 
 function emitEvent(event: Event) {
@@ -106,7 +61,90 @@ function emitEvent(event: Event) {
   }
 }
 
-function commitChanges() {
+// Helper functions
+function getModel(model: ModelName, id: string): Model | undefined {
+  return models[model].get(id);
+}
+
+function subscribe(subscriber: (event: Event) => void) {
+  eventSubscribers.add(subscriber);
+  return () => eventSubscribers.delete(subscriber);
+}
+
+function reverseEvent(event: Event): Event {
+  switch (event.operation) {
+    case "create":
+      return { operation: "delete", model: event.model, id: event.id };
+    case "delete":
+      return { operation: "create", model: event.model, id: event.id, props: event.props };
+    case "update":
+      return {
+        operation: "update",
+        model: event.model,
+        id: event.id,
+        propKey: event.propKey,
+        oldValue: event.newValue,
+        newValue: event.oldValue,
+      };
+    case "set":
+      return {
+        operation: "set",
+        model: event.model,
+        id: event.id,
+        oldProps: event.newProps,
+        newProps: event.oldProps,
+      };
+    default:
+      return event satisfies never;
+  }
+}
+
+function applyEvent(event: Event) {
+  isTrackingChanges = true;
+  try {
+    switch (event.operation) {
+      case "create":
+        createModel(event.model, event.id, event.props ?? {});
+        break;
+      case "update":
+        if (event.propKey) {
+          const model = getModel(event.model, event.id);
+          if (model) {
+            (model as any)[event.propKey] = event.newValue;
+          }
+        }
+        break;
+      case "delete":
+        models[event.model].delete(event.id);
+        break;
+      case "set": {
+        switch (event.model) {
+          case "project": {
+            setProject({ id: event.id, ...event.newProps });
+            break;
+          }
+          case "issue": {
+            setIssue({ id: event.id, ...event.newProps });
+            break;
+          }
+          case "relation": {
+            setRelation({ id: event.id, ...event.newProps });
+            break;
+          }
+        }
+        break;
+      }
+      default:
+        event satisfies never;
+    }
+  } finally {
+    isTrackingChanges = false;
+  }
+}
+
+// Commit changes
+
+function commit() {
   if (stagedChanges.length > 0) {
     console.log("Committing changes", stagedChanges);
     undoStack.push(stagedChanges);
@@ -115,13 +153,25 @@ function commitChanges() {
   }
 }
 
-// Set up automatic commit of changes
-reaction(
-  () => lastStagedChangeTimestamp.get(),
-  () => {
-    commitChanges();
-  }
-);
+let autoCommitDisposer: (() => void) | null = null;
+
+export function startAutoCommit() {
+  autoCommitDisposer = reaction(
+    () => lastStagedChangeTimestamp.get(),
+    () => {
+      commit();
+    }
+  );
+}
+
+export function stopAutoCommit() {
+  autoCommitDisposer?.();
+  autoCommitDisposer = null;
+}
+
+export function init() {
+  startAutoCommit();
+}
 
 // Model metadata for property mapping
 const modelMetadata = new Map<string, Map<string, string>>();
@@ -137,7 +187,8 @@ function getSerializedProp(model: ModelName, prop: string): string {
   return modelMetadata.get(model)?.get(prop) ?? prop;
 }
 
-// Property decorators
+// Model decorators
+
 const Property = (serializedName?: string) => {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
@@ -196,7 +247,6 @@ const ForeignKey = (serializedName?: string) => {
   };
 };
 
-// Backlinks implementation stays mostly the same
 class Backlinks<T extends Model> implements Iterable<T> {
   private map = new Map<string, T>();
   unsubscribe: (() => void) | null = null;
@@ -224,7 +274,14 @@ class Backlinks<T extends Model> implements Iterable<T> {
   }
 }
 
-// Model interfaces and classes
+// Models
+
+const models = {
+  issue: new Map<string, Issue>(),
+  project: new Map<string, Project>(),
+  relation: new Map<string, Relation>(),
+};
+
 interface Model {
   id: string;
   model: ModelName;
@@ -294,60 +351,6 @@ class Relation implements Model {
   set(props: Partial<ModelRelationProps>) {
     this.from = props.from ?? null;
     this.to = props.to ?? null;
-  }
-}
-
-// Helper functions
-function getModel(model: ModelName, id: string): Model | undefined {
-  return models[model].get(id);
-}
-
-function subscribe(subscriber: (event: Event) => void) {
-  eventSubscribers.add(subscriber);
-  return () => eventSubscribers.delete(subscriber);
-}
-
-// Core operations
-function applyEvent(event: Event) {
-  isTrackingChanges = true;
-  try {
-    switch (event.operation) {
-      case "create":
-        createModel(event.model, event.id, event.props ?? {});
-        break;
-      case "update":
-        if (event.propKey) {
-          const model = getModel(event.model, event.id);
-          if (model) {
-            (model as any)[event.propKey] = event.newValue;
-          }
-        }
-        break;
-      case "delete":
-        models[event.model].delete(event.id);
-        break;
-      case "set": {
-        switch (event.model) {
-          case "project": {
-            setProject({ id: event.id, ...event.newProps });
-            break;
-          }
-          case "issue": {
-            setIssue({ id: event.id, ...event.newProps });
-            break;
-          }
-          case "relation": {
-            setRelation({ id: event.id, ...event.newProps });
-            break;
-          }
-        }
-        break;
-      }
-      default:
-        event satisfies never;
-    }
-  } finally {
-    isTrackingChanges = false;
   }
 }
 
@@ -461,52 +464,6 @@ function setRelation(props: SerializedRelation) {
       return relation;
     }
   });
-}
-
-// Undo/Redo
-function undo() {
-  const changes = undoStack.pop();
-  if (changes) {
-    const reversedChanges = changes.map(reverseEvent).reverse();
-    redoStack.push(reversedChanges);
-    reversedChanges.forEach(applyEvent);
-  }
-}
-
-function redo() {
-  const changes = redoStack.pop();
-  if (changes) {
-    undoStack.push(changes);
-    changes.forEach(applyEvent);
-  }
-}
-
-function reverseEvent(event: Event): Event {
-  switch (event.operation) {
-    case "create":
-      return { operation: "delete", model: event.model, id: event.id };
-    case "delete":
-      return { operation: "create", model: event.model, id: event.id, props: event.props };
-    case "update":
-      return {
-        operation: "update",
-        model: event.model,
-        id: event.id,
-        propKey: event.propKey,
-        oldValue: event.newValue,
-        newValue: event.oldValue,
-      };
-    case "set":
-      return {
-        operation: "set",
-        model: event.model,
-        id: event.id,
-        oldProps: event.newProps,
-        newProps: event.oldProps,
-      };
-    default:
-      return event satisfies never;
-  }
 }
 
 // Load initial data
