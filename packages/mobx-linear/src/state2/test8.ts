@@ -231,6 +231,21 @@ const Property = (serializedName?: string) => {
   };
 };
 
+const ModelProps = {
+  project: {
+    properties: [],
+    foreignKeys: [],
+  },
+  issue: {
+    properties: [],
+    foreignKeys: [],
+  },
+  relation: {
+    properties: [],
+    foreignKeys: [],
+  },
+};
+
 const keyMaps: { model: ModelName; modelKey: string; serializedKey: string }[] = [];
 function getSerializedKey(model: ModelName, modelKey: string) {
   const keyMap = keyMaps.find((k) => k.model === model && k.modelKey === modelKey);
@@ -263,7 +278,7 @@ const ForeignKey = (serializedKey?: string) => {
       },
       init(this: T, value: any) {
         if (serializedKey) {
-          keyMaps.push({ model: this.model, modelKey: propKey, serializedKey });
+          ModelProps[this.model].foreignKeys.push({ modelKey: propKey, serializedKey });
         }
         return observableResult.init?.call(this, value);
       },
