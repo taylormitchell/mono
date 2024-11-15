@@ -363,6 +363,16 @@ const Model = (name: ModelName) => {
           throw new Error(`Model ${name} with id ${props.id} already exists`);
         }
         const inst = new value(props);
+        Object.entries(ModelProps[name].foreignKeys).forEach(([key, serializedKey]) => {
+          if (props[serializedKey]) {
+            inst[key] = resolveRef(name, props[serializedKey]);
+          }
+        });
+        Object.entries(ModelProps[name].properties).forEach(([key, serializedKey]) => {
+          if (props[serializedKey]) {
+            inst[key] = props[serializedKey];
+          }
+        });
         _store.models[name].set(inst.id, inst);
         _store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
