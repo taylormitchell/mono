@@ -163,6 +163,18 @@ class Store {
     return relation;
   }
 
+  private getProjectOrCreatePlaceholder(id: string) {
+    const project = this.models.project.get(id);
+    if (project) return project;
+    return this.createProject(id, { title: "", placeholder: true });
+  }
+
+  private getIssueOrCreatePlaceholder(id: string) {
+    const issue = this.models.issue.get(id);
+    if (issue) return issue;
+    return this.createIssue(id, { title: "", placeholder: true });
+  }
+
   setIssue(props: SerializedIssue) {
     return this.withEventQueuingDisabled(() => {
       const existing = this.models.issue.get(props.id);
@@ -170,17 +182,9 @@ class Store {
         existing.set(props);
         return existing;
       } else {
-        let project: Project | null = null;
-        if (props.projectId) {
-          project = this.models.project.get(props.projectId as string) ?? null;
-          if (!project) {
-            project = new Project(props.projectId as string, {
-              title: "",
-              placeholder: true,
-            });
-            this.models.project.set(props.projectId as string, project);
-          }
-        }
+        const project = props.projectId
+          ? this.getProjectOrCreatePlaceholder(props.projectId)
+          : null;
         const issue = new Issue(props.id, { ...props, project });
         this.models.issue.set(props.id, issue);
         return issue;
