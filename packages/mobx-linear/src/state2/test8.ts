@@ -319,6 +319,9 @@ const ForeignKey = (serializedName?: string) => {
         });
         observableResult.set?.call(this, newValue);
       },
+      init(this: T, value: any) {
+        observableResult.init?.call(this, value);
+      },
     };
   };
 };
