@@ -309,6 +309,7 @@ const Model = (name: ModelName) => {
     console.log("Model", name, kind);
     if (kind === "class") {
       store.models[name].class = value;
+
       return function (props: any) {
         const inst = store.getModel(name, props.id) ?? new value(props);
         // Resolve foreign keys to instances
