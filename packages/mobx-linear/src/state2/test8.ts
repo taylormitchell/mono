@@ -389,10 +389,10 @@ class Backlinks<T extends IModel> implements Iterable<T> {
           if (referencingInstance) this.map.set(event.id, referencingInstance);
           return;
         }
-        const serializedKey = referencingInstance
+        const serializedForeignKey = referencingInstance
           ? getModelMetadata(referencingInstance.constructor).foreignKeys[link.key].serializedKey
           : null;
-        if (event.operation === "update" && event.propKey === serializedKey) {
+        if (event.operation === "update" && event.propKey === serializedForeignKey) {
           if (event.oldValue === this.owner.id) {
             this.map.delete(event.id);
           }
