@@ -314,68 +314,65 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 };
 
 const Model = (name: ModelName) => {
-  return (value: any, { kind }: ClassDecoratorContext) => {
-    if (kind === "class") {
-      initModelMetadata(value, name);
-      const instances = new Map<string, any>();
-      store.models[name] = {
-        // TODO: Should somehow make it more obvious that this is creating a new instance
-        // or if one already exists, updating the existing one. And maybe the event should
-        // be different between the two.
-        create: action("create", (props: any) => {
-          const inst = store.models[name].get(props.id) ?? new value(props);
-          // Set id if it's provided
-          if (props.id) {
-            inst.id = props.id;
-          }
-          // Resolve foreign keys to instances
-          Object.entries(getModelMetadata(value).foreignKeys).forEach(
-            ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
-              if (props[serializedKey]) {
-                const referencedId = props[serializedKey];
-                let referencedInst: IModel | null = null;
-                if (referencedId) {
-                  const inst = store.models[referencedModelName].get(referencedId);
-                  if (inst) {
-                    referencedInst = inst;
-                  } else {
-                    if (!store.models[referencedModelName].create) {
-                      throw new Error(
-                        `Missing create method for referenced model ${referencedModelName}`
-                      );
-                    }
-                    referencedInst = store.models[referencedModelName].create({
-                      id: referencedId,
-                    });
+  return (cls: any) => {
+    initModelMetadata(cls, name);
+    const instances = new Map<string, any>();
+    store.models[name] = {
+      // TODO: Should somehow make it more obvious that this is creating a new instance
+      // or if one already exists, updating the existing one. And maybe the event should
+      // be different between the two.
+      create: action("create", (props: any) => {
+        const inst = store.models[name].get(props.id) ?? new cls(props);
+        // Set id if it's provided
+        if (props.id) {
+          inst.id = props.id;
+        }
+        // Resolve foreign keys to instances
+        Object.entries(getModelMetadata(cls).foreignKeys).forEach(
+          ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
+            if (props[serializedKey]) {
+              const referencedId = props[serializedKey];
+              let referencedInst: IModel | null = null;
+              if (referencedId) {
+                const inst = store.models[referencedModelName].get(referencedId);
+                if (inst) {
+                  referencedInst = inst;
+                } else {
+                  if (!store.models[referencedModelName].create) {
+                    throw new Error(
+                      `Missing create method for referenced model ${referencedModelName}`
+                    );
                   }
+                  referencedInst = store.models[referencedModelName].create({
+                    id: referencedId,
+                  });
                 }
-                inst[modelKey] = referencedInst;
               }
+              inst[modelKey] = referencedInst;
             }
-          );
-          // Set properties
-          Object.entries(getModelMetadata(value).properties).forEach(
-            ([modelKey, { serializedKey }]) => {
-              if (props[serializedKey]) {
-                inst[modelKey] = props[serializedKey];
-              }
+          }
+        );
+        // Set properties
+        Object.entries(getModelMetadata(cls).properties).forEach(
+          ([modelKey, { serializedKey }]) => {
+            if (props[serializedKey]) {
+              inst[modelKey] = props[serializedKey];
             }
-          );
-          inst.placeholder = props.placeholder ?? false;
-          instances.set(inst.id, inst);
-          store.emitEvent({ operation: "create", model: name, id: inst.id, props });
-          return inst;
-        }),
-        delete: action("delete", (id: string) => {
-          store.emitEvent({ operation: "delete", model: name, id });
-          instances.delete(id);
-        }),
-        get: (id: string) => instances.get(id),
-        getAll: () => Array.from(instances.values()),
-      };
-      return value;
-    }
-    return value;
+          }
+        );
+        inst.placeholder = props.placeholder ?? false;
+        instances.set(inst.id, inst);
+        store.emitEvent({ operation: "create", model: name, id: inst.id, props });
+        return inst;
+      }),
+      delete: action("delete", (id: string) => {
+        store.emitEvent({ operation: "delete", model: name, id });
+        instances.delete(id);
+      }),
+      get: (id: string) => instances.get(id),
+      getAll: () => Array.from(instances.values()),
+    };
+    return cls;
   };
 };
 
