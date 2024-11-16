@@ -144,9 +144,10 @@ class Store {
       case "update":
         if (event.propKey) {
           const model = this.getModel(event.model, event.id);
-          if (model) {
-            (model as any)[event.propKey] = event.newValue;
+          if (!model) {
+            throw new Error(`Unknown model ${event.model} with id ${event.id}`);
           }
+          (model as any)[event.propKey] = event.newValue;
         }
         break;
       case "delete":
