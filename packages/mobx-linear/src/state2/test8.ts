@@ -506,6 +506,15 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
   };
 }
 
+type Collection<T extends IModel> = {
+  [Symbol.iterator]: () => Iterator<T>;
+  delete: (id: string) => boolean;
+  add: (value: T) => void;
+  clear: () => void;
+  has: (id: string) => boolean;
+  get: (id: string) => T | undefined;
+};
+
 // Models
 
 @Model("issue")
