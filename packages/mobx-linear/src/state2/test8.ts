@@ -325,6 +325,8 @@ const Model = (name: ModelName) => {
                   referencedInst = new store.models[referencedModelName].class({
                     id: referencedId,
                   });
+                  // TODO For some reason the above call doesn't trigger the Model decorator
+                  // so we have to set placeholder manually.
                   referencedInst.placeholder = true;
                 }
               }
