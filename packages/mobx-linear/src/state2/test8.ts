@@ -55,16 +55,29 @@ class Store {
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
 
-  models: Record<
-    ModelName,
-    {
+  models: {
+    issue: {
       properties: Record<string, string>;
       foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-      instances: Map<string, IModel>;
-      create: (props: any) => IModel;
+      instances: Map<string, Issue>;
+      create: (props: any) => Issue;
       class: any;
-    }
-  > = {
+    };
+    project: {
+      properties: Record<string, string>;
+      foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+      instances: Map<string, Project>;
+      create: (props: any) => Project;
+      class: any;
+    };
+    relation: {
+      properties: Record<string, string>;
+      foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+      instances: Map<string, Relation>;
+      create: (props: any) => Relation;
+      class: any;
+    };
+  } = {
     issue: {
       properties: {},
       foreignKeys: {},
