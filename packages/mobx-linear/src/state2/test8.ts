@@ -429,7 +429,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 }
 
 function BacklinkDecorator(link: { from: ModelName; key: string }) {
-  return <T extends IModel>(_: any, { name }: ClassAccessorDecoratorContext) => {
+  return (_: any, { name }: ClassAccessorDecoratorContext) => {
     console.log("name", name);
     class BacklinksMap<T extends IModel> extends Map<string, T> {
       unsubscribe: () => void;
@@ -540,7 +540,7 @@ class Issue implements IModel {
   accessor project: Project | null = null;
 
   @BacklinkDecorator({ from: "relation", key: "from" })
-  test = new Map<string, Relation>();
+  accessor test = new Map<string, Relation>();
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
 
