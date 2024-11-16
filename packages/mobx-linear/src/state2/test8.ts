@@ -306,6 +306,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 
 const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
+    console.log("Model", name, kind);
     if (kind === "class") {
       store.models[name].class = value;
       return function (props: any) {
