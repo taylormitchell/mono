@@ -103,11 +103,11 @@ class Store {
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
 
-  private objects = {
+  objects = {
     issue: new Map<string, Issue>(),
     project: new Map<string, Project>(),
     relation: new Map<string, Relation>(),
-  };
+  }; // TODO: Make private
 
   models: {
     issue: ModelData<Issue, SerializedIssue>;
@@ -356,16 +356,19 @@ const Model = (name: ModelName) => {
           }
         });
         inst.placeholder = props.placeholder ?? false;
-        store.models[name].instances.set(inst.id, inst);
+        store.objects[name].set(inst.id, inst);
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
       }
-      store.models[name].create = action("create", createInstance);
-      store.models[name].delete = action("delete", (id: string) => {
-        store.emitEvent({ operation: "delete", model: name, id });
-        store.models[name].instances.delete(id);
-      });
-      Object.defineProperty(value, modelMetadata, { value: { name } });
+      store.models[name] = {
+        create: action("create", createInstance),
+        delete: action("delete", (id: string) => {
+          store.emitEvent({ operation: "delete", model: name, id });
+          store.objects[name].delete(id);
+        }),
+        get: (id: string) => store.objects[name].get(id),
+        getAll: () => Array.from(store.objects[name].values()),
+      };
       return value;
     }
     return value;
