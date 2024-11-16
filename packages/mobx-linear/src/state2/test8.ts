@@ -499,33 +499,16 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
 
 const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
-    const observableResult = observable(target, context);
-    if (!observableResult) {
-      throw new Error("Failed to decorate property");
-    }
-    const modelKey = String(context.name);
-    const serializedKey = _serializedKey ?? modelKey;
-
+    const set = observable.box(new Set<T>());
     return {
       get(this: T) {
-        return observableResult.get?.call(this);
+        return set.get();
       },
       set(this: T, newValue: any) {
-        const oldValue = observableResult.get?.call(this);
-        store?.emitEvent({
-          operation: "update",
-          model: getModelMetadata(this.constructor).name,
-          id: this.id,
-          propKey: serializedKey,
-          oldValue,
-          newValue,
-        });
-        observableResult.set?.call(this, newValue);
+        set.set(newValue);
       },
       init(this: T, value: any) {
-        const metadata = getModelMetadata(this.constructor);
-        metadata.properties[modelKey] = { serializedKey };
-        return observableResult.init?.call(this, value);
+        set.set(value);
       },
     };
   };
