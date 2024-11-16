@@ -368,7 +368,10 @@ const Model = (name: ModelName) => {
         return inst;
       }
       store.models[name].create = action("create", createInstance);
-      store.models[name].class = value;
+      store.models[name].delete = action("delete", (id: string) => {
+        store.emitEvent({ operation: "delete", model: name, id });
+        store.models[name].instances.delete(id);
+      });
       Object.defineProperty(value, modelMetadata, { value: { name } });
       return value;
     }
