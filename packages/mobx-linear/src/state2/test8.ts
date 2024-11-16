@@ -319,6 +319,9 @@ const Model = (name: ModelName) => {
       initModelMetadata(value, name);
       const instances = new Map<string, any>();
       store.models[name] = {
+        // TODO: Should somehow make it more obvious that this is creating a new instance
+        // or if one already exists, updating the existing one. And maybe the event should
+        // be different between the two.
         create: action("create", (props: any) => {
           const inst = store.models[name].get(props.id) ?? new value(props);
           // Set id if it's provided
