@@ -62,11 +62,8 @@ type ModelData<
   T extends Project | Issue | Relation,
   S extends SerializedProject | SerializedIssue | SerializedRelation
 > = {
-  properties: Record<string, string>;
-  foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
   create: (props: ModelProps<S>) => T;
   instances: Map<string, T>;
-  class: T;
   get: (id: string) => T | undefined;
   getAll: () => T[];
 };
@@ -94,28 +91,19 @@ class Store {
     relation: ModelData<Relation, SerializedRelation>;
   } = {
     issue: {
-      properties: {},
-      foreignKeys: {},
       create: null,
-      class: null,
       instances: new Map<string, Issue>(),
       get: (id: string) => this.models.issue.instances.get(id),
       getAll: () => Array.from(this.models.issue.instances.values()),
     },
     project: {
-      properties: {},
-      foreignKeys: {},
       create: null,
-      class: null,
       instances: new Map<string, Project>(),
       get: (id: string) => this.models.project.instances.get(id),
       getAll: () => Array.from(this.models.project.instances.values()),
     },
     relation: {
-      properties: {},
-      foreignKeys: {},
       create: null,
-      class: null,
       instances: new Map<string, Relation>(),
       get: (id: string) => this.models.relation.instances.get(id),
       getAll: () => Array.from(this.models.relation.instances.values()),
@@ -246,15 +234,6 @@ const store = new Store();
 
 // Model decorators
 
-function constructorToModelName(value: any): ModelName {
-  for (const [modelName, props] of Object.entries(store.models)) {
-    if (props.class === value) {
-      return modelName as ModelName;
-    }
-  }
-  throw new Error("Unknown model class");
-}
-
 function getSerializedForeignKey(model: ModelName, modelKey: string) {
   return store.models[model].foreignKeys[modelKey]?.serializedKey ?? modelKey;
 }
@@ -309,7 +288,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
         const oldValue = observableResult.get?.call(this);
         store?.emitEvent({
           operation: "update",
-          model: constructorToModelName(this.constructor),
+          model: getModelMetadata(this.constructor).name,
           id: this.id,
           propKey: serializedKey,
           oldValue: oldValue?.id ?? null,
