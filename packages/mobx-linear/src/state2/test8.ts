@@ -5,6 +5,11 @@ type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelati
   Omit<T, "id">
 > & { id: string; placeholder?: boolean };
 
+interface IModel {
+  readonly id: string;
+  placeholder: boolean;
+}
+
 class Store {
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
@@ -390,11 +395,6 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 }
 
 // Models
-
-interface IModel {
-  readonly id: string;
-  placeholder: boolean;
-}
 
 @Model("issue")
 class Issue implements IModel {
