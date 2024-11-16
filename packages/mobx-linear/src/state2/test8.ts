@@ -429,7 +429,8 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 }
 
 function BacklinkDecorator(link: { from: ModelName; key: string }) {
-  return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
+  return <T extends IModel>(_: any, { name }: ClassAccessorDecoratorContext) => {
+    console.log("name", name);
     class BacklinksMap<T extends IModel> extends Map<string, T> {
       unsubscribe: () => void;
       constructor(owner: any, initialMap: Map<string, T>) {
