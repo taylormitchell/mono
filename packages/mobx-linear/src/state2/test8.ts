@@ -74,10 +74,10 @@ function createInitialModelData(name: ModelName) {
     create: () => {
       throw new Error(`Create method not set. ${msg}`);
     },
-    delete: (id: string) => {
+    delete: () => {
       throw new Error(`Delete method not set. ${msg}`);
     },
-    get: (id: string) => {
+    get: () => {
       throw new Error(`Get method not set. ${msg}`);
     },
     getAll: () => {
@@ -102,12 +102,6 @@ class Store {
   // We use this to trigger the reactions rather than tracking the array
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
-
-  objects = {
-    issue: new Map<string, Issue>(),
-    project: new Map<string, Project>(),
-    relation: new Map<string, Relation>(),
-  }; // TODO: Make private
 
   models: {
     issue: ModelData<Issue, SerializedIssue>;
@@ -322,6 +316,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     if (kind === "class") {
+      const instances = new Map<string, any>();
       function createInstance(props: any) {
         const inst = store.getModel(name, props.id) ?? new value(props);
         // Resolve foreign keys to instances
@@ -356,7 +351,7 @@ const Model = (name: ModelName) => {
           }
         });
         inst.placeholder = props.placeholder ?? false;
-        store.objects[name].set(inst.id, inst);
+        instances.set(inst.id, inst);
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
       }
@@ -364,10 +359,10 @@ const Model = (name: ModelName) => {
         create: action("create", createInstance),
         delete: action("delete", (id: string) => {
           store.emitEvent({ operation: "delete", model: name, id });
-          store.objects[name].delete(id);
+          instances.delete(id);
         }),
-        get: (id: string) => store.objects[name].get(id),
-        getAll: () => Array.from(store.objects[name].values()),
+        get: (id: string) => instances.get(id),
+        getAll: () => Array.from(instances.values()),
       };
       return value;
     }
