@@ -431,11 +431,9 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 function BacklinkDecorator(link: { model: ModelName; key: string }) {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
     class BacklinksSet<T extends IModel> implements Set<T> {
-      private map = new Map<string, T>();
-
+      private map = observable.map<string, T>();
       unsubscribe: () => void;
-
-      constructor(private owner: IModel, private link: { from: ModelName; key: string }) {
+      constructor() {
         this.unsubscribe = store.subscribe((event) => {
           if (event.model === link.from) {
             if (event.operation === "delete" && this.has(event.id)) {
@@ -468,7 +466,7 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
       }
 
       delete(id: string) {
-        super.delete(id);
+        return this.map.delete(id);
       }
 
       add(value: T) {
@@ -479,10 +477,7 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
         this.map.clear();
       }
     }
-    const observableResult = observable(target, context);
-    if (!observableResult) {
-      throw new Error("Failed to decorate property");
-    }
+
     const modelKey = String(context.name);
     const serializedKey = _serializedKey ?? modelKey;
 
