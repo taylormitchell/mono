@@ -66,6 +66,7 @@ type ModelData<
   instances: Map<string, T>;
   get: (id: string) => T | undefined;
   getAll: () => T[];
+  delete: (id: string) => void;
 };
 
 // Store
@@ -94,7 +95,10 @@ class Store {
       create: () => {
         throw new Error("Create method not set");
       },
-      instances: new Map<string, Issue>(),
+      instances: new Map<string, Issue>(), // TODO: Make private
+      delete: (id: string) => {
+        this.models.issue.instances.delete(id);
+      },
       get: (id: string) => this.models.issue.instances.get(id),
       getAll: () => Array.from(this.models.issue.instances.values()),
     },
@@ -103,6 +107,9 @@ class Store {
         throw new Error("Create method not set");
       },
       instances: new Map<string, Project>(),
+      delete: (id: string) => {
+        this.models.project.instances.delete(id);
+      },
       get: (id: string) => this.models.project.instances.get(id),
       getAll: () => Array.from(this.models.project.instances.values()),
     },
@@ -111,6 +118,9 @@ class Store {
         throw new Error("Create method not set");
       },
       instances: new Map<string, Relation>(),
+      delete: (id: string) => {
+        this.models.relation.instances.delete(id);
+      },
       get: (id: string) => this.models.relation.instances.get(id),
       getAll: () => Array.from(this.models.relation.instances.values()),
     },
