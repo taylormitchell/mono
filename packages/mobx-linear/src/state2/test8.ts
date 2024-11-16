@@ -318,9 +318,9 @@ const Model = (name: ModelName) => {
       // or if one already exists, updating the existing one. And maybe the event should
       // be different between the two.
       create: action("create", (props: any) => {
-        const existing = store.models[name].get(props.id);
-        const inst = existing ?? new cls(props);
-        if (!existing && props.id) {
+        const existing = props.id ? store.models[name].get(props.id) : undefined;
+        const inst = existing ?? new cls();
+        if (props.id) {
           inst.id = props.id;
         }
         // Placeholder instances are created by passing placeholder: true to the
