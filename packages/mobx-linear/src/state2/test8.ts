@@ -352,7 +352,46 @@ const Model = (name: ModelName) => {
         return inst;
       }
       store.models[name] = {
-        create: action("create", createInstance),
+        create: action("create", (props: any) => {
+          const inst = store.models[name].get(props.id) ?? new value(props);
+          // Resolve foreign keys to instances
+          Object.entries(getModelMetadata(value).foreignKeys).forEach(
+            ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
+              if (props[serializedKey]) {
+                const referencedId = props[serializedKey];
+                let referencedInst: IModel | null = null;
+                if (referencedId) {
+                  const inst = store.models[referencedModelName].get(referencedId);
+                  if (inst) {
+                    referencedInst = inst;
+                  } else {
+                    if (!store.models[referencedModelName].create) {
+                      throw new Error(
+                        `Missing create method for referenced model ${referencedModelName}`
+                      );
+                    }
+                    referencedInst = store.models[referencedModelName].create({
+                      id: referencedId,
+                    });
+                  }
+                }
+                inst[modelKey] = referencedInst;
+              }
+            }
+          );
+          // Set properties
+          Object.entries(getModelMetadata(value).properties).forEach(
+            ([modelKey, serializedKey]) => {
+              if (props[serializedKey]) {
+                inst[modelKey] = props[serializedKey];
+              }
+            }
+          );
+          inst.placeholder = props.placeholder ?? false;
+          instances.set(inst.id, inst);
+          store.emitEvent({ operation: "create", model: name, id: inst.id, props });
+          return inst;
+        }),
         delete: action("delete", (id: string) => {
           store.emitEvent({ operation: "delete", model: name, id });
           instances.delete(id);
