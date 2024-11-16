@@ -428,6 +428,89 @@ class Backlinks<T extends IModel> implements Iterable<T> {
   }
 }
 
+function BacklinkDecorator(link: { model: ModelName; key: string }) {
+  return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
+    class BacklinksSet<T extends IModel> implements Set<T> {
+      private map = new Map<string, T>();
+
+      unsubscribe: () => void;
+
+      constructor(private owner: IModel, private link: { from: ModelName; key: string }) {
+        this.unsubscribe = store.subscribe((event) => {
+          if (event.model === link.from) {
+            if (event.operation === "delete" && this.has(event.id)) {
+              this.map.delete(event.id);
+              return;
+            }
+            const modelReferencingOwner = store.models[link.from].get(event.id);
+            if (!modelReferencingOwner) {
+              console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
+              return;
+            }
+            if (event.operation === "create") {
+              this.map.set(event.id, modelReferencingOwner);
+              return;
+            }
+            const serializedForeignKey = modelReferencingOwner
+              ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key]
+                  .serializedKey
+              : null;
+            if (event.operation === "update" && event.propKey === serializedForeignKey) {
+              if (event.oldValue === this.owner.id) {
+                this.map.delete(event.id);
+              }
+              if (event.newValue === this.owner.id) {
+                this.map.set(event.id, modelReferencingOwner);
+              }
+            }
+          }
+        });
+      }
+
+      delete(id: string) {
+        super.delete(id);
+      }
+
+      add(value: T) {
+        this.map.set(value.id, value);
+      }
+
+      clear() {
+        this.map.clear();
+      }
+    }
+    const observableResult = observable(target, context);
+    if (!observableResult) {
+      throw new Error("Failed to decorate property");
+    }
+    const modelKey = String(context.name);
+    const serializedKey = _serializedKey ?? modelKey;
+
+    return {
+      get(this: T) {
+        return observableResult.get?.call(this);
+      },
+      set(this: T, newValue: any) {
+        const oldValue = observableResult.get?.call(this);
+        store?.emitEvent({
+          operation: "update",
+          model: getModelMetadata(this.constructor).name,
+          id: this.id,
+          propKey: serializedKey,
+          oldValue,
+          newValue,
+        });
+        observableResult.set?.call(this, newValue);
+      },
+      init(this: T, value: any) {
+        const metadata = getModelMetadata(this.constructor);
+        metadata.properties[modelKey] = { serializedKey };
+        return observableResult.init?.call(this, value);
+      },
+    };
+  };
+}
+
 // Models
 
 @Model("issue")
@@ -442,7 +525,11 @@ class Issue implements IModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
+  @BacklinkDecorator({ model: "relation", key: "from" })
+  test = new Set<Relation>();
+
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
+
   relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
 }
 
