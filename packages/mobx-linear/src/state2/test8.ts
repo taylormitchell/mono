@@ -360,6 +360,7 @@ const Model = (name: ModelName) => {
       }
       store.models[name].create = action("create", createInstance);
       store.models[name].class = value;
+      Object.defineProperty(value, modelMetadata, { value: { name } });
       return value;
     }
     return value;
