@@ -472,6 +472,8 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
         }
         return super.delete(id);
       }
+
+      // TODO: `add` method?
     }
 
     const backlinksMap = new BacklinksMap<T>();
