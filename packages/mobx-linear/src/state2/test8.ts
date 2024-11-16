@@ -318,7 +318,8 @@ const Model = (name: ModelName) => {
       // or if one already exists, updating the existing one. And maybe the event should
       // be different between the two.
       create: action("create", (props: any) => {
-        const inst = store.models[name].get(props.id) ?? new cls(props);
+        const existing = store.models[name].get(props.id);
+        const inst = existing ?? new cls(props);
         // Set id if it's provided
         if (props.id) {
           inst.id = props.id;
@@ -350,8 +351,9 @@ const Model = (name: ModelName) => {
             }
           }
         );
-
-        instances.set(inst.id, inst);
+        if (!existing) {
+          instances.set(inst.id, inst);
+        }
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
       }),
