@@ -42,8 +42,10 @@ type ModelData<T extends Project | Issue | Relation> = {
   properties: Record<string, string>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
   create: (props: any) => T;
-  class: T;
   instances: Map<string, T>;
+  class: T;
+  get: (id: string) => T | undefined;
+  getAll: () => T[];
 };
 
 // Store
@@ -74,6 +76,8 @@ class Store {
       create: null,
       class: null,
       instances: new Map<string, Issue>(),
+      get: (id: string) => this.models.issue.instances.get(id),
+      getAll: () => Array.from(this.models.issue.instances.values()),
     },
     project: {
       properties: {},
@@ -81,6 +85,8 @@ class Store {
       create: null,
       class: null,
       instances: new Map<string, Project>(),
+      get: (id: string) => this.models.project.instances.get(id),
+      getAll: () => Array.from(this.models.project.instances.values()),
     },
     relation: {
       properties: {},
@@ -88,6 +94,8 @@ class Store {
       create: null,
       class: null,
       instances: new Map<string, Relation>(),
+      get: (id: string) => this.models.relation.instances.get(id),
+      getAll: () => Array.from(this.models.relation.instances.values()),
     },
   };
 
