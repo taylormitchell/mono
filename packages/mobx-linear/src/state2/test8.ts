@@ -14,6 +14,8 @@ interface IModel {
   placeholder: boolean;
 }
 
+const modelMetadata = Symbol("modelMetadata");
+
 function reverseEvent(event: Event): Event {
   switch (event.operation) {
     case "create":
