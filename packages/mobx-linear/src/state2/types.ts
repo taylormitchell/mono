@@ -38,13 +38,4 @@ export type Event =
       model: ModelName;
       id: string;
       props?: Record<string, unknown>;
-    }
-  | {
-      // Used by sync/load to set a model to some state. It's not generated
-      // by a client, so we don't e.g. track it.
-      operation: "set";
-      model: ModelName;
-      id: string;
-      oldProps: Record<string, unknown> | null;
-      newProps: Record<string, unknown> | null;
     };
