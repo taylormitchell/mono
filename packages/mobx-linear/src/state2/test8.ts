@@ -549,7 +549,7 @@ class Issue implements IModel {
   accessor project: Project | null = null;
 
   @BacklinkDecorator({ model: "relation", key: "from" })
-  test = new Set<Relation>();
+  test = new Map<string, Relation>();
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
 
