@@ -480,6 +480,9 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
 
     return {
       get(this: T) {
+        if (!backlinksMap) {
+          backlinksMap = new BacklinksMap<T>(this, new Map());
+        }
         return backlinksMap;
       },
       set(this: T, newMap: any) {
