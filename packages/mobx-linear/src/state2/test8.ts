@@ -312,7 +312,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     if (kind === "class") {
-      value[modelMetadata].name = name;
+      getModelMetadata(value).name = name;
       const instances = new Map<string, any>();
       store.models[name] = {
         create: action("create", (props: any) => {
