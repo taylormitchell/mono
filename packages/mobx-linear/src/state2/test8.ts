@@ -430,10 +430,10 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 
 function BacklinkDecorator(link: { model: ModelName; key: string }) {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
-    class BacklinksMap<T extends IModel> implements Map<string, T> {
-      private map = observable.map<string, T>();
+    class BacklinksMap<T extends IModel> extends Map<string, T> {
       unsubscribe: () => void;
       constructor() {
+        super();
         this.unsubscribe = store.subscribe((event) => {
           if (event.model === link.from) {
             if (event.operation === "delete" && this.has(event.id)) {
@@ -466,35 +466,24 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
       }
 
       delete(id: string) {
-        return this.map.delete(id);
-      }
-
-      add(value: T) {
-        this.map.set(value.id, value);
-      }
-
-      clear() {
-        this.map.clear();
+        const model = super.get(id);
+        if (model) {
+          model[link.key] = null;
+        }
+        return super.delete(id);
       }
     }
+
+    const backlinksMap = new BacklinksMap<T>();
 
     const modelKey = String(context.name);
 
     return {
       get(this: T) {
-        return observableResult.get?.call(this);
+        return backlinksMap.get(this.id);
       },
       set(this: T, newValue: any) {
-        const oldValue = observableResult.get?.call(this);
-        store?.emitEvent({
-          operation: "update",
-          model: getModelMetadata(this.constructor).name,
-          id: this.id,
-          propKey: serializedKey,
-          oldValue,
-          newValue,
-        });
-        observableResult.set?.call(this, newValue);
+        backlinksMap.set(this.id, newValue);
       },
       init(this: T, value: any) {
         const metadata = getModelMetadata(this.constructor);
