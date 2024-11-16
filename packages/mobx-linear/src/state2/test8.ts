@@ -119,7 +119,7 @@ class Store {
     }
   }
 
-  applyEvent(event: Event) {
+  private applyEvent(event: Event) {
     switch (event.operation) {
       case "create":
         switch (event.model) {
@@ -207,6 +207,14 @@ class Store {
     } finally {
       this.isQueuingEventsToPush = previous;
     }
+  }
+
+  // sync
+
+  applyRemoteEvent(event: Event) {
+    this.withEventQueuingDisabled(() => {
+      this.applyEvent(event);
+    });
   }
 }
 
