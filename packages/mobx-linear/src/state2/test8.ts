@@ -498,17 +498,18 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
 }
 
 const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
-  return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
-    const set = observable.box(new Set<T>());
+  return (target: any, context: ClassAccessorDecoratorContext) => {
+    const set = observable.box(new Set<any>());
     return {
-      get(this: T) {
+      get(this: any) {
         return set.get();
       },
-      set(this: T, newValue: any) {
+      set(this: any, newValue: any) {
         set.set(newValue);
       },
-      init(this: T, value: any) {
+      init(this: any, value: any) {
         set.set(value);
+        return set.get();
       },
     };
   };
