@@ -33,19 +33,23 @@ class Store {
     {
       properties: Record<string, string>;
       foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+      instances: Map<string, IModel>;
     }
   > = {
     issue: {
       properties: {},
       foreignKeys: {},
+      instances: new Map<string, Issue>(),
     },
     project: {
       properties: {},
       foreignKeys: {},
+      instances: new Map<string, Project>(),
     },
     relation: {
       properties: {},
       foreignKeys: {},
+      instances: new Map<string, Relation>(),
     },
   };
 
