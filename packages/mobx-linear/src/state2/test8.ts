@@ -323,6 +323,9 @@ const Model = (name: ModelName) => {
         if (props.id) {
           inst.id = props.id;
         }
+        // Placeholder instances are created by passing placeholder: true to this method.
+        // If it's not provided, then we have the real model data in which case we flip
+        // the placeholder flag to false.
         inst.placeholder = props.placeholder ?? false;
         // Resolve foreign key to existing or placeholder instance
         Object.entries(getModelMetadata(cls).foreignKeys).forEach(
