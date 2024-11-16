@@ -61,25 +61,25 @@ class Store {
       properties: Record<string, string>;
       foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
       instances: Map<string, IModel>;
-      class: any;
+      create: null | ((props: any) => IModel);
     }
   > = {
     issue: {
       properties: {},
       foreignKeys: {},
-      class: null,
+      create: null,
       instances: new Map<string, Issue>(),
     },
     project: {
       properties: {},
       foreignKeys: {},
-      class: null,
+      create: null,
       instances: new Map<string, Project>(),
     },
     relation: {
       properties: {},
       foreignKeys: {},
-      class: null,
+      create: null,
       instances: new Map<string, Relation>(),
     },
   };
@@ -321,7 +321,7 @@ const Model = (name: ModelName) => {
                 if (inst) {
                   referencedInst = inst;
                 } else {
-                  referencedInst = new store.models[referencedModelName].class({
+                  referencedInst = store.models[referencedModelName].create?.({
                     id: referencedId,
                   });
                 }
