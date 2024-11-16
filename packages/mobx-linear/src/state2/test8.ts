@@ -50,7 +50,7 @@ class Store {
   }
 
   getModel(model: ModelName, id: string): IModel | undefined {
-    return this.models[model].get(id);
+    return this.models[model].instances.get(id);
   }
 
   emitEvent(event: Event) {
@@ -91,7 +91,7 @@ class Store {
           }
           break;
         case "delete":
-          this.models[event.model].delete(event.id);
+          this.models[event.model].instances.delete(event.id);
           break;
         case "set": {
           switch (event.model) {
@@ -377,7 +377,7 @@ const Model = (name: ModelName) => {
         if (props.placeholder !== undefined) {
           inst.placeholder = props.placeholder;
         }
-        store.models[name].set(inst.id, inst);
+        store.models[name].instances.set(inst.id, inst);
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
       };
@@ -402,15 +402,15 @@ function resolveRef<T extends ModelName>(
 function resolveRef(model: ModelName, id: string | undefined | null) {
   if (!id) return null;
   if (model === "project") {
-    const project = store.models.project.get(id);
+    const project = store.models.project.instances.get(id);
     if (project) return project;
     return new Project({ id, title: "", placeholder: true });
   } else if (model === "issue") {
-    const issue = store.models.issue.get(id);
+    const issue = store.models.issue.instances.get(id);
     if (issue) return issue;
     return new Issue({ id, title: "", placeholder: true });
   } else if (model === "relation") {
-    const relation = store.models.relation.get(id);
+    const relation = store.models.relation.instances.get(id);
     if (relation) return relation;
     return new Relation({ id, fromId: null, toId: null, placeholder: true });
   } else {
