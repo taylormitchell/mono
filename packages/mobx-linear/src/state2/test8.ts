@@ -323,6 +323,7 @@ const Model = (name: ModelName) => {
         if (props.id) {
           inst.id = props.id;
         }
+        inst.placeholder = props.placeholder ?? false;
         // Resolve foreign key to existing or placeholder instance
         Object.entries(getModelMetadata(cls).foreignKeys).forEach(
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
@@ -346,7 +347,7 @@ const Model = (name: ModelName) => {
             }
           }
         );
-        inst.placeholder = props.placeholder ?? false;
+
         instances.set(inst.id, inst);
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
