@@ -430,12 +430,10 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 
 function BacklinkDecorator(link: { from: ModelName; key: string }) {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
-    let owner: any;
-
     class BacklinksMap<T extends IModel> extends Map<string, T> {
       unsubscribe: () => void;
-      constructor() {
-        super();
+      constructor(owner: any, initialMap: Map<string, T>) {
+        super(initialMap);
         this.unsubscribe = store.subscribe((event) => {
           if (event.model === link.from) {
             if (event.operation === "delete" && this.has(event.id)) {
@@ -486,12 +484,12 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
       get(this: T) {
         return backlinksMap;
       },
-      set(this: T, newValue: any) {
-        backlinksMap = new BacklinksMap<T>(); // TODO need values?
+      set(this: T, newMap: any) {
+        backlinksMap = new BacklinksMap<T>(this, newMap); // TODO need values?
         return backlinksMap;
       },
-      init(this: T, value: any) {
-        owner = this;
+      init(this: T, map: any) {
+        backlinksMap = new BacklinksMap<T>(this, map);
       },
     };
   };
