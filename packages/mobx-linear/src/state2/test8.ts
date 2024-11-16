@@ -308,7 +308,41 @@ const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     console.log("Model", name, kind);
     if (kind === "class") {
-      store.models[name].class = value;
+      function createInstance(props: any) {
+        const inst = store.getModel(name, props.id) ?? new value(props);
+        // Resolve foreign keys to instances
+        Object.entries(store.models[name].foreignKeys).forEach(
+          ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
+            if (props[serializedKey]) {
+              const referencedId = props[serializedKey];
+              let referencedInst: IModel | null = null;
+              if (referencedId) {
+                const inst = store.getModel(referencedModelName, referencedId);
+                if (inst) {
+                  referencedInst = inst;
+                } else {
+                  referencedInst = new store.models[referencedModelName].class({
+                    id: referencedId,
+                  });
+                }
+              }
+              inst[modelKey] = referencedInst;
+            }
+          }
+        );
+        // Set properties
+        Object.entries(store.models[name].properties).forEach(([modelKey, serializedKey]) => {
+          if (props[serializedKey]) {
+            inst[modelKey] = props[serializedKey];
+          }
+        });
+        inst.placeholder = props.placeholder ?? false;
+        store.models[name].instances.set(inst.id, inst);
+        store.emitEvent({ operation: "create", model: name, id: inst.id, props });
+        return inst;
+      }
+      store.models[name].create = createInstance;
+      return value;
 
       return function (props: any) {
         const inst = store.getModel(name, props.id) ?? new value(props);
