@@ -20,6 +20,7 @@ type ModelMetadata = {
   name: ModelName;
   properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+  cleanupFunctions: (() => void)[];
 };
 
 function getModelMetadata(model: any): ModelMetadata {
@@ -232,10 +233,6 @@ class Store {
 const store = new Store();
 
 // Model decorators
-
-function getSerializedForeignKey(model: ModelName, modelKey: string) {
-  return store.models[model].foreignKeys[modelKey]?.serializedKey ?? modelKey;
-}
 
 const Property = (_serializedKey?: string) => {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
@@ -553,34 +550,6 @@ const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
     };
   };
 };
-
-class Collection<T extends IModel> {
-  private map = new Map<string, T>();
-
-  [Symbol.iterator](): Iterator<T> {
-    return this.map.values();
-  }
-
-  delete(id: string) {
-    return this.map.delete(id);
-  }
-
-  add(value: T) {
-    this.map.set(value.id, value);
-  }
-
-  clear() {
-    this.map.clear();
-  }
-
-  has(id: string) {
-    return this.map.has(id);
-  }
-
-  get(id: string) {
-    return this.map.get(id);
-  }
-}
 
 // Models
 
