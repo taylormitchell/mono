@@ -117,10 +117,6 @@ class Store {
     this.startAutoCommit();
   }
 
-  getModel(model: ModelName, id: string): IModel | undefined {
-    return this.models[model].instances.get(id);
-  }
-
   emitEvent(event: Event) {
     if (this.isQueuingEventsToPush) {
       this.stagedChanges.push(event);
@@ -150,7 +146,7 @@ class Store {
         break;
       case "update":
         if (event.propKey) {
-          const model = this.getModel(event.model, event.id);
+          const model = this.models[event.model].get(event.id);
           if (!model) {
             throw new Error(`Unknown model ${event.model} with id ${event.id}`);
           }
@@ -158,7 +154,7 @@ class Store {
         }
         break;
       case "delete":
-        this.models[event.model].instances.delete(event.id);
+        this.models[event.model].delete(event.id);
         break;
       default:
         event satisfies never;
@@ -318,7 +314,7 @@ const Model = (name: ModelName) => {
     if (kind === "class") {
       const instances = new Map<string, any>();
       function createInstance(props: any) {
-        const inst = store.getModel(name, props.id) ?? new value(props);
+        const inst = store.models[name].get(props.id) ?? new value(props);
         // Resolve foreign keys to instances
         Object.entries(getModelMetadata(value).foreignKeys).forEach(
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
@@ -326,7 +322,7 @@ const Model = (name: ModelName) => {
               const referencedId = props[serializedKey];
               let referencedInst: IModel | null = null;
               if (referencedId) {
-                const inst = store.getModel(referencedModelName, referencedId);
+                const inst = store.models[referencedModelName].get(referencedId);
                 if (inst) {
                   referencedInst = inst;
                 } else {
@@ -383,7 +379,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
         if (event.operation === "delete" && this.map.has(event.id)) {
           this.map.delete(event.id);
         } else if (event.operation === "create") {
-          const model = store?.getModel(link.from, event.id);
+          const model = store.models[link.from].get(event.id);
           if (model) this.map.set(event.id, model);
         } else if (
           event.operation === "update" &&
@@ -393,7 +389,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
             this.map.delete(event.id);
           }
           if (event.newValue === this.owner.id) {
-            const model = store?.getModel(link.from, event.id);
+            const model = store.models[link.from].get(event.id);
             if (model) this.map.set(event.id, model);
           }
         }
