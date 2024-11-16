@@ -26,21 +26,25 @@ class Store {
       properties: Record<string, string>;
       foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
       instances: Map<string, IModel>;
+      class: any;
     }
   > = {
     issue: {
       properties: {},
       foreignKeys: {},
+      class: Issue,
       instances: new Map<string, Issue>(),
     },
     project: {
       properties: {},
       foreignKeys: {},
+      class: Project,
       instances: new Map<string, Project>(),
     },
     relation: {
       properties: {},
       foreignKeys: {},
+      class: Relation,
       instances: new Map<string, Relation>(),
     },
   };
