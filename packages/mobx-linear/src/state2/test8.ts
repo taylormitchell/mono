@@ -324,8 +324,8 @@ const Model = (name: ModelName) => {
                 } else {
                   referencedInst = new store.models[referencedModelName].class({
                     id: referencedId,
-                    placeholder: true,
                   });
+                  referencedInst.placeholder = true;
                 }
               }
               inst[modelKey] = referencedInst;
