@@ -63,11 +63,28 @@ type ModelData<
   S extends SerializedProject | SerializedIssue | SerializedRelation
 > = {
   create: (props: ModelProps<S>) => T;
-  instances: Map<string, T>;
   get: (id: string) => T | undefined;
   getAll: () => T[];
   delete: (id: string) => void;
 };
+
+function createInitialModelData(name: ModelName) {
+  const msg = `Did you forget to add decorator @Model(${name}) to the class?`;
+  return {
+    create: () => {
+      throw new Error(`Create method not set. ${msg}`);
+    },
+    delete: (id: string) => {
+      throw new Error(`Delete method not set. ${msg}`);
+    },
+    get: (id: string) => {
+      throw new Error(`Get method not set. ${msg}`);
+    },
+    getAll: () => {
+      throw new Error(`Get all method not set. ${msg}`);
+    },
+  };
+}
 
 // Store
 
@@ -86,44 +103,20 @@ class Store {
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
 
+  private objects = {
+    issue: new Map<string, Issue>(),
+    project: new Map<string, Project>(),
+    relation: new Map<string, Relation>(),
+  };
+
   models: {
     issue: ModelData<Issue, SerializedIssue>;
     project: ModelData<Project, SerializedProject>;
     relation: ModelData<Relation, SerializedRelation>;
   } = {
-    issue: {
-      create: () => {
-        throw new Error("Create method not set");
-      },
-      instances: new Map<string, Issue>(), // TODO: Make private
-      delete: (id: string) => {
-        throw new Error("Delete method not set");
-      },
-      get: (id: string) => this.models.issue.instances.get(id),
-      getAll: () => Array.from(this.models.issue.instances.values()),
-    },
-    project: {
-      create: () => {
-        throw new Error("Create method not set");
-      },
-      instances: new Map<string, Project>(),
-      delete: (id: string) => {
-        throw new Error("Delete method not set");
-      },
-      get: (id: string) => this.models.project.instances.get(id),
-      getAll: () => Array.from(this.models.project.instances.values()),
-    },
-    relation: {
-      create: () => {
-        throw new Error("Create method not set");
-      },
-      instances: new Map<string, Relation>(),
-      delete: (id: string) => {
-        throw new Error("Delete method not set");
-      },
-      get: (id: string) => this.models.relation.instances.get(id),
-      getAll: () => Array.from(this.models.relation.instances.values()),
-    },
+    issue: createInitialModelData("issue"),
+    project: createInitialModelData("project"),
+    relation: createInitialModelData("relation"),
   };
 
   constructor() {
