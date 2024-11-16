@@ -539,8 +539,10 @@ class Issue implements IModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
-  @BacklinkDecorator<Relation>({ from: "relation", key: "from" })
-  accessor test = new Map<string, Relation>();
+  // @BacklinkDecorator({ from: "relation", key: "from" })
+
+  @Property()
+  accessor test = new Set<Relation>();
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
 
