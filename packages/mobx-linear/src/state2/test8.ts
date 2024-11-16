@@ -506,14 +506,33 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
   };
 }
 
-type Collection<T extends IModel> = {
-  [Symbol.iterator]: () => Iterator<T>;
-  delete: (id: string) => boolean;
-  add: (value: T) => void;
-  clear: () => void;
-  has: (id: string) => boolean;
-  get: (id: string) => T | undefined;
-};
+class Collection<T extends IModel> {
+  private map = new Map<string, T>();
+
+  [Symbol.iterator](): Iterator<T> {
+    return this.map.values();
+  }
+
+  delete(id: string) {
+    return this.map.delete(id);
+  }
+
+  add(value: T) {
+    this.map.set(value.id, value);
+  }
+
+  clear() {
+    this.map.clear();
+  }
+
+  has(id: string) {
+    return this.map.has(id);
+  }
+
+  get(id: string) {
+    return this.map.get(id);
+  }
+}
 
 // Models
 
