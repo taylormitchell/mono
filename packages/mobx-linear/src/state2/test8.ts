@@ -236,8 +236,14 @@ const ModelProps: Record<
   },
 };
 function getModelName(value: any): ModelName {
-  return ModelClassToName.get(value)!;
+  for (const [modelName, props] of Object.entries(store.models)) {
+    if (props.class === value) {
+      return modelName as ModelName;
+    }
+  }
+  throw new Error("Unknown model class");
 }
+
 function getSerializedForeignKey(model: ModelName, modelKey: string) {
   return ModelProps[model].foreignKeys[modelKey]?.serializedKey ?? modelKey;
 }
