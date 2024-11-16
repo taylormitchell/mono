@@ -338,9 +338,7 @@ const Model = (name: ModelName) => {
             inst[key] = props[serializedKey];
           }
         });
-        if (props.placeholder !== undefined) {
-          inst.placeholder = props.placeholder;
-        }
+        inst.placeholder = props.placeholder ?? false;
         store.models[name].instances.set(inst.id, inst);
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
