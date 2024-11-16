@@ -499,7 +499,44 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
 
 const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
   return (target: any, context: ClassAccessorDecoratorContext) => {
-    const set = observable.box(new Set<any>());
+    class BacklinksSet extends Set<any> {
+      unsubscribe: () => void;
+      constructor(initialSet: Set<any>) {
+        super(initialSet);
+        this.unsubscribe = store.subscribe((event) => {
+          if (event.model === link.from) {
+            if (event.operation === "delete" && this.has(event.id)) {
+              super.delete(event.id);
+              return;
+            }
+            const modelReferencingOwner = store.models[link.from].get(event.id);
+            if (!modelReferencingOwner) {
+              console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
+              return;
+            }
+            if (event.operation === "create") {
+              super.set(event.id, modelReferencingOwner);
+              return;
+            }
+            const serializedForeignKey = modelReferencingOwner
+              ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key]
+                  .serializedKey
+              : null;
+            if (event.operation === "update" && event.propKey === serializedForeignKey) {
+              if (event.oldValue === this.owner.id) {
+                super.delete(event.id);
+              }
+              if (event.newValue === this.owner.id) {
+                super.set(event.id, modelReferencingOwner);
+              }
+            }
+          }
+        });
+      }
+      }
+    }
+
+    const set = observable.box(new BacklinksSet());
     return {
       get(this: any) {
         return set.get();
