@@ -430,76 +430,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
   }
 }
 
-function BacklinkDecorator(link: { from: ModelName; key: string }) {
-  return <T>(_: any, { name }: ClassAccessorDecoratorContext) => {
-    console.log("name", name);
-    class BacklinksMap<T> extends Map<string, T> {
-      unsubscribe: () => void;
-      constructor(owner: any, initialMap: Map<string, T>) {
-        super(initialMap);
-        this.unsubscribe = store.subscribe((event) => {
-          if (event.model === link.from) {
-            if (event.operation === "delete" && this.has(event.id)) {
-              super.delete(event.id);
-              return;
-            }
-            const modelReferencingOwner = store.models[link.from].get(event.id);
-            if (!modelReferencingOwner) {
-              console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
-              return;
-            }
-            if (event.operation === "create") {
-              super.set(event.id, modelReferencingOwner);
-              return;
-            }
-            const serializedForeignKey = modelReferencingOwner
-              ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key]
-                  .serializedKey
-              : null;
-            if (event.operation === "update" && event.propKey === serializedForeignKey) {
-              if (event.oldValue === this.owner.id) {
-                super.delete(event.id);
-              }
-              if (event.newValue === this.owner.id) {
-                super.set(event.id, modelReferencingOwner);
-              }
-            }
-          }
-        });
-      }
-
-      delete(id: string) {
-        const model = super.get(id);
-        if (model) {
-          model[link.key] = null;
-        }
-        return super.delete(id);
-      }
-
-      // TODO: `add` method?
-    }
-
-    let backlinksMap: BacklinksMap<T> | null = null;
-
-    return {
-      get(this: T) {
-        if (!backlinksMap) {
-          backlinksMap = new BacklinksMap<T>(this, new Map());
-        }
-        return backlinksMap;
-      },
-      set(this: T, newMap: any) {
-        backlinksMap = new BacklinksMap<T>(this, newMap); // TODO need values?
-        return backlinksMap;
-      },
-      init(this: T, map: any) {
-        backlinksMap = new BacklinksMap<T>(this, map);
-      },
-    };
-  };
-}
-
-const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
+const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassAccessorDecoratorContext) => {
     class BacklinksSet extends Set<any> {
       unsubscribe: () => void;
@@ -570,9 +501,7 @@ class Issue implements IModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
-  // @BacklinkDecorator({ from: "relation", key: "from" })
-
-  @BacklinkDecorator2({ from: "relation", key: "from" })
+  @BacklinkDecorator({ from: "relation", key: "from" })
   accessor test = new Set<Relation>();
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
