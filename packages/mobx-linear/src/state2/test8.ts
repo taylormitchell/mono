@@ -1,7 +1,5 @@
 import { action, observable, reaction, runInAction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
-import { constructor } from "react";
-import { string } from "zod";
 
 type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelation> = Partial<
   Omit<T, "id">
@@ -40,7 +38,13 @@ function reverseEvent(event: Event): Event {
   }
 }
 
-
+type ModelData<T extends Project | Issue | Relation> = {
+  properties: Record<string, string>;
+  foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+  create: (props: any) => T;
+  class: T;
+  instances: Map<string, T>;
+};
 
 // Store
 
@@ -58,14 +62,6 @@ class Store {
   // We use this to trigger the reactions rather than tracking the array
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
-
-  type ModelData<T extends Project | Issue | Relation> = {
-    properties: Record<string, string>;
-    foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-    create: (props: any) => T;
-    class: T;
-    instances: Map<string, T>;
-  };
 
   models: {
     issue: ModelData<Issue>;
