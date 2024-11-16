@@ -18,7 +18,7 @@ const modelMetadata = Symbol("modelMetadata");
 
 type ModelMetadata = {
   name: ModelName;
-  properties: Record<string, string>;
+  properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
 };
 
