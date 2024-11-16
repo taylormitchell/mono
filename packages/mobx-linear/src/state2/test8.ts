@@ -453,7 +453,8 @@ class Relation implements IModel {
 
 // Load initial data
 const issue1 = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
-const issue2 = store.models.issue.create({ id: "i2", title: "Issue 2", projectId: "p1" });
+store.models.issue.create({ id: "i2", title: "Issue 2", projectId: "p1" });
+const issue2 = store.models.issue.get("i2");
 const project1 = store.models.project.create({ id: "p1", title: "Project 1" });
 const project2 = store.models.project.create({ id: "p2", title: "Project 2" });
 
