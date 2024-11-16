@@ -232,13 +232,14 @@ function getSerializedForeignKey(model: ModelName, modelKey: string) {
   return store.models[model].foreignKeys[modelKey]?.serializedKey ?? modelKey;
 }
 
-const Property = (serializedName?: string) => {
+const Property = (_serializedKey?: string) => {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
-    const propKey = serializedName ?? String(context.name);
+    const modelKey = String(context.name);
+    const serializedKey = _serializedKey ?? modelKey;
 
     return {
       get(this: T) {
@@ -250,17 +251,15 @@ const Property = (serializedName?: string) => {
           operation: "update",
           model: constructorToModelName(this.constructor),
           id: this.id,
-          propKey,
+          propKey: serializedKey,
           oldValue,
           newValue,
         });
         observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
-        if (serializedName) {
-          const modelName = constructorToModelName(this.constructor);
-          store.models[modelName].properties[propKey] = serializedName;
-        }
+        const modelName = constructorToModelName(this.constructor);
+        store.models[modelName].properties[modelKey] = serializedKey;
         return observableResult.init?.call(this, value);
       },
     };
@@ -333,9 +332,9 @@ const Model = (name: ModelName) => {
           }
         );
         // Set properties
-        Object.entries(store.models[name].properties).forEach(([key, serializedKey]) => {
+        Object.entries(store.models[name].properties).forEach(([modelKey, serializedKey]) => {
           if (props[serializedKey]) {
-            inst[key] = props[serializedKey];
+            inst[modelKey] = props[serializedKey];
           }
         });
         inst.placeholder = props.placeholder ?? false;
