@@ -362,7 +362,9 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     if (kind === "class") {
+      store.models[name].class = value;
       ModelClassToName.set(value, name);
+
       return function (props: any) {
         const inst = store.getModel(name, props.id) ?? new value(props);
         Object.entries(ModelProps[name].foreignKeys).forEach(
