@@ -481,3 +481,9 @@ runInAction(() => {
 });
 
 console.log(project1.issues);
+
+runInAction(() => {
+  issue1.project = null;
+});
+
+console.log(project1.issues);
