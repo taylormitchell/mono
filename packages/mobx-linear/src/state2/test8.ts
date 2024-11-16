@@ -28,14 +28,26 @@ class Store {
     relation: new Map<string, Relation>(),
   };
 
-  models2: Map<
+  modelMetadata: Record<
     ModelName,
     {
       properties: Record<string, string>;
       foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-      class: any;
     }
-  > = new Map();
+  > = {
+    issue: {
+      properties: {},
+      foreignKeys: {},
+    },
+    project: {
+      properties: {},
+      foreignKeys: {},
+    },
+    relation: {
+      properties: {},
+      foreignKeys: {},
+    },
+  };
 
   constructor() {
     this.startAutoCommit();
