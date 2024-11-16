@@ -308,7 +308,12 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 
 const Model = (name: ModelName) => {
   return (cls: any) => {
-    cls[modelMetadata] = { name, properties: {}, foreignKeys: {} };
+    cls[modelMetadata] = {
+      name,
+      properties: {},
+      foreignKeys: {},
+      cleanupFunctions: [],
+    } satisfies ModelMetadata;
     const instances = new Map<string, any>();
     store.models[name] = {
       // TODO: Should somehow make it more obvious that this is creating a new instance
@@ -535,7 +540,7 @@ const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
     const modelKey = String(context.name);
     console.log("modelKey", modelKey);
 
-    const set = observable.box(new Set());
+    const set = observable.box(new Set<any>());
     return {
       get(this: any) {
         return set.get();
