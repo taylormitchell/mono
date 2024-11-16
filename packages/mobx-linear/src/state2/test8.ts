@@ -22,6 +22,14 @@ type ModelMetadata = {
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
 };
 
+function getModelMetadata(model: any): ModelMetadata {
+  const metadata = model[modelMetadata];
+  if (!metadata) {
+    throw new Error(`Unknown model ${model}`);
+  }
+  return metadata;
+}
+
 function reverseEvent(event: Event): Event {
   switch (event.operation) {
     case "create":
@@ -268,7 +276,7 @@ const Property = (_serializedKey?: string) => {
         const oldValue = observableResult.get?.call(this);
         store?.emitEvent({
           operation: "update",
-          model: constructorToModelName(this.constructor),
+          model: getModelMetadata(this.constructor).name,
           id: this.id,
           propKey: serializedKey,
           oldValue,
@@ -277,10 +285,7 @@ const Property = (_serializedKey?: string) => {
         observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
-        const metadata = this.constructor[modelMetadata];
-        if (!metadata) {
-          throw new Error(`Unknown model ${this.constructor}`);
-        }
+        const metadata = getModelMetadata(this.constructor);
         metadata.properties[modelKey] = serializedKey;
         return observableResult.init?.call(this, value);
       },
