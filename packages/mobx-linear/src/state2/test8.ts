@@ -428,7 +428,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
   }
 }
 
-function BacklinkDecorator(link: { model: ModelName; key: string }) {
+function BacklinkDecorator(link: { from: ModelName; key: string }) {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
     class BacklinksMap<T extends IModel> extends Map<string, T> {
       unsubscribe: () => void;
@@ -437,7 +437,7 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
         this.unsubscribe = store.subscribe((event) => {
           if (event.model === link.from) {
             if (event.operation === "delete" && this.has(event.id)) {
-              this.map.delete(event.id);
+              super.delete(event.id);
               return;
             }
             const modelReferencingOwner = store.models[link.from].get(event.id);
@@ -446,7 +446,7 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
               return;
             }
             if (event.operation === "create") {
-              this.map.set(event.id, modelReferencingOwner);
+              super.set(event.id, modelReferencingOwner);
               return;
             }
             const serializedForeignKey = modelReferencingOwner
@@ -455,10 +455,10 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
               : null;
             if (event.operation === "update" && event.propKey === serializedForeignKey) {
               if (event.oldValue === this.owner.id) {
-                this.map.delete(event.id);
+                super.delete(event.id);
               }
               if (event.newValue === this.owner.id) {
-                this.map.set(event.id, modelReferencingOwner);
+                super.set(event.id, modelReferencingOwner);
               }
             }
           }
@@ -485,7 +485,7 @@ function BacklinkDecorator(link: { model: ModelName; key: string }) {
         return backlinksMap.get(this.id);
       },
       set(this: T, newValue: any) {
-        backlinksMap.set(this.id, newValue);
+        return backlinksMap.set(this.id, newValue);
       },
       init(this: T, value: any) {
         const metadata = getModelMetadata(this.constructor);
@@ -538,7 +538,7 @@ class Issue implements IModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
-  @BacklinkDecorator({ model: "relation", key: "from" })
+  @BacklinkDecorator({ from: "relation", key: "from" })
   test = new Map<string, Relation>();
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
