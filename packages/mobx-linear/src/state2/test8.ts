@@ -157,7 +157,6 @@ class Store {
     return () => this.eventSubscribers.delete(subscriber);
   }
 
-  // Undo/Redo methods
   undo() {
     const changes = this.undoStack.pop();
     if (changes) {
