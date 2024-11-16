@@ -268,7 +268,7 @@ const Property = (_serializedKey?: string) => {
       },
       init(this: T, value: any) {
         const metadata = getModelMetadata(this.constructor);
-        metadata.properties[modelKey] = serializedKey;
+        metadata.properties[modelKey] = { serializedKey };
         return observableResult.init?.call(this, value);
       },
     };
@@ -348,7 +348,7 @@ const Model = (name: ModelName) => {
           );
           // Set properties
           Object.entries(getModelMetadata(value).properties).forEach(
-            ([modelKey, serializedKey]) => {
+            ([modelKey, { serializedKey }]) => {
               if (props[serializedKey]) {
                 inst[modelKey] = props[serializedKey];
               }
@@ -420,10 +420,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 
 @Model("issue")
 class Issue implements IModel {
-  constructor(props: ModelProps<SerializedIssue>) {
-    this.id = props.id ?? uuid();
-  }
-  readonly id: string;
+  readonly id: string = uuid();
 
   placeholder = false;
 
