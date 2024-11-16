@@ -535,6 +535,9 @@ const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
       }
     }
 
+    const modelKey = String(context.name);
+    console.log("modelKey", modelKey);
+
     const set = observable.box(new Set());
     return {
       get(this: any) {
