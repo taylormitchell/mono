@@ -1,4 +1,4 @@
-import { observable, reaction, runInAction } from "mobx";
+import { action, observable, reaction, runInAction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
 
 type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelation> = Partial<
@@ -362,7 +362,7 @@ const Model = (name: ModelName) => {
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
       }
-      store.models[name].create = createInstance;
+      store.models[name].create = action("create", createInstance);
       store.models[name].class = value;
       return value;
     }
