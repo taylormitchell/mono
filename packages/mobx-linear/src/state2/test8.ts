@@ -321,6 +321,10 @@ const Model = (name: ModelName) => {
       store.models[name] = {
         create: action("create", (props: any) => {
           const inst = store.models[name].get(props.id) ?? new value(props);
+          // Set id if it's provided
+          if (props.id) {
+            inst.id = props.id;
+          }
           // Resolve foreign keys to instances
           Object.entries(getModelMetadata(value).foreignKeys).forEach(
             ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
@@ -436,11 +440,7 @@ class Issue implements IModel {
 
 @Model("project")
 class Project implements IModel {
-  constructor(props: ModelProps<SerializedProject>) {
-    this.id = props.id ?? uuid();
-  }
-
-  readonly id: string;
+  readonly id: string = uuid();
 
   placeholder = false;
 
@@ -452,11 +452,7 @@ class Project implements IModel {
 
 @Model("relation")
 class Relation implements IModel {
-  constructor(props: ModelProps<SerializedRelation>) {
-    this.id = props.id ?? uuid();
-  }
-
-  readonly id: string;
+  readonly id: string = uuid();
 
   placeholder = false;
 
