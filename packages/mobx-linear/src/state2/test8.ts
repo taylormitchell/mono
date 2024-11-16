@@ -320,8 +320,7 @@ const Model = (name: ModelName) => {
       create: action("create", (props: any) => {
         const existing = store.models[name].get(props.id);
         const inst = existing ?? new cls(props);
-        // Set id if it's provided
-        if (props.id) {
+        if (!existing && props.id) {
           inst.id = props.id;
         }
         // Placeholder instances are created by passing placeholder: true to the
@@ -354,6 +353,7 @@ const Model = (name: ModelName) => {
         if (!existing) {
           instances.set(inst.id, inst);
         }
+        // TODO: Maybe condition on existing/new
         store.emitEvent({ operation: "create", model: name, id: inst.id, props });
         return inst;
       }),
