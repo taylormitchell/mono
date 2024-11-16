@@ -319,8 +319,8 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
       },
       init(this: T, value: any) {
         if (serializedKey) {
-          const modelName = constructorToModelName(this.constructor);
-          store.models[modelName].foreignKeys[modelKey] = {
+          const metadata = getModelMetadata(this.constructor);
+          metadata.foreignKeys[modelKey] = {
             referencedModelName: referencedModelName,
             serializedKey: serializedKey,
           };
@@ -337,7 +337,7 @@ const Model = (name: ModelName) => {
       function createInstance(props: any) {
         const inst = store.getModel(name, props.id) ?? new value(props);
         // Resolve foreign keys to instances
-        Object.entries(store.models[name].foreignKeys).forEach(
+        Object.entries(getModelMetadata(value).foreignKeys).forEach(
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
             if (props[serializedKey]) {
               const referencedId = props[serializedKey];
@@ -362,7 +362,7 @@ const Model = (name: ModelName) => {
           }
         );
         // Set properties
-        Object.entries(store.models[name].properties).forEach(([modelKey, serializedKey]) => {
+        Object.entries(getModelMetadata(value).properties).forEach(([modelKey, serializedKey]) => {
           if (props[serializedKey]) {
             inst[modelKey] = props[serializedKey];
           }
