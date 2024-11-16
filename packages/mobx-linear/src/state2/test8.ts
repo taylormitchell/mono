@@ -384,24 +384,24 @@ class Backlinks<T extends IModel> implements Iterable<T> {
           this.map.delete(event.id);
           return;
         }
-        const referencingInstance = store.models[link.from].get(event.id);
-        if (!referencingInstance) {
+        const modelReferencingOwner = store.models[link.from].get(event.id);
+        if (!modelReferencingOwner) {
           console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
           return;
         }
         if (event.operation === "create") {
-          this.map.set(event.id, referencingInstance);
+          this.map.set(event.id, modelReferencingOwner);
           return;
         }
-        const serializedForeignKey = referencingInstance
-          ? getModelMetadata(referencingInstance.constructor).foreignKeys[link.key].serializedKey
+        const serializedForeignKey = modelReferencingOwner
+          ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key].serializedKey
           : null;
         if (event.operation === "update" && event.propKey === serializedForeignKey) {
           if (event.oldValue === this.owner.id) {
             this.map.delete(event.id);
           }
           if (event.newValue === this.owner.id) {
-            this.map.set(event.id, referencingInstance);
+            this.map.set(event.id, modelReferencingOwner);
           }
         }
       }
