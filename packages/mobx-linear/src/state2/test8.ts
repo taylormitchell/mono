@@ -362,6 +362,8 @@ const Model = (name: ModelName) => {
       delete: action("delete", (id: string) => {
         const inst = instances.get(id);
         if (inst) {
+          // TODO: We could probably make this a little cleaner if we use decorators
+          // in some way.
           Object.values(inst).forEach((prop) => {
             if (prop instanceof Backlinks) {
               prop.unsubscribe();
