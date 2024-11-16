@@ -476,9 +476,7 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
       // TODO: `add` method?
     }
 
-    let backlinksMap = new BacklinksMap<T>();
-
-    const modelKey = String(context.name);
+    let backlinksMap: BacklinksMap<T> | null = null;
 
     return {
       get(this: T) {
