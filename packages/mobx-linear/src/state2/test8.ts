@@ -354,7 +354,19 @@ const Model = (name: ModelName) => {
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
             if (props[serializedKey]) {
               const referencedId = props[serializedKey];
-              inst[modelKey] = resolveRef(referencedModelName, referencedId);
+              let referencedInst: IModel | null = null;
+              if (referencedId) {
+                const inst = store.getModel(referencedModelName, referencedId);
+                if (inst) {
+                  referencedInst = inst;
+                } else {
+                  referencedInst = new store.models[referencedModelName].class({
+                    id: referencedId,
+                    placeholder: true,
+                  });
+                }
+              }
+              inst[modelKey] = referencedInst;
             }
           }
         );
@@ -374,38 +386,6 @@ const Model = (name: ModelName) => {
     return value;
   };
 };
-
-type ModelTypeMap = {
-  project: Project;
-  issue: Issue;
-  relation: Relation;
-};
-
-// TODO: if I register model classes by model name in the decorators
-// then I don't need to reference the classes directly here, I can use
-// the cached model classes by name.
-function resolveRef<T extends ModelName>(
-  model: T,
-  id: string | undefined | null
-): ModelTypeMap[T] | null;
-function resolveRef(model: ModelName, id: string | undefined | null) {
-  if (!id) return null;
-  if (model === "project") {
-    const project = store.models.project.instances.get(id);
-    if (project) return project;
-    return new Project({ id, title: "", placeholder: true });
-  } else if (model === "issue") {
-    const issue = store.models.issue.instances.get(id);
-    if (issue) return issue;
-    return new Issue({ id, title: "", placeholder: true });
-  } else if (model === "relation") {
-    const relation = store.models.relation.instances.get(id);
-    if (relation) return relation;
-    return new Relation({ id, fromId: null, toId: null, placeholder: true });
-  } else {
-    return model satisfies never;
-  }
-}
 
 // Models
 
