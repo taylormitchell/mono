@@ -97,7 +97,7 @@ class Store {
       },
       instances: new Map<string, Issue>(), // TODO: Make private
       delete: (id: string) => {
-        this.models.issue.instances.delete(id);
+        throw new Error("Delete method not set");
       },
       get: (id: string) => this.models.issue.instances.get(id),
       getAll: () => Array.from(this.models.issue.instances.values()),
@@ -108,7 +108,7 @@ class Store {
       },
       instances: new Map<string, Project>(),
       delete: (id: string) => {
-        this.models.project.instances.delete(id);
+        throw new Error("Delete method not set");
       },
       get: (id: string) => this.models.project.instances.get(id),
       getAll: () => Array.from(this.models.project.instances.values()),
@@ -119,7 +119,7 @@ class Store {
       },
       instances: new Map<string, Relation>(),
       delete: (id: string) => {
-        this.models.relation.instances.delete(id);
+        throw new Error("Delete method not set");
       },
       get: (id: string) => this.models.relation.instances.get(id),
       getAll: () => Array.from(this.models.relation.instances.values()),
