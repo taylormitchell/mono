@@ -277,6 +277,8 @@ const Property = (_serializedKey?: string) => {
         observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
+        const metadata = this.constructor[modelMetadata];
+
         const modelName = constructorToModelName(this.constructor);
         store.models[modelName].properties[modelKey] = serializedKey;
         return observableResult.init?.call(this, value);
