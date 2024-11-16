@@ -323,23 +323,18 @@ const Model = (name: ModelName) => {
         if (props.id) {
           inst.id = props.id;
         }
-        // Resolve foreign keys to instances
+        // Resolve foreign key to existing or placeholder instance
         Object.entries(getModelMetadata(cls).foreignKeys).forEach(
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
             if (props[serializedKey]) {
               const referencedId = props[serializedKey];
-              let referencedInst: IModel | null = null;
               if (referencedId) {
-                const inst = store.models[referencedModelName].get(referencedId);
-                if (inst) {
-                  referencedInst = inst;
-                } else {
-                  referencedInst = store.models[referencedModelName].create({
-                    id: referencedId,
-                  });
-                }
+                inst[modelKey] =
+                  store.models[referencedModelName].get(referencedId) ??
+                  store.models[referencedModelName].create({ id: referencedId, placeholder: true });
+              } else {
+                inst[modelKey] = null;
               }
-              inst[modelKey] = referencedInst;
             }
           }
         );
