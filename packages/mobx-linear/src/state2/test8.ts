@@ -214,28 +214,6 @@ function reverseEvent(event: Event): Event {
 
 // Model decorators
 
-const ModelClassToName = new Map<any, ModelName>();
-const ModelProps: Record<
-  ModelName,
-  {
-    properties: Record<string, string>;
-    foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-  }
-> = {
-  project: {
-    properties: {},
-    foreignKeys: {},
-  },
-  issue: {
-    properties: {},
-    foreignKeys: {},
-  },
-  relation: {
-    properties: {},
-    foreignKeys: {},
-  },
-};
-
 function constructorToModelName(value: any): ModelName {
   for (const [modelName, props] of Object.entries(store.models)) {
     if (props.class === value) {
@@ -276,7 +254,7 @@ const Property = (serializedName?: string) => {
       init(this: T, value: any) {
         if (serializedName) {
           const modelName = constructorToModelName(this.constructor);
-          ModelProps[modelName].properties[propKey] = serializedName;
+          store.models[modelName].properties[propKey] = serializedName;
         }
         return observableResult.init?.call(this, value);
       },
@@ -311,7 +289,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
       init(this: T, value: any) {
         if (serializedKey) {
           const modelName = constructorToModelName(this.constructor);
-          ModelProps[modelName].foreignKeys[modelKey] = {
+          store.models[modelName].foreignKeys[modelKey] = {
             referencedModelName: referencedModelName,
             serializedKey: serializedKey,
           };
@@ -370,11 +348,9 @@ const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     if (kind === "class") {
       store.models[name].class = value;
-      ModelClassToName.set(value, name);
-
       return function (props: any) {
         const inst = store.getModel(name, props.id) ?? new value(props);
-        Object.entries(ModelProps[name].foreignKeys).forEach(
+        Object.entries(store.models[name].foreignKeys).forEach(
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
             if (props[serializedKey]) {
               const referencedId = props[serializedKey];
@@ -382,7 +358,7 @@ const Model = (name: ModelName) => {
             }
           }
         );
-        Object.entries(ModelProps[name].properties).forEach(([key, serializedKey]) => {
+        Object.entries(store.models[name].properties).forEach(([key, serializedKey]) => {
           if (props[serializedKey]) {
             inst[key] = props[serializedKey];
           }
