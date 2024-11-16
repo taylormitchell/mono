@@ -321,7 +321,12 @@ const Model = (name: ModelName) => {
                 if (inst) {
                   referencedInst = inst;
                 } else {
-                  referencedInst = store.models[referencedModelName].create?.({
+                  if (!store.models[referencedModelName].create) {
+                    throw new Error(
+                      `Missing create method for referenced model ${referencedModelName}`
+                    );
+                  }
+                  referencedInst = store.models[referencedModelName].create({
                     id: referencedId,
                   });
                 }
