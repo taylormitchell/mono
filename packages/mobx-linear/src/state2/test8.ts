@@ -322,12 +322,19 @@ const Model = (name: ModelName) => {
                 if (inst) {
                   referencedInst = inst;
                 } else {
-                  referencedInst = new store.models[referencedModelName].class({
-                    id: referencedId,
-                  });
-                  // TODO For some reason the above call doesn't trigger the Model decorator
-                  // so we have to set placeholder manually.
-                  referencedInst.placeholder = true;
+                  if (referencedModelName === "project") {
+                    referencedInst = new Project({ id: referencedId, placeholder: true });
+                  } else if (referencedModelName === "issue") {
+                    referencedInst = new Issue({ id: referencedId, placeholder: true });
+                  } else if (referencedModelName === "relation") {
+                    referencedInst = new Relation({ id: referencedId, placeholder: true });
+                  }
+                  // referencedInst = new store.models[referencedModelName].class({
+                  //   id: referencedId,
+                  // });
+                  // // TODO For some reason the above call doesn't trigger the Model decorator
+                  // // so we have to set placeholder manually.
+                  // referencedInst.placeholder = true;
                 }
               }
               inst[modelKey] = referencedInst;
