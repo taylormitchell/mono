@@ -320,7 +320,9 @@ const Model = (name: ModelName) => {
       create: action("create", (props: any) => {
         const existing = props.id ? store.models[name].get(props.id) : undefined;
         const inst = existing ?? new cls();
-        if (props.id) {
+        // If we created a new instance, the class constructor will have assigned a new
+        // random id. If the user provided an id, we should use that instead.
+        if (!existing && props.id) {
           inst.id = props.id;
         }
         // Placeholder instances are created by passing placeholder: true to the
