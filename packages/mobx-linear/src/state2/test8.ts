@@ -91,19 +91,19 @@ class Store {
     relation: ModelData<Relation, SerializedRelation>;
   } = {
     issue: {
-      create: null,
+      create: null!, // TODO: is there a way to make this not null? at minimum I should assert that it gets set
       instances: new Map<string, Issue>(),
       get: (id: string) => this.models.issue.instances.get(id),
       getAll: () => Array.from(this.models.issue.instances.values()),
     },
     project: {
-      create: null,
+      create: null!,
       instances: new Map<string, Project>(),
       get: (id: string) => this.models.project.instances.get(id),
       getAll: () => Array.from(this.models.project.instances.values()),
     },
     relation: {
-      create: null,
+      create: null!,
       instances: new Map<string, Relation>(),
       get: (id: string) => this.models.relation.instances.get(id),
       getAll: () => Array.from(this.models.relation.instances.values()),
