@@ -382,12 +382,14 @@ class Backlinks<T extends IModel> implements Iterable<T> {
       if (event.model === link.from) {
         if (event.operation === "delete" && this.map.has(event.id)) {
           this.map.delete(event.id);
-        } else if (event.operation === "create") {
-          const model = store.models[link.from].get(event.id);
-          if (model) this.map.set(event.id, model);
-        } else if (
+        }
+        const referencingInstance = store.models[link.from].get(event.id);
+        if (event.operation === "create") {
+          if (referencingInstance) this.map.set(event.id, referencingInstance);
+        }
+        if (
           event.operation === "update" &&
-          event.propKey === getSerializedForeignKey(link.from, link.key)
+          event.propKey === store.models[link.from].foreignKeys[link.key]?.serializedKey
         ) {
           if (event.oldValue === this.owner.id) {
             this.map.delete(event.id);
