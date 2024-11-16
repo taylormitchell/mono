@@ -120,40 +120,35 @@ class Store {
   }
 
   applyEvent(event: Event) {
-    this.isQueuingEventsToPush = true;
-    try {
-      switch (event.operation) {
-        case "create":
-          switch (event.model) {
-            case "project":
-              this.models.project.create(event.props ?? {});
-              break;
-            case "issue":
-              this.models.issue.create(event.props ?? {});
-              break;
-            case "relation":
-              this.models.relation.create(event.props ?? {});
-              break;
-            default:
-              event.model satisfies never;
+    switch (event.operation) {
+      case "create":
+        switch (event.model) {
+          case "project":
+            this.models.project.create(event.props ?? {});
+            break;
+          case "issue":
+            this.models.issue.create(event.props ?? {});
+            break;
+          case "relation":
+            this.models.relation.create(event.props ?? {});
+            break;
+          default:
+            event.model satisfies never;
+        }
+        break;
+      case "update":
+        if (event.propKey) {
+          const model = this.getModel(event.model, event.id);
+          if (model) {
+            (model as any)[event.propKey] = event.newValue;
           }
-          break;
-        case "update":
-          if (event.propKey) {
-            const model = this.getModel(event.model, event.id);
-            if (model) {
-              (model as any)[event.propKey] = event.newValue;
-            }
-          }
-          break;
-        case "delete":
-          this.models[event.model].instances.delete(event.id);
-          break;
-        default:
-          event satisfies never;
-      }
-    } finally {
-      this.isQueuingEventsToPush = false;
+        }
+        break;
+      case "delete":
+        this.models[event.model].instances.delete(event.id);
+        break;
+      default:
+        event satisfies never;
     }
   }
 
