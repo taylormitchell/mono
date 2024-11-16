@@ -17,6 +17,7 @@ export type SerializedRelation = {
 
 // Basic types
 export type ModelName = "issue" | "relation" | "project";
+
 export type Event =
   | {
       operation: "create";

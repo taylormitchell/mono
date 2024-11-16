@@ -10,6 +10,36 @@ interface IModel {
   placeholder: boolean;
 }
 
+function reverseEvent(event: Event): Event {
+  switch (event.operation) {
+    case "create":
+      return { operation: "delete", model: event.model, id: event.id };
+    case "delete":
+      return { operation: "create", model: event.model, id: event.id, props: event.props };
+    case "update":
+      return {
+        operation: "update",
+        model: event.model,
+        id: event.id,
+        propKey: event.propKey,
+        oldValue: event.newValue,
+        newValue: event.oldValue,
+      };
+    case "set":
+      return {
+        operation: "set",
+        model: event.model,
+        id: event.id,
+        oldProps: event.newProps,
+        newProps: event.oldProps,
+      };
+    default:
+      return event satisfies never;
+  }
+}
+
+// Store
+
 class Store {
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
@@ -186,36 +216,6 @@ class Store {
 }
 
 const store = new Store();
-
-// Helpers
-
-function reverseEvent(event: Event): Event {
-  switch (event.operation) {
-    case "create":
-      return { operation: "delete", model: event.model, id: event.id };
-    case "delete":
-      return { operation: "create", model: event.model, id: event.id, props: event.props };
-    case "update":
-      return {
-        operation: "update",
-        model: event.model,
-        id: event.id,
-        propKey: event.propKey,
-        oldValue: event.newValue,
-        newValue: event.oldValue,
-      };
-    case "set":
-      return {
-        operation: "set",
-        model: event.model,
-        id: event.id,
-        oldProps: event.newProps,
-        newProps: event.oldProps,
-      };
-    default:
-      return event satisfies never;
-  }
-}
 
 // Model decorators
 
