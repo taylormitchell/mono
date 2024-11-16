@@ -300,6 +300,51 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
   };
 };
 
+const Model = (name: ModelName) => {
+  return (value: any, { kind }: ClassDecoratorContext) => {
+    if (kind === "class") {
+      store.models[name].class = value;
+      return function (props: any) {
+        const inst = store.getModel(name, props.id) ?? new value(props);
+        // Resolve foreign keys to instances
+        Object.entries(store.models[name].foreignKeys).forEach(
+          ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
+            if (props[serializedKey]) {
+              const referencedId = props[serializedKey];
+              let referencedInst: IModel | null = null;
+              if (referencedId) {
+                const inst = store.getModel(referencedModelName, referencedId);
+                if (inst) {
+                  referencedInst = inst;
+                } else {
+                  referencedInst = new store.models[referencedModelName].class({
+                    id: referencedId,
+                    placeholder: true,
+                  });
+                }
+              }
+              inst[modelKey] = referencedInst;
+            }
+          }
+        );
+        // Set properties
+        Object.entries(store.models[name].properties).forEach(([key, serializedKey]) => {
+          if (props[serializedKey]) {
+            inst[key] = props[serializedKey];
+          }
+        });
+        if (props.placeholder !== undefined) {
+          inst.placeholder = props.placeholder;
+        }
+        store.models[name].instances.set(inst.id, inst);
+        store.emitEvent({ operation: "create", model: name, id: inst.id, props });
+        return inst;
+      };
+    }
+    return value;
+  };
+};
+
 class Backlinks<T extends IModel> implements Iterable<T> {
   private map = new Map<string, T>();
   unsubscribe: (() => void) | null = null;
@@ -343,49 +388,6 @@ class Backlinks<T extends IModel> implements Iterable<T> {
     return this.map.values();
   }
 }
-
-const Model = (name: ModelName) => {
-  return (value: any, { kind }: ClassDecoratorContext) => {
-    if (kind === "class") {
-      store.models[name].class = value;
-      return function (props: any) {
-        const inst = store.getModel(name, props.id) ?? new value(props);
-        Object.entries(store.models[name].foreignKeys).forEach(
-          ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
-            if (props[serializedKey]) {
-              const referencedId = props[serializedKey];
-              let referencedInst: IModel | null = null;
-              if (referencedId) {
-                const inst = store.getModel(referencedModelName, referencedId);
-                if (inst) {
-                  referencedInst = inst;
-                } else {
-                  referencedInst = new store.models[referencedModelName].class({
-                    id: referencedId,
-                    placeholder: true,
-                  });
-                }
-              }
-              inst[modelKey] = referencedInst;
-            }
-          }
-        );
-        Object.entries(store.models[name].properties).forEach(([key, serializedKey]) => {
-          if (props[serializedKey]) {
-            inst[key] = props[serializedKey];
-          }
-        });
-        if (props.placeholder !== undefined) {
-          inst.placeholder = props.placeholder;
-        }
-        store.models[name].instances.set(inst.id, inst);
-        store.emitEvent({ operation: "create", model: name, id: inst.id, props });
-        return inst;
-      };
-    }
-    return value;
-  };
-};
 
 // Models
 
