@@ -361,6 +361,21 @@ const Model = (name: ModelName) => {
       }),
       delete: action("delete", (id: string) => {
         store.emitEvent({ operation: "delete", model: name, id });
+        const inst = instances.get(id);
+        if (inst) {
+          Object.values(inst).forEach((prop) => {
+            if (prop instanceof Backlinks) {
+              prop.unsubscribe?.();
+            }
+          });
+        }
+        // Unsubscribe all listeners for this instance
+        Object.values(inst).forEach((prop) => {
+          if (prop instanceof Backlinks) {
+            prop.unsubscribe?.();
+          }
+        });
+        instances.delete(id);
         instances.delete(id);
       }),
       get: (id: string) => instances.get(id),
@@ -372,12 +387,9 @@ const Model = (name: ModelName) => {
 
 class Backlinks<T extends IModel> implements Iterable<T> {
   private map = new Map<string, T>();
-  unsubscribe: (() => void) | null = null;
+  unsubscribe: () => void;
 
   constructor(private owner: IModel, private link: { from: ModelName; key: string }) {
-    if (!store) {
-      return;
-    }
     this.unsubscribe = store.subscribe((event) => {
       if (event.model === link.from) {
         if (event.operation === "delete" && this.map.has(event.id)) {
