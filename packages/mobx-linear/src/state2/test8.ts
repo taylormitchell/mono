@@ -62,24 +62,28 @@ class Store {
       foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
       instances: Map<string, IModel>;
       create: (props: any) => IModel;
+      class: any;
     }
   > = {
     issue: {
       properties: {},
       foreignKeys: {},
       create: null,
+      class: null,
       instances: new Map<string, Issue>(),
     },
     project: {
       properties: {},
       foreignKeys: {},
       create: null,
+      class: null,
       instances: new Map<string, Project>(),
     },
     relation: {
       properties: {},
       foreignKeys: {},
       create: null,
+      class: null,
       instances: new Map<string, Relation>(),
     },
   };
@@ -346,6 +350,7 @@ const Model = (name: ModelName) => {
         return inst;
       }
       store.models[name].create = createInstance;
+      store.models[name].class = value;
       return value;
     }
     return value;
