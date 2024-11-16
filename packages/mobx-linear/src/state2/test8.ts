@@ -38,10 +38,13 @@ function reverseEvent(event: Event): Event {
   }
 }
 
-type ModelData<T extends Project | Issue | Relation> = {
+type ModelData<
+  T extends Project | Issue | Relation,
+  S extends SerializedProject | SerializedIssue | SerializedRelation
+> = {
   properties: Record<string, string>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-  create: (props: any) => T;
+  create: (props: ModelProps<S>) => T;
   instances: Map<string, T>;
   class: T;
   get: (id: string) => T | undefined;
@@ -66,9 +69,9 @@ class Store {
   private lastStagedChangeTimestamp = observable.box(0);
 
   models: {
-    issue: ModelData<Issue>;
-    project: ModelData<Project>;
-    relation: ModelData<Relation>;
+    issue: ModelData<Issue, SerializedIssue>;
+    project: ModelData<Project, SerializedProject>;
+    relation: ModelData<Relation, SerializedRelation>;
   } = {
     issue: {
       properties: {},
