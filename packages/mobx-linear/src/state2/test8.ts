@@ -235,7 +235,8 @@ const ModelProps: Record<
     foreignKeys: {},
   },
 };
-function getModelName(value: any): ModelName {
+
+function constructorToModelName(value: any): ModelName {
   for (const [modelName, props] of Object.entries(store.models)) {
     if (props.class === value) {
       return modelName as ModelName;
@@ -245,7 +246,7 @@ function getModelName(value: any): ModelName {
 }
 
 function getSerializedForeignKey(model: ModelName, modelKey: string) {
-  return ModelProps[model].foreignKeys[modelKey]?.serializedKey ?? modelKey;
+  return store.models[model].foreignKeys[modelKey]?.serializedKey ?? modelKey;
 }
 
 const Property = (serializedName?: string) => {
@@ -264,7 +265,7 @@ const Property = (serializedName?: string) => {
         const oldValue = observableResult.get?.call(this);
         store?.emitEvent({
           operation: "update",
-          model: getModelName(this.constructor),
+          model: constructorToModelName(this.constructor),
           id: this.id,
           propKey,
           oldValue,
@@ -274,7 +275,7 @@ const Property = (serializedName?: string) => {
       },
       init(this: T, value: any) {
         if (serializedName) {
-          const modelName = getModelName(this.constructor);
+          const modelName = constructorToModelName(this.constructor);
           ModelProps[modelName].properties[propKey] = serializedName;
         }
         return observableResult.init?.call(this, value);
@@ -299,7 +300,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
         const oldValue = observableResult.get?.call(this);
         store?.emitEvent({
           operation: "update",
-          model: getModelName(this.constructor),
+          model: constructorToModelName(this.constructor),
           id: this.id,
           propKey: serializedKey,
           oldValue: oldValue?.id ?? null,
@@ -309,7 +310,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
       },
       init(this: T, value: any) {
         if (serializedKey) {
-          const modelName = getModelName(this.constructor);
+          const modelName = constructorToModelName(this.constructor);
           ModelProps[modelName].foreignKeys[modelKey] = {
             referencedModelName: referencedModelName,
             serializedKey: serializedKey,
