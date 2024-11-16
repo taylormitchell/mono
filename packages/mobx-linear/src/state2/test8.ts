@@ -501,7 +501,7 @@ const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     class BacklinksSet extends Set<any> {
       unsubscribe: () => void;
-      constructor(initialSet: Set<any>) {
+      constructor(initialSet: Set<any>, private owner: any) {
         super(initialSet);
         this.unsubscribe = store.subscribe((event) => {
           if (event.model === link.from) {
@@ -515,7 +515,7 @@ const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
               return;
             }
             if (event.operation === "create") {
-              super.set(event.id, modelReferencingOwner);
+              super.add(modelReferencingOwner);
               return;
             }
             const serializedForeignKey = modelReferencingOwner
@@ -524,28 +524,27 @@ const BacklinkDecorator2 = (link: { from: ModelName; key: string }) => {
               : null;
             if (event.operation === "update" && event.propKey === serializedForeignKey) {
               if (event.oldValue === this.owner.id) {
-                super.delete(event.id);
+                super.delete(modelReferencingOwner);
               }
               if (event.newValue === this.owner.id) {
-                super.set(event.id, modelReferencingOwner);
+                super.add(modelReferencingOwner);
               }
             }
           }
         });
       }
-      }
     }
 
-    const set = observable.box(new BacklinksSet());
+    const set = observable.box(new Set());
     return {
       get(this: any) {
         return set.get();
       },
       set(this: any, newValue: any) {
-        set.set(newValue);
+        set.set(new BacklinksSet(newValue, this));
       },
       init(this: any, value: any) {
-        set.set(value);
+        set.set(new BacklinksSet(value, this));
         return set.get();
       },
     };
