@@ -1,5 +1,7 @@
 import { action, observable, reaction, runInAction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
+import { constructor } from "react";
+import { string } from "zod";
 
 type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelation> = Partial<
   Omit<T, "id">
@@ -38,6 +40,8 @@ function reverseEvent(event: Event): Event {
   }
 }
 
+
+
 // Store
 
 class Store {
@@ -55,28 +59,18 @@ class Store {
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
 
+  type ModelData<T extends Project | Issue | Relation> = {
+    properties: Record<string, string>;
+    foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+    create: (props: any) => T;
+    class: T;
+    instances: Map<string, T>;
+  };
+
   models: {
-    issue: {
-      properties: Record<string, string>;
-      foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-      instances: Map<string, Issue>;
-      create: (props: any) => Issue;
-      class: any;
-    };
-    project: {
-      properties: Record<string, string>;
-      foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-      instances: Map<string, Project>;
-      create: (props: any) => Project;
-      class: any;
-    };
-    relation: {
-      properties: Record<string, string>;
-      foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-      instances: Map<string, Relation>;
-      create: (props: any) => Relation;
-      class: any;
-    };
+    issue: ModelData<Issue>;
+    project: ModelData<Project>;
+    relation: ModelData<Relation>;
   } = {
     issue: {
       properties: {},
