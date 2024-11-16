@@ -1,9 +1,13 @@
 import { action, observable, reaction, runInAction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
 
-type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelation> = Partial<
-  Omit<T, "id">
-> & { id: string; placeholder?: boolean };
+function uuid() {
+  return crypto.randomUUID();
+}
+
+type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelation> = Partial<T> & {
+  placeholder?: boolean;
+};
 
 interface IModel {
   readonly id: string;
@@ -405,7 +409,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 @Model("issue")
 class Issue implements IModel {
   constructor(props: ModelProps<SerializedIssue>) {
-    this.id = props.id;
+    this.id = props.id ?? uuid();
   }
   readonly id: string;
 
@@ -424,7 +428,7 @@ class Issue implements IModel {
 @Model("project")
 class Project implements IModel {
   constructor(props: ModelProps<SerializedProject>) {
-    this.id = props.id;
+    this.id = props.id ?? uuid();
   }
 
   readonly id: string;
@@ -440,7 +444,7 @@ class Project implements IModel {
 @Model("relation")
 class Relation implements IModel {
   constructor(props: ModelProps<SerializedRelation>) {
-    this.id = props.id;
+    this.id = props.id ?? uuid();
   }
 
   readonly id: string;
