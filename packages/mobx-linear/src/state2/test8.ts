@@ -360,22 +360,15 @@ const Model = (name: ModelName) => {
         return inst;
       }),
       delete: action("delete", (id: string) => {
-        store.emitEvent({ operation: "delete", model: name, id });
         const inst = instances.get(id);
         if (inst) {
           Object.values(inst).forEach((prop) => {
             if (prop instanceof Backlinks) {
-              prop.unsubscribe?.();
+              prop.unsubscribe();
             }
           });
         }
-        // Unsubscribe all listeners for this instance
-        Object.values(inst).forEach((prop) => {
-          if (prop instanceof Backlinks) {
-            prop.unsubscribe?.();
-          }
-        });
-        instances.delete(id);
+        store.emitEvent({ operation: "delete", model: name, id });
         instances.delete(id);
       }),
       get: (id: string) => instances.get(id),
