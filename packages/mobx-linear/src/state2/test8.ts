@@ -156,6 +156,9 @@ class Store {
       default:
         event satisfies never;
     }
+    for (const subscriber of this.eventSubscribers) {
+      subscriber(event);
+    }
   }
 
   subscribe(subscriber: (event: Event) => void) {
