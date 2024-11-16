@@ -430,6 +430,8 @@ class Backlinks<T extends IModel> implements Iterable<T> {
 
 function BacklinkDecorator(link: { from: ModelName; key: string }) {
   return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
+    let owner: any;
+
     class BacklinksMap<T extends IModel> extends Map<string, T> {
       unsubscribe: () => void;
       constructor() {
@@ -489,9 +491,7 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
         return backlinksMap;
       },
       init(this: T, value: any) {
-        const metadata = getModelMetadata(this.constructor);
-        metadata.properties[modelKey] = { serializedKey };
-        return observableResult.init?.call(this, value);
+        owner = this;
       },
     };
   };
