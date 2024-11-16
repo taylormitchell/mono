@@ -30,6 +30,10 @@ function getModelMetadata(model: any): ModelMetadata {
   return metadata;
 }
 
+function initModelMetadata(model: any, name: ModelName) {
+  model[modelMetadata] = { name, properties: {}, foreignKeys: {} };
+}
+
 function reverseEvent(event: Event): Event {
   switch (event.operation) {
     case "create":
@@ -312,7 +316,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 const Model = (name: ModelName) => {
   return (value: any, { kind }: ClassDecoratorContext) => {
     if (kind === "class") {
-      getModelMetadata(value).name = name;
+      initModelMetadata(value, name);
       const instances = new Map<string, any>();
       store.models[name] = {
         create: action("create", (props: any) => {
