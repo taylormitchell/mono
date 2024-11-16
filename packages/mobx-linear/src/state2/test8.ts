@@ -32,19 +32,19 @@ class Store {
     issue: {
       properties: {},
       foreignKeys: {},
-      class: Issue,
+      class: null,
       instances: new Map<string, Issue>(),
     },
     project: {
       properties: {},
       foreignKeys: {},
-      class: Project,
+      class: null,
       instances: new Map<string, Project>(),
     },
     relation: {
       properties: {},
       foreignKeys: {},
-      class: Relation,
+      class: null,
       instances: new Map<string, Relation>(),
     },
   };
