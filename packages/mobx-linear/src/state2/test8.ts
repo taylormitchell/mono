@@ -476,16 +476,17 @@ function BacklinkDecorator(link: { from: ModelName; key: string }) {
       // TODO: `add` method?
     }
 
-    const backlinksMap = new BacklinksMap<T>();
+    let backlinksMap = new BacklinksMap<T>();
 
     const modelKey = String(context.name);
 
     return {
       get(this: T) {
-        return backlinksMap.get(this.id);
+        return backlinksMap;
       },
       set(this: T, newValue: any) {
-        return backlinksMap.set(this.id, newValue);
+        backlinksMap = new BacklinksMap<T>(); // TODO need values?
+        return backlinksMap;
       },
       init(this: T, value: any) {
         const metadata = getModelMetadata(this.constructor);
