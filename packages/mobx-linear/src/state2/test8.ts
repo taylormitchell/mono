@@ -16,6 +16,12 @@ interface IModel {
 
 const modelMetadata = Symbol("modelMetadata");
 
+type ModelMetadata = {
+  name: ModelName;
+  properties: Record<string, string>;
+  foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+};
+
 function reverseEvent(event: Event): Event {
   switch (event.operation) {
     case "create":
