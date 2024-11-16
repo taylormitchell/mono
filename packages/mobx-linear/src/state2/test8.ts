@@ -61,7 +61,7 @@ class Store {
       properties: Record<string, string>;
       foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
       instances: Map<string, IModel>;
-      create: null | ((props: any) => IModel);
+      create: (props: any) => IModel;
     }
   > = {
     issue: {
@@ -102,60 +102,60 @@ class Store {
     }
   }
 
-  applyEvent(event: Event) {
-    this.isQueuingEventsToPush = true;
-    try {
-      switch (event.operation) {
-        case "create":
-          switch (event.model) {
-            case "project":
-              new Project(event.id, event.props ?? {});
-              break;
-            case "issue":
-              new Issue(event.id, event.props ?? {});
-              break;
-            case "relation":
-              new Relation(event.id, event.props ?? {});
-              break;
-            default:
-              event.model satisfies never;
-          }
-          break;
-        case "update":
-          if (event.propKey) {
-            const model = this.getModel(event.model, event.id);
-            if (model) {
-              (model as any)[event.propKey] = event.newValue;
-            }
-          }
-          break;
-        case "delete":
-          this.models[event.model].instances.delete(event.id);
-          break;
-        case "set": {
-          switch (event.model) {
-            case "project": {
-              this.setProject({ id: event.id, ...event.newProps });
-              break;
-            }
-            case "issue": {
-              this.setIssue({ id: event.id, ...event.newProps });
-              break;
-            }
-            case "relation": {
-              this.setRelation({ id: event.id, ...event.newProps });
-              break;
-            }
-          }
-          break;
-        }
-        default:
-          event satisfies never;
-      }
-    } finally {
-      this.isQueuingEventsToPush = false;
-    }
-  }
+  // applyEvent(event: Event) {
+  //   this.isQueuingEventsToPush = true;
+  //   try {
+  //     switch (event.operation) {
+  //       case "create":
+  //         switch (event.model) {
+  //           case "project":
+  //             new Project(event.id, event.props ?? {});
+  //             break;
+  //           case "issue":
+  //             new Issue(event.id, event.props ?? {});
+  //             break;
+  //           case "relation":
+  //             new Relation(event.id, event.props ?? {});
+  //             break;
+  //           default:
+  //             event.model satisfies never;
+  //         }
+  //         break;
+  //       case "update":
+  //         if (event.propKey) {
+  //           const model = this.getModel(event.model, event.id);
+  //           if (model) {
+  //             (model as any)[event.propKey] = event.newValue;
+  //           }
+  //         }
+  //         break;
+  //       case "delete":
+  //         this.models[event.model].instances.delete(event.id);
+  //         break;
+  //       case "set": {
+  //         switch (event.model) {
+  //           case "project": {
+  //             this.setProject({ id: event.id, ...event.newProps });
+  //             break;
+  //           }
+  //           case "issue": {
+  //             this.setIssue({ id: event.id, ...event.newProps });
+  //             break;
+  //           }
+  //           case "relation": {
+  //             this.setRelation({ id: event.id, ...event.newProps });
+  //             break;
+  //           }
+  //         }
+  //         break;
+  //       }
+  //       default:
+  //         event satisfies never;
+  //     }
+  //   } finally {
+  //     this.isQueuingEventsToPush = false;
+  //   }
+  // }
 
   subscribe(subscriber: (event: Event) => void) {
     this.eventSubscribers.add(subscriber);
@@ -496,10 +496,10 @@ class Relation implements IModel {
 }
 
 // Load initial data
-const issue1 = new Issue({ id: "i1", title: "Issue 1", projectId: "p1" });
-const issue2 = new Issue({ id: "i2", title: "Issue 2", projectId: "p1" });
-const project1 = new Project({ id: "p1", title: "Project 1" });
-const project2 = new Project({ id: "p2", title: "Project 2" });
+const issue1 = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
+const issue2 = store.models.issue.create({ id: "i2", title: "Issue 2", projectId: "p1" });
+const project1 = store.models.project.create({ id: "p1", title: "Project 1" });
+const project2 = store.models.project.create({ id: "p2", title: "Project 2" });
 
 // Make changes
 runInAction(() => {
