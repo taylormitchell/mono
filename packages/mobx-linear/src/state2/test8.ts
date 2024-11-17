@@ -418,16 +418,15 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       }
 
       add(value: any) {
-        if (value[link.key] !== this.owner.id) {
-          value[link.key] = this.owner.id;
+        if (value[link.key] !== this.owner) {
+          value[link.key] = this.owner;
         }
         return super.add(value);
       }
 
       delete(value: any) {
-        if (value[link.key] === this.owner.id) {
+        if (value[link.key] === this.owner) {
           value[link.key] = null;
-          return true;
         }
         return super.delete(value);
       }
