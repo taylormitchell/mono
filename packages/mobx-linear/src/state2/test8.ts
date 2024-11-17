@@ -474,6 +474,9 @@ class Project extends BaseModel {
 
 @Model("relation")
 class Relation extends BaseModel {
+  // alternative apis
+  // @ForeignKey("issue", { serializedKey: "fromId" })
+  // @ForeignKey("issue") Or maybe just assume it?
   @ForeignKey("fromId", "issue")
   accessor from: Issue | null = null;
 
