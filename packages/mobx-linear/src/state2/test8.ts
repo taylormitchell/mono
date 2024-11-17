@@ -471,14 +471,18 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       }
 
       add(value: any) {
-        store.dispatchEvent({
-          operation: "update",
-          model: value.modelName,
-          id: value.id,
-          propKey: link.key,
-          oldValue: value[link.key]?.id ?? null,
-          newValue: this.owner.id,
-        });
+        if (value[link.key] !== this.owner) {
+          store.dispatchEvent({
+            operation: "update",
+            model: value.modelName,
+            id: value.id,
+            propKey: link.key,
+            oldValue: value[link.key]?.id ?? null,
+            newValue: this.owner.id,
+          });
+          return true;
+        }
+        return false;
       }
 
       delete(value: any) {
@@ -491,8 +495,9 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
             oldValue: this.owner.id,
             newValue: null,
           });
+          return true;
         }
-        return super.delete(value);
+        return false;
       }
     }
 
