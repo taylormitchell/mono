@@ -432,9 +432,6 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkSetKey = String(context.name);
-    // set up subscription here
-    // no need for teardown on delete. there's only one subscription for all backlinks
-
     // Update backlinks when referencing model is updated
     store.subscribe((event) => {
       if (event.model === link.from) {
@@ -470,6 +467,8 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
       }
     });
 
+    // When a model is added/removed from a backlink set, this will update the
+    // model's foreign key to point to this or null if removed.
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
