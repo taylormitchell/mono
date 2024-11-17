@@ -66,7 +66,7 @@ function reverseEvent(event: Event): Event {
 type ModelClass<T> = new (id?: string) => T;
 type ModelRecord = Record<string, ModelClass<BaseModel>>;
 
-type CRUD<T extends Project | Issue | Relation> = {
+type CRUD<T extends BaseModel> = {
   create: (props: Partial<T> & { id?: string; placeholder?: boolean }) => T;
   get: (id: string) => T | undefined;
   getAll: () => T[];
@@ -74,7 +74,7 @@ type CRUD<T extends Project | Issue | Relation> = {
 };
 
 type StoreModels<TModels extends ModelRecord> = {
-  [K in keyof TModels]: ModelData<InstanceType<TModels[K]>>;
+  [K in keyof TModels]: CRUD<InstanceType<TModels[K]>>;
 };
 
 function createInitialModelData(name: ModelName) {
