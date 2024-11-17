@@ -27,10 +27,7 @@ type ModelMetadata = {
   name: ModelName;
   properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-  backlinks: Record<
-    string,
-    { refModel: ModelName; refKey: string; backModel: ModelName; backKey: string }
-  >;
+  backlinks: Record<string, { fromModel: ModelName; fromKey: string; backlinksKey: string }>;
 };
 
 function getModelMetadata(model: any): ModelMetadata {
