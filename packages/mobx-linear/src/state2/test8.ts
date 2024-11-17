@@ -499,7 +499,7 @@ class Project extends BaseModel {
 @Model("relation")
 class Relation extends BaseModel {
   // alternative apis
-  // @ForeignKey("issue", { serializedKey: "fromId" })
+  // @ForeignKey("issue", { serializedKey: "fromId" }) // Maybe the serializedKey is optional here too, and if not provided, we do the "Id" suffix thing
   // @ForeignKey("issue") Or maybe just assume it? like you trust users to use a prop name which you can add "Id" to
   @ForeignKey("fromId", "issue")
   accessor from: Issue | null = null;
