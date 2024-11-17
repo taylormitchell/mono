@@ -12,13 +12,6 @@ type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelati
 abstract class BaseModel {
   abstract readonly id: string;
   abstract placeholder: boolean;
-  tearDownFunctions: (() => void)[] = [];
-  addTearDownFunction(fn: () => void) {
-    this.tearDownFunctions.push(fn);
-  }
-  tearDown() {
-    this.tearDownFunctions.forEach((fn) => fn());
-  }
 }
 
 const modelMetadata = Symbol("modelMetadata");
@@ -367,10 +360,6 @@ const Model = (name: ModelName) => {
         return inst;
       }),
       delete: action("delete", (id: string) => {
-        const inst = instances.get(id);
-        if (inst) {
-          inst.cleanup();
-        }
         store.emitEvent({ operation: "delete", model: name, id });
         instances.delete(id);
       }),
@@ -413,7 +402,6 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
         }
       }
     });
-    getModelMetadata(this.owner.constructor).cleanupFunctions.push(() => unsubscribe());
   }
 
   delete(id: string) {
@@ -437,11 +425,11 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
     store.subscribe((event) => {
       if (event.model === link.from) {
         const model = store.models[link.from].get(event.id);
-        const referencedModel = model[link.key];
         if (!model) {
           console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
           return;
         }
+        const referencedModel = model[link.key];
         if (!referencedModel) {
           // TODO: something to do here?
           return;
