@@ -346,11 +346,11 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
           const newReferencedModel = event.newValue
             ? store.models[referencedModelName].get(event.newValue)
             : null;
-          if (event.oldValue === referencedModel.id && backlinks.has(model)) {
-            backlinks.delete(model);
+          if (oldReferencedModel && oldReferencedModel[backlinkSetKey].has(model)) {
+            oldReferencedModel[backlinkSetKey].delete(model);
           }
-          if (event.newValue === referencedModel.id && !backlinks.has(model)) {
-            backlinks.add(model);
+          if (newReferencedModel && !newReferencedModel[backlinkSetKey].has(model)) {
+            newReferencedModel[backlinkSetKey].add(model);
           }
         }
       }
