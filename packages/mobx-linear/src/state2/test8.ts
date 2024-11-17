@@ -515,9 +515,6 @@ class Issue extends BaseModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
-  @BacklinkDecorator({ from: "relation", key: "from" })
-  test = new Set<Relation>();
-
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
 
   relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
@@ -531,6 +528,9 @@ class Project extends BaseModel {
 
   @Property()
   accessor title = "";
+
+  @BacklinkDecorator({ from: "issue", key: "project" })
+  decoratedIssues = new Set<Issue>();
 
   issues = new Backlinks<Issue>(this, { from: "issue", key: "project" });
 }
