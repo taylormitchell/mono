@@ -461,24 +461,28 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
 
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
-    const modelKey = String(context.name);
+    const backlinkSetKey = String(context.name);
     // set up subscription here
     // no need for teardown on delete. there's only one subscription for all backlinks
 
     store.subscribe((event) => {
       if (event.model === link.from) {
         const model = store.models[link.from].get(event.id);
-        if (event.operation === "delete") {
-          this.map.delete(event.id);
-          return;
-        }
-        const modelReferencingOwner = store.models[link.from].get(event.id);
-        if (!modelReferencingOwner) {
+        const referencedModel = model[link.key];
+        if (!model) {
           console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
           return;
         }
+        if (!referencedModel) {
+          // TODO: something to do here?
+          return;
+        }
+        if (event.operation === "delete") {
+          referencedModel[backlinkSetKey].delete(model);
+          return;
+        }
         if (event.operation === "create") {
-          this.map.set(event.id, modelReferencingOwner);
+          referencedModel[backlinkSetKey].add(model);
           return;
         }
         const serializedForeignKey = modelReferencingOwner
@@ -520,10 +524,10 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
         console.warn("Backlinks should not be initialized with an existing set");
       }
       const metadata = getModelMetadata(this.constructor);
-      metadata.backlinks[modelKey] = {
+      metadata.backlinks[backlinkSetKey] = {
         fromModel: link.from,
         fromKey: link.key,
-        backlinksKey: modelKey,
+        backlinksKey: backlinkSetKey,
       };
       return new BacklinksSet(this);
     };
