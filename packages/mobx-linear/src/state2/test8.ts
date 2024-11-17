@@ -328,7 +328,7 @@ class Store<TModels extends ModelRecord> {
 
   // sync
 
-  applyRemoteEvent(event: Event) {
+  dispatchEvent(event: Event) {
     this.withEventQueuingDisabled(() => {
       this.applyEvent(event);
     });
@@ -471,15 +471,26 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       }
 
       add(value: any) {
-        if (value[link.key] !== this.owner) {
-          value[link.key] = this.owner;
-        }
-        return super.add(value);
+        store.dispatchEvent({
+          operation: "update",
+          model: value.modelName,
+          id: value.id,
+          propKey: link.key,
+          oldValue: value[link.key]?.id ?? null,
+          newValue: this.owner.id,
+        });
       }
 
       delete(value: any) {
         if (value[link.key] === this.owner) {
-          value[link.key] = null;
+          store.dispatchEvent({
+            operation: "update",
+            model: value.modelName,
+            id: value.id,
+            propKey: link.key,
+            oldValue: this.owner.id,
+            newValue: null,
+          });
         }
         return super.delete(value);
       }
