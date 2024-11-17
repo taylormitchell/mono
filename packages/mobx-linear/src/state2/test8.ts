@@ -233,7 +233,7 @@ class Store<TModels extends ModelRecord> {
     }
   }
 
-  private applyEvent(event: Event) {
+  private applyEventAndNotifySubscribers(event: Event) {
     switch (event.operation) {
       case "create":
         switch (event.model) {
@@ -281,7 +281,7 @@ class Store<TModels extends ModelRecord> {
       const reversedChanges = changes.map(reverseEvent).reverse();
       this.redoStack.push(reversedChanges);
       for (const event of reversedChanges) {
-        this.applyEvent(event);
+        this.applyEventAndNotifySubscribers(event);
       }
     }
   }
@@ -291,7 +291,7 @@ class Store<TModels extends ModelRecord> {
     if (changes) {
       this.undoStack.push(changes);
       for (const event of changes) {
-        this.applyEvent(event);
+        this.applyEventAndNotifySubscribers(event);
       }
     }
   }
@@ -330,7 +330,7 @@ class Store<TModels extends ModelRecord> {
 
   dispatchEvent(event: Event) {
     this.withEventQueuingDisabled(() => {
-      this.applyEvent(event);
+      this.applyEventAndNotifySubscribers(event);
     });
   }
 }
