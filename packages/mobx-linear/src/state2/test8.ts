@@ -63,14 +63,18 @@ function reverseEvent(event: Event): Event {
   }
 }
 
-type CRUD<
-  T extends Project | Issue | Relation,
-  S extends SerializedProject | SerializedIssue | SerializedRelation
-> = {
-  create: (props: ModelProps<S>) => T;
+type ModelClass<T> = new (id?: string) => T;
+type ModelRecord = Record<string, ModelClass<BaseModel>>;
+
+type CRUD<T extends Project | Issue | Relation> = {
+  create: (props: Partial<T> & { id?: string; placeholder?: boolean }) => T;
   get: (id: string) => T | undefined;
   getAll: () => T[];
   delete: (id: string) => void;
+};
+
+type StoreModels<TModels extends ModelRecord> = {
+  [K in keyof TModels]: ModelData<InstanceType<TModels[K]>>;
 };
 
 function createInitialModelData(name: ModelName) {
