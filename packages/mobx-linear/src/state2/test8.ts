@@ -63,7 +63,7 @@ function reverseEvent(event: Event): Event {
   }
 }
 
-type ModelData<
+type CRUD<
   T extends Project | Issue | Relation,
   S extends SerializedProject | SerializedIssue | SerializedRelation
 > = {
@@ -109,9 +109,9 @@ class Store {
   private lastStagedChangeTimestamp = observable.box(0);
 
   models: {
-    issue: ModelData<Issue, SerializedIssue>;
-    project: ModelData<Project, SerializedProject>;
-    relation: ModelData<Relation, SerializedRelation>;
+    issue: CRUD<Issue, SerializedIssue>;
+    project: CRUD<Project, SerializedProject>;
+    relation: CRUD<Relation, SerializedRelation>;
   } = {
     issue: createInitialModelData("issue"),
     project: createInitialModelData("project"),
