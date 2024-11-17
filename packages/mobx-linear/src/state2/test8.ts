@@ -487,8 +487,7 @@ class Issue extends BaseModel {
   @property()
   accessor title = "";
 
-  // TODO: same here where model name can be provided, but we just assume the accessor name matches the model name if none is provided
-  @link("projectId", "project")
+  @link()
   accessor project: Project | null = null;
 
   // @Backlinks("relation.from") TODO: Maybe this? Can typescript check this?
