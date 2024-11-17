@@ -27,7 +27,6 @@ type ModelMetadata = {
   name: ModelName;
   properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-  backlinks: Record<string, { fromModel: ModelName; fromKey: string; backlinksKey: string }>;
 };
 
 function getModelMetadata(model: any): ModelMetadata {
@@ -319,37 +318,8 @@ const Model = (name: ModelName) => {
       name,
       properties: {},
       foreignKeys: {},
-      backlinks: {},
     } satisfies ModelMetadata;
     const instances = new Map<string, any>();
-    const unsubscribe = store.subscribe((event) => {
-      Object.values(getModelMetadata(cls).backlinks).forEach(
-        ({ fromModel, fromKey, backlinksKey }) => {
-          if (event.model === fromModel) {
-            if (event.operation === "delete") {
-              const model = instances.get(event.id);
-              if (model) {
-                const referencedId = model[fromKey];
-                const referencedModel = store.models[referencedModelName].get(referencedId);
-                if (referencedModel) {
-                  referencedModel[backlinksKey]?.delete(event.id);
-                }
-              }
-            }
-            if (event.operation === "create") {
-              const model = instances.get(event.id);
-              if (model) {
-                const referencedId = model[fromKey];
-                const referencedModel = store.models[referencedModelName].get(referencedId);
-                if (referencedModel) {
-                  referencedModel[backlinksKey]?.add(event.id);
-                }
-              }
-            }
-          }
-        }
-      );
-    });
     store.models[name] = {
       // TODO: Should somehow make it more obvious that this is creating a new instance
       // or if one already exists, updating the existing one. And maybe the event should
