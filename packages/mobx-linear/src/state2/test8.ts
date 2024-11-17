@@ -197,8 +197,8 @@ class Store<TModels extends ModelRecord> {
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
       const metadata = getOrCreateModelMetadata(ModelClass);
       this.subscribe((event) => {
-        if (event.model === link.from) {
-          const model = store.models[link.from].get(event.id);
+        if (event.model === modelName) {
+          const model = this.models[modelName].get(event.id);
           if (!model) {
             console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
             return;
@@ -433,58 +433,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 };
 
 const Backlinks = (link: { from: ModelName; key: string }) => {
-  return (_: any, context: ClassFieldDecoratorContext) => {
-    const backlinkSetKey = String(context.name);
-
-    // When the referencing model is updated, update the backlink set on the referenced model.
-    store.subscribe((event) => {
-      if (event.model === link.from) {
-        const model = store.models[link.from].get(event.id);
-        if (!model) {
-          console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
-          return;
-        }
-        const metadata = getModelMetadata(model.constructor);
-        const referencedModelName = metadata.foreignKeys[link.key].referencedModelName;
-
-        if (event.operation === "delete") {
-          const referencedModel = event.oldValue
-            ? store.models[referencedModelName].get(event.oldValue)
-            : null;
-          referencedModel?.[backlinkSetKey].delete(model);
-          return;
-        }
-        if (event.operation === "create") {
-          const referencedModel = event.newValue
-            ? store.models[referencedModelName].get(event.newValue)
-            : null;
-          referencedModel?.[backlinkSetKey].add(model);
-          return;
-        }
-        const serializedForeignKey = model
-          ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
-          : null;
-        if (event.operation === "update" && event.propKey === serializedForeignKey) {
-          const oldReferencedModel = event.oldValue
-            ? store.models[referencedModelName].get(event.oldValue)
-            : null;
-          const newReferencedModel = event.newValue
-            ? store.models[referencedModelName].get(event.newValue)
-            : null;
-          if (oldReferencedModel && oldReferencedModel[backlinkSetKey].has(model)) {
-            oldReferencedModel[backlinkSetKey].delete(model);
-          }
-          if (newReferencedModel && !newReferencedModel[backlinkSetKey].has(model)) {
-            newReferencedModel[backlinkSetKey].add(model);
-          }
-        }
-      }
-    });
-
-    // When a model is added/removed from the backlink set, update the foreign key on the
-    // referencing model to match.
-    // TODO: Maybe do this by dispatching an event. That way the behaviour only gets strung
-    // up once you've instantiated the store. (Probably another way to do this tbh though)
+  return () => {
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
