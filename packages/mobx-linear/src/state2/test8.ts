@@ -248,6 +248,7 @@ const Property = (_serializedKey?: string) => {
       },
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
+        // TODO Maybe this gets injected in during registration with the store?
         store?.emitEvent({
           operation: "update",
           model: getModelMetadata(this.constructor).name,
