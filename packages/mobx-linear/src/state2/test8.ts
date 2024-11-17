@@ -434,7 +434,16 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
   };
 };
 
-const backlink = (link: { from: ModelName; key: string }) => {
+function parseBacklinkRef(ref: string) {
+  const parts = ref.split(".");
+  if (parts.length !== 2) {
+    throw new Error("Invalid backlink reference");
+  }
+  return parts as [string, string];
+}
+
+const backlink = (ref: string) => {
+  const { from, key } = parseBacklinkRef(ref);
   class BacklinksSet extends Set<any> {
     constructor(private owner: BaseModel) {
       super();
@@ -455,6 +464,7 @@ const backlink = (link: { from: ModelName; key: string }) => {
       return false;
     }
   }
+
   return (_: any, context: ClassFieldDecoratorContext) => {
     return function (this: any, initialValue: any) {
       if (!(initialValue instanceof Set)) {
