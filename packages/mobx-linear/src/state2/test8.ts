@@ -114,7 +114,7 @@ class Store<TModels extends ModelRecord> {
 
   models: StoreModels<TModels>;
 
-  constructor(models: TModels) {
+  constructor(modelClasses: TModels) {
     this.models = {} as StoreModels<TModels>;
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
       const instances = new Map<string, InstanceType<typeof ModelClass>>();
@@ -321,8 +321,6 @@ class Store<TModels extends ModelRecord> {
     });
   }
 }
-
-const store = new Store();
 
 // Model decorators
 
@@ -584,7 +582,6 @@ const Model = (name: ModelName) => {
  *
  */
 
-@Model("issue") // TODO: Do we even need this? We're already typing class to name in the store types above
 class Issue extends BaseModel {
   @Property()
   accessor title = "";
@@ -601,7 +598,6 @@ class Issue extends BaseModel {
   readonly relationsTo = new Set<Relation>();
 }
 
-@Model("project")
 class Project extends BaseModel {
   @Property()
   accessor title = "";
@@ -610,7 +606,6 @@ class Project extends BaseModel {
   readonly issues = new Set<Issue>();
 }
 
-@Model("relation")
 class Relation extends BaseModel {
   // alternative apis
   // @ForeignKey("issue", { serializedKey: "fromId" }) // Maybe the serializedKey is optional here too, and if not provided, we do the "Id" suffix thing
@@ -621,6 +616,12 @@ class Relation extends BaseModel {
   @ForeignKey("toId", "issue")
   accessor to: Issue | null = null;
 }
+
+const store = new Store({
+  issue: Issue,
+  project: Project,
+  relation: Relation,
+});
 
 // Load initial data
 const issue1 = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
