@@ -401,7 +401,9 @@ const link = (opts: { serializedKey?: string; referencedModelName?: ModelName } 
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
-    const modelKey = String(context.name);
+    const accessorName = String(context.name);
+    const serializedKey = opts.serializedKey ?? `${accessorName}Id`;
+    const referencedModelName = opts.referencedModelName ?? accessorName;
 
     return {
       get(this: T) {
@@ -423,7 +425,7 @@ const link = (opts: { serializedKey?: string; referencedModelName?: ModelName } 
       init(this: T, value: any) {
         if (serializedKey) {
           const metadata = getOrCreateModelMetadata(this.constructor);
-          metadata.foreignKeys[modelKey] = {
+          metadata.foreignKeys[accessorName] = {
             referencedModelName: referencedModelName,
             serializedKey: serializedKey,
           };
