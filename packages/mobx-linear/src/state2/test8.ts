@@ -124,7 +124,12 @@ class Store<TModels extends ModelRecord> {
           const existing = props.id ? instances.get(props.id) : undefined;
           const inst = existing ?? new ModelClass(props.id);
 
+          // TODO: Is there actually any reason to do this after the fact? Like why not do the mapping
+          // from ids to instances before instantiation and then pass them to the constructor?
           if (!existing) {
+            if (props.id) {
+              inst.id = props.id;
+            }
             instances.set(inst.id, inst);
           }
 
