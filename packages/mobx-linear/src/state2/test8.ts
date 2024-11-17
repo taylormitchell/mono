@@ -248,7 +248,8 @@ const Property = (_serializedKey?: string) => {
       },
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        // TODO Maybe this gets injected in during registration with the store?
+        // TODO Maybe this gets injected in during registration with the store? and so does
+        // nothing in cases where the class is instantiated outside a store context?
         store?.emitEvent({
           operation: "update",
           model: getModelMetadata(this.constructor).name,
