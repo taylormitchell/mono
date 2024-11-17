@@ -395,7 +395,7 @@ const property = (_serializedKey?: string) => {
   };
 };
 
-const link = (serializedKey: string, referencedModelName: ModelName) => {
+const link = (opts: { serializedKey?: string; referencedModelName?: ModelName } = {}) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
