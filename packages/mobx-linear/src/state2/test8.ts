@@ -432,7 +432,8 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkSetKey = String(context.name);
-    // Update backlinks when referencing model is updated
+
+    // When the referencing model is updated, update the backlink set on the referenced model.
     store.subscribe((event) => {
       if (event.model === link.from) {
         const model = store.models[link.from].get(event.id);
@@ -468,6 +469,8 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
       }
     });
 
+    // When a model is added/removed from the backlink set, update the foreign key on the
+    // referencing model to match.
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
