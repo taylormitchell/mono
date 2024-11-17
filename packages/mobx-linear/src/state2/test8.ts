@@ -322,6 +322,52 @@ const Model = (name: ModelName) => {
       backlinks: {},
     } satisfies ModelMetadata;
     const instances = new Map<string, any>();
+    const unsubscribe = store.subscribe((event) => {
+      Object.values(getModelMetadata(cls).backlinks).forEach(
+        ({ fromModel, fromKey, backlinksKey }) => {
+          if (event.model === fromModel) {
+            if (event.operation === "delete") {
+              instances.get(event.id)?.[backlinksKey]?.delete(event.id);
+            }
+            if (event.operation === "create") {
+              instances.get(event.id)?.[backlinksKey]?.add(event.id);
+            }
+          }
+        }
+      );
+
+      if (event.model === name) {
+        if (event.operation === "delete") {
+          Object.values(getModelMetadata(cls).backlinks).forEach(
+            ({ fromModel, fromKey, backlinksKey }) => {
+              instances.get(event.id)?.[backlinksKey]?.delete(event.id);
+            }
+          );
+          instances.delete(event.id);
+          return;
+        }
+        const modelReferencingOwner = store.models[link.from].get(event.id);
+        if (!modelReferencingOwner) {
+          console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
+          return;
+        }
+        if (event.operation === "create") {
+          this.map.set(event.id, modelReferencingOwner);
+          return;
+        }
+        const serializedForeignKey = modelReferencingOwner
+          ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key].serializedKey
+          : null;
+        if (event.operation === "update" && event.propKey === serializedForeignKey) {
+          if (event.oldValue === this.owner.id) {
+            this.map.delete(event.id);
+          }
+          if (event.newValue === this.owner.id) {
+            this.map.set(event.id, modelReferencingOwner);
+          }
+        }
+      }
+    });
     store.models[name] = {
       // TODO: Should somehow make it more obvious that this is creating a new instance
       // or if one already exists, updating the existing one. And maybe the event should
