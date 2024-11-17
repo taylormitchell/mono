@@ -460,8 +460,11 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
         }
       }
     });
-    const modelKey = String(context.name);
-    console.log("modelKey", modelKey);
+    context.addInitializer(() => {
+      console.log("initializer");
+    });
+    // const modelKey = String(context.name);
+    // console.log("modelKey", modelKey);
     return target;
   };
 };
