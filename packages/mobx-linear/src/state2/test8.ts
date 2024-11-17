@@ -458,6 +458,18 @@ const Model = (name: ModelName) => {
 // That or we make the store actually know nothing about the types of the models it holders, and then we create
 // some wrapper function that asserts the types of the models at runtime.
 // Like maybe the store doesn't even get exposed?
+/**
+ * // I bet there are some fancy type things to make this work:
+ *
+ * const store = createStore({
+ *   issue: { class: Issue, serialized: SerializedIssue },
+ *   project: { class: Project, serialized: SerializedProject },
+ *   relation: { class: Relation, serialized: SerializedRelation },
+ * })
+ *
+ * const issue = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
+ *
+ */
 
 @Model("issue") // TODO: Do we even need this? We're already typing class to name in the store types above
 class Issue extends BaseModel {
