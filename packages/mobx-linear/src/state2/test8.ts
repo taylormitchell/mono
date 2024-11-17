@@ -9,9 +9,16 @@ type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelati
   placeholder?: boolean;
 };
 
-interface IModel {
-  readonly id: string;
-  placeholder: boolean;
+abstract class BaseModel {
+  abstract readonly id: string;
+  abstract placeholder: boolean;
+  cleanupFunctions: (() => void)[] = [];
+  addCleanupFunction(fn: () => void) {
+    this.cleanupFunctions.push(fn);
+  }
+  cleanup() {
+    this.cleanupFunctions.forEach((fn) => fn());
+  }
 }
 
 const modelMetadata = Symbol("modelMetadata");
@@ -234,7 +241,7 @@ const store = new Store();
 // Model decorators
 
 const Property = (_serializedKey?: string) => {
-  return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
+  return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
@@ -268,7 +275,7 @@ const Property = (_serializedKey?: string) => {
 };
 
 const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
-  return <T extends IModel>(target: any, context: ClassAccessorDecoratorContext) => {
+  return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
@@ -381,10 +388,10 @@ const Model = (name: ModelName) => {
   };
 };
 
-class Backlinks<T extends IModel> implements Iterable<T> {
+class Backlinks<T extends BaseModel> implements Iterable<T> {
   private map = new Map<string, T>();
 
-  constructor(private owner: IModel, private link: { from: ModelName; key: string }) {
+  constructor(private owner: BaseModel, private link: { from: ModelName; key: string }) {
     const unsubscribe = store.subscribe((event) => {
       if (event.model === link.from) {
         if (event.operation === "delete" && this.map.has(event.id)) {
@@ -489,7 +496,7 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
 // Models
 
 @Model("issue")
-class Issue implements IModel {
+class Issue extends BaseModel {
   readonly id: string = uuid();
 
   placeholder = false;
@@ -509,7 +516,7 @@ class Issue implements IModel {
 }
 
 @Model("project")
-class Project implements IModel {
+class Project extends BaseModel {
   readonly id: string = uuid();
 
   placeholder = false;
@@ -521,7 +528,7 @@ class Project implements IModel {
 }
 
 @Model("relation")
-class Relation implements IModel {
+class Relation extends BaseModel {
   readonly id: string = uuid();
 
   placeholder = false;
