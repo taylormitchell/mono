@@ -359,7 +359,7 @@ class Store<TModels extends ModelRecord> {
 
 // Model decorators
 
-const Property = (_serializedKey?: string) => {
+const property = (_serializedKey?: string) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
@@ -395,7 +395,7 @@ const Property = (_serializedKey?: string) => {
   };
 };
 
-const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
+const link = (serializedKey: string, referencedModelName: ModelName) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
@@ -442,30 +442,30 @@ function parseBacklinkRef(ref: string) {
   return parts as [string, string];
 }
 
-const backlink = (ref: string) => {
-  const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
-  class BacklinksSet extends Set<any> {
-    constructor(private owner: BaseModel) {
-      super();
-    }
-
-    add(value: any) {
-      if (value[sourceModelLinkKey] !== this.owner) {
-        value[sourceModelLinkKey] = this.owner;
-      }
-      return this;
-    }
-
-    delete(value: any) {
-      if (value[sourceModelLinkKey] === this.owner) {
-        value[sourceModelLinkKey] = null;
-        return true;
-      }
-      return false;
-    }
-  }
-
+const backlinks = (ref: string) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
+    const backlinkKey = String(context.name);
+    const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
+    class BacklinksSet extends Set<any> {
+      constructor(private owner: BaseModel) {
+        super();
+      }
+
+      add(value: any) {
+        if (value[sourceModelLinkKey] !== this.owner) {
+          value[sourceModelLinkKey] = this.owner;
+        }
+        return this;
+      }
+
+      delete(value: any) {
+        if (value[sourceModelLinkKey] === this.owner) {
+          value[sourceModelLinkKey] = null;
+          return true;
+        }
+        return false;
+      }
+    }
     return function (this: any, initialValue: any) {
       if (!(initialValue instanceof Set)) {
         throw new Error("Backlinks must be initialized with a Set");
@@ -475,33 +475,33 @@ const backlink = (ref: string) => {
         console.warn("Backlinks should not be initialized with an existing set");
       }
       const metadata = getOrCreateModelMetadata(this);
-      metadata.backlinks[link.key] = { from: link.from, key: link.key };
+      metadata.backlinks[backlinkKey] = { from: sourceModelName, key: sourceModelLinkKey };
       return new BacklinksSet(this);
     };
   };
 };
 
 class Issue extends BaseModel {
-  @Property()
+  @property()
   accessor title = "";
 
   // TODO: same here where model name can be provided, but we just assume the accessor name matches the model name if none is provided
-  @ForeignKey("projectId", "project")
+  @link("projectId", "project")
   accessor project: Project | null = null;
 
   // @Backlinks("relation.from") TODO: Maybe this? Can typescript check this?
-  @backlink({ from: "relation", key: "from" })
+  @backlinks("relation.from")
   readonly relationsFrom = new Set<Relation>();
 
-  @backlink({ from: "relation", key: "to" })
+  @backlinks("relation.to")
   readonly relationsTo = new Set<Relation>();
 }
 
 class Project extends BaseModel {
-  @Property()
+  @property()
   accessor title = "";
 
-  @backlink({ from: "issue", key: "project" })
+  @backlinks("issue.project")
   readonly issues = new Set<Issue>();
 }
 
@@ -509,10 +509,10 @@ class Relation extends BaseModel {
   // alternative apis
   // @ForeignKey("issue", { serializedKey: "fromId" }) // Maybe the serializedKey is optional here too, and if not provided, we do the "Id" suffix thing
   // @ForeignKey("issue") Or maybe just assume it? like you trust users to use a prop name which you can add "Id" to
-  @ForeignKey("fromId", "issue")
+  @link("fromId", "issue")
   accessor from: Issue | null = null;
 
-  @ForeignKey("toId", "issue")
+  @link("toId", "issue")
   accessor to: Issue | null = null;
 }
 
