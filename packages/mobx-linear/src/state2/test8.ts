@@ -349,6 +349,8 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
 
     // When a model is added/removed from the backlink set, update the foreign key on the
     // referencing model to match.
+    // TODO: Maybe do this by dispatching an event. That way the behaviour only gets strung
+    // up once you've instantiated the store. (Probably another way to do this tbh though)
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
