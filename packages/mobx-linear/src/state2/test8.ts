@@ -465,6 +465,26 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
     // set up subscription here
     // no need for teardown on delete. there's only one subscription for all backlinks
 
+    class BacklinksSet extends Set<any> {
+      constructor(private owner: BaseModel, initialValue: Set<any>) {
+        super(initialValue);
+      }
+
+      add(value: any) {
+        if (value[link.key] !== this.owner.id) {
+          value[link.key] = this.owner.id;
+        }
+        return super.add(value);
+      }
+
+      delete(value: any) {
+        if (value[link.key] === this.owner.id) {
+          value[link.key] = null;
+        }
+        return super.delete(value);
+      }
+    }
+
     return function (this: any, initialValue: any) {
       const metadata = getModelMetadata(this.constructor);
       metadata.backlinks[modelKey] = {
@@ -472,7 +492,7 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
         fromKey: link.key,
         backlinksKey: modelKey,
       };
-      return initialValue;
+      return new BacklinksSet(this, initialValue);
     };
   };
 };
