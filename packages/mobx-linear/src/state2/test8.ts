@@ -431,59 +431,39 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
 }
 
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
-  return (_: any, context: ClassAccessorDecoratorContext) => {
-    class BacklinksSet extends Set<any> {
-      constructor(initialSet: Set<any>, private owner: any) {
-        super(initialSet);
-        const unsubscribe = store.subscribe((event) => {
-          if (event.model === link.from) {
-            if (event.operation === "delete" && this.has(event.id)) {
-              super.delete(event.id);
-              return;
-            }
-            const modelReferencingOwner = store.models[link.from].get(event.id);
-            if (!modelReferencingOwner) {
-              console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
-              return;
-            }
-            if (event.operation === "create") {
-              super.add(modelReferencingOwner);
-              return;
-            }
-            const serializedForeignKey = modelReferencingOwner
-              ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key]
-                  .serializedKey
-              : null;
-            if (event.operation === "update" && event.propKey === serializedForeignKey) {
-              if (event.oldValue === this.owner.id) {
-                super.delete(modelReferencingOwner);
-              }
-              if (event.newValue === this.owner.id) {
-                super.add(modelReferencingOwner);
-              }
-            }
+  return (target: any, context: ClassFieldDecoratorContext) => {
+    const unsubscribe = store.subscribe((event) => {
+      if (event.model === link.from) {
+        if (event.operation === "delete" && this.has(event.id)) {
+          super.delete(event.id);
+          return;
+        }
+        const modelReferencingOwner = store.models[link.from].get(event.id);
+        if (!modelReferencingOwner) {
+          console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
+          return;
+        }
+        if (event.operation === "create") {
+          super.add(modelReferencingOwner);
+          return;
+        }
+        const serializedForeignKey = modelReferencingOwner
+          ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key].serializedKey
+          : null;
+        if (event.operation === "update" && event.propKey === serializedForeignKey) {
+          if (event.oldValue === this.owner.id) {
+            super.delete(modelReferencingOwner);
           }
-        });
-        this.owner.addCleanupFunction(() => unsubscribe());
+          if (event.newValue === this.owner.id) {
+            super.add(modelReferencingOwner);
+          }
+        }
       }
-    }
+    });
 
     const modelKey = String(context.name);
     console.log("modelKey", modelKey);
-
-    const set = observable.box(new Set<any>());
-    return {
-      get(this: any) {
-        return set.get();
-      },
-      set(this: any, newValue: any) {
-        set.set(new BacklinksSet(newValue, this));
-      },
-      init(this: any, value: any) {
-        set.set(new BacklinksSet(value, this));
-        return set.get();
-      },
-    };
+    return target;
   };
 };
 
@@ -502,7 +482,7 @@ class Issue extends BaseModel {
   accessor project: Project | null = null;
 
   @BacklinkDecorator({ from: "relation", key: "from" })
-  accessor test = new Set<Relation>();
+  test = new Set<Relation>();
 
   relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
 
