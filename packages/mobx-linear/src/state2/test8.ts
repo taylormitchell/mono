@@ -395,7 +395,7 @@ const property = (_serializedKey?: string) => {
   };
 };
 
-const link = (opts: { serializedKey?: string; referencedModelName?: ModelName } = {}) => {
+const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
@@ -403,7 +403,7 @@ const link = (opts: { serializedKey?: string; referencedModelName?: ModelName } 
     }
     const accessorName = String(context.name);
     const serializedKey = opts.serializedKey ?? `${accessorName}Id`;
-    const referencedModelName = opts.referencedModelName ?? accessorName;
+    const referencedModelName = opts.modelName ?? accessorName;
 
     return {
       get(this: T) {
@@ -490,7 +490,6 @@ class Issue extends BaseModel {
   @link()
   accessor project: Project | null = null;
 
-  // @Backlinks("relation.from") TODO: Maybe this? Can typescript check this?
   @backlinks("relation.from")
   readonly relationsFrom = new Set<Relation>();
 
@@ -507,13 +506,10 @@ class Project extends BaseModel {
 }
 
 class Relation extends BaseModel {
-  // alternative apis
-  // @ForeignKey("issue", { serializedKey: "fromId" }) // Maybe the serializedKey is optional here too, and if not provided, we do the "Id" suffix thing
-  // @ForeignKey("issue") Or maybe just assume it? like you trust users to use a prop name which you can add "Id" to
-  @link("fromId", "issue")
+  @link({ modelName: "issue" })
   accessor from: Issue | null = null;
 
-  @link("toId", "issue")
+  @link({ modelName: "issue" })
   accessor to: Issue | null = null;
 }
 
