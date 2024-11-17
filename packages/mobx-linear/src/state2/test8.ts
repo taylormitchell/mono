@@ -25,6 +25,7 @@ type ModelMetadata = {
   name: ModelName;
   properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
+  backlinks: Record<string, { from: ModelName; key: string }>;
 };
 
 function getOrCreateModelMetadata(model: any): ModelMetadata {
@@ -33,7 +34,8 @@ function getOrCreateModelMetadata(model: any): ModelMetadata {
       name: model.name,
       properties: {},
       foreignKeys: {},
-    };
+      backlinks: {},
+    } satisfies ModelMetadata;
   }
   return model[modelMetadata];
 }
@@ -462,6 +464,8 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       if (initialValue.size > 0) {
         console.warn("Backlinks should not be initialized with an existing set");
       }
+      const metadata = getOrCreateModelMetadata(this);
+      metadata.backlinks[link.key] = { from: link.from, key: link.key };
       return new BacklinksSet(this);
     };
   };
