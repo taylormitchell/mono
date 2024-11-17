@@ -288,6 +288,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
       },
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
+        const res = observableResult.set?.call(this, newValue);
         store?.emitEvent({
           operation: "update",
           model: getModelMetadata(this.constructor).name,
@@ -296,7 +297,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
           oldValue: oldValue?.id ?? null,
           newValue: newValue?.id ?? null,
         });
-        observableResult.set?.call(this, newValue);
+        return res;
       },
       init(this: T, value: any) {
         if (serializedKey) {
@@ -544,10 +545,10 @@ runInAction(() => {
   issue1.project = project2;
 });
 
-// console.log(project1.issues);
+console.log(project1.issues);
 
-// runInAction(() => {
-//   issue1.project = null;
-// });
+runInAction(() => {
+  issue1.project = null;
+});
 
-// console.log(project1.issues);
+console.log(project1.issues);
