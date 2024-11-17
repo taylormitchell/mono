@@ -27,12 +27,16 @@ type ModelMetadata = {
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
 };
 
-function getModelMetadata(model: any): ModelMetadata {
-  const metadata = model[modelMetadata];
-  if (!metadata) {
-    throw new Error(`Unknown model ${model}`);
+function getOrCreateModelMetadata(model: any): ModelMetadata {
+  if (model[modelMetadata]) {
+    return model[modelMetadata];
   }
-  return metadata;
+  model[modelMetadata] = {
+    name: model.name,
+    properties: {},
+    foreignKeys: {},
+  };
+  return model[modelMetadata];
 }
 
 function reverseEvent(event: Event): Event {
@@ -127,6 +131,8 @@ class Store<TModels extends ModelRecord> {
           // TODO: Is there actually any reason to do this after the fact? Like why not do the mapping
           // from ids to instances before instantiation and then pass them to the constructor?
           if (!existing) {
+            // If we created a new instance, the class constructor will have assigned a new
+            // random id. If the user provided an id, we should use that instead.
             if (props.id) {
               inst.id = props.id;
             }
@@ -137,6 +143,9 @@ class Store<TModels extends ModelRecord> {
           (inst as any).store = this;
           (inst as any).modelName = modelName;
 
+          // Placeholder instances are created by passing placeholder: true to the
+          // create method (see below). If it's not provided, then we have the
+          // real model data in which case we flip the placeholder flag to false.
           inst.placeholder = props.placeholder ?? false;
 
           // Handle foreign keys
