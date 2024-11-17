@@ -20,7 +20,6 @@ type ModelMetadata = {
   name: ModelName;
   properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-  cleanupFunctions: (() => void)[];
 };
 
 function getModelMetadata(model: any): ModelMetadata {
@@ -384,10 +383,9 @@ const Model = (name: ModelName) => {
 
 class Backlinks<T extends IModel> implements Iterable<T> {
   private map = new Map<string, T>();
-  unsubscribe: () => void;
 
   constructor(private owner: IModel, private link: { from: ModelName; key: string }) {
-    this.unsubscribe = store.subscribe((event) => {
+    const unsubscribe = store.subscribe((event) => {
       if (event.model === link.from) {
         if (event.operation === "delete" && this.map.has(event.id)) {
           this.map.delete(event.id);
@@ -415,6 +413,7 @@ class Backlinks<T extends IModel> implements Iterable<T> {
         }
       }
     });
+    getModelMetadata(this.owner.constructor).cleanupFunctions.push(() => unsubscribe());
   }
 
   delete(id: string) {
