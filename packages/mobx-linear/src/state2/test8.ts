@@ -327,13 +327,18 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
         const metadata = getModelMetadata(model.constructor);
         const referencedModelName = metadata.foreignKeys[link.key].referencedModelName;
 
-        const backlinks = referencedModel[backlinkSetKey];
         if (event.operation === "delete") {
-          backlinks.delete(model);
+          const referencedModel = event.oldValue
+            ? store.models[referencedModelName].get(event.oldValue)
+            : null;
+          referencedModel?.[backlinkSetKey].delete(model);
           return;
         }
         if (event.operation === "create") {
-          backlinks.add(model);
+          const referencedModel = event.newValue
+            ? store.models[referencedModelName].get(event.newValue)
+            : null;
+          referencedModel?.[backlinkSetKey].add(model);
           return;
         }
         const serializedForeignKey = model
