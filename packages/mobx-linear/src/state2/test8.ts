@@ -447,6 +447,7 @@ const Model = (name: ModelName) => {
 
 // Models
 // store.registerModel("issue", Issue, SerializedIssue);
+// ^ this way you could runtime check if props are valid for the model
 
 @Model("issue")
 class Issue extends BaseModel {
