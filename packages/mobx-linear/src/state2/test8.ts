@@ -485,15 +485,15 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
           referencedModel[backlinkSetKey].add(model);
           return;
         }
-        const serializedForeignKey = modelReferencingOwner
-          ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key].serializedKey
+        const serializedForeignKey = model
+          ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
           : null;
         if (event.operation === "update" && event.propKey === serializedForeignKey) {
-          if (event.oldValue === this.owner.id) {
-            this.map.delete(event.id);
+          if (event.oldValue === referencedModel.id) {
+            referencedModel[backlinkSetKey].delete(model);
           }
-          if (event.newValue === this.owner.id) {
-            this.map.set(event.id, modelReferencingOwner);
+          if (event.newValue === referencedModel.id) {
+            referencedModel[backlinkSetKey].add(model);
           }
         }
       }
