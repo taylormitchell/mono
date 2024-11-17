@@ -327,7 +327,15 @@ const Model = (name: ModelName) => {
         ({ fromModel, fromKey, backlinksKey }) => {
           if (event.model === fromModel) {
             if (event.operation === "delete") {
-              instances.get(event.id)?.[backlinksKey]?.delete(event.id);
+              const model = instances.get(event.id);
+              if (model) {
+                const referencedId = model[fromKey];
+                const referencedModel = store.models[referencedModelName].get(referencedId);
+                if (referencedModel) {
+                  referencedModel[backlinksKey]?.delete(event.id);
+                }
+              }
+            }
             }
             if (event.operation === "create") {
               instances.get(event.id)?.[backlinksKey]?.add(event.id);
