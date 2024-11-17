@@ -433,28 +433,27 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
 };
 
 const Backlinks = (link: { from: ModelName; key: string }) => {
-  return () => {
-    class BacklinksSet extends Set<any> {
-      constructor(private owner: BaseModel) {
-        super();
-      }
-
-      add(value: any) {
-        if (value[link.key] !== this.owner) {
-          value[link.key] = this.owner;
-        }
-        return this;
-      }
-
-      delete(value: any) {
-        if (value[link.key] === this.owner) {
-          value[link.key] = null;
-          return true;
-        }
-        return false;
-      }
+  class BacklinksSet extends Set<any> {
+    constructor(private owner: BaseModel) {
+      super();
     }
 
+    add(value: any) {
+      if (value[link.key] !== this.owner) {
+        value[link.key] = this.owner;
+      }
+      return this;
+    }
+
+    delete(value: any) {
+      if (value[link.key] === this.owner) {
+        value[link.key] = null;
+        return true;
+      }
+      return false;
+    }
+  }
+  return () => {
     return function (this: any, initialValue: any) {
       if (!(initialValue instanceof Set)) {
         throw new Error("Backlinks must be initialized with a Set");
