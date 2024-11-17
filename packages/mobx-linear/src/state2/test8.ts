@@ -433,7 +433,6 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
 
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (target: any, context: ClassFieldDecoratorContext) => {
-    const metadata = getModelMetadata(target.constructor);
     return (initialValue: any) => {
       return initialValue;
     };
