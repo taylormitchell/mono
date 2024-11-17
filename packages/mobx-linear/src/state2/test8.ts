@@ -455,19 +455,17 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       return false;
     }
   }
-  return () => {
-    return function (this: any, initialValue: any) {
-      if (!(initialValue instanceof Set)) {
-        throw new Error("Backlinks must be initialized with a Set");
-      }
-      // TODO maybe confirm that there's a matching foreign key
-      if (initialValue.size > 0) {
-        console.warn("Backlinks should not be initialized with an existing set");
-      }
-      const metadata = getOrCreateModelMetadata(this);
-      metadata.backlinks[link.key] = { from: link.from, key: link.key };
-      return new BacklinksSet(this);
-    };
+  return function (this: any, initialValue: any) {
+    if (!(initialValue instanceof Set)) {
+      throw new Error("Backlinks must be initialized with a Set");
+    }
+    // TODO maybe confirm that there's a matching foreign key
+    if (initialValue.size > 0) {
+      console.warn("Backlinks should not be initialized with an existing set");
+    }
+    const metadata = getOrCreateModelMetadata(this);
+    metadata.backlinks[link.key] = { from: link.from, key: link.key };
+    return new BacklinksSet(this);
   };
 };
 
