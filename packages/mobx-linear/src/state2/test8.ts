@@ -122,7 +122,7 @@ class Store<TModels extends ModelRecord> {
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
       const instances = new Map<string, InstanceType<typeof ModelClass>>();
 
-      this.models[modelName as any] = {
+      (this.models as any)[modelName] = {
         create: action("create", (props: any) => {
           const existing = props.id ? instances.get(props.id) : undefined;
           const inst = existing ?? new ModelClass(props.id);
