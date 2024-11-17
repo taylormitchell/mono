@@ -467,8 +467,7 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
       }
     });
 
-    // When a model is added/removed from a backlink set, this will update the
-    // model's foreign key to point to this or null if removed.
+    // Overwrite set/delete
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
@@ -478,14 +477,15 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
         if (value[link.key] !== this.owner.id) {
           value[link.key] = this.owner.id;
         }
-        return super.add(value);
+        return this;
       }
 
       delete(value: any) {
         if (value[link.key] === this.owner.id) {
           value[link.key] = null;
+          return true;
         }
-        return super.delete(value);
+        return false;
       }
     }
 
