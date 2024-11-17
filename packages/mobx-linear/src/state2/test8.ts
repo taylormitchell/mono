@@ -555,33 +555,6 @@ const Model = (name: ModelName) => {
   };
 };
 
-// Models
-// store.registerModel("issue", Issue, SerializedIssue);
-// ^ this way you could runtime check if props are valid for the model
-
-// meh I dunno. seems fine to have store, class, and names coupled. don't need to pretend like we don't know
-// the name associated with a class or like the user of store can create arbitrary class models without modifying
-// the store too.
-//
-// That or we make the store actually know nothing about the types of the models it holders, and then we create
-// some wrapper function that asserts the types of the models at runtime.
-// Like maybe the store doesn't even get exposed?
-/**
- * // I bet there are some fancy type things to make this work:
- *
- * const store = createStore({
- *   issue: Issue,
- *   project: Project,
- *   relation: Relation,
- * })
- * // ^ probably just throw if they try to do this twice
- * // this can check a bunch of stuff at runtime too e.g. that backlinks match up with foreign keys,
- * // and vice versa.
- *
- * const issue = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
- *
- */
-
 class Issue extends BaseModel {
   @Property()
   accessor title = "";
