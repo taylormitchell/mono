@@ -481,7 +481,7 @@ class Issue extends BaseModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
-  // @Backlinks("relation.from") TODO: Maybe this?
+  // @Backlinks("relation.from") TODO: Maybe this? Can typescript check this?
   @Backlinks({ from: "relation", key: "from" })
   readonly relationsFrom = new Set<Relation>();
 
