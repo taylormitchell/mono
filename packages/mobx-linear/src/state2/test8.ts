@@ -462,6 +462,9 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const modelKey = String(context.name);
+    // set up subscription here
+    // no need for teardown on delete. there's only one subscription for all backlinks
+
     return function (this: any, initialValue: any) {
       const metadata = getModelMetadata(this.constructor);
       metadata.backlinks[modelKey] = {
