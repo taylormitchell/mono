@@ -197,25 +197,45 @@ class Store<TModels extends ModelRecord> {
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
       const metadata = getOrCreateModelMetadata(ModelClass);
       this.subscribe((event) => {
-        if (event.model === modelName) {
-          const model = this.models[event.model].get(event.id);
-          if (!model) return;
+        if (event.model === link.from) {
+          const model = store.models[link.from].get(event.id);
+          if (!model) {
+            console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
+            return;
+          }
+          const metadata = getModelMetadata(model.constructor);
+          const referencedModelName = metadata.foreignKeys[link.key].referencedModelName;
 
-          if (event.operation === "update") {
-            Object.entries(metadata.foreignKeys).forEach(([key, { referencedModelName }]) => {
-              if (event.propKey === metadata.foreignKeys[key].serializedKey) {
-                const oldRef = event.oldValue
-                  ? this.models[referencedModelName].get(event.oldValue)
-                  : null;
-                const newRef = event.newValue
-                  ? this.models[referencedModelName].get(event.newValue)
-                  : null;
-
-                // Update backlinks
-                oldRef?.[`${modelName}s`]?.delete(model);
-                newRef?.[`${modelName}s`]?.add(model);
-              }
-            });
+          if (event.operation === "delete") {
+            const referencedModel = event.oldValue
+              ? store.models[referencedModelName].get(event.oldValue)
+              : null;
+            referencedModel?.[backlinkSetKey].delete(model);
+            return;
+          }
+          if (event.operation === "create") {
+            const referencedModel = event.newValue
+              ? store.models[referencedModelName].get(event.newValue)
+              : null;
+            referencedModel?.[backlinkSetKey].add(model);
+            return;
+          }
+          const serializedForeignKey = model
+            ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
+            : null;
+          if (event.operation === "update" && event.propKey === serializedForeignKey) {
+            const oldReferencedModel = event.oldValue
+              ? store.models[referencedModelName].get(event.oldValue)
+              : null;
+            const newReferencedModel = event.newValue
+              ? store.models[referencedModelName].get(event.newValue)
+              : null;
+            if (oldReferencedModel && oldReferencedModel[backlinkSetKey].has(model)) {
+              oldReferencedModel[backlinkSetKey].delete(model);
+            }
+            if (newReferencedModel && !newReferencedModel[backlinkSetKey].has(model)) {
+              newReferencedModel[backlinkSetKey].add(model);
+            }
           }
         }
       });
@@ -473,21 +493,13 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       add(value: any) {
         if (value[link.key] !== this.owner) {
           value[link.key] = this.owner;
-          return true;
         }
-        return false;
+        return this;
       }
 
       delete(value: any) {
         if (value[link.key] === this.owner) {
-          store.applyEvent({
-            operation: "update",
-            model: value.modelName,
-            id: value.id,
-            propKey: link.key,
-            oldValue: this.owner.id,
-            newValue: null,
-          });
+          value[link.key] = null;
           return true;
         }
         return false;
