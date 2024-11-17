@@ -305,71 +305,6 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
   };
 };
 
-const Model = (name: ModelName) => {
-  return (cls: any) => {
-    cls[modelMetadata] = {
-      name,
-      properties: {},
-      foreignKeys: {},
-    } satisfies ModelMetadata;
-    const instances = new Map<string, any>();
-    store.models[name] = {
-      // TODO: Should somehow make it more obvious that this is creating a new instance
-      // or if one already exists, updating the existing one. And maybe the event should
-      // be different between the two.
-      create: action("create", (props: any) => {
-        const existing = props.id ? store.models[name].get(props.id) : undefined;
-        const inst = existing ?? new cls();
-        // If we created a new instance, the class constructor will have assigned a new
-        // random id. If the user provided an id, we should use that instead.
-        if (!existing && props.id) {
-          inst.id = props.id;
-        }
-        // Placeholder instances are created by passing placeholder: true to the
-        // create method (see below). If it's not provided, then we have the
-        // real model data in which case we flip the placeholder flag to false.
-        inst.placeholder = props.placeholder ?? false;
-        // Resolve foreign key to existing or placeholder instance
-        Object.entries(getModelMetadata(cls).foreignKeys).forEach(
-          ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
-            if (props[serializedKey]) {
-              const referencedId = props[serializedKey];
-              if (referencedId) {
-                inst[modelKey] =
-                  store.models[referencedModelName].get(referencedId) ??
-                  store.models[referencedModelName].create({ id: referencedId, placeholder: true });
-              } else {
-                inst[modelKey] = null;
-              }
-            }
-          }
-        );
-        // Set properties
-        Object.entries(getModelMetadata(cls).properties).forEach(
-          ([modelKey, { serializedKey }]) => {
-            if (props[serializedKey]) {
-              inst[modelKey] = props[serializedKey];
-            }
-          }
-        );
-        if (!existing) {
-          instances.set(inst.id, inst);
-        }
-        // TODO: Maybe condition on existing/new
-        store.emitEvent({ operation: "create", model: name, id: inst.id, props });
-        return inst;
-      }),
-      delete: action("delete", (id: string) => {
-        store.emitEvent({ operation: "delete", model: name, id });
-        instances.delete(id);
-      }),
-      get: (id: string) => instances.get(id),
-      getAll: () => Array.from(instances.values()),
-    };
-    return cls;
-  };
-};
-
 const Backlinks = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkSetKey = String(context.name);
@@ -441,6 +376,71 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       }
       return new BacklinksSet(this);
     };
+  };
+};
+
+const Model = (name: ModelName) => {
+  return (cls: any) => {
+    cls[modelMetadata] = {
+      name,
+      properties: {},
+      foreignKeys: {},
+    } satisfies ModelMetadata;
+    const instances = new Map<string, any>();
+    store.models[name] = {
+      // TODO: Should somehow make it more obvious that this is creating a new instance
+      // or if one already exists, updating the existing one. And maybe the event should
+      // be different between the two.
+      create: action("create", (props: any) => {
+        const existing = props.id ? store.models[name].get(props.id) : undefined;
+        const inst = existing ?? new cls();
+        // If we created a new instance, the class constructor will have assigned a new
+        // random id. If the user provided an id, we should use that instead.
+        if (!existing && props.id) {
+          inst.id = props.id;
+        }
+        // Placeholder instances are created by passing placeholder: true to the
+        // create method (see below). If it's not provided, then we have the
+        // real model data in which case we flip the placeholder flag to false.
+        inst.placeholder = props.placeholder ?? false;
+        // Resolve foreign key to existing or placeholder instance
+        Object.entries(getModelMetadata(cls).foreignKeys).forEach(
+          ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
+            if (props[serializedKey]) {
+              const referencedId = props[serializedKey];
+              if (referencedId) {
+                inst[modelKey] =
+                  store.models[referencedModelName].get(referencedId) ??
+                  store.models[referencedModelName].create({ id: referencedId, placeholder: true });
+              } else {
+                inst[modelKey] = null;
+              }
+            }
+          }
+        );
+        // Set properties
+        Object.entries(getModelMetadata(cls).properties).forEach(
+          ([modelKey, { serializedKey }]) => {
+            if (props[serializedKey]) {
+              inst[modelKey] = props[serializedKey];
+            }
+          }
+        );
+        if (!existing) {
+          instances.set(inst.id, inst);
+        }
+        // TODO: Maybe condition on existing/new
+        store.emitEvent({ operation: "create", model: name, id: inst.id, props });
+        return inst;
+      }),
+      delete: action("delete", (id: string) => {
+        store.emitEvent({ operation: "delete", model: name, id });
+        instances.delete(id);
+      }),
+      get: (id: string) => instances.get(id),
+      getAll: () => Array.from(instances.values()),
+    };
+    return cls;
   };
 };
 
