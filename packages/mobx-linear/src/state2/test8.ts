@@ -370,7 +370,7 @@ const Model = (name: ModelName) => {
   };
 };
 
-const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
+const Backlinks = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkSetKey = String(context.name);
 
@@ -433,7 +433,10 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
       }
     }
 
-    return function (this: any, initialValue: Set<any>) {
+    return function (this: any, initialValue: any) {
+      if (!(initialValue instanceof Set)) {
+        throw new Error("Backlinks must be initialized with a Set");
+      }
       if (initialValue.size > 0) {
         console.warn("Backlinks should not be initialized with an existing set");
       }
@@ -456,10 +459,10 @@ class Issue extends BaseModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
-  @BacklinkDecorator({ from: "relation", key: "from" })
+  @Backlinks({ from: "relation", key: "from" })
   relationsFrom = new Set<Relation>();
 
-  @BacklinkDecorator({ from: "relation", key: "to" })
+  @Backlinks({ from: "relation", key: "to" })
   relationsTo = new Set<Relation>();
 }
 
@@ -472,7 +475,7 @@ class Project extends BaseModel {
   @Property()
   accessor title = "";
 
-  @BacklinkDecorator({ from: "issue", key: "project" })
+  @Backlinks({ from: "issue", key: "project" })
   issues = new Set<Issue>();
 }
 
