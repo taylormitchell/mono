@@ -449,7 +449,7 @@ const Model = (name: ModelName) => {
 // store.registerModel("issue", Issue, SerializedIssue);
 // ^ this way you could runtime check if props are valid for the model
 
-@Model("issue")
+@Model("issue") // TODO: Do we even need this? We're already typing class to name in the store types above
 class Issue extends BaseModel {
   @Property()
   accessor title = "";
