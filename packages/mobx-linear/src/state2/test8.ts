@@ -465,6 +465,7 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
     // set up subscription here
     // no need for teardown on delete. there's only one subscription for all backlinks
 
+    // Update backlinks when referencing model is updated
     store.subscribe((event) => {
       if (event.model === link.from) {
         const model = store.models[link.from].get(event.id);
@@ -523,12 +524,6 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
       if (initialValue.size > 0) {
         console.warn("Backlinks should not be initialized with an existing set");
       }
-      const metadata = getModelMetadata(this.constructor);
-      metadata.backlinks[backlinkSetKey] = {
-        fromModel: link.from,
-        fromKey: link.key,
-        backlinksKey: backlinkSetKey,
-      };
       return new BacklinksSet(this);
     };
   };
