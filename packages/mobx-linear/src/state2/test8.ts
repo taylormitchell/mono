@@ -1,4 +1,4 @@
-import { action, observable, reaction } from "mobx";
+import { action, observable, reaction, runInAction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
 /**
  * TODO:
@@ -416,6 +416,10 @@ const Model = (name: ModelName) => {
         // create method (see below). If it's not provided, then we have the
         // real model data in which case we flip the placeholder flag to false.
         inst.placeholder = props.placeholder ?? false;
+
+        // TODO: Is there actually any reason to do this after the fact? Like why not do the mapping
+        // from ids to instances before instantiation and then pass them to the constructor?
+
         // Resolve foreign key to existing or placeholder instance
         Object.entries(getModelMetadata(cls).foreignKeys).forEach(
           ([modelKey, { referencedModelName, serializedKey: serializedKey }]) => {
@@ -522,14 +526,14 @@ class Relation extends BaseModel {
 
 // Load initial data
 const issue1 = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
-// const project1 = store.models.project.create({ id: "p1", title: "Project 1" });
-// const project2 = store.models.project.create({ id: "p2", title: "Project 2" });
+const project1 = store.models.project.create({ id: "p1", title: "Project 1" });
+const project2 = store.models.project.create({ id: "p2", title: "Project 2" });
 
 // // Make changes
-// runInAction(() => {
-//   project1.title = "Updated Title";
-//   issue1.project = project2;
-// });
+runInAction(() => {
+  project1.title = "Updated Title";
+  issue1.project = project2;
+});
 
 // console.log(project1.issues);
 
