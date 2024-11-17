@@ -521,7 +521,7 @@ class Relation extends BaseModel {
 
 // Load initial data
 const issue1 = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
-const project1 = store.models.project.create({ id: "p1", title: "Project 1" });
+// const project1 = store.models.project.create({ id: "p1", title: "Project 1" });
 // const project2 = store.models.project.create({ id: "p2", title: "Project 2" });
 
 // // Make changes
