@@ -450,6 +450,9 @@ const Model = (name: ModelName) => {
 // Models
 // store.registerModel("issue", Issue, SerializedIssue);
 // ^ this way you could runtime check if props are valid for the model
+// meh I dunno. seems fine to have store, class, and names coupled. don't need to pretend like we don't know
+// the name associated with a class or like the user of store can create arbitrary class models without modifying
+// the store too.
 
 @Model("issue") // TODO: Do we even need this? We're already typing class to name in the store types above
 class Issue extends BaseModel {
