@@ -450,15 +450,15 @@ const backlink = (ref: string) => {
     }
 
     add(value: any) {
-      if (value[link.key] !== this.owner) {
-        value[link.key] = this.owner;
+      if (value[sourceModelLinkKey] !== this.owner) {
+        value[sourceModelLinkKey] = this.owner;
       }
       return this;
     }
 
     delete(value: any) {
-      if (value[link.key] === this.owner) {
-        value[link.key] = null;
+      if (value[sourceModelLinkKey] === this.owner) {
+        value[sourceModelLinkKey] = null;
         return true;
       }
       return false;
