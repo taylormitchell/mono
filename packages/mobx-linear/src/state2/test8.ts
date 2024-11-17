@@ -443,7 +443,7 @@ function parseBacklinkRef(ref: string) {
 }
 
 const backlink = (ref: string) => {
-  const { from, key } = parseBacklinkRef(ref);
+  const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
   class BacklinksSet extends Set<any> {
     constructor(private owner: BaseModel) {
       super();
