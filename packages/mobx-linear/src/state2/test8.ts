@@ -16,7 +16,7 @@ abstract class BaseModel {
   addCleanupFunction(fn: () => void) {
     this.cleanupFunctions.push(fn);
   }
-  cleanup() {
+  destroy() {
     this.cleanupFunctions.forEach((fn) => fn());
   }
 }
