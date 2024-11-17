@@ -457,6 +457,7 @@ const Model = (name: ModelName) => {
 //
 // That or we make the store actually know nothing about the types of the models it holders, and then we create
 // some wrapper function that asserts the types of the models at runtime.
+// Like maybe the store doesn't even get exposed?
 
 @Model("issue") // TODO: Do we even need this? We're already typing class to name in the store types above
 class Issue extends BaseModel {
