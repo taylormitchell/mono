@@ -28,14 +28,13 @@ type ModelMetadata = {
 };
 
 function getOrCreateModelMetadata(model: any): ModelMetadata {
-  if (model[modelMetadata]) {
-    return model[modelMetadata];
+  if (!model[modelMetadata]) {
+    model[modelMetadata] = {
+      name: model.name,
+      properties: {},
+      foreignKeys: {},
+    };
   }
-  model[modelMetadata] = {
-    name: model.name,
-    properties: {},
-    foreignKeys: {},
-  };
   return model[modelMetadata];
 }
 
@@ -123,7 +122,7 @@ class Store<TModels extends ModelRecord> {
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
       const instances = new Map<string, InstanceType<typeof ModelClass>>();
 
-      this.models[modelName as keyof TModels] = {
+      this.models[modelName as any] = {
         create: action("create", (props: any) => {
           const existing = props.id ? instances.get(props.id) : undefined;
           const inst = existing ?? new ModelClass(props.id);
