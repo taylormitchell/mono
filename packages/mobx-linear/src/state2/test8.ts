@@ -1,4 +1,4 @@
-import { action, observable, reaction, runInAction } from "mobx";
+import { action, observable, reaction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
 /**
  * TODO:
@@ -522,18 +522,18 @@ class Relation extends BaseModel {
 // Load initial data
 const issue1 = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
 const project1 = store.models.project.create({ id: "p1", title: "Project 1" });
-const project2 = store.models.project.create({ id: "p2", title: "Project 2" });
+// const project2 = store.models.project.create({ id: "p2", title: "Project 2" });
 
-// Make changes
-runInAction(() => {
-  project1.title = "Updated Title";
-  issue1.project = project2;
-});
+// // Make changes
+// runInAction(() => {
+//   project1.title = "Updated Title";
+//   issue1.project = project2;
+// });
 
-console.log(project1.issues);
+// console.log(project1.issues);
 
-runInAction(() => {
-  issue1.project = null;
-});
+// runInAction(() => {
+//   issue1.project = null;
+// });
 
-console.log(project1.issues);
+// console.log(project1.issues);
