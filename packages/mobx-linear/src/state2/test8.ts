@@ -476,6 +476,7 @@ class Issue extends BaseModel {
   @Property()
   accessor title = "";
 
+  // TODO: same here where model name can be provided, but we just assume the accessor name matches the model name if none is provided
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
