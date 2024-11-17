@@ -326,12 +326,6 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
         }
         const metadata = getModelMetadata(model.constructor);
         const referencedModelName = metadata.foreignKeys[link.key].referencedModelName;
-        const oldReferencedModel = event.oldValue
-          ? store.models[referencedModelName].get(event.oldValue)
-          : null;
-        const newReferencedModel = event.newValue
-          ? store.models[referencedModelName].get(event.newValue)
-          : null;
 
         const backlinks = referencedModel[backlinkSetKey];
         if (event.operation === "delete") {
@@ -346,6 +340,12 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
           ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
           : null;
         if (event.operation === "update" && event.propKey === serializedForeignKey) {
+          const oldReferencedModel = event.oldValue
+            ? store.models[referencedModelName].get(event.oldValue)
+            : null;
+          const newReferencedModel = event.newValue
+            ? store.models[referencedModelName].get(event.newValue)
+            : null;
           if (event.oldValue === referencedModel.id && backlinks.has(model)) {
             backlinks.delete(model);
           }
