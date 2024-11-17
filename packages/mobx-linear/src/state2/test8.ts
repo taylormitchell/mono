@@ -474,6 +474,8 @@ const Model = (name: ModelName) => {
  *   relation: Relation,
  * })
  * // ^ probably just throw if they try to do this twice
+ * // this can check a bunch of stuff at runtime too e.g. that backlinks match up with foreign keys,
+ * // and vice versa.
  *
  * const issue = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
  *
