@@ -10,8 +10,8 @@ type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelati
 };
 
 abstract class BaseModel {
-  abstract readonly id: string;
-  abstract placeholder: boolean;
+  readonly id: string = uuid();
+  placeholder: boolean = false;
 }
 
 const modelMetadata = Symbol("modelMetadata");
@@ -448,10 +448,6 @@ const Model = (name: ModelName) => {
 
 @Model("issue")
 class Issue extends BaseModel {
-  readonly id: string = uuid();
-
-  placeholder = false;
-
   @Property()
   accessor title = "";
 
@@ -467,10 +463,6 @@ class Issue extends BaseModel {
 
 @Model("project")
 class Project extends BaseModel {
-  readonly id: string = uuid();
-
-  placeholder = false;
-
   @Property()
   accessor title = "";
 
@@ -480,10 +472,6 @@ class Project extends BaseModel {
 
 @Model("relation")
 class Relation extends BaseModel {
-  readonly id: string = uuid();
-
-  placeholder = false;
-
   @ForeignKey("fromId", "issue")
   accessor from: Issue | null = null;
 
