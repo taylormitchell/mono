@@ -370,13 +370,7 @@ const Model = (name: ModelName) => {
       delete: action("delete", (id: string) => {
         const inst = instances.get(id);
         if (inst) {
-          // TODO: We could probably make this a little cleaner if we use decorators
-          // in some way.
-          Object.values(inst).forEach((prop) => {
-            if (prop instanceof Backlinks) {
-              prop.unsubscribe();
-            }
-          });
+          inst.cleanup();
         }
         store.emitEvent({ operation: "delete", model: name, id });
         instances.delete(id);
@@ -439,10 +433,9 @@ class Backlinks<T extends BaseModel> implements Iterable<T> {
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassAccessorDecoratorContext) => {
     class BacklinksSet extends Set<any> {
-      unsubscribe: () => void;
       constructor(initialSet: Set<any>, private owner: any) {
         super(initialSet);
-        this.unsubscribe = store.subscribe((event) => {
+        const unsubscribe = store.subscribe((event) => {
           if (event.model === link.from) {
             if (event.operation === "delete" && this.has(event.id)) {
               super.delete(event.id);
@@ -471,6 +464,7 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
             }
           }
         });
+        this.owner.addCleanupFunction(() => unsubscribe());
       }
     }
 
