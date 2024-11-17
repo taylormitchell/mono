@@ -462,9 +462,9 @@ const Model = (name: ModelName) => {
  * // I bet there are some fancy type things to make this work:
  *
  * const store = createStore({
- *   issue: { class: Issue, serialized: SerializedIssue },
- *   project: { class: Project, serialized: SerializedProject },
- *   relation: { class: Relation, serialized: SerializedRelation },
+ *   issue: Issue,
+ *   project: Project,
+ *   relation: Relation,
  * })
  *
  * const issue = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
