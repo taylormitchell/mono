@@ -12,12 +12,12 @@ type ModelProps<T extends SerializedIssue | SerializedProject | SerializedRelati
 abstract class BaseModel {
   abstract readonly id: string;
   abstract placeholder: boolean;
-  cleanupFunctions: (() => void)[] = [];
-  addCleanupFunction(fn: () => void) {
-    this.cleanupFunctions.push(fn);
+  tearDownFunctions: (() => void)[] = [];
+  addTearDownFunction(fn: () => void) {
+    this.tearDownFunctions.push(fn);
   }
-  destroy() {
-    this.cleanupFunctions.forEach((fn) => fn());
+  tearDown() {
+    this.tearDownFunctions.forEach((fn) => fn());
   }
 }
 
