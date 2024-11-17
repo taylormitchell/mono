@@ -465,6 +465,36 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
     // set up subscription here
     // no need for teardown on delete. there's only one subscription for all backlinks
 
+    store.subscribe((event) => {
+      if (event.model === link.from) {
+        const model = store.models[link.from].get(event.id);
+        if (event.operation === "delete") {
+          this.map.delete(event.id);
+          return;
+        }
+        const modelReferencingOwner = store.models[link.from].get(event.id);
+        if (!modelReferencingOwner) {
+          console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
+          return;
+        }
+        if (event.operation === "create") {
+          this.map.set(event.id, modelReferencingOwner);
+          return;
+        }
+        const serializedForeignKey = modelReferencingOwner
+          ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key].serializedKey
+          : null;
+        if (event.operation === "update" && event.propKey === serializedForeignKey) {
+          if (event.oldValue === this.owner.id) {
+            this.map.delete(event.id);
+          }
+          if (event.newValue === this.owner.id) {
+            this.map.set(event.id, modelReferencingOwner);
+          }
+        }
+      }
+    });
+
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
