@@ -359,14 +359,14 @@ class Store<TModels extends ModelRecord> {
 
 // Model decorators
 
-const property = (_serializedKey?: string) => {
+const property = (opts: { serializedKey?: string } = {}) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
     if (!observableResult) {
       throw new Error("Failed to decorate property");
     }
-    const modelKey = String(context.name);
-    const serializedKey = _serializedKey ?? modelKey;
+    const accessorName = String(context.name);
+    const serializedKey = opts.serializedKey ?? `${accessorName}Id`;
 
     return {
       get(this: T) {
@@ -378,7 +378,7 @@ const property = (_serializedKey?: string) => {
         // nothing in cases where the class is instantiated outside a store context?
         store?.emitEvent({
           operation: "update",
-          model: getModelMetadata(this.constructor).name,
+          model: getOrCreateModelMetadata(this.constructor).name,
           id: this.id,
           propKey: serializedKey,
           oldValue,
@@ -387,8 +387,8 @@ const property = (_serializedKey?: string) => {
         observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
-        const metadata = getModelMetadata(this.constructor);
-        metadata.properties[modelKey] = { serializedKey };
+        const metadata = getOrCreateModelMetadata(this.constructor);
+        metadata.properties[accessorName] = { serializedKey };
         return observableResult.init?.call(this, value);
       },
     };
