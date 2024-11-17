@@ -466,6 +466,7 @@ const Model = (name: ModelName) => {
  *   project: Project,
  *   relation: Relation,
  * })
+ * // ^ probably just throw if they try to do this twice
  *
  * const issue = store.models.issue.create({ id: "i1", title: "Issue 1", projectId: "p1" });
  *
