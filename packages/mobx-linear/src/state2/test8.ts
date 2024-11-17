@@ -97,7 +97,7 @@ function createInitialModelData(name: ModelName) {
 
 // Store
 
-class Store {
+class Store<TModels extends ModelRecord> {
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
 
@@ -112,17 +112,101 @@ class Store {
   // because you're not supposed to mutate arrays in reactions.
   private lastStagedChangeTimestamp = observable.box(0);
 
-  models: {
-    issue: CRUD<Issue, SerializedIssue>;
-    project: CRUD<Project, SerializedProject>;
-    relation: CRUD<Relation, SerializedRelation>;
-  } = {
-    issue: createInitialModelData("issue"),
-    project: createInitialModelData("project"),
-    relation: createInitialModelData("relation"),
-  };
+  models: StoreModels<TModels>;
 
-  constructor() {
+  constructor(models: TModels) {
+    this.models = {} as StoreModels<TModels>;
+    for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
+      const instances = new Map<string, InstanceType<typeof ModelClass>>();
+
+      this.models[modelName as keyof TModels] = {
+        create: action("create", (props: any) => {
+          const existing = props.id ? instances.get(props.id) : undefined;
+          const inst = existing ?? new ModelClass(props.id);
+
+          if (!existing) {
+            instances.set(inst.id, inst);
+          }
+
+          // Add store reference to instance
+          (inst as any).store = this;
+          (inst as any).modelName = modelName;
+
+          inst.placeholder = props.placeholder ?? false;
+
+          // Handle foreign keys
+          const metadata = getOrCreateModelMetadata(ModelClass);
+          Object.entries(metadata.foreignKeys).forEach(
+            ([modelKey, { referencedModelName, serializedKey }]) => {
+              if (props[serializedKey]) {
+                const referencedId = props[serializedKey];
+                if (referencedId) {
+                  inst[modelKey] =
+                    this.models[referencedModelName].get(referencedId) ??
+                    this.models[referencedModelName].create({
+                      id: referencedId,
+                      placeholder: true,
+                    });
+                } else {
+                  inst[modelKey] = null;
+                }
+              }
+            }
+          );
+
+          // Set properties
+          Object.entries(metadata.properties).forEach(([modelKey, { serializedKey }]) => {
+            if (props[serializedKey] !== undefined) {
+              inst[modelKey] = props[serializedKey];
+            }
+          });
+
+          this.emitEvent({
+            operation: "create",
+            model: modelName,
+            id: inst.id,
+            props,
+          });
+
+          return inst;
+        }),
+        delete: action("delete", (id: string) => {
+          this.emitEvent({ operation: "delete", model: modelName, id });
+          instances.delete(id);
+        }),
+        get: (id: string) => instances.get(id),
+        getAll: () => Array.from(instances.values()),
+      };
+    }
+
+    // Setup backlinks
+    for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
+      const metadata = getOrCreateModelMetadata(ModelClass);
+
+      this.subscribe((event) => {
+        if (event.model === modelName) {
+          const model = this.models[event.model].get(event.id);
+          if (!model) return;
+
+          if (event.operation === "update") {
+            Object.entries(metadata.foreignKeys).forEach(([key, { referencedModelName }]) => {
+              if (event.propKey === metadata.foreignKeys[key].serializedKey) {
+                const oldRef = event.oldValue
+                  ? this.models[referencedModelName].get(event.oldValue)
+                  : null;
+                const newRef = event.newValue
+                  ? this.models[referencedModelName].get(event.newValue)
+                  : null;
+
+                // Update backlinks
+                oldRef?.[`${modelName}s`]?.delete(model);
+                newRef?.[`${modelName}s`]?.add(model);
+              }
+            });
+          }
+        }
+      });
+    }
     this.startAutoCommit();
   }
 
