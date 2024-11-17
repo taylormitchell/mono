@@ -465,7 +465,9 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
     });
     // const modelKey = String(context.name);
     // console.log("modelKey", modelKey);
-    return new Set<Relation>();
+    return (initialValue: any) => {
+      console.log("tearDown", initialValue);
+    };
   };
 };
 
