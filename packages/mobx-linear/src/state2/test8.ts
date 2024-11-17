@@ -456,10 +456,10 @@ class Issue extends BaseModel {
   accessor project: Project | null = null;
 
   @Backlinks({ from: "relation", key: "from" })
-  relationsFrom = new Set<Relation>();
+  readonly relationsFrom = new Set<Relation>();
 
   @Backlinks({ from: "relation", key: "to" })
-  relationsTo = new Set<Relation>();
+  readonly relationsTo = new Set<Relation>();
 }
 
 @Model("project")
@@ -468,7 +468,7 @@ class Project extends BaseModel {
   accessor title = "";
 
   @Backlinks({ from: "issue", key: "project" })
-  issues = new Set<Issue>();
+  readonly issues = new Set<Issue>();
 }
 
 @Model("relation")
