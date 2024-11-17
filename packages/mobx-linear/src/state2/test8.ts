@@ -324,11 +324,15 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
           console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
           return;
         }
-        const referencedModel = model[link.key];
-        if (!referencedModel) {
-          // TODO: something to do here?
-          return;
-        }
+        const metadata = getModelMetadata(model.constructor);
+        const referencedModelName = metadata.foreignKeys[link.key].referencedModelName;
+        const oldReferencedModel = event.oldValue
+          ? store.models[referencedModelName].get(event.oldValue)
+          : null;
+        const newReferencedModel = event.newValue
+          ? store.models[referencedModelName].get(event.newValue)
+          : null;
+
         const backlinks = referencedModel[backlinkSetKey];
         if (event.operation === "delete") {
           backlinks.delete(model);
