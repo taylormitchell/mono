@@ -319,7 +319,7 @@ const Model = (name: ModelName) => {
       name,
       properties: {},
       foreignKeys: {},
-      cleanupFunctions: [],
+      backlinks: {},
     } satisfies ModelMetadata;
     const instances = new Map<string, any>();
     store.models[name] = {
