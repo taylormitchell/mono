@@ -445,29 +445,29 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
           // TODO: something to do here?
           return;
         }
+        const backlinks = referencedModel[backlinkSetKey];
         if (event.operation === "delete") {
-          referencedModel[backlinkSetKey].delete(model);
+          backlinks.delete(model);
           return;
         }
         if (event.operation === "create") {
-          referencedModel[backlinkSetKey].add(model);
+          backlinks.add(model);
           return;
         }
         const serializedForeignKey = model
           ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
           : null;
         if (event.operation === "update" && event.propKey === serializedForeignKey) {
-          if (event.oldValue === referencedModel.id) {
-            referencedModel[backlinkSetKey].delete(model);
+          if (event.oldValue === referencedModel.id && backlinks.has(model)) {
+            backlinks.delete(model);
           }
-          if (event.newValue === referencedModel.id) {
-            referencedModel[backlinkSetKey].add(model);
+          if (event.newValue === referencedModel.id && !backlinks.has(model)) {
+            backlinks.add(model);
           }
         }
       }
     });
 
-    // Overwrite set/delete
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
@@ -477,7 +477,7 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
         if (value[link.key] !== this.owner.id) {
           value[link.key] = this.owner.id;
         }
-        return this;
+        return super.add(value);
       }
 
       delete(value: any) {
@@ -485,7 +485,7 @@ const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
           value[link.key] = null;
           return true;
         }
-        return false;
+        return super.delete(value);
       }
     }
 
