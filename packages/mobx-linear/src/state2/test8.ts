@@ -370,53 +370,6 @@ const Model = (name: ModelName) => {
   };
 };
 
-class Backlinks<T extends BaseModel> implements Iterable<T> {
-  private map = new Map<string, T>();
-
-  constructor(private owner: BaseModel, private link: { from: ModelName; key: string }) {
-    const unsubscribe = store.subscribe((event) => {
-      if (event.model === link.from) {
-        if (event.operation === "delete" && this.map.has(event.id)) {
-          this.map.delete(event.id);
-          return;
-        }
-        const modelReferencingOwner = store.models[link.from].get(event.id);
-        if (!modelReferencingOwner) {
-          console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
-          return;
-        }
-        if (event.operation === "create") {
-          this.map.set(event.id, modelReferencingOwner);
-          return;
-        }
-        const serializedForeignKey = modelReferencingOwner
-          ? getModelMetadata(modelReferencingOwner.constructor).foreignKeys[link.key].serializedKey
-          : null;
-        if (event.operation === "update" && event.propKey === serializedForeignKey) {
-          if (event.oldValue === this.owner.id) {
-            this.map.delete(event.id);
-          }
-          if (event.newValue === this.owner.id) {
-            this.map.set(event.id, modelReferencingOwner);
-          }
-        }
-      }
-    });
-  }
-
-  delete(id: string) {
-    const model = this.map.get(id);
-    if (model) {
-      this.map.delete(id);
-      model[this.link.key] = null;
-    }
-  }
-
-  [Symbol.iterator](): Iterator<T> {
-    return this.map.values();
-  }
-}
-
 const BacklinkDecorator = (link: { from: ModelName; key: string }) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkSetKey = String(context.name);
@@ -503,9 +456,11 @@ class Issue extends BaseModel {
   @ForeignKey("projectId", "project")
   accessor project: Project | null = null;
 
-  relationsFrom = new Backlinks<Relation>(this, { from: "relation", key: "from" });
+  @BacklinkDecorator({ from: "relation", key: "from" })
+  relationsFrom = new Set<Relation>();
 
-  relationsTo = new Backlinks<Relation>(this, { from: "relation", key: "to" });
+  @BacklinkDecorator({ from: "relation", key: "to" })
+  relationsTo = new Set<Relation>();
 }
 
 @Model("project")
@@ -518,9 +473,7 @@ class Project extends BaseModel {
   accessor title = "";
 
   @BacklinkDecorator({ from: "issue", key: "project" })
-  decoratedIssues = new Set<Issue>();
-
-  issues = new Backlinks<Issue>(this, { from: "issue", key: "project" });
+  issues = new Set<Issue>();
 }
 
 @Model("relation")
