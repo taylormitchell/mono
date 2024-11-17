@@ -1,5 +1,10 @@
 import { action, observable, reaction, runInAction } from "mobx";
 import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
+/**
+ * TODO:
+ - Get the new backlinks stuff working  
+ - Then start implementing all the refactor ideas below
+ */
 
 function uuid() {
   return crypto.randomUUID();
