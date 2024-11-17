@@ -446,6 +446,7 @@ const Model = (name: ModelName) => {
 };
 
 // Models
+// store.registerModel("issue", Issue, SerializedIssue);
 
 @Model("issue")
 class Issue extends BaseModel {
