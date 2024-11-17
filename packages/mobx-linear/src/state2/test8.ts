@@ -434,7 +434,7 @@ const ForeignKey = (serializedKey: string, referencedModelName: ModelName) => {
   };
 };
 
-const Backlinks = (link: { from: ModelName; key: string }) => {
+const backlink = (link: { from: ModelName; key: string }) => {
   class BacklinksSet extends Set<any> {
     constructor(private owner: BaseModel) {
       super();
@@ -455,17 +455,19 @@ const Backlinks = (link: { from: ModelName; key: string }) => {
       return false;
     }
   }
-  return function (this: any, initialValue: any) {
-    if (!(initialValue instanceof Set)) {
-      throw new Error("Backlinks must be initialized with a Set");
-    }
-    // TODO maybe confirm that there's a matching foreign key
-    if (initialValue.size > 0) {
-      console.warn("Backlinks should not be initialized with an existing set");
-    }
-    const metadata = getOrCreateModelMetadata(this);
-    metadata.backlinks[link.key] = { from: link.from, key: link.key };
-    return new BacklinksSet(this);
+  return (_: any, context: ClassFieldDecoratorContext) => {
+    return function (this: any, initialValue: any) {
+      if (!(initialValue instanceof Set)) {
+        throw new Error("Backlinks must be initialized with a Set");
+      }
+      // TODO maybe confirm that there's a matching foreign key
+      if (initialValue.size > 0) {
+        console.warn("Backlinks should not be initialized with an existing set");
+      }
+      const metadata = getOrCreateModelMetadata(this);
+      metadata.backlinks[link.key] = { from: link.from, key: link.key };
+      return new BacklinksSet(this);
+    };
   };
 };
 
@@ -478,10 +480,10 @@ class Issue extends BaseModel {
   accessor project: Project | null = null;
 
   // @Backlinks("relation.from") TODO: Maybe this? Can typescript check this?
-  @Backlinks({ from: "relation", key: "from" })
+  @backlink({ from: "relation", key: "from" })
   readonly relationsFrom = new Set<Relation>();
 
-  @Backlinks({ from: "relation", key: "to" })
+  @backlink({ from: "relation", key: "to" })
   readonly relationsTo = new Set<Relation>();
 }
 
@@ -489,7 +491,7 @@ class Project extends BaseModel {
   @Property()
   accessor title = "";
 
-  @Backlinks({ from: "issue", key: "project" })
+  @backlink({ from: "issue", key: "project" })
   readonly issues = new Set<Issue>();
 }
 
