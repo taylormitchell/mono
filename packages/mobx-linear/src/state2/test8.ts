@@ -346,6 +346,10 @@ function createStore<TModels extends ModelRecord>(modelClasses: TModels) {
 }
 
 // Model decorators
+// A pattern I'm kinda arriving at is that the decorator functions are mostly just responsible for:
+// - Setting up the metadata
+// - Emitting the right events
+// Any side-effect mutations are handled by the store in response to events.
 
 const property = (opts: { serializedKey?: string } = {}) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
