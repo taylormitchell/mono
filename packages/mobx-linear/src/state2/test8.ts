@@ -25,13 +25,7 @@ type ModelMetadata = {
   name: ModelName;
   properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-  backlinks: Record<
-    string,
-    {
-      from: ModelName;
-      key: string;
-    }
-  >;
+  backlinks: Record<string, { from: ModelName; key: string }>;
 };
 
 function getOrCreateModelMetadata(model: any): ModelMetadata {
@@ -370,31 +364,6 @@ class Store<TModels extends ModelRecord> {
 
 // Model decorators
 
-function updateBacklinks(
-  model: BaseModel,
-  key: string,
-  referencedModelName: ModelName,
-  oldValue: any,
-  newValue: any
-) {
-  const backlinksKey = Object.values(store.modelMetadata[referencedModelName].backlinks).find(
-    ({ key }) => {
-      if (key === accessorName) {
-        return key;
-      }
-    }
-  );
-  if (!backlinksKey) {
-    return;
-  }
-  if (oldValue !== null) {
-    oldValue[backlinksKey]._deleteWithoutSideEffect(model);
-  }
-  if (newValue !== null) {
-    newValue[backlinksKey]._addWithoutSideEffect(model);
-  }
-}
-
 const property = (opts: { serializedKey?: string } = {}) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
@@ -447,11 +416,27 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
       },
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        updateBacklinks(this, accessorName, oldValue, newValue);
-        return observableResult.set?.call(this, newValue);
+        const res = observableResult.set?.call(this, newValue);
+        const metadata = getOrCreateModelMetadata(this.constructor);
+
+        store?.emitEvent({
+          operation: "update",
+          model: getOrCreateModelMetadata(this.constructor).name,
+          id: this.id,
+          propKey: serializedKey,
+          oldValue: oldValue?.id ?? null,
+          newValue: newValue?.id ?? null,
+        });
+        return res;
       },
       init(this: T, value: any) {
-        updateBacklinks(this, accessorName, null, value);
+        if (serializedKey) {
+          const metadata = getOrCreateModelMetadata(this.constructor);
+          metadata.foreignKeys[accessorName] = {
+            referencedModelName: referencedModelName,
+            serializedKey: serializedKey,
+          };
+        }
         return observableResult.init?.call(this, value);
       },
     };
@@ -470,18 +455,9 @@ const backlinks = (ref: string) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkKey = String(context.name);
     const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
-
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
-      }
-
-      _addWithoutSideEffect(value: any) {
-        super.add(value);
-      }
-
-      _deleteWithoutSideEffect(value: any) {
-        super.delete(value);
       }
 
       add(value: any) {
