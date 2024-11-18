@@ -447,82 +447,53 @@ const backlinks = (ref: string) => {
 
     // TODO: We want this set up after the store is created. So maybe does make sense to
     // go in the constructor.
-    store.subscribe((event) => {
-      if (event.model === sourceModelName) {
-        const model = store.models[sourceModelName].get(event.id);
-        if (!model) {
-          console.warn(`Received event for unknown model ${sourceModelName} with id ${event.id}`);
-          return;
-        }
-        const metadata = getOrCreateModelMetadata(model.constructor);
-        const referencedModelName = metadata.foreignKeys[sourceModelLinkKey].referencedModelName;
-        if (!referencedModelName) {
-          console.warn(`No referenced model name for ${sourceModelName}.${sourceModelLinkKey}`);
-          return;
-        }
+    // store.subscribe((event) => {
+    //   if (event.model === sourceModelName) {
+    //     const model = store.models[sourceModelName].get(event.id);
+    //     if (!model) {
+    //       console.warn(`Received event for unknown model ${sourceModelName} with id ${event.id}`);
+    //       return;
+    //     }
+    //     const metadata = getOrCreateModelMetadata(model.constructor);
+    //     const referencedModelName = metadata.foreignKeys[sourceModelLinkKey].referencedModelName;
+    //     if (!referencedModelName) {
+    //       console.warn(`No referenced model name for ${sourceModelName}.${sourceModelLinkKey}`);
+    //       return;
+    //     }
 
-        if (event.operation === "delete") {
-          const referencedModel = model[sourceModelLinkKey];
-          if (referencedModel) {
-            referencedModel[backlinkKey].delete(model);
-          }
-          return;
-        }
-        if (event.operation === "create") {
-          const referencedModel = model[sourceModelLinkKey];
-          if (referencedModel) {
-            referencedModel[backlinkKey].add(model);
-          }
-          return;
-        }
-        const serializedForeignKey = model
-          ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
-          : null;
-        if (event.operation === "update" && event.propKey === serializedForeignKey) {
-          const oldReferencedModel = event.oldValue
-            ? store.models[referencedModelName].get(event.oldValue)
-            : null;
-          const newReferencedModel = event.newValue
-            ? store.models[referencedModelName].get(event.newValue)
-            : null;
-          if (oldReferencedModel && oldReferencedModel[backlinkSetKey].has(model)) {
-            oldReferencedModel[backlinkSetKey].delete(model);
-          }
-          if (newReferencedModel && !newReferencedModel[backlinkSetKey].has(model)) {
-            newReferencedModel[backlinkSetKey].add(model);
-          }
-        }
-      }
-    });
-
-    class BacklinksSet extends Set<any> {
-      constructor(private owner: BaseModel) {
-        super();
-      }
-
-      add(value: any) {
-        if (globalStore) {
-          if (value[sourceModelLinkKey] !== this.owner) {
-            value[sourceModelLinkKey] = this.owner;
-          }
-        } else {
-          console.warn("No store found when adding to backlinks");
-        }
-        return this;
-      }
-
-      delete(value: any) {
-        if (globalStore) {
-          if (value[sourceModelLinkKey] === this.owner) {
-            value[sourceModelLinkKey] = null;
-          }
-        } else {
-          console.warn("No store found when deleting from backlinks");
-        }
-        return false;
-      }
-    }
-
+    //     if (event.operation === "delete") {
+    //       const referencedModel = model[sourceModelLinkKey];
+    //       if (referencedModel) {
+    //         referencedModel[backlinkKey].delete(model);
+    //       }
+    //       return;
+    //     }
+    //     if (event.operation === "create") {
+    //       const referencedModel = model[sourceModelLinkKey];
+    //       if (referencedModel) {
+    //         referencedModel[backlinkKey].add(model);
+    //       }
+    //       return;
+    //     }
+    //     const serializedForeignKey = model
+    //       ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
+    //       : null;
+    //     if (event.operation === "update" && event.propKey === serializedForeignKey) {
+    //       const oldReferencedModel = event.oldValue
+    //         ? store.models[referencedModelName].get(event.oldValue)
+    //         : null;
+    //       const newReferencedModel = event.newValue
+    //         ? store.models[referencedModelName].get(event.newValue)
+    //         : null;
+    //       if (oldReferencedModel && oldReferencedModel[backlinkSetKey].has(model)) {
+    //         oldReferencedModel[backlinkSetKey].delete(model);
+    //       }
+    //       if (newReferencedModel && !newReferencedModel[backlinkSetKey].has(model)) {
+    //         newReferencedModel[backlinkSetKey].add(model);
+    //       }
+    //     }
+    //   }
+    // });
     return function (this: any, initialValue: any) {
       if (!(initialValue instanceof Set)) {
         throw new Error("Backlinks must be initialized with a Set");
@@ -533,6 +504,31 @@ const backlinks = (ref: string) => {
       }
       const metadata = getOrCreateModelMetadata(this);
       metadata.backlinks[backlinkKey] = { from: sourceModelName, key: sourceModelLinkKey };
+      const set = observable.set(initialValue);
+      // TODO: Maybe we should just override the add/delete methods on the set?
+      const originalAdd = set.add;
+      const originalDelete = set.delete;
+      set.add = function (value: any) {
+        const res = originalAdd.call(this, value);
+        globalStore?.emitEvent({
+          operation: "addToBacklinks",
+          model: metadata.name,
+          id: this.id,
+          backlinkKey,
+        });
+        return res;
+      };
+      set.delete = function (value: any) {
+        const res = originalDelete.call(this, value);
+        globalStore?.emitEvent({
+          operation: "deleteFromBacklinks",
+          model: metadata.name,
+          id: this.id,
+          backlinkKey,
+        });
+        return res;
+      };
+
       return new BacklinksSet(this);
     };
   };
