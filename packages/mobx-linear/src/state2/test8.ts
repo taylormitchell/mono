@@ -427,10 +427,10 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
         return;
       }
       if (oldValue !== null) {
-        oldValue[backlinkKey].delete(model);
+        oldValue[backlinkKey]._deleteWithoutSideEffect(model);
       }
       if (newValue !== null) {
-        newValue[backlinkKey].add(model);
+        newValue[backlinkKey]._addWithoutSideEffect(model);
       }
     }
 
@@ -479,11 +479,11 @@ const backlinks = (ref: string) => {
         super();
       }
 
-      _unsafeAdd(value: any) {
+      _addWithoutSideEffect(value: any) {
         super.add(value);
       }
 
-      _unsafeDelete(value: any) {
+      _deleteWithoutSideEffect(value: any) {
         super.delete(value);
       }
 
