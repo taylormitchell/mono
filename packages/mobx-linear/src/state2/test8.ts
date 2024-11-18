@@ -85,6 +85,8 @@ type StoreModels<TModels extends ModelRecord> = {
 // Store
 
 class Store<TModels extends ModelRecord> {
+  store: Store<TModels> | null = null;
+
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
 
