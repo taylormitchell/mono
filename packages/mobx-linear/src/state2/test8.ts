@@ -441,25 +441,6 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
     const serializedKey = opts.serializedKey ?? `${accessorName}Id`;
     const referencedModelName = opts.modelName ?? accessorName;
 
-    function updateBacklinks(model: T, key: string, oldValue: any, newValue: any) {
-      const backlinksKey = Object.values(store.modelMetadata[referencedModelName].backlinks).find(
-        ({ key }) => {
-          if (key === accessorName) {
-            return key;
-          }
-        }
-      );
-      if (!backlinksKey) {
-        return;
-      }
-      if (oldValue !== null) {
-        oldValue[backlinksKey]._deleteWithoutSideEffect(model);
-      }
-      if (newValue !== null) {
-        newValue[backlinksKey]._addWithoutSideEffect(model);
-      }
-    }
-
     return {
       get(this: T) {
         return observableResult.get?.call(this);
