@@ -484,6 +484,7 @@ const backlinks = (ref: string) => {
         return false;
       }
     }
+
     return function (this: any, initialValue: any) {
       if (!(initialValue instanceof Set)) {
         throw new Error("Backlinks must be initialized with a Set");
