@@ -82,24 +82,6 @@ type StoreModels<TModels extends ModelRecord> = {
   [K in keyof TModels]: CRUD<InstanceType<TModels[K]>>;
 };
 
-function createInitialModelData(name: ModelName) {
-  const msg = `Did you forget to add decorator @Model(${name}) to the class?`;
-  return {
-    create: () => {
-      throw new Error(`Create method not set. ${msg}`);
-    },
-    delete: () => {
-      throw new Error(`Delete method not set. ${msg}`);
-    },
-    get: () => {
-      throw new Error(`Get method not set. ${msg}`);
-    },
-    getAll: () => {
-      throw new Error(`Get all method not set. ${msg}`);
-    },
-  };
-}
-
 // Store
 
 class Store<TModels extends ModelRecord> {
@@ -369,7 +351,6 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
         const res = observableResult.set?.call(this, newValue);
-        const metadata = getOrCreateModelMetadata(this.constructor);
         store?.emitEvent({
           operation: "update",
           model: getOrCreateModelMetadata(this.constructor).name,
