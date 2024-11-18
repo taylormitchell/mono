@@ -83,7 +83,6 @@ type StoreModels<TModels extends ModelRecord> = {
 };
 
 // Store
-const _store: Store<any> | null = null;
 
 class Store<TModels extends ModelRecord> {
   private undoStack: Event[][] = [];
@@ -105,10 +104,10 @@ class Store<TModels extends ModelRecord> {
   modelMetadata: Record<ModelName, ModelMetadata>;
 
   constructor(modelClasses: TModels) {
-    if (store) {
+    if (globalStore) {
       throw new Error("Store already exists");
     }
-    store = this;
+    globalStore = this;
     this.models = {} as StoreModels<TModels>;
     this.modelMetadata = {} as Record<ModelName, ModelMetadata>;
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
@@ -301,6 +300,15 @@ class Store<TModels extends ModelRecord> {
   }
 }
 
+let globalStore: Store<any> | null = null;
+function createStore<TModels extends ModelRecord>(modelClasses: TModels) {
+  if (globalStore) {
+    throw new Error("Store already exists");
+  }
+  globalStore = new Store(modelClasses);
+  return globalStore;
+}
+
 // Model decorators
 
 const property = (opts: { serializedKey?: string } = {}) => {
@@ -320,8 +328,9 @@ const property = (opts: { serializedKey?: string } = {}) => {
         const oldValue = observableResult.get?.call(this);
         // TODO Maybe this gets injected in during registration with the store? and so does
         // nothing in cases where the class is instantiated outside a store context?
-        Store.store?.emitEvent({
-          operation: "update",
+        if (globalStore) {
+          globalStore.emitEvent({
+            operation: "update",
           model: getOrCreateModelMetadata(this.constructor).name,
           id: this.id,
           propKey: serializedKey,
@@ -506,7 +515,7 @@ class Relation extends BaseModel {
   accessor to: Issue | null = null;
 }
 
-const store = new Store({
+const store = createStore({
   issue: Issue,
   project: Project,
   relation: Relation,
