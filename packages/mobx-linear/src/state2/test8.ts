@@ -409,6 +409,8 @@ const backlinks = (ref: string) => {
     const backlinkKey = String(context.name);
     const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
 
+    // TODO: We want this set up after the store is created. So maybe does make sense to
+    // go in the constructor.
     store.subscribe((event) => {
       if (event.model === sourceModelName) {
         const model = store.models[sourceModelName].get(event.id);
