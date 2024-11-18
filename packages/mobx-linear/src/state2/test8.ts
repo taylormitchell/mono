@@ -119,10 +119,15 @@ class Store<TModels extends ModelRecord> {
 
   models: StoreModels<TModels>;
 
+  modelMetadata: Record<ModelName, ModelMetadata>;
+
   constructor(modelClasses: TModels) {
     this.models = {} as StoreModels<TModels>;
+    this.modelMetadata = {} as Record<ModelName, ModelMetadata>;
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
       const instances = new Map<string, InstanceType<typeof ModelClass>>();
+
+      this.modelMetadata[modelName] = getOrCreateModelMetadata(ModelClass);
 
       (this.models as any)[modelName] = {
         create: action("create", (props: any) => {
@@ -376,7 +381,7 @@ const property = (opts: { serializedKey?: string } = {}) => {
         const oldValue = observableResult.get?.call(this);
         // TODO Maybe this gets injected in during registration with the store? and so does
         // nothing in cases where the class is instantiated outside a store context?
-        store?.emitEvent({
+        store.emitEvent({
           operation: "update",
           model: getOrCreateModelMetadata(this.constructor).name,
           id: this.id,
@@ -412,6 +417,8 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
         const res = observableResult.set?.call(this, newValue);
+        const metadata = getOrCreateModelMetadata(this.constructor);
+
         store?.emitEvent({
           operation: "update",
           model: getOrCreateModelMetadata(this.constructor).name,
