@@ -435,8 +435,7 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
         const res = observableResult.set?.call(this, newValue);
-        const metadata = getOrCreateModelMetadata(this.constructor);
-
+        updateBacklinks(this, oldValue, newValue);
         store?.emitEvent({
           operation: "update",
           model: getOrCreateModelMetadata(this.constructor).name,
