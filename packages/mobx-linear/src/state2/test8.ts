@@ -417,12 +417,13 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
     const referencedModelName = opts.modelName ?? accessorName;
 
     function updateBacklinks(model: T, oldValue: any, newValue: any) {
-      let backlinkKey: string | null = null;
-      store.modelMetadata[referencedModelName].backlinks.forEach(({ key }) => {
-        if (key === accessorName) {
-          backlinkKey = key;
+      const backlinkKey = Object.values(store.modelMetadata[referencedModelName].backlinks).find(
+        ({ key }) => {
+          if (key === accessorName) {
+            return key;
+          }
         }
-      });
+      );
       if (!backlinkKey) {
         return;
       }
