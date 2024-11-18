@@ -387,7 +387,6 @@ const backlinks = (ref: string) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkKey = String(context.name);
     const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
-    const set = observable.set(new Set<any>());
 
     store.subscribe((event) => {
       if (event.model === sourceModelName) {
@@ -403,12 +402,18 @@ const backlinks = (ref: string) => {
           return;
         }
 
-        if (event.operation === "delete" && model[sourceModelLinkKey] === ) {
-          set.delete(model)
+        if (event.operation === "delete") {
+          const referencedModel = model[sourceModelLinkKey];
+          if (referencedModel) {
+            referencedModel[backlinkKey].delete(model);
+          }
           return;
         }
         if (event.operation === "create") {
-          set.add(model);
+          const referencedModel = model[sourceModelLinkKey];
+          if (referencedModel) {
+            referencedModel[backlinkKey].add(model);
+          }
           return;
         }
         const serializedForeignKey = model
