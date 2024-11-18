@@ -199,54 +199,6 @@ class Store<TModels extends ModelRecord> {
         getAll: () => Array.from(instances.values()),
       };
     }
-
-    // Setup backlinks
-    for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
-      const metadata = getOrCreateModelMetadata(ModelClass);
-      this.subscribe((event) => {
-        if (event.model === modelName) {
-          const model = this.models[modelName].get(event.id);
-          if (!model) {
-            console.warn(`Received event for unknown model ${link.from} with id ${event.id}`);
-            return;
-          }
-          const metadata = getModelMetadata(model.constructor);
-          const referencedModelName = metadata.foreignKeys[link.key].referencedModelName;
-
-          if (event.operation === "delete") {
-            const referencedModel = event.oldValue
-              ? store.models[referencedModelName].get(event.oldValue)
-              : null;
-            referencedModel?.[backlinkSetKey].delete(model);
-            return;
-          }
-          if (event.operation === "create") {
-            const referencedModel = event.newValue
-              ? store.models[referencedModelName].get(event.newValue)
-              : null;
-            referencedModel?.[backlinkSetKey].add(model);
-            return;
-          }
-          const serializedForeignKey = model
-            ? getModelMetadata(model.constructor).foreignKeys[link.key].serializedKey
-            : null;
-          if (event.operation === "update" && event.propKey === serializedForeignKey) {
-            const oldReferencedModel = event.oldValue
-              ? store.models[referencedModelName].get(event.oldValue)
-              : null;
-            const newReferencedModel = event.newValue
-              ? store.models[referencedModelName].get(event.newValue)
-              : null;
-            if (oldReferencedModel && oldReferencedModel[backlinkSetKey].has(model)) {
-              oldReferencedModel[backlinkSetKey].delete(model);
-            }
-            if (newReferencedModel && !newReferencedModel[backlinkSetKey].has(model)) {
-              newReferencedModel[backlinkSetKey].add(model);
-            }
-          }
-        }
-      });
-    }
     this.startAutoCommit();
   }
 
@@ -470,18 +422,12 @@ const backlinks = (ref: string) => {
           return;
         }
 
-        if (event.operation === "delete") {
-          const referencedModel = event.oldValue
-            ? store.models[referencedModelName].get(event.oldValue)
-            : null;
-          referencedModel?.[backlinkSetKey].delete(model);
+        if (event.operation === "delete" && model[sourceModelLinkKey] === ) {
+          set.delete(model)
           return;
         }
         if (event.operation === "create") {
-          const referencedModel = event.newValue
-            ? store.models[referencedModelName].get(event.newValue)
-            : null;
-          referencedModel?.[backlinkSetKey].add(model);
+          set.add(model);
           return;
         }
         const serializedForeignKey = model
@@ -503,21 +449,6 @@ const backlinks = (ref: string) => {
         }
       }
     });
-
-    const originalAdd = set.add.bind(set);
-    const originalDelete = set.delete.bind(set);
-    set.add = (value: any) => {
-      if (value[sourceModelLinkKey] !== this.owner) {
-        value[sourceModelLinkKey] = this.owner;
-      }
-      return originalAdd(value);
-    };
-    set.delete = (value: any) => {
-      if (value[sourceModelLinkKey] === this.owner) {
-        value[sourceModelLinkKey] = null;
-      }
-      return originalDelete(value);
-    };
 
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
