@@ -25,7 +25,13 @@ type ModelMetadata = {
   name: ModelName;
   properties: Record<string, { serializedKey: string }>;
   foreignKeys: Record<string, { referencedModelName: ModelName; serializedKey: string }>;
-  backlinks: Record<string, { from: ModelName; key: string }>;
+  backlinks: Record<
+    string,
+    {
+      from: ModelName;
+      key: string;
+    }
+  >;
 };
 
 function getOrCreateModelMetadata(model: any): ModelMetadata {
@@ -467,9 +473,15 @@ const backlinks = (ref: string) => {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const backlinkKey = String(context.name);
     const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
+
+    let add: (value: any) => void;
+    let del: (value: any) => boolean;
+
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
+        add = (value: any) => this._add(value);
+        del = (value: any) => this._delete(value);
       }
 
       add(value: any) {
