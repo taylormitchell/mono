@@ -85,7 +85,7 @@ type StoreModels<TModels extends ModelRecord> = {
 // Store
 
 class Store<TModels extends ModelRecord> {
-  store: Store<TModels> | null = null;
+  static store: Store<any> | null = null;
 
   private undoStack: Event[][] = [];
   private redoStack: Event[][] = [];
@@ -106,6 +106,10 @@ class Store<TModels extends ModelRecord> {
   modelMetadata: Record<ModelName, ModelMetadata>;
 
   constructor(modelClasses: TModels) {
+    if (Store.store) {
+      throw new Error("Store already exists");
+    }
+    Store.store = this;
     this.models = {} as StoreModels<TModels>;
     this.modelMetadata = {} as Record<ModelName, ModelMetadata>;
     for (const [modelName, ModelClass] of Object.entries(modelClasses)) {
