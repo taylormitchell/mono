@@ -410,6 +410,24 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
     const serializedKey = opts.serializedKey ?? `${accessorName}Id`;
     const referencedModelName = opts.modelName ?? accessorName;
 
+    function updateBacklinks(model: T, oldValue: any, newValue: any) {
+      let backlinkKey: string | null = null;
+      store.modelMetadata[referencedModelName].backlinks.forEach(({ key }) => {
+        if (key === accessorName) {
+          backlinkKey = key;
+        }
+      });
+      if (!backlinkKey) {
+        return;
+      }
+      if (oldValue !== null) {
+        oldValue[backlinkKey].delete(model);
+      }
+      if (newValue !== null) {
+        newValue[backlinkKey].add(model);
+      }
+    }
+
     return {
       get(this: T) {
         return observableResult.get?.call(this);
@@ -430,14 +448,9 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
         return res;
       },
       init(this: T, value: any) {
-        if (serializedKey) {
-          const metadata = getOrCreateModelMetadata(this.constructor);
-          metadata.foreignKeys[accessorName] = {
-            referencedModelName: referencedModelName,
-            serializedKey: serializedKey,
-          };
-        }
-        return observableResult.init?.call(this, value);
+        const res = observableResult.init?.call(this, value);
+        updateBacklinks(this, null, value);
+        return res;
       },
     };
   };
