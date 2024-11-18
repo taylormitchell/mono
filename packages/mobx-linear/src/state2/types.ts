@@ -17,25 +17,3 @@ export type SerializedRelation = {
 
 // Basic types
 export type ModelName = "issue" | "relation" | "project";
-
-export type Event =
-  | {
-      operation: "create";
-      model: ModelName;
-      id: string;
-      props?: Record<string, unknown>;
-    }
-  | {
-      operation: "update";
-      model: ModelName;
-      id: string;
-      propKey: string;
-      oldValue: unknown;
-      newValue: unknown;
-    }
-  | {
-      operation: "delete";
-      model: ModelName;
-      id: string;
-      props?: Record<string, unknown>;
-    };
