@@ -474,14 +474,17 @@ const backlinks = (ref: string) => {
     const backlinkKey = String(context.name);
     const [sourceModelName, sourceModelLinkKey] = parseBacklinkRef(ref);
 
-    let add: (value: any) => void;
-    let del: (value: any) => boolean;
-
     class BacklinksSet extends Set<any> {
       constructor(private owner: BaseModel) {
         super();
-        add = (value: any) => this._add(value);
-        del = (value: any) => this._delete(value);
+      }
+
+      _unsafeAdd(value: any) {
+        super.add(value);
+      }
+
+      _unsafeDelete(value: any) {
+        super.delete(value);
       }
 
       add(value: any) {
