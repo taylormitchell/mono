@@ -331,13 +331,16 @@ const property = (opts: { serializedKey?: string } = {}) => {
         if (globalStore) {
           globalStore.emitEvent({
             operation: "update",
-          model: getOrCreateModelMetadata(this.constructor).name,
-          id: this.id,
-          propKey: serializedKey,
-          oldValue,
-          newValue,
-        });
-        observableResult.set?.call(this, newValue);
+            model: getOrCreateModelMetadata(this.constructor).name,
+            id: this.id,
+            propKey: serializedKey,
+            oldValue,
+            newValue,
+          });
+        } else {
+          console.warn("No store found when emitting update event");
+        }
+        return observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
         const metadata = getModelMetadata(this.constructor);
@@ -365,14 +368,18 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
         const res = observableResult.set?.call(this, newValue);
-        store?.emitEvent({
-          operation: "update",
-          model: getOrCreateModelMetadata(this.constructor).name,
-          id: this.id,
-          propKey: serializedKey,
-          oldValue: oldValue?.id ?? null,
-          newValue: newValue?.id ?? null,
-        });
+        if (globalStore) {
+          globalStore.emitEvent({
+            operation: "update",
+            model: getOrCreateModelMetadata(this.constructor).name,
+            id: this.id,
+            propKey: serializedKey,
+            oldValue: oldValue?.id ?? null,
+            newValue: newValue?.id ?? null,
+          });
+        } else {
+          console.warn("No store found when emitting update event");
+        }
         return res;
       },
       init(this: T, value: any) {
@@ -456,16 +463,23 @@ const backlinks = (ref: string) => {
       }
 
       add(value: any) {
-        if (value[sourceModelLinkKey] !== this.owner) {
-          value[sourceModelLinkKey] = this.owner;
+        if (globalStore) {
+          if (value[sourceModelLinkKey] !== this.owner) {
+            value[sourceModelLinkKey] = this.owner;
+          }
+        } else {
+          console.warn("No store found when adding to backlinks");
         }
         return this;
       }
 
       delete(value: any) {
-        if (value[sourceModelLinkKey] === this.owner) {
-          value[sourceModelLinkKey] = null;
-          return true;
+        if (globalStore) {
+          if (value[sourceModelLinkKey] === this.owner) {
+            value[sourceModelLinkKey] = null;
+          }
+        } else {
+          console.warn("No store found when deleting from backlinks");
         }
         return false;
       }
