@@ -440,22 +440,12 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
       },
       set(this: T, newValue: any) {
         const oldValue = observableResult.get?.call(this);
-        const res = observableResult.set?.call(this, newValue);
         updateBacklinks(this, oldValue, newValue);
-        store?.emitEvent({
-          operation: "update",
-          model: getOrCreateModelMetadata(this.constructor).name,
-          id: this.id,
-          propKey: serializedKey,
-          oldValue: oldValue?.id ?? null,
-          newValue: newValue?.id ?? null,
-        });
-        return res;
+        return observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
-        const res = observableResult.init?.call(this, value);
         updateBacklinks(this, null, value);
-        return res;
+        return observableResult.init?.call(this, value);
       },
     };
   };
