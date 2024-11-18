@@ -387,7 +387,7 @@ const property = (opts: { serializedKey?: string } = {}) => {
         observableResult.set?.call(this, newValue);
       },
       init(this: T, value: any) {
-        const metadata = getOrCreateModelMetadata(this.constructor);
+        const metadata = getModelMetadata(this.constructor);
         metadata.properties[accessorName] = { serializedKey };
         return observableResult.init?.call(this, value);
       },
