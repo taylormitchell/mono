@@ -1,5 +1,5 @@
 import { action, observable, reaction, runInAction } from "mobx";
-import { Event, ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
+import { ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
 
 export type Event =
   | {
@@ -21,7 +21,21 @@ export type Event =
       model: ModelName;
       id: string;
       props?: Record<string, unknown>;
+    }
+  | {
+      operation: "addToBacklinks";
+      model: ModelName;
+      id: string;
+      backlinkKey: string;
+    }
+  | {
+      operation: "deleteFromBacklinks";
+      model: ModelName;
+      id: string;
+      backlinkKey: string;
     };
+
+/**
 /**
  * TODO:
  - Get the new backlinks stuff working  
