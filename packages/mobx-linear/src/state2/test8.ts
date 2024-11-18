@@ -417,21 +417,21 @@ const link = (opts: { serializedKey?: string; modelName?: ModelName } = {}) => {
     const referencedModelName = opts.modelName ?? accessorName;
 
     function updateBacklinks(model: T, oldValue: any, newValue: any) {
-      const backlinkKey = Object.values(store.modelMetadata[referencedModelName].backlinks).find(
+      const backlinksKey = Object.values(store.modelMetadata[referencedModelName].backlinks).find(
         ({ key }) => {
           if (key === accessorName) {
             return key;
           }
         }
       );
-      if (!backlinkKey) {
+      if (!backlinksKey) {
         return;
       }
       if (oldValue !== null) {
-        oldValue[backlinkKey]._deleteWithoutSideEffect(model);
+        oldValue[backlinksKey]._deleteWithoutSideEffect(model);
       }
       if (newValue !== null) {
-        newValue[backlinkKey]._addWithoutSideEffect(model);
+        newValue[backlinksKey]._addWithoutSideEffect(model);
       }
     }
 
