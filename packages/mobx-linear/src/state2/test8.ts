@@ -370,6 +370,31 @@ class Store<TModels extends ModelRecord> {
 
 // Model decorators
 
+function updateBacklinks(
+  model: BaseModel,
+  key: string,
+  referencedModelName: ModelName,
+  oldValue: any,
+  newValue: any
+) {
+  const backlinksKey = Object.values(store.modelMetadata[referencedModelName].backlinks).find(
+    ({ key }) => {
+      if (key === accessorName) {
+        return key;
+      }
+    }
+  );
+  if (!backlinksKey) {
+    return;
+  }
+  if (oldValue !== null) {
+    oldValue[backlinksKey]._deleteWithoutSideEffect(model);
+  }
+  if (newValue !== null) {
+    newValue[backlinksKey]._addWithoutSideEffect(model);
+  }
+}
+
 const property = (opts: { serializedKey?: string } = {}) => {
   return <T extends BaseModel>(target: any, context: ClassAccessorDecoratorContext) => {
     const observableResult = observable(target, context);
