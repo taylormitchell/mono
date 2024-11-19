@@ -539,7 +539,7 @@ const backlinks = (ref: string) => {
         return res;
       };
 
-      return new BacklinksSet(this);
+      return set;
     };
   };
 };
