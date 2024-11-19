@@ -91,13 +91,19 @@ function reverseEvent(event: Event): Event {
         oldValue: event.newValue,
         newValue: event.oldValue,
       };
-    case "set":
+    case "addToBacklinks":
       return {
-        operation: "set",
+        operation: "deleteFromBacklinks",
         model: event.model,
         id: event.id,
-        oldProps: event.newProps,
-        newProps: event.oldProps,
+        backlinkKey: event.backlinkKey,
+      };
+    case "deleteFromBacklinks":
+      return {
+        operation: "addToBacklinks",
+        model: event.model,
+        id: event.id,
+        backlinkKey: event.backlinkKey,
       };
     default:
       return event satisfies never;
