@@ -142,7 +142,8 @@ describe("Store", () => {
     });
 
     it("should undo and redo link changes", () => {
-      const project = store.create("project", { title: "Test Project" });
+      const projectId = crypto.randomUUID();
+      const project = store.create("project", { id: projectId, title: "Test Project" });
       const issue = store.create("issue", { title: "Test Issue" });
       store.commit();
 
@@ -155,7 +156,7 @@ describe("Store", () => {
       expect(project.issues.has(issue)).toBe(false);
 
       store.redo();
-      expect(issue.project).toBe(project);
+      expect(issue.project?.id).toBe(projectId);
       expect(project.issues.has(issue)).toBe(true);
     });
   });

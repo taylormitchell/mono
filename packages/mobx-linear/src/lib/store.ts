@@ -309,7 +309,6 @@ export class Store<TModels extends ModelRecord> {
   commit() {
     if (this.pendingChanges.length > 0) {
       this.undoStack.push(this.pendingChanges);
-      this.redoStack = [];
       this.pendingChanges = [];
     }
   }
@@ -453,7 +452,6 @@ export class Store<TModels extends ModelRecord> {
       const reversedChanges = changes.map(reverseEvent).reverse();
       for (const event of reversedChanges) {
         this.applyEvent(event);
-        this.eventSubscribers.forEach((subscriber) => subscriber(event));
       }
     }
   }
@@ -477,33 +475,28 @@ export class Store<TModels extends ModelRecord> {
    * it for syncing and triggers reactions.
    */
   applyEvent(event: StoreEvent): Error | undefined {
-    try {
-      this.emittingEnabled = false;
-      switch (event.type) {
-        case "create":
-          this.create(event.model, event.props ?? {});
-          break;
-        case "update": {
-          const model = this.models[event.model].get(event.id);
-          if (!model) {
-            return new Error(`Unknown model ${event.model} with id ${event.id}`);
-          }
-          (model as any)[event.field] = event.newValue;
-          break;
+    switch (event.type) {
+      case "create":
+        this.create(event.model, event.props ?? {});
+        break;
+      case "update": {
+        const model = this.models[event.model].get(event.id);
+        if (!model) {
+          return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
-        case "delete": {
-          const model = this.models[event.model].get(event.id);
-          if (!model) {
-            return new Error(`Unknown model ${event.model} with id ${event.id}`);
-          }
-          this.delete(model);
-          break;
-        }
-        default:
-          event satisfies never;
+        (model as any)[event.field] = event.newValue;
+        break;
       }
-    } finally {
-      this.emittingEnabled = true;
+      case "delete": {
+        const model = this.models[event.model].get(event.id);
+        if (!model) {
+          return new Error(`Unknown model ${event.model} with id ${event.id}`);
+        }
+        this.delete(model);
+        break;
+      }
+      default:
+        event satisfies never;
     }
   }
 
