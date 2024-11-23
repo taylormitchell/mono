@@ -1,5 +1,5 @@
 import { action, observable, reaction, runInAction } from "mobx";
-import { ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "./types";
+import { ModelName, SerializedIssue, SerializedProject, SerializedRelation } from "../lib/types";
 
 export type Event =
   | {
