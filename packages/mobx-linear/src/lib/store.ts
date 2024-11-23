@@ -315,6 +315,7 @@ export class Store<TModels extends ModelRecord> {
 
   emit(event: StoreEvent) {
     if (!this.emittingEnabled) return;
+    this.redoStack = []; // TODO is this the right place?
     this.pendingChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
     this.eventSubscribers.forEach((subscriber) => subscriber(event));
