@@ -30,7 +30,7 @@ type ModelMetadata = {
 };
 
 // Event types
-type StoreEvent =
+export type StoreEvent =
   | {
       type: "create";
       model: ModelName;
@@ -52,7 +52,7 @@ type StoreEvent =
     };
 
 // Create, update, or delete a single model
-type Patch = {
+export type Patch = {
   type: "set";
   model: ModelName;
   id: string;
