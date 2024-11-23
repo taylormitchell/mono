@@ -275,7 +275,7 @@ export class Store<TModels extends ModelRecord> {
   private stagedChanges: StoreEvent[] = [];
 
   private mutationId = 0;
-  private optimisticMutations: OptimisticMutation[] = [];
+  private localMutations: OptimisticMutation[] = [];
 
   private lastChangeTimestamp = observable.box(0);
   private disposers: Array<() => void> = [];
@@ -315,7 +315,7 @@ export class Store<TModels extends ModelRecord> {
       const changes = this.stagedChanges;
       this.undoStack.push(changes);
       this.stagedChanges = [];
-      this.optimisticMutations.push({ mutationId: this.mutationId++, events: changes });
+      this.localMutations.push({ mutationId: this.mutationId++, events: changes });
     }
   }
 
@@ -328,6 +328,36 @@ export class Store<TModels extends ModelRecord> {
     this.stagedChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
     this.eventSubscribers.forEach((subscriber) => subscriber(event));
+  }
+
+  private rebase(serverEvents: StoreEvent[], lastMutationId: number) {
+    this.emittingEnabled = false;
+
+    // Rollback to last synced state by applying local mutations in reverse
+    const localEvents = this.localMutations
+      .flatMap((m) => m.events)
+      .reverse()
+      .map(reverseEvent);
+    for (const event of localEvents) {
+      this.applyEvent(event);
+    }
+
+    // Apply new server events
+    for (const event of serverEvents) {
+      this.emit(event);
+    }
+
+    // Remove any local mutations that have already been applied
+    this.localMutations = this.localMutations.filter((m) => m.mutationId > lastMutationId);
+
+    // Apply any remaining local mutations
+    for (const mutation of this.localMutations) {
+      for (const event of mutation.events) {
+        this.applyEvent(event);
+      }
+    }
+
+    this.emittingEnabled = true;
   }
 
   private setupBidirectionalSync() {
