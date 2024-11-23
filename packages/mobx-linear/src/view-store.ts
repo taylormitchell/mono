@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { IssueModel } from "./state";
+import { IssueModel } from "./old/state";
 
 export type ModalType = "issue" | "project" | null;
 

@@ -1,6 +1,5 @@
-import { get, observable, reaction } from "mobx";
+import { observable, reaction } from "mobx";
 import { ModelName } from "./types";
-import { string } from "zod";
 
 // Types and utilities
 type ModelMetadataField =
@@ -270,6 +269,8 @@ export class Store<TModels extends ModelRecord> {
   private lastChangeTimestamp = observable.box(0);
   private disposers: Array<() => void> = [];
 
+  constructor(modelClasses: TModels) {
+    this.modelClasses = modelClasses;
 
     // Initialize model storage
     for (const name in modelClasses) {
