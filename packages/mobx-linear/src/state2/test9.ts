@@ -159,6 +159,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
       set(this: BaseModel, newValue: BaseModel | null) {
         const oldValue = observableResult.get?.call(this);
         const model = getModelMetadata(this.constructor).name;
+        observableResult.set?.call(this, newValue);
         this.emitIfStored({
           type: "update",
           model,
@@ -167,7 +168,6 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
           oldValue: oldValue?.id ?? null,
           newValue: newValue?.id ?? null,
         });
-        return observableResult.set?.call(this, newValue);
       },
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(target.constructor);
@@ -205,6 +205,7 @@ export function backlinks(sourceRef: string) {
       const setDelete = set.delete.bind(set);
       set.add = (value: BaseModel) => {
         const result = setAdd(value);
+        // TODO: handle case where they're in different stores?
         if (this.inStore()) {
           const metadata = getModelMetadata(value.constructor);
           if (metadata.name !== sourceModel) {
