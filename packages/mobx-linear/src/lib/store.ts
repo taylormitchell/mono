@@ -278,6 +278,7 @@ export class Store<TModels extends ModelRecord> {
   private disposers: Array<() => void> = [];
 
   private emittingEnabled = true;
+  private isUndoingOrRedoing = false;
 
   constructor(modelClasses: TModels) {
     this.modelClasses = modelClasses;
@@ -315,6 +316,10 @@ export class Store<TModels extends ModelRecord> {
 
   emit(event: StoreEvent) {
     if (!this.emittingEnabled) return;
+    if (!this.isUndoingOrRedoing) {
+      this.redoStack = [];
+    }
+
     this.pendingChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
     this.eventSubscribers.forEach((subscriber) => subscriber(event));
@@ -487,9 +492,11 @@ export class Store<TModels extends ModelRecord> {
     if (changes) {
       this.redoStack.push(changes);
       const reversedChanges = changes.map(reverseEvent).reverse();
+      this.isUndoingOrRedoing = true;
       for (const event of reversedChanges) {
         this.applyEvent(event);
       }
+      this.isUndoingOrRedoing = false;
     }
   }
 
@@ -497,9 +504,11 @@ export class Store<TModels extends ModelRecord> {
     const changes = this.redoStack.pop();
     if (changes) {
       this.undoStack.push(changes);
+      this.isUndoingOrRedoing = true;
       for (const event of changes) {
         this.applyEvent(event);
       }
+      this.isUndoingOrRedoing = false;
     }
   }
 
