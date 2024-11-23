@@ -298,6 +298,8 @@ export class Store<TModels extends ModelRecord> {
 
     makeObservable(this, {
       emit: action,
+      undo: action,
+      redo: action,
     });
   }
 
@@ -444,8 +446,8 @@ export class Store<TModels extends ModelRecord> {
   undo() {
     const changes = this.undoStack.pop();
     if (changes) {
+      this.redoStack.push(changes);
       const reversedChanges = changes.map(reverseEvent).reverse();
-      this.redoStack.push(reversedChanges);
       for (const event of reversedChanges) {
         this.applyEvent(event);
       }
