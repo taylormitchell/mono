@@ -443,6 +443,14 @@ class Store<TModels extends ModelRecord> {
     }
   }
 
+  /**
+   * Update the store with an event. Usually you update state by mutating a
+   * model or through methods on the store. But for some internal operations
+   * it's useful to be able to apply an event directly.
+   *
+   * The application of an event emits then emits the event, which queues
+   * it for syncing and triggers reactions.
+   */
   applyEvent(event: StoreEvent): Error | undefined {
     switch (event.type) {
       case "create":
