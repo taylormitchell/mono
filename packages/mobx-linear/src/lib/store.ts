@@ -322,41 +322,49 @@ export class Store<TModels extends ModelRecord> {
 
   private setupBidirectionalSync() {
     this.subscribe((event) => {
-      if (event.type !== "update") return;
+      if (event.type === "update") {
+        const ModelClass = this.modelClasses[event.model];
+        if (!ModelClass) return;
 
-      const ModelClass = this.modelClasses[event.model];
-      if (!ModelClass) return;
+        const metadata = getModelMetadata(ModelClass);
+        const field = metadata.fields[event.field];
 
-      const metadata = getModelMetadata(ModelClass);
-      const field = metadata.fields[event.field];
+        if (field?.type === "link") {
+          // Find corresponding backlinks
+          const TargetClass = this.modelClasses[field.targetModel];
+          if (!TargetClass) return;
 
-      if (field?.type === "link") {
-        // Find corresponding backlinks
-        const TargetClass = this.modelClasses[field.targetModel];
-        if (!TargetClass) return;
+          const targetMetadata = getModelMetadata(TargetClass);
+          const backlink = Object.values(targetMetadata.fields).find(
+            (f) =>
+              f.type === "backlinks" && f.sourceModel === event.model && f.sourceKey === event.field
+          ) as BacklinksMetadataField | undefined;
 
-        const targetMetadata = getModelMetadata(TargetClass);
-        const backlink = Object.values(targetMetadata.fields).find(
-          (f) =>
-            f.type === "backlinks" && f.sourceModel === event.model && f.sourceKey === event.field
-        ) as BacklinksMetadataField | undefined;
+          if (backlink) {
+            const sourceInst = this.models[event.model].get(event.id);
 
-        if (backlink) {
+            if (event.oldValue) {
+              const oldTarget = this.models[field.targetModel].get(event.oldValue as string) as any;
+              if (oldTarget) {
+                (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst!);
+              }
+            }
+
+            if (event.newValue) {
+              const newTarget = this.models[field.targetModel].get(event.newValue as string) as any;
+              if (newTarget) {
+                (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst!);
+              }
+            }
+          }
+        }
+      } else if (event.type === "create") {
+        const ModelClass = this.modelClasses[event.model];
+        if (!ModelClass) return;
+        const metadata = getModelMetadata(ModelClass);
+        const field = metadata.fields[event.field];
+        if (field?.type === "backlinks") {
           const sourceInst = this.models[event.model].get(event.id);
-
-          if (event.oldValue) {
-            const oldTarget = this.models[field.targetModel].get(event.oldValue as string) as any;
-            if (oldTarget) {
-              (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst!);
-            }
-          }
-
-          if (event.newValue) {
-            const newTarget = this.models[field.targetModel].get(event.newValue as string) as any;
-            if (newTarget) {
-              (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst!);
-            }
-          }
         }
       }
     });
@@ -403,7 +411,7 @@ export class Store<TModels extends ModelRecord> {
           break;
       }
     });
-    if (existing) {
+    if (existing && serializedProps.placeholder === undefined) {
       instance.placeholder = false;
     }
 

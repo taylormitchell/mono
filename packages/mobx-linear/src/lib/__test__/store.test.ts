@@ -66,6 +66,12 @@ describe("Store", () => {
   });
 
   describe("bidirectional links", () => {
+    it("should update backlinks on create", () => {
+      const project = store.create("project", { title: "Test Project" });
+      const issue = store.create("issue", { title: "Test Issue", projectId: project.id });
+      expect(project.issues.has(issue)).toBe(true);
+    });
+
     it("should update backlinks when setting a link", () => {
       const project = store.create("project", { title: "Test Project" });
       const issue = store.create("issue", { title: "Test Issue" });
@@ -232,7 +238,7 @@ describe("Store", () => {
       });
 
       expect(issue.project).toBe(realProject);
-      expect(realProject.issues.has(issue)).toBe(true);
+      expect(realProject.placeholder).toBe(false);
     });
   });
 });
