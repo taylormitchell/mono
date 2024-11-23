@@ -301,10 +301,20 @@ export class Store<TModels extends ModelRecord> {
   private emittingEnabled = true;
   private isUndoingOrRedoing = false;
 
-  constructor(modelClasses: TModels, { puller, pusher }: { puller?: Puller; pusher?: Pusher }) {
+  private autoCommitOn: "actionEnd" | "event" | null;
+
+  constructor(
+    modelClasses: TModels,
+    {
+      puller,
+      pusher,
+      autoCommitOn = "actionEnd",
+    }: { puller?: Puller; pusher?: Pusher; autoCommitOn?: "actionEnd" | "event" | null }
+  ) {
     this.modelClasses = modelClasses;
     this.puller = puller;
     this.pusher = pusher;
+    this.autoCommitOn = autoCommitOn;
 
     // Initialize model storage
     for (const name in modelClasses) {
@@ -312,12 +322,14 @@ export class Store<TModels extends ModelRecord> {
     }
 
     // Set up auto-commit
-    this.disposers.push(
-      reaction(
-        () => this.lastChangeTimestamp.get(),
-        () => this.commit()
-      )
-    );
+    if (this.autoCommitOn === "actionEnd") {
+      this.disposers.push(
+        reaction(
+          () => this.lastChangeTimestamp.get(),
+          () => this.commit()
+        )
+      );
+    }
 
     // Set up bidirectional sync
     this.setupBidirectionalSync();
