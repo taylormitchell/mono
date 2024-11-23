@@ -484,7 +484,14 @@ export class Store<TModels extends ModelRecord> {
         if (!model) {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
-        (model as any)[event.field] = event.newValue;
+        const metadata = getModelMetadata(model.constructor);
+        const field = metadata.fields[event.field];
+        if (field?.type === "link" && event.newValue) {
+          const targetModel = this.models[field.targetModel].get(event.newValue as string);
+          (model as any)[event.field] = targetModel;
+        } else {
+          (model as any)[event.field] = event.newValue;
+        }
         break;
       }
       case "delete": {
