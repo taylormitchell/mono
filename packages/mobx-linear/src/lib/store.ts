@@ -1,4 +1,4 @@
-import { action, observable, reaction, runInAction } from "mobx";
+import { action, isAction, observable, reaction, runInAction } from "mobx";
 import { ModelName } from "./types";
 
 // Types and utilities
@@ -329,18 +329,11 @@ export class Store<TModels extends ModelRecord> {
     this.disposers.push(
       reaction(
         () => this.lastChangeTimestamp.get(),
-        () => this.commit()
+        () => {
+          this.commit();
+        }
       )
     );
-
-    // makeObservable<Store<TModels>, "rebase">(this, {
-    //   emit: action,
-    //   undo: action,
-    //   redo: action,
-    //   create: action,
-    //   delete: action,
-    //   rebase: action,
-    // });
 
     // Set up bidirectional sync
     this.setupBidirectionalSync();
@@ -357,6 +350,7 @@ export class Store<TModels extends ModelRecord> {
 
   @action
   emit(event: StoreEvent) {
+    console.log("Is action?", isAction(this.emit));
     if (!this.emittingEnabled) return;
     if (!this.isUndoingOrRedoing) {
       this.redoStack = [];
