@@ -83,7 +83,6 @@ function getModelMetadata(target: Function): ModelMetadata {
   return modelMetadataRegistry.get(target)!;
 }
 
-// Base model that all domain models extend from
 export abstract class BaseModel {
   readonly id: string;
   placeholder = false;
@@ -93,8 +92,6 @@ export abstract class BaseModel {
     this.id = props.id ?? crypto.randomUUID();
     this.placeholder = props.placeholder ?? false;
   }
-
-  // TODO: I don't like these
 
   protected emitIfStored(event: StoreEvent) {
     this.store?.emit(event);
@@ -114,7 +111,6 @@ export abstract class BaseModel {
   }
 }
 
-// Standalone decorators
 export function property(opts: { serializedKey?: string } = {}) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const fieldName = String(context.name);
@@ -193,7 +189,6 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
   };
 }
 
-// TODO better types
 export function backlinks(sourceRef: string) {
   const [sourceModel, sourceKey] = sourceRef.split(".");
   if (!sourceModel || !sourceKey) {
