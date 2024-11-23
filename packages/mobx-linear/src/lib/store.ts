@@ -372,15 +372,19 @@ export class Store<TModels extends ModelRecord> {
       throw new Error(`Unknown model: ${String(modelName)}`);
     }
 
-    const metadata = getModelMetadata(ModelClass);
-    const constructorProps: Record<string, unknown> = {
-      id: serializedProps.id,
-      placeholder: serializedProps.placeholder,
-    };
-
-    const instance = new ModelClass(constructorProps) as InstanceType<TModels[K]>;
+    const existing =
+      typeof serializedProps.id === "string"
+        ? this.models[modelName].get(serializedProps.id)
+        : undefined;
+    const instance =
+      existing ??
+      (new ModelClass({
+        id: serializedProps.id,
+        placeholder: serializedProps.placeholder,
+      }) as InstanceType<TModels[K]>);
 
     // Transform serialized props into constructor props
+    const metadata = getModelMetadata(ModelClass);
     Object.entries(metadata.fields).forEach(([fieldName, field]) => {
       switch (field.type) {
         case "property":
@@ -399,6 +403,9 @@ export class Store<TModels extends ModelRecord> {
           break;
       }
     });
+    if (existing) {
+      instance.placeholder = false;
+    }
 
     instance._setStore(this);
 
