@@ -371,13 +371,16 @@ export class Store<TModels extends ModelRecord> {
               (f) =>
                 f.type === "backlinks" &&
                 f.sourceModel === event.model &&
-                f.sourceKey === event.field
+                f.sourceKey === field.fieldKey
             ) as BacklinksMetadataField | undefined;
-            if (backlink?.type === "backlinks") {
-              this.getOrCreatePlaceholder(
-                field.targetModel,
+            if (backlink) {
+              const targetInst = this.models[field.targetModel].get(
                 event.props![field.serializedKey] as string
               );
+              const sourceInst = this.models[event.model].get(event.id);
+              if (targetInst && sourceInst) {
+                (targetInst as any)[backlink.fieldKey].add(sourceInst);
+              }
             }
           }
         });
