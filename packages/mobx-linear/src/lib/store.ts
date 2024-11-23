@@ -273,7 +273,11 @@ type OptimisticMutation = {
 };
 
 type Pusher = (clientId: string, mutations: OptimisticMutation[]) => Promise<void>;
-type Puller = (clientId: string) => Promise<{ patches: Patch[]; lastMutationId: number }>;
+type Puller = (clientId: string) => Promise<{
+  patches: Patch[];
+  lastMutationId: number;
+  serverVersion: number;
+}>;
 
 // Store implementation
 export class Store<TModels extends ModelRecord> {
@@ -289,7 +293,8 @@ export class Store<TModels extends ModelRecord> {
   private redoStack: StoreEvent[][] = [];
   private stagedChanges: StoreEvent[] = [];
 
-  private mutationId = 0;
+  private lastSyncedServerVersion = 0;
+  private localMutationId = 0;
   private localMutations: OptimisticMutation[] = [];
 
   private lastChangeTimestamp = observable.box(0);
@@ -332,7 +337,7 @@ export class Store<TModels extends ModelRecord> {
       const changes = this.stagedChanges;
       this.undoStack.push(changes);
       this.stagedChanges = [];
-      this.localMutations.push({ mutationId: this.mutationId++, events: changes });
+      this.localMutations.push({ mutationId: this.localMutationId++, events: changes });
     }
   }
 
@@ -359,12 +364,12 @@ export class Store<TModels extends ModelRecord> {
 
   async pull() {
     if (this.puller) {
-      const { patches, lastMutationId } = await this.puller(this.clientId);
-      this.rebase(patches, lastMutationId);
+      const { patches, lastMutationId, serverVersion } = await this.puller(this.clientId);
+      this.rebase(patches, lastMutationId, serverVersion);
     }
   }
 
-  private rebase(serverPatches: Patch[], lastMutationId: number) {
+  private rebase(serverPatches: Patch[], lastMutationId: number, serverVersion: number) {
     this.emittingEnabled = false;
 
     // Rollback to last synced state by applying local mutations in reverse
@@ -394,6 +399,7 @@ export class Store<TModels extends ModelRecord> {
     }
     this.notifySubscribers(remainingEvents);
 
+    this.lastSyncedServerVersion = serverVersion;
     this.emittingEnabled = true;
   }
 
