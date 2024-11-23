@@ -1,4 +1,4 @@
-import { action, makeObservable, observable, reaction, runInAction } from "mobx";
+import { action, observable, reaction, runInAction } from "mobx";
 import { ModelName } from "./types";
 
 // Types and utilities
@@ -335,17 +335,8 @@ export class Store<TModels extends ModelRecord> {
 
     // Set up bidirectional sync
     this.setupBidirectionalSync();
-
-    makeObservable(this, {
-      emit: action,
-      undo: action,
-      redo: action,
-      create: action,
-      delete: action,
-    });
   }
 
-  // TODO: Need to _not_ do this during undo/redo?
   commit() {
     if (this.stagedChanges.length > 0) {
       const changes = this.stagedChanges;
@@ -355,6 +346,7 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
+  @action
   emit(event: StoreEvent) {
     if (!this.emittingEnabled) return;
     if (!this.isUndoingOrRedoing) {
@@ -382,6 +374,7 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
+  @action
   private rebase(serverPatches: Patch[], lastMutationId: number) {
     this.emittingEnabled = false;
 
@@ -558,6 +551,7 @@ export class Store<TModels extends ModelRecord> {
     return this.create(modelName, { id, placeholder: true }) as T;
   }
 
+  @action
   delete(model: BaseModel) {
     const modelName = modelMetadataRegistry.get(model.constructor)?.name;
     if (!modelName) throw new Error("Unknown model");
@@ -577,6 +571,7 @@ export class Store<TModels extends ModelRecord> {
     return () => this.eventSubscribers.delete(handler);
   }
 
+  @action
   undo() {
     const changes = this.undoStack.pop();
     if (changes) {
@@ -590,6 +585,7 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
+  @action
   redo() {
     const changes = this.redoStack.pop();
     if (changes) {
