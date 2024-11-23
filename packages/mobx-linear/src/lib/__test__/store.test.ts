@@ -144,9 +144,11 @@ describe("Store", () => {
     it("should undo and redo link changes", () => {
       const project = store.create("project", { title: "Test Project" });
       const issue = store.create("issue", { title: "Test Issue" });
+      store.commit();
 
       issue.project = project;
       expect(project.issues.has(issue)).toBe(true);
+      store.commit();
 
       store.undo();
       expect(issue.project).toBeNull();
