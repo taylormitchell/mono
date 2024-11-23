@@ -272,8 +272,15 @@ type OptimisticMutation = {
   events: StoreEvent[];
 };
 
+type Pusher = (clientId: string, mutations: OptimisticMutation[]) => Promise<void>;
+type Puller = (clientId: string) => Promise<{ patches: Patch[]; lastMutationId: number }>;
+
 // Store implementation
 export class Store<TModels extends ModelRecord> {
+  readonly clientId = crypto.randomUUID();
+  private puller?: Puller;
+  private pusher?: Pusher;
+
   private models = {} as Record<keyof TModels, Map<string, InstanceType<TModels[keyof TModels]>>>;
   private modelClasses: TModels;
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
@@ -291,8 +298,10 @@ export class Store<TModels extends ModelRecord> {
   private emittingEnabled = true;
   private isUndoingOrRedoing = false;
 
-  constructor(modelClasses: TModels) {
+  constructor(modelClasses: TModels, { puller, pusher }: { puller?: Puller; pusher?: Pusher }) {
     this.modelClasses = modelClasses;
+    this.puller = puller;
+    this.pusher = pusher;
 
     // Initialize model storage
     for (const name in modelClasses) {
@@ -342,7 +351,20 @@ export class Store<TModels extends ModelRecord> {
     this.eventSubscribers.forEach((subscriber) => events.forEach(subscriber));
   }
 
-  rebase(serverPatches: Patch[], lastMutationId: number) {
+  async push() {
+    if (this.pusher) {
+      await this.pusher(this.clientId, this.localMutations);
+    }
+  }
+
+  async pull() {
+    if (this.puller) {
+      const { patches, lastMutationId } = await this.puller(this.clientId);
+      this.rebase(patches, lastMutationId);
+    }
+  }
+
+  private rebase(serverPatches: Patch[], lastMutationId: number) {
     this.emittingEnabled = false;
 
     // Rollback to last synced state by applying local mutations in reverse
