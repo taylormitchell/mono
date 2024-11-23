@@ -333,6 +333,15 @@ export class Store<TModels extends ModelRecord> {
       )
     );
 
+    // makeObservable<Store<TModels>, "rebase">(this, {
+    //   emit: action,
+    //   undo: action,
+    //   redo: action,
+    //   create: action,
+    //   delete: action,
+    //   rebase: action,
+    // });
+
     // Set up bidirectional sync
     this.setupBidirectionalSync();
   }
