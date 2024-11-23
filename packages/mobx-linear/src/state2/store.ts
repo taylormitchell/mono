@@ -1,5 +1,6 @@
-import { observable, reaction } from "mobx";
+import { get, observable, reaction } from "mobx";
 import { ModelName } from "./types";
+import { string } from "zod";
 
 // Types and utilities
 type ModelMetadataField =
@@ -78,7 +79,7 @@ function getModelMetadata(target: Function): ModelMetadata {
 }
 
 // Base model that all domain models extend from
-abstract class BaseModel {
+export abstract class BaseModel {
   readonly id: string;
   placeholder = false;
   private store?: Store<any>;
@@ -257,7 +258,7 @@ export function backlinks(sourceRef: string) {
 type ModelRecord = Record<string, new (...args: any[]) => BaseModel>;
 
 // Store implementation
-class Store<TModels extends ModelRecord> {
+export class Store<TModels extends ModelRecord> {
   private models = {} as Record<keyof TModels, Map<string, InstanceType<TModels[keyof TModels]>>>;
   private modelClasses: TModels;
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
@@ -269,8 +270,6 @@ class Store<TModels extends ModelRecord> {
   private lastChangeTimestamp = observable.box(0);
   private disposers: Array<() => void> = [];
 
-  constructor(modelClasses: TModels) {
-    this.modelClasses = modelClasses;
 
     // Initialize model storage
     for (const name in modelClasses) {
@@ -486,75 +485,3 @@ class Store<TModels extends ModelRecord> {
     this.disposers.forEach((dispose) => dispose());
   }
 }
-
-// Example usage:
-class Issue extends BaseModel {
-  @property()
-  accessor title: string;
-
-  @link()
-  accessor project: Project | null;
-
-  @backlinks("relation.from")
-  readonly relationsFrom = new Set<Relation>();
-
-  @backlinks("relation.to")
-  readonly relationsTo = new Set<Relation>();
-
-  constructor(
-    props: {
-      id?: string;
-      placeholder?: boolean;
-      title?: string;
-      project?: Project | null;
-    } = {}
-  ) {
-    super(props);
-    this.title = props.title ?? "";
-    this.project = props.project ?? null;
-  }
-}
-
-class Project extends BaseModel {
-  @property()
-  accessor title = "";
-
-  @backlinks("issue.project")
-  readonly issues = new Set<Issue>();
-
-  constructor(props: { id?: string; placeholder?: boolean; title?: string } = {}) {
-    super(props);
-    this.title = props.title ?? "";
-  }
-}
-
-class Relation extends BaseModel {
-  @link("issue")
-  accessor from: Issue | null = null;
-
-  @link("issue")
-  accessor to: Issue | null = null;
-
-  constructor(
-    props: { id?: string; placeholder?: boolean; from?: Issue | null; to?: Issue | null } = {}
-  ) {
-    super(props);
-    this.from = props.from ?? null;
-    this.to = props.to ?? null;
-  }
-}
-
-// TODO: Make it so only a single store exists
-const store = new Store({
-  issue: Issue,
-  project: Project,
-  relation: Relation,
-});
-
-const issue = store.create("issue", { title: "Test" });
-issue.title = "Updated"; // Will emit events and trigger updates
-
-const project = store.create("project", { title: "Test" });
-issue.project = project;
-
-console.log(issue.title);
