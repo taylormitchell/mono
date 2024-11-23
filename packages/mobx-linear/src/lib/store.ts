@@ -308,6 +308,7 @@ export class Store<TModels extends ModelRecord> {
     {
       puller,
       pusher,
+      // TODO: Only actionEnd works right now but something like this should be doable
       autoCommitOn = "actionEnd",
     }: { puller?: Puller; pusher?: Pusher; autoCommitOn?: "actionEnd" | "event" | null } = {}
   ) {
