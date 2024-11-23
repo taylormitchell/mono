@@ -141,7 +141,7 @@ describe("Store", () => {
   let store: Store<{ project: typeof Project; issue: typeof Issue }>;
 
   beforeEach(() => {
-    store = new Store({ project: Project, issue: Issue }, { autoCommitOn: "event" });
+    store = new Store({ project: Project, issue: Issue });
   });
 
   afterEach(() => {
@@ -352,7 +352,6 @@ describe("Store", () => {
         {
           pusher: (clientId, mutations) => server.push(clientId, mutations),
           puller: (clientId) => server.pull(clientId),
-          autoCommitOn: "event",
         }
       );
     }

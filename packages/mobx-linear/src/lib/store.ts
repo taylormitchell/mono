@@ -154,9 +154,7 @@ export function property(opts: { serializedKey?: string } = {}) {
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
         metadata.fields[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
-        runInAction(() => {
-          observableResult.init?.call(this, initialValue);
-        });
+        return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
   };
@@ -197,9 +195,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
           serializedKey,
           targetModel: (targetModel ?? fieldName) as ModelName,
         };
-        runInAction(() => {
-          observableResult.init?.call(this, initialValue);
-        });
+        return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
   };
@@ -309,39 +305,33 @@ export class Store<TModels extends ModelRecord> {
   private emittingEnabled = true;
   private isUndoingOrRedoing = false;
 
-  private autoCommitOn: "actionEnd" | "event" | null;
-
   constructor(
     modelClasses: TModels,
     {
       puller,
       pusher,
-      // TODO: The 'event' doesn't work exactly how I'd want right now. Like if you create
-      // a model which refs a non-existent model, that becomes two mutations. I'd want that
-      // to be one. So it's like every create/delete/update by the user should result in a
-      // mutation, but any internal calls to those things should be separate.
-      autoCommitOn = "actionEnd",
-    }: { puller?: Puller; pusher?: Pusher; autoCommitOn?: "actionEnd" | "event" | null } = {}
+    }: // TODO: The 'event' doesn't work exactly how I'd want right now. Like if you create
+    // a model which refs a non-existent model, that becomes two mutations. I'd want that
+    // to be one. So it's like every create/delete/update by the user should result in a
+    // mutation, but any internal calls to those things should be separate.
+    { puller?: Puller; pusher?: Pusher } = {}
   ) {
     this.modelClasses = modelClasses;
     this.puller = puller;
     this.pusher = pusher;
-    this.autoCommitOn = autoCommitOn;
 
     // Initialize model storage
     for (const name in modelClasses) {
-      this.models[name] = new Map();
+      this.models[name] = observable.map();
     }
 
     // Set up auto-commit
-    if (this.autoCommitOn === "actionEnd") {
-      this.disposers.push(
-        reaction(
-          () => this.lastChangeTimestamp.get(),
-          () => this.commit()
-        )
-      );
-    }
+    this.disposers.push(
+      reaction(
+        () => this.lastChangeTimestamp.get(),
+        () => this.commit()
+      )
+    );
 
     // Set up bidirectional sync
     this.setupBidirectionalSync();
@@ -350,6 +340,8 @@ export class Store<TModels extends ModelRecord> {
       emit: action,
       undo: action,
       redo: action,
+      create: action,
+      delete: action,
     });
   }
 
@@ -363,21 +355,14 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
-  emitDepth = 0; // TODO: sketch?
   emit(event: StoreEvent) {
     if (!this.emittingEnabled) return;
     if (!this.isUndoingOrRedoing) {
       this.redoStack = [];
     }
-
-    this.emitDepth++;
     this.stagedChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
     this.notifySubscribers([event]);
-    this.emitDepth--;
-    if (this.emitDepth === 0 && this.autoCommitOn === "event") {
-      this.commit();
-    }
   }
 
   notifySubscribers(events: StoreEvent[]) {
