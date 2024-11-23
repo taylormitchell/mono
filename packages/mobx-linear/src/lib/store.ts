@@ -4,17 +4,20 @@ import { ModelName } from "./types";
 // Types and utilities
 interface PropertyMetadataField {
   type: "property";
+  fieldKey: string;
   serializedKey: string;
 }
 
 interface LinkMetadataField {
   type: "link";
+  fieldKey: string;
   serializedKey: string;
   targetModel: ModelName;
 }
 
 interface BacklinksMetadataField {
   type: "backlinks";
+  fieldKey: string;
   sourceModel: ModelName;
   sourceKey: string;
 }
@@ -122,7 +125,7 @@ export function property(opts: { serializedKey?: string } = {}) {
 
     context.addInitializer(function (this: any) {
       const metadata = getModelMetadata(this.constructor);
-      metadata.fields[fieldName] = { type: "property", serializedKey };
+      metadata.fields[fieldName] = { type: "property", fieldKey: fieldName, serializedKey };
     });
 
     return {
@@ -144,7 +147,7 @@ export function property(opts: { serializedKey?: string } = {}) {
       },
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
-        metadata.fields[fieldName] = { type: "property", serializedKey };
+        metadata.fields[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
         return observableResult.init?.call(this, initialValue);
       },
     };
@@ -180,6 +183,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
         const metadata = getModelMetadata(this.constructor);
         metadata.fields[fieldName] = {
           type: "link",
+          fieldKey: fieldName,
           serializedKey,
           targetModel: (targetModel ?? fieldName) as ModelName,
         };
@@ -201,6 +205,7 @@ export function backlinks(sourceRef: string) {
       const metadata = getModelMetadata(this.constructor);
       metadata.fields[fieldName] = {
         type: "backlinks",
+        fieldKey: fieldName,
         sourceModel: sourceModel as ModelName,
         sourceKey,
       };
@@ -338,14 +343,14 @@ export class Store<TModels extends ModelRecord> {
           if (event.oldValue) {
             const oldTarget = this.models[field.targetModel].get(event.oldValue as string) as any;
             if (oldTarget) {
-              (oldTarget[backlink.sourceKey] as Set<BaseModel>).delete(sourceInst!);
+              (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst!);
             }
           }
 
           if (event.newValue) {
             const newTarget = this.models[field.targetModel].get(event.newValue as string) as any;
             if (newTarget) {
-              (newTarget[backlink.sourceKey] as Set<BaseModel>).add(sourceInst!);
+              (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst!);
             }
           }
         }
