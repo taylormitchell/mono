@@ -1,4 +1,83 @@
-import { backlinks, BaseModel, link, property, Store } from "../store";
+import { backlinks, BaseModel, link, OptimisticMutation, property, Store } from "../store";
+import { ModelName } from "../types";
+
+class MockServer {
+  private globalVersion = 0;
+  private models: Record<string, Map<string, { data: Record<string, unknown>; version: number }>> =
+    {};
+  private lastClientVersion: Map<string, number> = new Map();
+  private lastMutationId: Map<string, number> = new Map();
+
+  constructor(modelTypes: string[]) {
+    // Initialize empty maps for each model type
+    modelTypes.forEach((type) => {
+      this.models[type] = new Map();
+    });
+  }
+
+  async push(clientId: string, mutations: OptimisticMutation[]) {
+    // Apply each mutation in order
+    for (const { mutationId, events } of mutations) {
+      // Skip if we've already seen this mutation
+      if ((this.lastMutationId.get(clientId) ?? -1) >= mutationId) continue;
+
+      // Apply each event in the mutation
+      for (const event of events) {
+        this.globalVersion++;
+
+        switch (event.type) {
+          case "create":
+          case "update": {
+            const modelMap = this.models[event.model];
+            const existing = modelMap.get(event.id)?.data ?? {};
+
+            const newData =
+              event.type === "create"
+                ? { ...event.props }
+                : { ...existing, [event.field]: event.newValue };
+
+            modelMap.set(event.id, {
+              data: newData,
+              version: this.globalVersion,
+            });
+            break;
+          }
+          case "delete": {
+            this.models[event.model].delete(event.id);
+            break;
+          }
+        }
+      }
+
+      this.lastMutationId.set(clientId, mutationId);
+    }
+  }
+
+  async pull(clientId: string) {
+    const lastVersion = this.lastClientVersion.get(clientId) ?? 0;
+    const patches: Patch[] = [];
+
+    // Look through all models for changes since last version
+    for (const [modelName, modelMap] of Object.entries(this.models)) {
+      for (const [id, { data, version }] of modelMap.entries()) {
+        if (version > lastVersion) {
+          patches.push({
+            type: "set",
+            model: modelName as ModelName,
+            id,
+            props: data,
+          });
+        }
+      }
+    }
+
+    this.lastClientVersion.set(clientId, this.globalVersion);
+    return {
+      patches,
+      lastMutationId: this.lastMutationId.get(clientId) ?? 0,
+    };
+  }
+}
 
 describe("Store", () => {
   class Project extends BaseModel {

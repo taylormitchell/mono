@@ -267,7 +267,7 @@ export function backlinks(sourceRef: string) {
 
 type ModelRecord = Record<string, new (...args: any[]) => BaseModel>;
 
-type OptimisticMutation = {
+export type OptimisticMutation = {
   mutationId: number;
   events: StoreEvent[];
 };
@@ -276,7 +276,6 @@ type Pusher = (clientId: string, mutations: OptimisticMutation[]) => Promise<voi
 type Puller = (clientId: string) => Promise<{
   patches: Patch[];
   lastMutationId: number;
-  serverVersion: number;
 }>;
 
 // Store implementation
@@ -293,7 +292,6 @@ export class Store<TModels extends ModelRecord> {
   private redoStack: StoreEvent[][] = [];
   private stagedChanges: StoreEvent[] = [];
 
-  private lastSyncedServerVersion = 0;
   private localMutationId = 0;
   private localMutations: OptimisticMutation[] = [];
 
@@ -364,12 +362,12 @@ export class Store<TModels extends ModelRecord> {
 
   async pull() {
     if (this.puller) {
-      const { patches, lastMutationId, serverVersion } = await this.puller(this.clientId);
-      this.rebase(patches, lastMutationId, serverVersion);
+      const { patches, lastMutationId } = await this.puller(this.clientId);
+      this.rebase(patches, lastMutationId);
     }
   }
 
-  private rebase(serverPatches: Patch[], lastMutationId: number, serverVersion: number) {
+  private rebase(serverPatches: Patch[], lastMutationId: number) {
     this.emittingEnabled = false;
 
     // Rollback to last synced state by applying local mutations in reverse
@@ -399,7 +397,6 @@ export class Store<TModels extends ModelRecord> {
     }
     this.notifySubscribers(remainingEvents);
 
-    this.lastSyncedServerVersion = serverVersion;
     this.emittingEnabled = true;
   }
 
