@@ -308,7 +308,10 @@ export class Store<TModels extends ModelRecord> {
     {
       puller,
       pusher,
-      // TODO: Only actionEnd works right now but something like this should be doable
+      // TODO: The 'event' doesn't work exactly how I'd want right now. Like if you create
+      // a model which refs a non-existent model, that becomes two mutations. I'd want that
+      // to be one. So it's like every create/delete/update by the user should result in a
+      // mutation, but any internal calls to those things should be separate.
       autoCommitOn = "actionEnd",
     }: { puller?: Puller; pusher?: Pusher; autoCommitOn?: "actionEnd" | "event" | null } = {}
   ) {
