@@ -1,7 +1,5 @@
 import { observable, reaction } from "mobx";
 import { ModelName } from "./types";
-import { reverseEvent } from "../types";
-import { Store } from "../state";
 
 // Types and utilities
 type ModelMetadataField =
@@ -89,6 +87,8 @@ abstract class BaseModel {
     this.id = props.id ?? crypto.randomUUID();
     this.placeholder = props.placeholder ?? false;
   }
+
+  // TODO: I don't like these
 
   protected emitIfStored(event: StoreEvent) {
     this.store?.emit(event);
