@@ -322,69 +322,73 @@ export class Store<TModels extends ModelRecord> {
 
   private setupBidirectionalSync() {
     this.subscribe((event) => {
+      // Get model class and metadata early
+      const ModelClass = this.modelClasses[event.model];
+      if (!ModelClass) return;
+      const metadata = getModelMetadata(ModelClass);
+
+      // Gather all link changes
+      const linkChanges: {
+        field: LinkMetadataField;
+        sourceInst: BaseModel;
+        oldTargetId: string | null;
+        newTargetId: string | null;
+      }[] = [];
       if (event.type === "update") {
-        const ModelClass = this.modelClasses[event.model];
-        if (!ModelClass) return;
-
-        const metadata = getModelMetadata(ModelClass);
         const field = metadata.fields[event.field];
-
         if (field?.type === "link") {
-          // Find corresponding backlinks
-          const TargetClass = this.modelClasses[field.targetModel];
-          if (!TargetClass) return;
-
-          const targetMetadata = getModelMetadata(TargetClass);
-          const backlink = Object.values(targetMetadata.fields).find(
-            (f) =>
-              f.type === "backlinks" && f.sourceModel === event.model && f.sourceKey === event.field
-          ) as BacklinksMetadataField | undefined;
-
-          if (backlink) {
-            const sourceInst = this.models[event.model].get(event.id);
-
-            if (event.oldValue) {
-              const oldTarget = this.models[field.targetModel].get(event.oldValue as string) as any;
-              if (oldTarget) {
-                (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst!);
-              }
+          linkChanges.push({
+            field,
+            sourceInst: this.models[event.model].get(event.id)!,
+            oldTargetId: event.oldValue as string | null,
+            newTargetId: event.newValue as string | null,
+          });
+        }
+      } else if (event.type === "create") {
+        Object.values(metadata.fields)
+          .filter((f): f is LinkMetadataField => f.type === "link")
+          .forEach((field) => {
+            const targetId = event.props?.[field.serializedKey] as string | undefined;
+            if (targetId) {
+              linkChanges.push({
+                field,
+                sourceInst: this.models[event.model].get(event.id)!,
+                oldTargetId: null,
+                newTargetId: targetId,
+              });
             }
+          });
+      }
 
-            if (event.newValue) {
-              const newTarget = this.models[field.targetModel].get(event.newValue as string) as any;
-              if (newTarget) {
-                (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst!);
-              }
+      // Process all link changes through the same code path
+      linkChanges.forEach(({ field, sourceInst, oldTargetId, newTargetId }) => {
+        const TargetClass = this.modelClasses[field.targetModel];
+        if (!TargetClass) return;
+
+        const targetMetadata = getModelMetadata(TargetClass);
+        const backlink = Object.values(targetMetadata.fields).find(
+          (f) =>
+            f.type === "backlinks" &&
+            f.sourceModel === event.model &&
+            f.sourceKey === field.fieldKey
+        ) as BacklinksMetadataField | undefined;
+
+        if (backlink) {
+          if (oldTargetId) {
+            const oldTarget = this.models[field.targetModel].get(oldTargetId) as any;
+            if (oldTarget) {
+              (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst);
+            }
+          }
+
+          if (newTargetId) {
+            const newTarget = this.models[field.targetModel].get(newTargetId) as any;
+            if (newTarget) {
+              (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst);
             }
           }
         }
-      } else if (event.type === "create") {
-        const ModelClass = this.modelClasses[event.model];
-        if (!ModelClass) return;
-        const metadata = getModelMetadata(ModelClass);
-        Object.values(metadata.fields).forEach((field) => {
-          if (field.type === "link") {
-            const TargetClass = this.modelClasses[field.targetModel];
-            if (!TargetClass) return;
-            const targetMetadata = getModelMetadata(TargetClass);
-            const backlink = Object.values(targetMetadata.fields).find(
-              (f) =>
-                f.type === "backlinks" &&
-                f.sourceModel === event.model &&
-                f.sourceKey === field.fieldKey
-            ) as BacklinksMetadataField | undefined;
-            if (backlink) {
-              const targetInst = this.models[field.targetModel].get(
-                event.props![field.serializedKey] as string
-              );
-              const sourceInst = this.models[event.model].get(event.id);
-              if (targetInst && sourceInst) {
-                (targetInst as any)[backlink.fieldKey].add(sourceInst);
-              }
-            }
-          }
-        });
-      }
+      });
     });
   }
 
