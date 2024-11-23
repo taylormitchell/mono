@@ -367,25 +367,28 @@ export class Store<TModels extends ModelRecord> {
       placeholder: serializedProps.placeholder,
     };
 
+    const instance = new ModelClass(constructorProps) as InstanceType<TModels[K]>;
+
     // Transform serialized props into constructor props
     Object.entries(metadata.fields).forEach(([fieldName, field]) => {
       switch (field.type) {
         case "property":
           if (serializedProps[field.serializedKey] !== undefined) {
-            constructorProps[fieldName] = serializedProps[field.serializedKey];
+            // constructorProps[fieldName] = serializedProps[field.serializedKey];
+            (instance as any)[fieldName] = serializedProps[field.serializedKey];
           }
           break;
 
         case "link":
           if (serializedProps[field.serializedKey]) {
             const targetId = serializedProps[field.serializedKey] as string;
-            constructorProps[fieldName] = this.getOrCreatePlaceholder(field.targetModel, targetId);
+            // constructorProps[fieldName] = this.getOrCreatePlaceholder(field.targetModel, targetId);
+            (instance as any)[fieldName] = this.getOrCreatePlaceholder(field.targetModel, targetId);
           }
           break;
       }
     });
 
-    const instance = new ModelClass(constructorProps) as InstanceType<TModels[K]>;
     instance._setStore(this);
 
     // Register in store
