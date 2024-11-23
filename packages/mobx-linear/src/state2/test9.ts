@@ -102,6 +102,7 @@ abstract class BaseModel {
     return !!this.store;
   }
 
+  // TODO: Can only belong to one store?
   _setStore(store: Store<any>) {
     this.store = store;
   }
