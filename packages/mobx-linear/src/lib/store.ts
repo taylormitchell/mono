@@ -52,7 +52,7 @@ type StoreEvent =
     };
 
 // Create, update, or delete a single model
-type PatchEvent = {
+type Patch = {
   type: "set";
   model: ModelName;
   id: string;
@@ -335,35 +335,42 @@ export class Store<TModels extends ModelRecord> {
 
     this.stagedChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
-    this.eventSubscribers.forEach((subscriber) => subscriber(event));
+    this.notifySubscribers([event]);
   }
 
-  private rebase(serverEvents: PatchEvent[], lastMutationId: number) {
+  notifySubscribers(events: StoreEvent[]) {
+    this.eventSubscribers.forEach((subscriber) => events.forEach(subscriber));
+  }
+
+  rebase(serverPatches: Patch[], lastMutationId: number) {
     this.emittingEnabled = false;
 
     // Rollback to last synced state by applying local mutations in reverse
-    const localEvents = this.localMutations
+    const invertedLocalEvents = this.localMutations
       .flatMap((m) => m.events)
       .reverse()
       .map(reverseEvent);
-    for (const event of localEvents) {
+    for (const event of invertedLocalEvents) {
       this.applyEvent(event);
     }
+    this.notifySubscribers(invertedLocalEvents);
 
     // Apply new server events
-    for (const patch of serverEvents) {
-      this.emit(this.patchToEvent(patch));
+    const events = serverPatches.flatMap((patch) => this.patchToEvent(patch));
+    for (const event of events) {
+      this.applyEvent(event);
     }
+    this.notifySubscribers(events);
 
     // Remove any local mutations that have already been applied
     this.localMutations = this.localMutations.filter((m) => m.mutationId > lastMutationId);
 
     // Apply any remaining local mutations
-    for (const mutation of this.localMutations) {
-      for (const event of mutation.events) {
-        this.applyEvent(event);
-      }
+    const remainingEvents = this.localMutations.flatMap((m) => m.events);
+    for (const event of remainingEvents) {
+      this.applyEvent(event);
     }
+    this.notifySubscribers(remainingEvents);
 
     this.emittingEnabled = true;
   }
@@ -596,7 +603,7 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
-  patchToEvent(patch: PatchEvent): StoreEvent[] {
+  patchToEvent(patch: Patch): StoreEvent[] {
     const instance = this.models[patch.model].get(patch.id);
     if (patch.props === null) {
       return [{ type: "delete", model: patch.model, id: patch.id }];
