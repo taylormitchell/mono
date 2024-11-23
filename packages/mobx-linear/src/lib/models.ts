@@ -1,4 +1,4 @@
-import { property, backlinks, link, BaseModel } from "./store";
+import { property, backlinks, link, BaseModel, Store } from "./store";
 
 class Issue extends BaseModel {
   @property()
@@ -55,3 +55,9 @@ class Relation extends BaseModel {
     this.to = props.to ?? null;
   }
 }
+
+export const store = new Store({
+  issue: Issue,
+  project: Project,
+  relation: Relation,
+});
