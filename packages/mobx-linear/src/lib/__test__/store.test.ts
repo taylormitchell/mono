@@ -361,18 +361,6 @@ describe("Store", () => {
       store = createStore();
     });
 
-    it("should sync created models to server", async () => {
-      const project = store.create("project", { title: "Test Project" });
-      await store.push();
-
-      // Create a second store to verify sync
-      const store2 = createStore();
-
-      await store2.pull();
-      const syncedProject = store2.get("project", project.id);
-      expect(syncedProject?.title).toBe("Test Project");
-    });
-
     it("should sync updates between clients", async () => {
       // First client creates and updates
       const project = store.create("project", { title: "Original" });
@@ -381,13 +369,7 @@ describe("Store", () => {
       await store.push();
 
       // Second client syncs
-      const store2 = new Store(
-        { project: Project, issue: Issue },
-        {
-          pusher: (clientId, mutations) => server.push(clientId, mutations),
-          puller: (clientId) => server.pull(clientId),
-        }
-      );
+      const store2 = createStore();
 
       await store2.pull();
       const syncedProject = store2.get("project", project.id);

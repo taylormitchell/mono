@@ -613,7 +613,7 @@ export class Store<TModels extends ModelRecord> {
   applyEvent(event: StoreEvent): Error | undefined {
     switch (event.type) {
       case "create":
-        this.create(event.model, event.props ?? {});
+        this.create(event.model, { ...event.props, id: event.id });
         break;
       case "update": {
         const model = this.models[event.model].get(event.id);
