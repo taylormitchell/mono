@@ -362,10 +362,25 @@ export class Store<TModels extends ModelRecord> {
         const ModelClass = this.modelClasses[event.model];
         if (!ModelClass) return;
         const metadata = getModelMetadata(ModelClass);
-        const field = metadata.fields[event.field];
-        if (field?.type === "backlinks") {
-          const sourceInst = this.models[event.model].get(event.id);
-        }
+        Object.values(metadata.fields).forEach((field) => {
+          if (field.type === "link") {
+            const TargetClass = this.modelClasses[field.targetModel];
+            if (!TargetClass) return;
+            const targetMetadata = getModelMetadata(TargetClass);
+            const backlink = Object.values(targetMetadata.fields).find(
+              (f) =>
+                f.type === "backlinks" &&
+                f.sourceModel === event.model &&
+                f.sourceKey === event.field
+            ) as BacklinksMetadataField | undefined;
+            if (backlink?.type === "backlinks") {
+              this.getOrCreatePlaceholder(
+                field.targetModel,
+                event.props![field.serializedKey] as string
+              );
+            }
+          }
+        });
       }
     });
   }
