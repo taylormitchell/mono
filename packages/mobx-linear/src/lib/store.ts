@@ -51,6 +51,14 @@ type StoreEvent =
       id: string;
     };
 
+// Create, update, or delete a single model
+type PatchEvent = {
+  type: "set";
+  model: ModelName;
+  id: string;
+  props: Record<string, unknown> | null;
+};
+
 function reverseEvent(event: StoreEvent): StoreEvent {
   switch (event.type) {
     case "create":
