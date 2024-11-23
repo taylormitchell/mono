@@ -338,7 +338,7 @@ export class Store<TModels extends ModelRecord> {
     this.eventSubscribers.forEach((subscriber) => subscriber(event));
   }
 
-  private rebase(serverEvents: StoreEvent[], lastMutationId: number) {
+  private rebase(serverEvents: PatchEvent[], lastMutationId: number) {
     this.emittingEnabled = false;
 
     // Rollback to last synced state by applying local mutations in reverse
@@ -351,8 +351,8 @@ export class Store<TModels extends ModelRecord> {
     }
 
     // Apply new server events
-    for (const event of serverEvents) {
-      this.emit(event);
+    for (const patch of serverEvents) {
+      this.emit(this.patchToEvent(patch));
     }
 
     // Remove any local mutations that have already been applied
@@ -593,6 +593,26 @@ export class Store<TModels extends ModelRecord> {
       }
       default:
         event satisfies never;
+    }
+  }
+
+  patchToEvent(patch: PatchEvent): StoreEvent[] {
+    const instance = this.models[patch.model].get(patch.id);
+    if (patch.props === null) {
+      return [{ type: "delete", model: patch.model, id: patch.id }];
+    } else {
+      if (instance) {
+        return Object.entries(patch.props).map(([field, value]) => ({
+          type: "update",
+          model: patch.model,
+          id: patch.id,
+          field,
+          oldValue: (instance as any)[field],
+          newValue: value,
+        }));
+      } else {
+        return [{ type: "create", model: patch.model, id: patch.id, props: patch.props }];
+      }
     }
   }
 
