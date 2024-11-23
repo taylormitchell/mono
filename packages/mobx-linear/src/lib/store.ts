@@ -259,6 +259,11 @@ export function backlinks(sourceRef: string) {
 
 type ModelRecord = Record<string, new (...args: any[]) => BaseModel>;
 
+type OptimisticMutation = {
+  mutationId: number;
+  events: StoreEvent[];
+};
+
 // Store implementation
 export class Store<TModels extends ModelRecord> {
   private models = {} as Record<keyof TModels, Map<string, InstanceType<TModels[keyof TModels]>>>;
@@ -267,7 +272,10 @@ export class Store<TModels extends ModelRecord> {
 
   private undoStack: StoreEvent[][] = [];
   private redoStack: StoreEvent[][] = [];
-  private pendingChanges: StoreEvent[] = [];
+  private stagedChanges: StoreEvent[] = [];
+
+  private mutationId = 0;
+  private optimisticMutations: OptimisticMutation[] = [];
 
   private lastChangeTimestamp = observable.box(0);
   private disposers: Array<() => void> = [];
@@ -303,9 +311,11 @@ export class Store<TModels extends ModelRecord> {
 
   // TODO: Need to _not_ do this during undo/redo?
   commit() {
-    if (this.pendingChanges.length > 0) {
-      this.undoStack.push(this.pendingChanges);
-      this.pendingChanges = [];
+    if (this.stagedChanges.length > 0) {
+      const changes = this.stagedChanges;
+      this.undoStack.push(changes);
+      this.stagedChanges = [];
+      this.optimisticMutations.push({ mutationId: this.mutationId++, events: changes });
     }
   }
 
@@ -315,7 +325,7 @@ export class Store<TModels extends ModelRecord> {
       this.redoStack = [];
     }
 
-    this.pendingChanges.push(event);
+    this.stagedChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
     this.eventSubscribers.forEach((subscriber) => subscriber(event));
   }
