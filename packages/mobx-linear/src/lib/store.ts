@@ -277,6 +277,8 @@ export class Store<TModels extends ModelRecord> {
   private lastChangeTimestamp = observable.box(0);
   private disposers: Array<() => void> = [];
 
+  private emittingEnabled = true;
+
   constructor(modelClasses: TModels) {
     this.modelClasses = modelClasses;
 
@@ -313,6 +315,7 @@ export class Store<TModels extends ModelRecord> {
   }
 
   emit(event: StoreEvent) {
+    if (!this.emittingEnabled) return;
     this.pendingChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
     this.eventSubscribers.forEach((subscriber) => subscriber(event));
@@ -450,6 +453,7 @@ export class Store<TModels extends ModelRecord> {
       const reversedChanges = changes.map(reverseEvent).reverse();
       for (const event of reversedChanges) {
         this.applyEvent(event);
+        this.eventSubscribers.forEach((subscriber) => subscriber(event));
       }
     }
   }
@@ -473,28 +477,33 @@ export class Store<TModels extends ModelRecord> {
    * it for syncing and triggers reactions.
    */
   applyEvent(event: StoreEvent): Error | undefined {
-    switch (event.type) {
-      case "create":
-        this.create(event.model, event.props ?? {});
-        break;
-      case "update": {
-        const model = this.models[event.model].get(event.id);
-        if (!model) {
-          return new Error(`Unknown model ${event.model} with id ${event.id}`);
+    try {
+      this.emittingEnabled = false;
+      switch (event.type) {
+        case "create":
+          this.create(event.model, event.props ?? {});
+          break;
+        case "update": {
+          const model = this.models[event.model].get(event.id);
+          if (!model) {
+            return new Error(`Unknown model ${event.model} with id ${event.id}`);
+          }
+          (model as any)[event.field] = event.newValue;
+          break;
         }
-        (model as any)[event.field] = event.newValue;
-        break;
-      }
-      case "delete": {
-        const model = this.models[event.model].get(event.id);
-        if (!model) {
-          return new Error(`Unknown model ${event.model} with id ${event.id}`);
+        case "delete": {
+          const model = this.models[event.model].get(event.id);
+          if (!model) {
+            return new Error(`Unknown model ${event.model} with id ${event.id}`);
+          }
+          this.delete(model);
+          break;
         }
-        this.delete(model);
-        break;
+        default:
+          event satisfies never;
       }
-      default:
-        event satisfies never;
+    } finally {
+      this.emittingEnabled = true;
     }
   }
 
