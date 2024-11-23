@@ -361,6 +361,18 @@ describe("Store", () => {
       store = createStore();
     });
 
+    it("should clear local mutations after pull", async () => {
+      store.create("project", { title: "Test" });
+      // @ts-expect-error allow private access in test
+      expect(store.localMutations.length).toBe(1);
+      await store.push();
+      // @ts-expect-error allow private access in test
+      expect(store.localMutations.length).toBe(1);
+      await store.pull();
+      // @ts-expect-error allow private access in test
+      expect(store.localMutations.length).toBe(0);
+    });
+
     it("should sync updates between clients", async () => {
       // First client creates and updates
       const project = store.create("project", { title: "Original" });
@@ -378,30 +390,24 @@ describe("Store", () => {
 
     it("should handle concurrent updates", async () => {
       // First client creates
-      const project = store.create("project", { title: "Original" });
+      const store1Project = store.create("project", { title: "Original" });
       await store.push();
 
       // Second client syncs and updates
-      const store2 = new Store(
-        { project: Project, issue: Issue },
-        {
-          pusher: (clientId, mutations) => server.push(clientId, mutations),
-          puller: (clientId) => server.pull(clientId),
-        }
-      );
+      const store2 = createStore();
       await store2.pull();
-      const project2 = store2.get("project", project.id)!;
-      project2.title = "Store 2's Update";
+      const store2Project = store2.get("project", store1Project.id)!;
+      store2Project.title = "Store 2's Update";
       await store2.push();
 
       // First client updates without pulling
-      project.title = "Store 1's Update";
+      store1Project.title = "Store 1's Update";
       await store.push();
-      await store.pull(); // Now pull to get Store 2's changes
+      await store.pull();
 
       // Both stores should have the latest state
-      expect(project.title).toBe("Store 2's Update");
-      expect(project2.title).toBe("Store 2's Update");
+      expect(store1Project.title).toBe("Store 2's Update");
+      expect(store2Project.title).toBe("Store 1's Update");
     });
   });
 });
