@@ -309,7 +309,7 @@ export class Store<TModels extends ModelRecord> {
       puller,
       pusher,
       autoCommitOn = "actionEnd",
-    }: { puller?: Puller; pusher?: Pusher; autoCommitOn?: "actionEnd" | "event" | null }
+    }: { puller?: Puller; pusher?: Pusher; autoCommitOn?: "actionEnd" | "event" | null } = {}
   ) {
     this.modelClasses = modelClasses;
     this.puller = puller;
@@ -351,15 +351,21 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
+  emitDepth = 0; // TODO: sketch?
   emit(event: StoreEvent) {
     if (!this.emittingEnabled) return;
     if (!this.isUndoingOrRedoing) {
       this.redoStack = [];
     }
 
+    this.emitDepth++;
     this.stagedChanges.push(event);
     this.lastChangeTimestamp.set(Date.now());
     this.notifySubscribers([event]);
+    this.emitDepth--;
+    if (this.emitDepth === 0 && this.autoCommitOn === "event") {
+      this.commit();
+    }
   }
 
   notifySubscribers(events: StoreEvent[]) {
