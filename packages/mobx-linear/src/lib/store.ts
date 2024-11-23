@@ -1,4 +1,4 @@
-import { action, makeObservable, observable, reaction } from "mobx";
+import { action, makeObservable, observable, reaction, runInAction } from "mobx";
 import { ModelName } from "./types";
 
 // Types and utilities
@@ -139,20 +139,24 @@ export function property(opts: { serializedKey?: string } = {}) {
       set(this: BaseModel, newValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
         const oldValue = observableResult.get?.call(this);
-        observableResult.set?.call(this, newValue);
-        this.emitIfStored({
-          type: "update",
-          model: metadata.name,
-          id: this.id,
-          field: fieldName,
-          oldValue,
-          newValue,
+        runInAction(() => {
+          observableResult.set?.call(this, newValue);
+          this.emitIfStored({
+            type: "update",
+            model: metadata.name,
+            id: this.id,
+            field: fieldName,
+            oldValue,
+            newValue,
+          });
         });
       },
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
         metadata.fields[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
-        return observableResult.init?.call(this, initialValue);
+        runInAction(() => {
+          observableResult.init?.call(this, initialValue);
+        });
       },
     };
   };
@@ -173,14 +177,16 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
       set(this: BaseModel, newValue: BaseModel | null) {
         const oldValue = observableResult.get?.call(this);
         const model = getModelMetadata(this.constructor).name;
-        observableResult.set?.call(this, newValue);
-        this.emitIfStored({
-          type: "update",
-          model,
-          id: this.id,
-          field: fieldName,
-          oldValue: oldValue?.id ?? null,
-          newValue: newValue?.id ?? null,
+        runInAction(() => {
+          observableResult.set?.call(this, newValue);
+          this.emitIfStored({
+            type: "update",
+            model,
+            id: this.id,
+            field: fieldName,
+            oldValue: oldValue?.id ?? null,
+            newValue: newValue?.id ?? null,
+          });
         });
       },
       init(this: BaseModel, initialValue: unknown) {
@@ -191,7 +197,9 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
           serializedKey,
           targetModel: (targetModel ?? fieldName) as ModelName,
         };
-        return observableResult.init?.call(this, initialValue);
+        runInAction(() => {
+          observableResult.init?.call(this, initialValue);
+        });
       },
     };
   };
@@ -218,7 +226,7 @@ export function backlinks(sourceRef: string) {
       const set = observable.set();
       const setAdd = set.add.bind(set);
       const setDelete = set.delete.bind(set);
-      set.add = (value: BaseModel) => {
+      set.add = action((value: BaseModel) => {
         const result = setAdd(value);
         // TODO: handle case where they're in different stores?
         if (this.inStore()) {
@@ -238,8 +246,8 @@ export function backlinks(sourceRef: string) {
           }
         }
         return result;
-      };
-      set.delete = (value: BaseModel) => {
+      });
+      set.delete = action((value: BaseModel) => {
         const result = setDelete(value);
         if (this.inStore()) {
           const metadata = getModelMetadata(value.constructor);
@@ -258,7 +266,7 @@ export function backlinks(sourceRef: string) {
           }
         }
         return result;
-      };
+      });
 
       return set;
     };

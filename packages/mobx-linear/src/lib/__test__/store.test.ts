@@ -346,9 +346,8 @@ describe("Store", () => {
   describe("sync functionality", () => {
     let server: MockServer;
 
-    beforeEach(() => {
-      server = new MockServer(["project", "issue"]);
-      store = new Store(
+    function createStore() {
+      return new Store(
         { project: Project, issue: Issue },
         {
           pusher: (clientId, mutations) => server.push(clientId, mutations),
@@ -356,6 +355,11 @@ describe("Store", () => {
           autoCommitOn: "event",
         }
       );
+    }
+
+    beforeEach(() => {
+      server = new MockServer(["project", "issue"]);
+      store = createStore();
     });
 
     it("should sync created models to server", async () => {
@@ -363,13 +367,7 @@ describe("Store", () => {
       await store.push();
 
       // Create a second store to verify sync
-      const store2 = new Store(
-        { project: Project, issue: Issue },
-        {
-          pusher: (clientId, mutations) => server.push(clientId, mutations),
-          puller: (clientId) => server.pull(clientId),
-        }
-      );
+      const store2 = createStore();
 
       await store2.pull();
       const syncedProject = store2.get("project", project.id);
