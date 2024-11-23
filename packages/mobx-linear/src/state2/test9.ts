@@ -117,12 +117,19 @@ export function property(opts: { serializedKey?: string } = {}) {
     const observableResult = observable(target, context);
     if (!observableResult) throw new Error("Failed to create observable property");
 
+    context.addInitializer(function (this: any) {
+      const metadata = getModelMetadata(this.constructor);
+      metadata.fields[fieldName] = { type: "property", serializedKey };
+    });
+
     return {
       get(this: BaseModel) {
         return observableResult.get?.call(this);
       },
       set(this: BaseModel, newValue: unknown) {
+        const metadata = getModelMetadata(this.constructor);
         const oldValue = observableResult.get?.call(this);
+        observableResult.set?.call(this, newValue);
         this.emitIfStored({
           type: "update",
           model: metadata.name,
@@ -131,7 +138,6 @@ export function property(opts: { serializedKey?: string } = {}) {
           oldValue,
           newValue,
         });
-        return observableResult.set?.call(this, newValue);
       },
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
