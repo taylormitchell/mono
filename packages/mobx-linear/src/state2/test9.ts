@@ -113,12 +113,6 @@ export function property(opts: { serializedKey?: string } = {}) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const fieldName = String(context.name);
     const serializedKey = opts.serializedKey ?? fieldName;
-    const metadata = getModelMetadata(target.constructor);
-
-    metadata.fields[fieldName] = {
-      type: "property",
-      serializedKey,
-    };
 
     const observableResult = observable(target, context);
     if (!observableResult) throw new Error("Failed to create observable property");
@@ -139,7 +133,11 @@ export function property(opts: { serializedKey?: string } = {}) {
         });
         return observableResult.set?.call(this, newValue);
       },
-      init: observableResult.init,
+      init(this: BaseModel, initialValue: unknown) {
+        const metadata = getModelMetadata(this.constructor);
+        metadata.fields[fieldName] = { type: "property", serializedKey };
+        return observableResult.init?.call(this, initialValue);
+      },
     };
   };
 }
@@ -170,7 +168,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
         });
       },
       init(this: BaseModel, initialValue: unknown) {
-        const metadata = getModelMetadata(target.constructor);
+        const metadata = getModelMetadata(this.constructor);
         metadata.fields[fieldName] = {
           type: "link",
           serializedKey,
