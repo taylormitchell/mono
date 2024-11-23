@@ -1,4 +1,4 @@
-import { observable, reaction } from "mobx";
+import { action, makeObservable, observable, reaction } from "mobx";
 import { ModelName } from "./types";
 
 // Types and utilities
@@ -178,7 +178,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
         metadata.fields[fieldName] = {
           type: "link",
           serializedKey,
-          targetModel: targetModel ?? fieldName,
+          targetModel: (targetModel ?? fieldName) as ModelName,
         };
         return observableResult.init?.call(this, initialValue);
       },
@@ -198,7 +198,7 @@ export function backlinks(sourceRef: string) {
       const metadata = getModelMetadata(this.constructor);
       metadata.fields[fieldName] = {
         type: "backlinks",
-        sourceModel,
+        sourceModel: sourceModel as ModelName,
         sourceKey,
       };
       if (!(initialValue instanceof Set)) {
@@ -215,13 +215,13 @@ export function backlinks(sourceRef: string) {
           if (metadata.name !== sourceModel) {
             console.warn(`Backlink ${metadata.name} does not match source model ${sourceModel}`);
           }
-          if (value[sourceKey] !== this) {
+          if ((value as any)[sourceKey] !== this) {
             this.applyIfStored({
               type: "update",
-              model: sourceModel,
+              model: sourceModel as ModelName,
               id: value.id,
               field: sourceKey,
-              oldValue: value[sourceKey],
+              oldValue: (value as any)[sourceKey],
               newValue: this.id,
             });
           }
@@ -235,10 +235,10 @@ export function backlinks(sourceRef: string) {
           if (metadata.name !== sourceModel) {
             console.warn(`Backlink ${metadata.name} does not match source model ${sourceModel}`);
           }
-          if (value[sourceKey] === this) {
+          if ((value as any)[sourceKey] === this) {
             this.applyIfStored({
               type: "update",
-              model: sourceModel,
+              model: sourceModel as ModelName,
               id: this.id,
               field: sourceKey,
               oldValue: value.id,
@@ -287,6 +287,10 @@ export class Store<TModels extends ModelRecord> {
 
     // Set up bidirectional sync
     this.setupBidirectionalSync();
+
+    makeObservable(this, {
+      emit: action,
+    });
   }
 
   // TODO: Need to _not_ do this during undo/redo?
@@ -354,7 +358,7 @@ export class Store<TModels extends ModelRecord> {
   ): InstanceType<TModels[K]> {
     const ModelClass = this.modelClasses[modelName];
     if (!ModelClass) {
-      throw new Error(`Unknown model: ${modelName}`);
+      throw new Error(`Unknown model: ${String(modelName)}`);
     }
 
     const metadata = getModelMetadata(ModelClass);
@@ -390,7 +394,7 @@ export class Store<TModels extends ModelRecord> {
     // Emit create event
     this.emit({
       type: "create",
-      model: modelName,
+      model: modelName as ModelName,
       id: instance.id,
       props: serializedProps,
     });
@@ -405,7 +409,7 @@ export class Store<TModels extends ModelRecord> {
     const existing = this.models[modelName].get(id) as T;
     if (existing) return existing;
 
-    return this.create(modelName, { id, placeholder: true });
+    return this.create(modelName, { id, placeholder: true }) as T;
   }
 
   delete(model: BaseModel) {
