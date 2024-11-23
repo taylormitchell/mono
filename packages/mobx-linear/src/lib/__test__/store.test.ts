@@ -130,7 +130,9 @@ describe("Store", () => {
   describe("undo/redo functionality", () => {
     it("should undo and redo property changes", () => {
       const project = store.create("project", { title: "Original" });
+      store.commit();
       project.title = "Updated";
+      store.commit();
 
       store.undo();
       expect(project.title).toBe("Original");

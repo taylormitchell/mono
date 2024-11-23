@@ -247,9 +247,9 @@ export function backlinks(sourceRef: string) {
             this.applyIfStored({
               type: "update",
               model: sourceModel as ModelName,
-              id: this.id,
+              id: value.id,
               field: sourceKey,
-              oldValue: value.id,
+              oldValue: this.id,
               newValue: null,
             });
           }
