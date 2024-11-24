@@ -1,4 +1,4 @@
-import { action, isAction, observable, reaction, runInAction } from "mobx";
+import { action, observable, reaction, runInAction } from "mobx";
 import { ModelName } from "./types";
 
 // Types and utilities
@@ -350,7 +350,6 @@ export class Store<TModels extends ModelRecord> {
 
   @action
   emit(event: StoreEvent) {
-    console.log("Is action?", isAction(this.emit));
     if (!this.emittingEnabled) return;
     if (!this.isUndoingOrRedoing) {
       this.redoStack = [];

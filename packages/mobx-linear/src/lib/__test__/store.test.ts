@@ -388,26 +388,26 @@ describe("Store", () => {
       expect(syncedProject?.title).toBe("Updated");
     });
 
-    it("should handle concurrent updates", async () => {
+    // TODO fix this test
+    it("should replay local mutations after pull", async () => {
       // First client creates
       const store1Project = store.create("project", { title: "Original" });
       await store.push();
 
-      // Second client syncs and updates
+      // Second client syncs and pushes update
       const store2 = createStore();
       await store2.pull();
       const store2Project = store2.get("project", store1Project.id)!;
       store2Project.title = "Store 2's Update";
       await store2.push();
 
-      // First client updates without pulling
+      // First client makes optimistic update
       store1Project.title = "Store 1's Update";
-      await store.push();
-      await store.pull();
 
-      // Both stores should have the latest state
-      expect(store1Project.title).toBe("Store 2's Update");
-      expect(store2Project.title).toBe("Store 1's Update");
+      // First client pulls to get second client's update and should
+      // apply it's local mutation on top of the pulled update
+      await store.pull();
+      expect(store1Project.title).toBe("Store 1's Update");
     });
   });
 });
