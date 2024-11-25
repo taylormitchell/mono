@@ -98,7 +98,7 @@ export function createPost(directory?: string, content?: string): string {
 
 export function createNote(name?: string): string {
   const filename = name ? `${name}.md` : postFileFormat(new Date());
-  const filepath = path.join(getRootDir(), "notes", filename);
+  const filepath = path.join(getRootDir(), filename);
   return createFile(filepath);
 }
 

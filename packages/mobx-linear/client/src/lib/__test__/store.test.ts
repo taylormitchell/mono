@@ -1,107 +1,5 @@
-import { backlinks, BaseModel, link, OptimisticMutation, Patch, property, Store } from "../store";
-import { ModelName } from "../types";
-
-class MockServer {
-  private globalVersion = 0;
-  private models: Record<
-    string,
-    Map<string, { data: Record<string, unknown>; deleted?: boolean; version: number }>
-  > = {};
-  private clients: Map<string, { lastPulledVersion: number; lastPushedMutationId: number }> =
-    new Map();
-
-  constructor(modelTypes: string[]) {
-    // Initialize empty maps for each model type
-    modelTypes.forEach((type) => {
-      this.models[type] = new Map();
-    });
-  }
-
-  async push(clientId: string, mutations: OptimisticMutation[]) {
-    // Apply each mutation in order
-    for (const { mutationId, events } of mutations) {
-      // Skip if we've already seen this mutation
-      const lastPushedMutationId = this.clients.get(clientId)?.lastPushedMutationId ?? -1;
-      if (lastPushedMutationId >= mutationId) continue;
-
-      // Apply each event in the mutation
-      this.globalVersion++;
-      for (const event of events) {
-        const modelMap = this.models[event.model];
-        const existing = modelMap.get(event.id);
-        switch (event.type) {
-          case "create":
-          case "update": {
-            if (existing?.deleted) continue;
-            const existingData = existing?.data ?? {};
-            const newData =
-              event.type === "create"
-                ? { ...event.props }
-                : { ...existingData, [event.field]: event.newValue };
-            modelMap.set(event.id, {
-              data: newData,
-              version: this.globalVersion,
-            });
-            break;
-          }
-          case "delete": {
-            if (!existing || existing.deleted) continue;
-            modelMap.set(event.id, {
-              ...existing,
-              deleted: true,
-              version: this.globalVersion,
-            });
-            break;
-          }
-        }
-      }
-
-      this.clients.set(clientId, {
-        lastPulledVersion: this.globalVersion,
-        lastPushedMutationId: mutationId,
-      });
-    }
-  }
-
-  private getClient(clientId: string) {
-    let client = this.clients.get(clientId);
-    if (!client) {
-      client = {
-        lastPulledVersion: 0,
-        lastPushedMutationId: 0,
-      };
-      this.clients.set(clientId, client);
-    }
-    return client;
-  }
-
-  async pull(clientId: string) {
-    const client = this.getClient(clientId);
-
-    const lastPulledVersion = client.lastPulledVersion;
-    const patches: Patch[] = [];
-
-    // Look through all models for changes since last version
-    for (const [modelName, modelMap] of Object.entries(this.models)) {
-      for (const [id, { data, version, deleted }] of modelMap.entries()) {
-        if (version > lastPulledVersion) {
-          patches.push({
-            type: "set",
-            model: modelName as ModelName,
-            id,
-            props: deleted ? null : data,
-          });
-        }
-      }
-    }
-
-    client.lastPulledVersion = this.globalVersion;
-    return {
-      patches,
-      lastMutationId: client.lastPushedMutationId,
-    };
-  }
-}
+import { backlinks, BaseModel, link, property, Store } from "../store";
+import { InMemoryServer } from "../../../../shared/InMemoryServer";
 
 describe("Store", () => {
   class Project extends BaseModel {
@@ -270,13 +168,12 @@ describe("Store", () => {
 
   describe("event handling", () => {
     it("should emit events for model changes", () => {
-      const events: any[] = [];
-      store.subscribe((event) => events.push(event));
-
       const project = store.create("project", { title: "Test" });
       project.title = "Updated";
 
-      expect(events).toHaveLength(2);
+      // @ts-expect-error allow private access in test
+      const events = store.localMutations.flatMap((m) => m.events);
+
       expect(events[0]).toMatchObject({
         type: "create",
         model: "project",
@@ -291,16 +188,14 @@ describe("Store", () => {
     });
 
     it("should emit events for link changes", () => {
-      const events: any[] = [];
-      store.subscribe((event) => events.push(event));
-
       const project = store.create("project", { title: "Test Project" });
       const issue = store.create("issue", { title: "Test Issue" });
-
-      events.length = 0; // Clear creation events
       issue.project = project;
 
-      expect(events).toHaveLength(1);
+      // Get the last mutation
+      // @ts-expect-error allow private access in test
+      const events = store.localMutations.slice(-1)[0].events;
+
       expect(events[0]).toMatchObject({
         type: "update",
         model: "issue",
@@ -344,21 +239,28 @@ describe("Store", () => {
   });
 
   describe("sync functionality", () => {
-    let server: MockServer;
+    let server: InMemoryServer;
 
     function createStore() {
       return new Store(
         { project: Project, issue: Issue },
         {
-          pusher: (clientId, mutations) => server.push(clientId, mutations),
-          puller: (clientId) => server.pull(clientId),
+          pusher: (clientId, mutations) => server.handlePush(clientId, mutations),
+          puller: (clientId) => server.handlePull(clientId),
         }
       );
     }
 
     beforeEach(() => {
-      server = new MockServer(["project", "issue"]);
+      server = new InMemoryServer();
       store = createStore();
+    });
+
+    it("should handle basic push/pull", async () => {
+      const issue = store.create("issue");
+      await store.push();
+      await store.pull();
+      expect(store.get("issue", issue.id)).toBeDefined();
     });
 
     it("should clear local mutations after pull", async () => {
@@ -388,24 +290,24 @@ describe("Store", () => {
       expect(syncedProject?.title).toBe("Updated");
     });
 
-    // TODO fix this test
     it("should replay local mutations after pull", async () => {
-      // First client creates
-      const store1Project = store.create("project", { title: "Original" });
+      // Stores 1 and 2 are initially in sync
+      const projectId = store.create("project", { title: "Original" }).id;
       await store.push();
-
-      // Second client syncs and pushes update
       const store2 = createStore();
       await store2.pull();
-      const store2Project = store2.get("project", store1Project.id)!;
+
+      // Then they make concurrent changes
+      const store1Project = store.get("project", projectId)!;
+      const store2Project = store2.get("project", projectId)!;
+      store1Project.title = "Store 1's Update";
       store2Project.title = "Store 2's Update";
+
+      // Store 2 pushes to server
       await store2.push();
 
-      // First client makes optimistic update
-      store1Project.title = "Store 1's Update";
-
-      // First client pulls to get second client's update and should
-      // apply it's local mutation on top of the pulled update
+      // Store 1 pulls, but doesn't lose it's local mutation, cause it
+      // was re-applied after pull
       await store.pull();
       expect(store1Project.title).toBe("Store 1's Update");
     });

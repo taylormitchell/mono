@@ -12,9 +12,8 @@ const program = new Command();
 program.version("1.0.0").description("A CLI tool for managing todos in markdown files");
 
 function renderByFile(todos: Todo[]) {
-  const todosByFile = groupBy(todos, "filename");
-  todosByFile.forEach((todos, filename) => {
-    const relativeFilename = path.relative(getRootDir(), filename);
+  const todosByFile = groupBy(todos, "relativeFilename");
+  todosByFile.forEach((todos, relativeFilename) => {
     console.log(chalk.cyan(`File: ${relativeFilename}`));
     console.log(chalk.cyan("=".repeat(relativeFilename.length + 6)));
     todos.forEach((todo) => {

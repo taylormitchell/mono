@@ -2,7 +2,7 @@ import fs from "fs";
 import { glob } from "glob";
 import chalk from "chalk";
 import path from "path";
-import { getRootDir } from "../data";
+import { getRepoRoot, getRootDir } from "../data";
 import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
 import { dateToJournalPath } from "../note";
 chalk.level = 3;
@@ -165,26 +165,28 @@ export function addTodo(todo: Todo, filepath?: string): string {
   return filepath;
 }
 
-export function groupBy(arr: Todo[], key: string): Map<any, Todo[]> {
+export function groupBy(arr: Todo[], key: string): Map<string, Todo[]> {
   return arr.reduce((acc, todo) => {
     const value = todo[key as keyof Todo];
+    if (typeof value !== "string") {
+      throw new Error(`Expected string key, got ${typeof value}`);
+    }
     if (!acc.has(value)) {
       acc.set(value, []);
     }
     acc.get(value)!.push(todo);
     return acc;
-  }, new Map<any, Todo[]>());
+  }, new Map<string, Todo[]>());
 }
 
-export function getTodos(rootPath?: string, ignore = true): Todo[] {
-  const root = rootPath ? path.resolve(rootPath) : getRootDir();
-  const files = glob.sync(`${root}/**/*.md`);
+export function getTodos(rootPath?: string, ignore = ["**/node_modules/**", "**/test.md"]): Todo[] {
+  const root = rootPath ? path.resolve(rootPath) : getRepoRoot();
+  const files = glob.sync(`${root}/**/*.md`, { ignore });
   return files
-    .filter((file) => (ignore ? !file.includes("test.md") : true))
     .flatMap((file) => parseMarkdownFile(file))
     .map((todo) => ({
       ...todo,
-      relativeFilename: todo.filename ? path.relative(getRootDir(), todo.filename) : undefined,
+      relativeFilename: todo.filename ? path.relative(getRepoRoot(), todo.filename) : undefined,
     }));
 }
 

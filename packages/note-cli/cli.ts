@@ -61,7 +61,7 @@ program
   .command("note [name]")
   .description("Create a new note with optional name")
   .action((name) => {
-    createNote(name);
+    console.log(createNote(name));
   });
 
 program

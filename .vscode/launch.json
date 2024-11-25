@@ -34,9 +34,11 @@
     },
     {
       "type": "node",
-      "name": "vscode-jest-tests.v2.taylors-tech",
+      "name": "vscode-jest-tests.v2.home",
       "request": "launch",
       "args": [
+        "test",
+        "--",
         "--runInBand",
         "--watchAll=false",
         "--testNamePattern",
@@ -44,11 +46,11 @@
         "--runTestsByPath",
         "${jest.testFile}"
       ],
-      "cwd": "/Users/taylormitchell/Code/taylors-tech",
+      "cwd": "/Users/taylormitchell/Code/home/packages/mobx-linear/client",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "disableOptimisticBPs": true,
-      "program": "/Users/taylormitchell/Code/taylors-tech/node_modules/.bin/jest"
+      "runtimeExecutable": "npm"
     }
   ]
 }

@@ -10,7 +10,7 @@ import {
   MessageSquare,
   CheckCircle2,
 } from "lucide-react";
-import { Store, IssueModel } from "./old/state";
+import { Store, IssueModel } from "./lib/store";
 import { ViewStore } from "./view-store";
 import { useEffect } from "react";
 

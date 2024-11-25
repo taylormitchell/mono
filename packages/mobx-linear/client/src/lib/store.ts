@@ -1,5 +1,4 @@
 import { action, observable, reaction, runInAction } from "mobx";
-import { ModelName } from "./types";
 
 // Types and utilities
 interface PropertyMetadataField {
@@ -8,38 +7,45 @@ interface PropertyMetadataField {
   serializedKey: string;
 }
 
+interface UpdatedAtMetadataField {
+  type: "updatedAt";
+  fieldKey: string;
+  serializedKey: string;
+}
+
 interface LinkMetadataField {
   type: "link";
   fieldKey: string;
   serializedKey: string;
-  targetModel: ModelName;
+  targetModel: string;
 }
 
 interface BacklinksMetadataField {
   type: "backlinks";
   fieldKey: string;
-  sourceModel: ModelName;
+  sourceModel: string;
   sourceKey: string;
 }
 
 type ModelMetadataField = PropertyMetadataField | LinkMetadataField | BacklinksMetadataField;
 
 type ModelMetadata = {
-  name: ModelName;
+  name: string;
   fields: Record<string, ModelMetadataField>;
+  updatedAtField?: UpdatedAtMetadataField;
 };
 
 // Event types
 export type StoreEvent =
   | {
       type: "create";
-      model: ModelName;
+      model: string;
       id: string;
       props?: Record<string, unknown>;
     }
   | {
       type: "update";
-      model: ModelName;
+      model: string;
       id: string;
       field: string;
       oldValue: unknown;
@@ -47,14 +53,14 @@ export type StoreEvent =
     }
   | {
       type: "delete";
-      model: ModelName;
+      model: string;
       id: string;
     };
 
 // Create, update, or delete a single model
 export type Patch = {
   type: "set";
-  model: ModelName;
+  model: string;
   id: string;
   props: Record<string, unknown> | null;
 };
@@ -84,7 +90,7 @@ const modelMetadataRegistry = new Map<Function, ModelMetadata>();
 function getModelMetadata(target: Function): ModelMetadata {
   if (!modelMetadataRegistry.has(target)) {
     modelMetadataRegistry.set(target, {
-      name: target.name.toLowerCase() as ModelName,
+      name: target.name.toLowerCase(),
       fields: {},
     });
   }
@@ -127,11 +133,6 @@ export function property(opts: { serializedKey?: string } = {}) {
     const observableResult = observable(target, context);
     if (!observableResult) throw new Error("Failed to create observable property");
 
-    context.addInitializer(function (this: any) {
-      const metadata = getModelMetadata(this.constructor);
-      metadata.fields[fieldName] = { type: "property", fieldKey: fieldName, serializedKey };
-    });
-
     return {
       get(this: BaseModel) {
         return observableResult.get?.call(this);
@@ -154,6 +155,45 @@ export function property(opts: { serializedKey?: string } = {}) {
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
         metadata.fields[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
+        return runInAction(() => observableResult.init?.call(this, initialValue));
+      },
+    };
+  };
+}
+
+export function updatedAt(opts: { serializedKey?: string } = {}) {
+  return (target: any, context: ClassAccessorDecoratorContext) => {
+    const fieldName = String(context.name);
+    const serializedKey = opts.serializedKey ?? fieldName;
+
+    const observableResult = observable(target, context);
+    if (!observableResult) throw new Error("Failed to create observable property");
+
+    return {
+      get(this: BaseModel) {
+        return observableResult.get?.call(this);
+      },
+      set(this: BaseModel, newValue: unknown) {
+        const metadata = getModelMetadata(this.constructor);
+        const oldValue = observableResult.get?.call(this);
+        runInAction(() => {
+          observableResult.set?.call(this, newValue);
+          this.emitIfStored({
+            type: "update",
+            model: metadata.name,
+            id: this.id,
+            field: fieldName,
+            oldValue,
+            newValue,
+          });
+        });
+      },
+      init(this: BaseModel, initialValue: unknown) {
+        const metadata = getModelMetadata(this.constructor);
+        if (metadata.updatedAtField && metadata.updatedAtField.fieldKey !== fieldName) {
+          throw new Error("UpdatedAt field already set. Only one is allowed.");
+        }
+        metadata.updatedAtField = { type: "updatedAt", serializedKey, fieldKey: fieldName };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
@@ -193,7 +233,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
           type: "link",
           fieldKey: fieldName,
           serializedKey,
-          targetModel: (targetModel ?? fieldName) as ModelName,
+          targetModel: targetModel ?? fieldName,
         };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
@@ -213,7 +253,7 @@ export function backlinks(sourceRef: string) {
       metadata.fields[fieldName] = {
         type: "backlinks",
         fieldKey: fieldName,
-        sourceModel: sourceModel as ModelName,
+        sourceModel: sourceModel,
         sourceKey,
       };
       if (!(initialValue instanceof Set)) {
@@ -233,7 +273,7 @@ export function backlinks(sourceRef: string) {
           if ((value as any)[sourceKey] !== this) {
             this.applyIfStored({
               type: "update",
-              model: sourceModel as ModelName,
+              model: sourceModel,
               id: value.id,
               field: sourceKey,
               oldValue: (value as any)[sourceKey],
@@ -253,7 +293,7 @@ export function backlinks(sourceRef: string) {
           if ((value as any)[sourceKey] === this) {
             this.applyIfStored({
               type: "update",
-              model: sourceModel as ModelName,
+              model: sourceModel,
               id: value.id,
               field: sourceKey,
               oldValue: this.id,
@@ -282,6 +322,31 @@ type Puller = (clientId: string) => Promise<{
   lastMutationId: number;
 }>;
 
+function createPusher(url: string) {
+  return async (clientId: string, mutations: OptimisticMutation[]) => {
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ clientId, mutations }),
+    });
+  };
+}
+
+function createPuller(url: string) {
+  return async (clientId: string) => {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ clientId }),
+    });
+    return response.json();
+  };
+}
+
 // Store implementation
 export class Store<TModels extends ModelRecord> {
   readonly clientId = crypto.randomUUID();
@@ -289,6 +354,18 @@ export class Store<TModels extends ModelRecord> {
   private pusher?: Pusher;
 
   private models = {} as Record<keyof TModels, Map<string, InstanceType<TModels[keyof TModels]>>>;
+  /**
+   * We keep deleted models around cause if the delete happens from a rollback and
+   * then a re-create, we want to reuse the same instance. This gets cleared out
+   * at the end of a commit.
+   */
+  private deletedModels = {} as Record<
+    keyof TModels,
+    Map<string, InstanceType<TModels[keyof TModels]>>
+  >;
+
+  modelMetadata = {} as Record<keyof TModels, ModelMetadata>;
+
   private modelClasses: TModels;
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
 
@@ -299,11 +376,10 @@ export class Store<TModels extends ModelRecord> {
   private localMutationId = 0;
   private localMutations: OptimisticMutation[] = [];
 
-  private lastChangeTimestamp = observable.box(0);
+  private eventsEmittedCount = observable.box(0);
   private disposers: Array<() => void> = [];
 
   private emittingEnabled = true;
-  private isUndoingOrRedoing = false;
 
   constructor(
     modelClasses: TModels,
@@ -314,48 +390,52 @@ export class Store<TModels extends ModelRecord> {
     // a model which refs a non-existent model, that becomes two mutations. I'd want that
     // to be one. So it's like every create/delete/update by the user should result in a
     // mutation, but any internal calls to those things should be separate.
-    { puller?: Puller; pusher?: Pusher } = {}
+    { puller?: Puller | string; pusher?: Pusher | string } = {}
   ) {
     this.modelClasses = modelClasses;
-    this.puller = puller;
-    this.pusher = pusher;
+    this.puller = typeof puller === "string" ? createPuller(puller) : puller;
+    this.pusher = typeof pusher === "string" ? createPusher(pusher) : pusher;
 
     // Initialize model storage
     for (const name in modelClasses) {
+      const ModelClass = modelClasses[name];
+      new ModelClass(); // Initializes metadata (TODO: kinda weird)
       this.models[name] = observable.map();
+      this.deletedModels[name] = observable.map();
+      this.modelMetadata[name] = getModelMetadata(ModelClass);
     }
 
     // Set up auto-commit
     this.disposers.push(
       reaction(
-        () => this.lastChangeTimestamp.get(),
+        () => this.eventsEmittedCount.get(),
         () => {
           this.commit();
         }
       )
     );
 
-    // Set up bidirectional sync
-    this.setupBidirectionalSync();
+    // Set up triggers
+    this.setupBacklinksTrigger();
+    this.setupUpdatedAtTrigger();
   }
 
   commit() {
     if (this.stagedChanges.length > 0) {
-      const changes = this.stagedChanges;
+      const changes = [...this.stagedChanges];
       this.undoStack.push(changes);
       this.stagedChanges = [];
       this.localMutations.push({ mutationId: this.localMutationId++, events: changes });
     }
+    Object.values(this.deletedModels).forEach((map) => map.clear());
   }
 
   @action
   emit(event: StoreEvent) {
     if (!this.emittingEnabled) return;
-    if (!this.isUndoingOrRedoing) {
-      this.redoStack = [];
-    }
+    this.redoStack = [];
     this.stagedChanges.push(event);
-    this.lastChangeTimestamp.set(Date.now());
+    this.eventsEmittedCount.set(this.eventsEmittedCount.get() + 1);
     this.notifySubscribers([event]);
   }
 
@@ -363,9 +443,11 @@ export class Store<TModels extends ModelRecord> {
     this.eventSubscribers.forEach((subscriber) => events.forEach(subscriber));
   }
 
+  // TODO probably want a mutex for this stuff? actualy not sure. I don't think
+  // any async tasks read/write from localMutations across the task boundary.
   async push() {
     if (this.pusher) {
-      await this.pusher(this.clientId, this.localMutations);
+      await this.pusher(this.clientId, [...this.localMutations]);
     }
   }
 
@@ -378,39 +460,40 @@ export class Store<TModels extends ModelRecord> {
 
   @action
   private rebase(serverPatches: Patch[], lastMutationId: number) {
-    this.emittingEnabled = false;
-
-    // Rollback to last synced state by applying local mutations in reverse
-    const invertedLocalEvents = this.localMutations
-      .flatMap((m) => m.events)
-      .reverse()
-      .map(reverseEvent);
-    for (const event of invertedLocalEvents) {
-      this.applyEvent(event);
-    }
-    this.notifySubscribers(invertedLocalEvents);
-
-    // Apply new server events
-    const events = serverPatches.flatMap((patch) => this.patchToEvent(patch));
-    for (const event of events) {
-      this.applyEvent(event);
-    }
-    this.notifySubscribers(events);
-
-    // Remove any local mutations that have already been applied
+    // Remove any local mutations that have already been applied by the server
     this.localMutations = this.localMutations.filter((m) => m.mutationId > lastMutationId);
 
-    // Apply any remaining local mutations
-    const remainingEvents = this.localMutations.flatMap((m) => m.events);
-    for (const event of remainingEvents) {
-      this.applyEvent(event);
-    }
-    this.notifySubscribers(remainingEvents);
+    if (serverPatches.length === 0) return;
 
-    this.emittingEnabled = true;
+    try {
+      this.emittingEnabled = false;
+
+      // Rollback to last synced state by applying local mutations in reverse
+      const invertedLocalEvents = this.localMutations
+        .flatMap((m) => m.events)
+        .reverse()
+        .map(reverseEvent);
+      for (const event of invertedLocalEvents) {
+        this.applyEvent(event);
+      }
+
+      // Apply new server events
+      const events = serverPatches.flatMap((patch) => this.patchToEvent(patch));
+      for (const event of events) {
+        this.applyEvent(event);
+      }
+
+      // Apply any remaining local mutations
+      const remainingEvents = this.localMutations.flatMap((m) => m.events);
+      for (const event of remainingEvents) {
+        this.applyEvent(event);
+      }
+    } finally {
+      this.emittingEnabled = true;
+    }
   }
 
-  private setupBidirectionalSync() {
+  private setupBacklinksTrigger() {
     this.subscribe((event) => {
       // Get model class and metadata early
       const ModelClass = this.modelClasses[event.model];
@@ -482,10 +565,26 @@ export class Store<TModels extends ModelRecord> {
     });
   }
 
+  private setupUpdatedAtTrigger() {
+    this.subscribe((event) => {
+      const metadata = getModelMetadata(this.modelClasses[event.model]);
+      if (
+        event.type === "update" &&
+        metadata.updatedAtField &&
+        event.field !== metadata.updatedAtField.serializedKey
+      ) {
+        const model = this.models[event.model].get(event.id);
+        if (model) {
+          (model as any)[metadata.updatedAtField.fieldKey] = Date.now();
+        }
+      }
+    });
+  }
+
   // Model operations with type safety
   create<K extends keyof TModels>(
     modelName: K,
-    serializedProps: Record<string, unknown>
+    serializedProps: Record<string, unknown> = {}
   ): InstanceType<TModels[K]> {
     const ModelClass = this.modelClasses[modelName];
     if (!ModelClass) {
@@ -494,7 +593,10 @@ export class Store<TModels extends ModelRecord> {
 
     const existing =
       typeof serializedProps.id === "string"
-        ? this.models[modelName].get(serializedProps.id)
+        ? this.models[modelName].get(serializedProps.id) ??
+          // In case where we rollback a created model and then re-create it
+          // we want to use the same instance from before rolling back.
+          this.deletedModels[modelName].get(serializedProps.id)
         : undefined;
     const instance =
       existing ??
@@ -523,6 +625,13 @@ export class Store<TModels extends ModelRecord> {
           break;
       }
     });
+    if (metadata.updatedAtField) {
+      const updatedAt = serializedProps[metadata.updatedAtField.serializedKey];
+      if (updatedAt !== undefined) {
+        (instance as any)[metadata.updatedAtField.fieldKey] = updatedAt;
+      }
+    }
+
     if (existing && serializedProps.placeholder === undefined) {
       instance.placeholder = false;
     }
@@ -535,7 +644,7 @@ export class Store<TModels extends ModelRecord> {
     // Emit create event
     this.emit({
       type: "create",
-      model: modelName as ModelName,
+      model: String(modelName),
       id: instance.id,
       props: serializedProps,
     });
@@ -549,19 +658,43 @@ export class Store<TModels extends ModelRecord> {
   ): T {
     const existing = this.models[modelName].get(id) as T;
     if (existing) return existing;
-
     return this.create(modelName, { id, placeholder: true }) as T;
   }
 
+  /**
+   * Soft delete a model.
+   *
+   * In the current set up, this is important to do. It prevents the following
+   * from happening (which happens in the "should replay local mutations after
+   * pull" test):
+   * - a client creates a model
+   * - a client pulls and does rebase
+   * - rebase includes rolling back which removes the model instance from map
+   * - the server includes a set operation for that same mode. Because we don't
+   *   have the model in the map, we create a new instance.
+   * - But now if someon has a reference to the old instance, they're going to
+   *   see stale values.
+   *
+   * If we soft delete the model, then we still have the instance in the map,
+   * and we can apply the server set operation to it.
+   *
+   * Feels a little bit fragile to me but works for now.
+   *
+   * TODO: Maybe want to do something more robust in the future. Or at least
+   * document the trade offs.
+   */
   @action
   delete(model: BaseModel) {
     const modelName = modelMetadataRegistry.get(model.constructor)?.name;
     if (!modelName) throw new Error("Unknown model");
     this.models[modelName].delete(model.id);
+    this.deletedModels[modelName].set(model.id, model as InstanceType<TModels[keyof TModels]>);
+    this.emit({ type: "delete", model: modelName, id: model.id });
   }
 
   get<K extends keyof TModels>(modelName: K, id: string) {
-    return this.models[modelName].get(id) as InstanceType<TModels[K]> | undefined;
+    const model = this.models[modelName].get(id);
+    return model as InstanceType<TModels[K]> | undefined;
   }
 
   getAll<K extends keyof TModels>(modelName: K) {
@@ -573,30 +706,42 @@ export class Store<TModels extends ModelRecord> {
     return () => this.eventSubscribers.delete(handler);
   }
 
+  /**
+   * Undo the last set of changes.
+   *
+   * Note: Applying events can often result in new events being emitted, which
+   * clears the redo stack. In the case of undo/redo, we want to preserve the
+   * redo stack, so we make a copy and reset it afterwards.
+   */
   @action
   undo() {
     const changes = this.undoStack.pop();
     if (changes) {
-      this.redoStack.push(changes);
+      const newRedoStack = [...this.redoStack, changes];
       const reversedChanges = changes.map(reverseEvent).reverse();
-      this.isUndoingOrRedoing = true;
       for (const event of reversedChanges) {
         this.applyEvent(event);
       }
-      this.isUndoingOrRedoing = false;
+      this.redoStack = newRedoStack;
     }
   }
 
+  /**
+   * Redo the last set of changes.
+   *
+   * Note: Applying events can often result in new events being emitted, which
+   * clears the redo stack. In the case of undo/redo, we want to preserve the
+   * redo stack, so we make a copy and reset it afterwards.
+   */
   @action
   redo() {
     const changes = this.redoStack.pop();
     if (changes) {
-      this.undoStack.push(changes);
-      this.isUndoingOrRedoing = true;
+      const redoStack = [...this.redoStack];
       for (const event of changes) {
         this.applyEvent(event);
       }
-      this.isUndoingOrRedoing = false;
+      this.redoStack = redoStack;
     }
   }
 
@@ -639,6 +784,7 @@ export class Store<TModels extends ModelRecord> {
       default:
         event satisfies never;
     }
+    this.notifySubscribers([event]);
   }
 
   patchToEvent(patch: Patch): StoreEvent[] {
