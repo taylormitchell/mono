@@ -27,6 +27,9 @@ function gsync() {
   git push
 }
 
+# Add autocomplete for npm scripts
+npm completion >> ~/.zshrc
+
 # taylor's tech
 alias t="bun /Users/taylormitchell/Code/home/packages/todo-cli/cli.ts"
 alias n="bun /Users/taylormitchell/Code/home/packages/note-cli/cli.ts"
