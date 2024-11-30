@@ -3,6 +3,9 @@ import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store"
 import { computed } from "mobx";
 import { createPosition, createPositionBetween } from "./position";
 
+// TODO can probably define the store interface at the top and then
+// provide it to the models so they know the types of the other models
+
 class Issue extends BaseModel {
   @property()
   accessor title: string = "";
@@ -158,12 +161,14 @@ export function createStore() {
       issue: Issue,
       project: Project,
       relation: Relation,
-    },
-    {
-      puller: "/api/pull",
-      pusher: "/api/push",
-      poker: "ws://localhost:3000",
+      issueView: IssueView,
+      issueViewPosition: IssueViewPosition,
     }
+    // {
+    //   puller: "/api/pull",
+    //   pusher: "/api/push",
+    //   poker: "ws://localhost:3000",
+    // }
   );
 }
 
