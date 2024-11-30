@@ -34,6 +34,4 @@ npm completion >> ~/.zshrc
 alias t="bun /Users/taylormitchell/Code/home/packages/todo-cli/cli.ts"
 alias n="bun /Users/taylormitchell/Code/home/packages/note-cli/cli.ts"
 alias x="clear"
-
-alias hello="echo 'hello2'"
 export home="/Users/taylormitchell/Code/home"
