@@ -2,13 +2,14 @@ import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
 import { useStore } from "../lib/useStore";
 import { FilterBar } from "./FilterBar";
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { IssueType } from "../lib/models";
-import { debounce } from "remeda";
+import { CreateIssueModal } from "./CreateIssueModal";
 
 export const IssueList = observer(() => {
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const issues = store
     .getAll("issue")
@@ -23,10 +24,7 @@ export const IssueList = observer(() => {
           <h2>Issues</h2>
           <span className={styles.issueCount}>{issues.length}</span>
         </div>
-        <button
-          className={styles.createButton}
-          onClick={() => store.create("issue", { title: "New Issue" })}
-        >
+        <button className={styles.createButton} onClick={() => setIsCreateModalOpen(true)}>
           New Issue
         </button>
       </div>
@@ -39,41 +37,23 @@ export const IssueList = observer(() => {
             <IssueRow key={issue.id} issue={issue} />
           ))}
       </div>
+
+      {isCreateModalOpen && <CreateIssueModal onClose={() => setIsCreateModalOpen(false)} />}
     </div>
   );
 });
 
 const IssueRow = observer(({ issue }: { issue: IssueType }) => {
   const store = useStore();
-  const [localTitle, setLocalTitle] = useState(issue.title);
-
-  // Update local title when issue.title changes externally
-  useEffect(() => {
-    setLocalTitle(issue.title);
-  }, [issue.title]);
-
-  // Debounced update function
-  const updateTitle = useMemo(
-    () =>
-      debounce(
-        (newTitle: string) => {
-          issue.title = newTitle;
-        },
-        { maxWaitMs: 2000 }
-      ),
-    [issue]
-  );
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value;
-    setLocalTitle(newTitle);
-    updateTitle.call(newTitle);
-  };
 
   return (
     <div className={styles.issueRow}>
       <div className={styles.issueStatus}>●</div>
-      <input className={styles.issueTitle} value={localTitle} onChange={handleTitleChange} />
+      <input
+        className={styles.issueTitle}
+        value={issue.title}
+        onChange={(e) => (issue.title = e.target.value)}
+      />
       <div className={styles.issueMetadata}>
         <span className={styles.priority}>P1</span>
         <span className={styles.label}>Bug</span>

@@ -1,6 +1,6 @@
 .container {
   padding: 20px;
-  color: #e6e6e6;
+  color: #111111;
 }
 
 .header {
@@ -23,7 +23,7 @@
 }
 
 .issueCount {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 13px;
@@ -53,13 +53,13 @@
   display: flex;
   align-items: center;
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.02);
   border-radius: 6px;
   gap: 12px;
 }
 
 .issueRow:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .issueStatus {
@@ -71,14 +71,14 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #e6e6e6;
+  color: #111111;
   font-size: 14px;
   padding: 4px;
   border-radius: 4px;
 }
 
 .issueTitle:focus {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   outline: none;
 }
 
@@ -93,7 +93,7 @@
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .priority {
@@ -105,14 +105,14 @@
 }
 
 .status {
-  color: #6fcf97;
+  color: #27ae60;
 }
 
 .deleteButton {
   opacity: 0;
   background: transparent;
   border: none;
-  color: #e6e6e6;
+  color: #111111;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
@@ -124,5 +124,5 @@
 
 .deleteButton:hover {
   opacity: 1 !important;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }

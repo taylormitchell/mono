@@ -13,10 +13,10 @@
   top: 100%;
   left: 0;
   width: 280px;
-  background: #1f1f1f;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   z-index: 101;
   overflow: hidden;
 }
@@ -25,8 +25,8 @@
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #e6e6e6;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #111111;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -36,7 +36,7 @@
   background: transparent;
   border: none;
   padding: 4px;
-  color: #e6e6e6;
+  color: #111111;
   cursor: pointer;
   border-radius: 4px;
   display: flex;
@@ -45,7 +45,7 @@
 }
 
 .backButton:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .options,
@@ -60,7 +60,7 @@
   padding: 8px 16px;
   background: transparent;
   border: none;
-  color: #e6e6e6;
+  color: #111111;
   font-size: 14px;
   text-align: left;
   cursor: pointer;
@@ -74,12 +74,12 @@
 }
 
 .optionButton .icon {
-  color: #888;
+  color: #666666;
 }
 
 .optionButton:hover,
 .valueButton:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .valueButton svg {
@@ -87,7 +87,7 @@
 }
 
 .valueButton.selected {
-  background: rgba(94, 106, 210, 0.1);
+  background: rgba(94, 106, 210, 0.08);
 }
 
 .valueButton.selected svg {
