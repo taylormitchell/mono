@@ -24,3 +24,16 @@ function generateSortableHash(timestamp = Date.now(), length = 12) {
     return paddedTimestamp.padEnd(length, "0");
   }
 }
+
+function generateSomeRandomness() {
+  return crypto.randomUUID().slice(0, 4);
+}
+
+export function createPosition(timestamp: number = Date.now()) {
+  return generateSortableHash(timestamp) + "-" + "a0" + "-" + generateSomeRandomness();
+}
+
+export function splitPosition(position: string) {
+  const [hash, a0, randomness] = position.split("_");
+  return { hash, a0, randomness };
+}
