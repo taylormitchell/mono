@@ -2,8 +2,9 @@ import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
 import { useStore } from "../lib/useStore";
 import { FilterBar } from "./FilterBar";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { IssueType } from "../lib/models";
+import { debounce } from "remeda";
 
 export const IssueList = observer(() => {
   const store = useStore();
@@ -42,16 +43,37 @@ export const IssueList = observer(() => {
   );
 });
 
-function IssueRow({ issue }: { issue: IssueType }) {
+const IssueRow = observer(({ issue }: { issue: IssueType }) => {
   const store = useStore();
+  const [localTitle, setLocalTitle] = useState(issue.title);
+
+  // Update local title when issue.title changes externally
+  useEffect(() => {
+    setLocalTitle(issue.title);
+  }, [issue.title]);
+
+  // Debounced update function
+  const updateTitle = useMemo(
+    () =>
+      debounce(
+        (newTitle: string) => {
+          issue.title = newTitle;
+        },
+        { maxWaitMs: 2000 }
+      ),
+    [issue]
+  );
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setLocalTitle(newTitle);
+    updateTitle.call(newTitle);
+  };
+
   return (
     <div className={styles.issueRow}>
       <div className={styles.issueStatus}>●</div>
-      <input
-        className={styles.issueTitle}
-        value={issue.title}
-        onChange={(e) => (issue.title = e.target.value)}
-      />
+      <input className={styles.issueTitle} value={localTitle} onChange={handleTitleChange} />
       <div className={styles.issueMetadata}>
         <span className={styles.priority}>P1</span>
         <span className={styles.label}>Bug</span>
@@ -62,4 +84,4 @@ function IssueRow({ issue }: { issue: IssueType }) {
       </button>
     </div>
   );
-}
+});
