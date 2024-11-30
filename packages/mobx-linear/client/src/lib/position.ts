@@ -1,10 +1,9 @@
-/**
- * Generates a sortable, fixed-length hash from a timestamp
- * @param {number} [timestamp=Date.now()] - Optional timestamp to hash
- * @param {number} [length=12] - Desired length of the output hash
- * @returns {string} A fixed-length, sortable hash
- */
-function generateSortableHash(timestamp = Date.now(), length = 12) {
+import { generateKeyBetween } from "fractional-indexing";
+
+const HASH_LENGTH = 12;
+const RANDOMNESS_LENGTH = 4;
+
+function generateSortableHash(timestamp = Date.now()) {
   // Ensure timestamp is a number
   timestamp = Number(timestamp);
 
@@ -18,15 +17,15 @@ function generateSortableHash(timestamp = Date.now(), length = 12) {
 
   // If the padded timestamp is longer than desired length, take the rightmost characters
   // If it's shorter, pad with zeros on the right
-  if (paddedTimestamp.length > length) {
-    return paddedTimestamp.slice(-length);
+  if (paddedTimestamp.length > HASH_LENGTH) {
+    return paddedTimestamp.slice(-HASH_LENGTH);
   } else {
-    return paddedTimestamp.padEnd(length, "0");
+    return paddedTimestamp.padEnd(HASH_LENGTH, "0");
   }
 }
 
 function generateSomeRandomness() {
-  return crypto.randomUUID().slice(0, 4);
+  return crypto.randomUUID().slice(0, RANDOMNESS_LENGTH);
 }
 
 export function createPosition(timestamp: number = Date.now()) {
@@ -34,6 +33,41 @@ export function createPosition(timestamp: number = Date.now()) {
 }
 
 export function splitPosition(position: string) {
-  const [hash, a0, randomness] = position.split("_");
-  return { hash, a0, randomness };
+  const [hash, fractionalIndex, randomness] = position.split("-");
+  if (!hash || hash.length !== HASH_LENGTH) throw new Error("Invalid position");
+  if (!fractionalIndex) throw new Error("Invalid position");
+  if (!randomness || randomness.length !== RANDOMNESS_LENGTH) throw new Error("Invalid position");
+  return { hash, fractionalIndex, randomness };
+}
+
+export function createPositionBetween(
+  before: string | null,
+  after: string | null,
+  timestamp: number = Date.now()
+) {
+  if (after && !before) {
+    const afterParts = splitPosition(after);
+    return [
+      afterParts.hash,
+      generateKeyBetween(null, afterParts.fractionalIndex),
+      generateSomeRandomness(),
+    ].join("-");
+  } else if (before && !after) {
+    const beforeParts = splitPosition(before);
+    return [
+      beforeParts.hash,
+      generateKeyBetween(beforeParts.fractionalIndex, null),
+      generateSomeRandomness(),
+    ].join("-");
+  } else if (before && after) {
+    const beforeParts = splitPosition(before);
+    const afterParts = splitPosition(after);
+    return [
+      beforeParts.hash,
+      generateKeyBetween(beforeParts.fractionalIndex, afterParts.fractionalIndex),
+      generateSomeRandomness(),
+    ].join("-");
+  } else {
+    return createPosition(timestamp);
+  }
 }

@@ -1,6 +1,7 @@
 import { createContext } from "react";
 import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store";
 import { computed } from "mobx";
+import { createPosition, createPositionBetween } from "./position";
 
 class Issue extends BaseModel {
   @property()
@@ -134,16 +135,6 @@ class IssueView extends BaseModel {
       });
     }
   }
-}
-
-function createPosition(timestamp: number) {
-  // Create a unique position string by combining a timestamp hash and fractional index
-  const hash = timestamp.toString(36); // Convert timestamp to base36 for shorter hash
-  return `${hash}_a0`; // a0 is the initial fractional index position
-}
-
-function createPositionBetween(before: string | null, after: string | null) {
-  return `${before}_b${after}`;
 }
 
 class IssueViewPosition extends BaseModel {
