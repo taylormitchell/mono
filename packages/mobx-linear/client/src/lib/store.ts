@@ -387,7 +387,7 @@ export class Store<TModels extends ModelRecord> {
     {
       puller,
       pusher,
-      syncEnabled,
+      syncEnabled = true,
     }: // TODO: The 'event' doesn't work exactly how I'd want right now. Like if you create
     // a model which refs a non-existent model, that becomes two mutations. I'd want that
     // to be one. So it's like every create/delete/update by the user should result in a
@@ -397,11 +397,6 @@ export class Store<TModels extends ModelRecord> {
     this.modelClasses = modelClasses;
     this.puller = typeof puller === "string" ? createPuller(puller) : puller;
     this.pusher = typeof pusher === "string" ? createPusher(pusher) : pusher;
-    if (syncEnabled) {
-      this.enableSync();
-    } else {
-      this.disableSync();
-    }
 
     // Initialize model storage
     for (const name in modelClasses) {
@@ -428,6 +423,13 @@ export class Store<TModels extends ModelRecord> {
     // Set up triggers
     this.setupBacklinksTrigger();
     this.setupUpdatedAtTrigger();
+
+    // Start syncing
+    if (syncEnabled) {
+      this.enableSync();
+    } else {
+      this.disableSync();
+    }
   }
 
   commit() {
