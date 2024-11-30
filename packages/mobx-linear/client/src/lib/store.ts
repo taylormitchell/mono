@@ -321,6 +321,9 @@ type Puller = (clientId: string) => Promise<{
   patches: Patch[];
   lastMutationId: number;
 }>;
+interface Pocker {
+  subscribe: (listener: (poke: { clientId: string }) => void) => () => void;
+}
 
 function createPusher(url: string) {
   return async (clientId: string, mutations: OptimisticMutation[]) => {
