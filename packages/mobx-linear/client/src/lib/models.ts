@@ -73,37 +73,64 @@ class IssueView extends BaseModel {
   accessor updatedAt = Date.now();
 
   @backlinks("issueViewPosition.parentView")
-  readonly positions = new Set<IssueViewPosition>();
+  readonly issueViewPositions = new Set<IssueViewPosition>();
 
   @computed
-  get positionsById() {
-    return Array.from(this.positions).reduce<Record<string, string>>((acc, p) => {
-      if (!p.issue) return acc;
-      acc[p.issue.id] = p.position;
-      return acc;
-    }, {});
+  get issueViewPositionsById() {
+    return Array.from(this.issueViewPositions).reduce<Record<string, IssueViewPosition>>(
+      (acc, p) => {
+        if (!p.issue) return acc;
+        acc[p.issue.id] = p;
+        return acc;
+      },
+      {}
+    );
   }
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);
   }
 
-  getAll() {
+  getIssues() {
     if (!this.store) return [];
     const issues = this.store.getAll("issue") as Issue[];
     return issues.map((issue) => ({
       issue,
-      position: this.positionsById[issue.id] ?? createPosition(issue.createdAt),
+      position: this.issueViewPositionsById[issue.id]?.position ?? createPosition(issue.createdAt),
     }));
   }
 
-  placeAfter(issue: Issue, before: Issue) {
+  placeBetween(issue: Issue, before: Issue | null, after: Issue | null) {
     if (!this.store) return;
-    this.store.create("issueViewPosition", {
-      issue,
-      parentView: this,
-      position: createPosition(Date.now()),
-    });
+    let positionBefore: string | null = null;
+    let positionAfter: string | null = null;
+    if (before && !this.issueViewPositionsById[before.id]) {
+      positionBefore = createPosition(before.createdAt);
+      this.store.create("issueViewPosition", {
+        issue: before,
+        parentView: this,
+        position: positionBefore,
+      });
+    }
+    if (after && !this.issueViewPositionsById[after.id]) {
+      positionAfter = createPosition(after.createdAt);
+      this.store.create("issueViewPosition", {
+        issue: after,
+        parentView: this,
+        position: positionAfter,
+      });
+    }
+    const positionBetween = createPositionBetween(positionBefore, positionAfter);
+    const issueViewPosition = this.issueViewPositionsById[issue.id];
+    if (issueViewPosition) {
+      issueViewPosition.position = positionBetween;
+    } else {
+      this.store.create("issueViewPosition", {
+        issue,
+        parentView: this,
+        position: positionBetween,
+      });
+    }
   }
 }
 
@@ -111,6 +138,10 @@ function createPosition(timestamp: number) {
   // Create a unique position string by combining a timestamp hash and fractional index
   const hash = timestamp.toString(36); // Convert timestamp to base36 for shorter hash
   return `${hash}_a0`; // a0 is the initial fractional index position
+}
+
+function createPositionBetween(before: string | null, after: string | null) {
+  return `${before}_b${after}`;
 }
 
 class IssueViewPosition extends BaseModel {
