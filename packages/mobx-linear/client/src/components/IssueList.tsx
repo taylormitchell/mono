@@ -7,15 +7,24 @@ import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
 
-export const IssueList = observer(() => {
+const useAllIssuesView = () => {
   const store = useStore();
+  let view = store.get("issueView", "all");
+  if (!view) {
+    view = store.create("issueView", { id: "all" });
+  }
+  return view;
+};
+
+export const IssueList = observer(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const allIssuesView = useAllIssuesView();
 
-  const issues = store
-    .getAll("issue")
+  const issuesWithPositions = allIssuesView
+    .getIssues()
     .filter(
-      (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ({ issue }) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
   return (
@@ -23,7 +32,7 @@ export const IssueList = observer(() => {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2>Issues</h2>
-          <span className={styles.issueCount}>{issues.length}</span>
+          <span className={styles.issueCount}>{issuesWithPositions.length}</span>
         </div>
         <button className={styles.createButton} onClick={() => setIsCreateModalOpen(true)}>
           New Issue
@@ -32,10 +41,13 @@ export const IssueList = observer(() => {
       <FilterBar onSearch={setSearchQuery} />
 
       <div className={styles.list}>
-        {issues
-          .sort((a, b) => a.createdAt - b.createdAt)
-          .map((issue) => (
-            <IssueRow key={issue.id} issue={issue} />
+        {issuesWithPositions
+          .sort((a, b) => a.position.localeCompare(b.position))
+          .map(({ issue, position }) => (
+            <div key={issue.id}>
+              <IssueRow issue={issue} />
+              <div>{position}</div>
+            </div>
           ))}
       </div>
 

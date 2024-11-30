@@ -7,9 +7,12 @@ function generateSortableHash(timestamp = Date.now()) {
   // Ensure timestamp is a number
   timestamp = Number(timestamp);
 
-  // Convert timestamp to a base36 string (using digits 0-9 and letters a-z)
-  // This keeps the string sortable while reducing length
-  const base36Timestamp = timestamp.toString(36);
+  // Invert the timestamp by subtracting it from MAX_SAFE_INTEGER
+  // This makes newer timestamps sort before older ones
+  const invertedTimestamp = Number.MAX_SAFE_INTEGER - timestamp;
+
+  // Convert inverted timestamp to base36 string
+  const base36Timestamp = invertedTimestamp.toString(36);
 
   // Pad the start with zeros if needed to maintain sortability
   const maxTimestampLength = Math.ceil(Math.log(Number.MAX_SAFE_INTEGER) / Math.log(36));
