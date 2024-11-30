@@ -82,22 +82,36 @@ class IssueView extends BaseModel {
     if (!this.store) return [];
     const issues = this.store.getAll("issue") as Issue[];
     const positionsById = Array.from(this.positions).reduce<Record<string, string>>((acc, p) => {
-      acc[p.from.id] = p.position;
+      if (!p.issue) return acc;
+      acc[p.issue.id] = p.position;
       return acc;
     }, {});
     return issues.map((issue) => ({
       issue,
-      position: this.positions.find((p) => p.from === issue)?.position,
+      position: positionsById[issue.id] ?? createPosition(issue.createdAt),
     }));
   }
 }
 
+function createPosition(timestamp: number) {
+  // Create a unique position string by combining a timestamp hash and fractional index
+  const hash = timestamp.toString(36); // Convert timestamp to base36 for shorter hash
+  return `${hash}_a0`; // a0 is the initial fractional index position
+}
+
 class IssueViewPosition extends BaseModel {
+  @link("issue")
+  accessor issue: Issue | null = null;
+
   @link("issueView")
   accessor parentView: IssueView | null = null;
 
   @property()
-  accessor position: string = "a0";
+  accessor position: string = createPosition(Date.now());
+
+  constructor(props: { id?: string; placeholder?: boolean } = {}) {
+    super(props);
+  }
 }
 
 export function createStore() {
