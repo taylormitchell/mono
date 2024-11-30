@@ -350,11 +350,25 @@ function createPuller(url: string) {
   };
 }
 
+function createPoker(url: string) {
+  return {
+    subscribe: (listener: (poke: { clientId: string }) => void) => {
+      const ws = new WebSocket(url);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        listener({ clientId: data.clientId });
+      };
+      return () => ws.close();
+    },
+  };
+}
+
 // Store implementation
 export class Store<TModels extends ModelRecord> {
   readonly clientId = crypto.randomUUID();
   private puller?: Puller;
   private pusher?: Pusher;
+  private poker?: Pocker;
 
   private models = {} as Record<keyof TModels, Map<string, InstanceType<TModels[keyof TModels]>>>;
   /**
@@ -390,16 +404,23 @@ export class Store<TModels extends ModelRecord> {
     {
       puller,
       pusher,
+      poker,
       syncEnabled = true,
     }: // TODO: The 'event' doesn't work exactly how I'd want right now. Like if you create
     // a model which refs a non-existent model, that becomes two mutations. I'd want that
     // to be one. So it's like every create/delete/update by the user should result in a
     // mutation, but any internal calls to those things should be separate.
-    { puller?: Puller | string; pusher?: Pusher | string; syncEnabled?: boolean } = {}
+    {
+      puller?: Puller | string;
+      pusher?: Pusher | string;
+      poker?: Pocker | string;
+      syncEnabled?: boolean;
+    } = {}
   ) {
     this.modelClasses = modelClasses;
     this.puller = typeof puller === "string" ? createPuller(puller) : puller;
     this.pusher = typeof pusher === "string" ? createPusher(pusher) : pusher;
+    this.poker = typeof poker === "string" ? createPoker(poker) : poker;
 
     // Initialize model storage
     for (const name in modelClasses) {
@@ -432,6 +453,17 @@ export class Store<TModels extends ModelRecord> {
       this.enableSync();
     } else {
       this.disableSync();
+    }
+
+    // Set up poker
+    if (this.poker) {
+      this.poker.subscribe((poke) => {
+        if (poke.clientId === this.clientId) {
+          // TODO: Maybe make it so the periodic pull doesn't happen for a little
+          // while after the poke?
+          this.pull();
+        }
+      });
     }
   }
 

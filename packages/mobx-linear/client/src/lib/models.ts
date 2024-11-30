@@ -71,6 +71,7 @@ export function createStore() {
     {
       puller: "/api/pull",
       pusher: "/api/push",
+      poker: "/api/poke",
     }
   );
 }
