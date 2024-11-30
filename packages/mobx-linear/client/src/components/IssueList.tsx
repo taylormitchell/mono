@@ -1,10 +1,18 @@
 import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
 import { useStore } from "../lib/useStore";
+import { FilterBar } from "./FilterBar";
+import { useState } from "react";
 
 export const IssueList = observer(() => {
   const store = useStore();
-  const issues = store.getAll("issue");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const issues = store
+    .getAll("issue")
+    .filter(
+      (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <div className={styles.container}>
@@ -20,6 +28,7 @@ export const IssueList = observer(() => {
           New Issue
         </button>
       </div>
+      <FilterBar onSearch={setSearchQuery} />
 
       <div className={styles.list}>
         {issues

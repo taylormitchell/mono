@@ -454,7 +454,7 @@ export class Store<TModels extends ModelRecord> {
   async periodicPull() {
     while (this.syncEnabled) {
       await this.pull();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
     }
   }
 

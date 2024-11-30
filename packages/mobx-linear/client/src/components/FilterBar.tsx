@@ -1,0 +1,62 @@
+import { observer } from "mobx-react-lite";
+import styles from "./FilterBar.module.css";
+import { useState } from "react";
+
+interface FilterBarProps {
+  onSearch: (query: string) => void;
+}
+
+export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    onSearch(value);
+  };
+
+  return (
+    <div className={styles.container}>
+      <button className={styles.filterButton}>
+        <FilterIcon />
+        Filter
+      </button>
+      <div className={styles.searchContainer}>
+        <SearchIcon />
+        <input
+          type="text"
+          placeholder="Search issues..."
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          className={styles.searchInput}
+        />
+      </div>
+    </div>
+  );
+});
+
+const FilterIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M2 4H14M4 8H12M6 12H10"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+    <path
+      d="M11.3333 11.3333L14 14"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
