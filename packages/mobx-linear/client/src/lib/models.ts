@@ -76,4 +76,10 @@ export function createStore() {
   );
 }
 
+export type TIssue = typeof Issue;
+
+export type TProject = typeof Project;
+
+export type TRelation = typeof Relation;
+
 export const StoreContext = createContext<ReturnType<typeof createStore> | null>(null);

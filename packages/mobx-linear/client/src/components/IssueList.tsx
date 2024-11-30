@@ -55,3 +55,25 @@ export const IssueList = observer(() => {
     </div>
   );
 });
+
+function issueRow({ issue }: { issue: Issue }) {
+  const store = useStore();
+  return (
+    <div>
+      <div className={styles.issueStatus}>●</div>
+      <input
+        className={styles.issueTitle}
+        value={issue.title}
+        onChange={(e) => (issue.title = e.target.value)}
+      />
+      <div className={styles.issueMetadata}>
+        <span className={styles.priority}>P1</span>
+        <span className={styles.label}>Bug</span>
+        <span className={styles.status}>In Progress</span>
+      </div>
+      <button className={styles.deleteButton} onClick={() => store.delete(issue)}>
+        Delete
+      </button>
+    </div>
+  );
+}
