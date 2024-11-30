@@ -509,30 +509,37 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
-  private lastPullPromise: Promise<void> | null = null;
-  private lastPullTime = 0;
-  private isCurrentlyPulling = false;
+  private lastPull:
+    | { type: "pending"; promise: Promise<void> }
+    | { type: "fulfilled"; time: number }
+    | { type: "error"; time: number; error: unknown } = { type: "fulfilled", time: 0 };
 
   async throttledPull() {
     // If there's an ongoing pull, return its promise
-    if (this.lastPullPromise && this.isCurrentlyPulling) {
-      return this.lastPullPromise;
+    if (this.lastPull.type === "pending") {
+      return this.lastPull.promise;
     }
 
     // Check if enough time has passed since last pull
     const now = Date.now();
-    if (now - this.lastPullTime < 5000) {
+    if (now - this.lastPull.time < 5000) {
       return;
     }
 
     // Do the pull and track it
-    this.isCurrentlyPulling = true;
-    this.lastPullPromise = this.pull().finally(() => {
-      this.isCurrentlyPulling = false;
-      this.lastPullTime = Date.now();
-    });
+    this.lastPull = {
+      type: "pending",
+      promise: this.pull().then(
+        () => {
+          this.lastPull = { type: "fulfilled", time: Date.now() };
+        },
+        (error) => {
+          this.lastPull = { type: "error", time: Date.now(), error };
+        }
+      ),
+    };
 
-    return this.lastPullPromise;
+    return this.lastPull.promise;
   }
 
   @action
