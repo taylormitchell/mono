@@ -1,6 +1,7 @@
 import express from "express";
 import { InMemoryServer } from "../../shared/InMemoryServer";
 import cors from "cors";
+import { WebSocket, WebSocketServer } from "ws";
 
 // Create Express app
 const app = express();
@@ -9,6 +10,21 @@ app.use(express.json());
 
 // Initialize server with model types
 const server = new InMemoryServer();
+
+// Initialize WebSocket server
+const wss = new WebSocketServer({ noServer: true });
+
+// Keep track of connected clients
+const clients = new Set<WebSocket>();
+
+// WebSocket connection handler
+wss.on("connection", (ws) => {
+  clients.add(ws);
+
+  ws.on("close", () => {
+    clients.delete(ws);
+  });
+});
 
 // Log all requests
 app.use((req, res, next) => {
@@ -27,6 +43,15 @@ app.post("/push", async (req, res) => {
     const { mutations, clientId } = req.body;
     console.log("push", clientId, mutations);
     await server.handlePush(clientId, mutations);
+
+    // Notify all connected WebSocket clients
+    const message = JSON.stringify({ type: "update", clientId });
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+
     res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);
@@ -52,6 +77,13 @@ app.use("/health", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Upgrade HTTP server to handle WebSocket connections
+httpServer.on("upgrade", (request, socket, head) => {
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit("connection", ws, request);
+  });
 });
