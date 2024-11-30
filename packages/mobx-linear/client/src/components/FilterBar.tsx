@@ -1,6 +1,7 @@
 import { observer } from "mobx-react-lite";
 import styles from "./FilterBar.module.css";
 import { useState } from "react";
+import { FilterDropdown } from "./FilterDropdown";
 
 interface FilterBarProps {
   onSearch: (query: string) => void;
@@ -8,6 +9,7 @@ interface FilterBarProps {
 
 export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
@@ -16,10 +18,13 @@ export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
 
   return (
     <div className={styles.container}>
-      <button className={styles.filterButton}>
-        <FilterIcon />
-        Filter
-      </button>
+      <div className={styles.filterContainer}>
+        <button className={styles.filterButton} onClick={() => setIsDropdownOpen(true)}>
+          <FilterIcon />
+          Filter
+        </button>
+        <FilterDropdown isOpen={isDropdownOpen} onClose={() => setIsDropdownOpen(false)} />
+      </div>
       <div className={styles.searchContainer}>
         <SearchIcon />
         <input
