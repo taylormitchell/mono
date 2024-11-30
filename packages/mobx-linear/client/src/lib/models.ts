@@ -1,5 +1,6 @@
 import { createContext } from "react";
 import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store";
+import { computed } from "mobx";
 
 class Issue extends BaseModel {
   @property()
@@ -74,6 +75,15 @@ class IssueView extends BaseModel {
   @backlinks("issueViewPosition.parentView")
   readonly positions = new Set<IssueViewPosition>();
 
+  @computed
+  get positionsById() {
+    return Array.from(this.positions).reduce<Record<string, string>>((acc, p) => {
+      if (!p.issue) return acc;
+      acc[p.issue.id] = p.position;
+      return acc;
+    }, {});
+  }
+
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);
   }
@@ -81,15 +91,19 @@ class IssueView extends BaseModel {
   getAll() {
     if (!this.store) return [];
     const issues = this.store.getAll("issue") as Issue[];
-    const positionsById = Array.from(this.positions).reduce<Record<string, string>>((acc, p) => {
-      if (!p.issue) return acc;
-      acc[p.issue.id] = p.position;
-      return acc;
-    }, {});
     return issues.map((issue) => ({
       issue,
-      position: positionsById[issue.id] ?? createPosition(issue.createdAt),
+      position: this.positionsById[issue.id] ?? createPosition(issue.createdAt),
     }));
+  }
+
+  placeAfter(issue: Issue, before: Issue) {
+    if (!this.store) return;
+    this.store.create("issueViewPosition", {
+      issue,
+      parentView: this,
+      position: createPosition(Date.now()),
+    });
   }
 }
 
