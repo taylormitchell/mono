@@ -1,45 +1,29 @@
-import { createStore } from "./lib/models";
 import { observer } from "mobx-react-lite";
+import { IssueList } from "./components/IssueList";
+import { StoreProvider } from "./lib/StoreContext";
+import styles from "./App.module.css";
+import { Store } from "./lib/store";
 
-const store = createStore();
-store.pull();
-(window as any).store = store;
+const store = new Store();
 
-const App = observer(() => {
+const AppContent = observer(() => {
   return (
-    <div>
-      <div style={{ margin: "10px 0" }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <button onClick={() => store.push()}>Push Changes</button>
         <button onClick={() => store.pull()}>Pull Changes</button>
       </div>
-      <Issues />
+      <IssueList />
     </div>
   );
 });
 
-const Issues = observer(function Issues() {
-  const issues = store.getAll("issue");
-
+const App = () => {
   return (
-    <div>
-      <button
-        onClick={() => {
-          store.create("issue", { title: "New Issue" });
-        }}
-      >
-        Create New Issue
-      </button>
-
-      {issues
-        .sort((a, b) => a.createdAt - b.createdAt)
-        .map((issue) => (
-          <div key={issue.id} style={{ margin: "10px 0" }}>
-            <input value={issue.title} onChange={(e) => (issue.title = e.target.value)} />
-            <button onClick={() => store.delete(issue)}>Delete</button>
-          </div>
-        ))}
-    </div>
+    <StoreProvider>
+      <AppContent />
+    </StoreProvider>
   );
-});
+};
 
 export default App;

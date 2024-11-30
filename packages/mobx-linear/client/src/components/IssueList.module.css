@@ -1,0 +1,128 @@
+.container {
+  padding: 20px;
+  color: #e6e6e6;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerLeft h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.issueCount {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.createButton {
+  background: #5e6ad2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.createButton:hover {
+  background: #4f58b6;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.issueRow {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  gap: 12px;
+}
+
+.issueRow:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.issueStatus {
+  color: #5e6ad2;
+  font-size: 12px;
+}
+
+.issueTitle {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e6e6e6;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.issueTitle:focus {
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.issueMetadata {
+  display: flex;
+  gap: 8px;
+}
+
+.priority,
+.label,
+.status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.priority {
+  color: #f2994a;
+}
+
+.label {
+  color: #5e6ad2;
+}
+
+.status {
+  color: #6fcf97;
+}
+
+.deleteButton {
+  opacity: 0;
+  background: transparent;
+  border: none;
+  color: #e6e6e6;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.issueRow:hover .deleteButton {
+  opacity: 0.5;
+}
+
+.deleteButton:hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.1);
+}
