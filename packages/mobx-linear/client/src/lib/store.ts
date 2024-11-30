@@ -100,7 +100,7 @@ function getModelMetadata(target: Function): ModelMetadata {
 export abstract class BaseModel {
   readonly id: string;
   placeholder = false;
-  private store?: Store<any>;
+  protected store?: Store<any>;
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     this.id = props.id ?? crypto.randomUUID();

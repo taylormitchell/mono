@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store";
-import { computed } from "mobx";
+import { action, computed } from "mobx";
 import { createPosition, createPositionBetween } from "./position";
 
 // TODO can probably define the store interface at the top and then
@@ -104,6 +104,7 @@ class IssueView extends BaseModel {
     }));
   }
 
+  @action
   placeBetween(issue: Issue, before: Issue | null, after: Issue | null) {
     if (!this.store) return;
     let positionBefore: string | null = null;
