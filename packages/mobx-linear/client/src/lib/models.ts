@@ -1,3 +1,4 @@
+import { createContext } from "react";
 import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store";
 
 class Issue extends BaseModel {
@@ -73,3 +74,5 @@ export function createStore() {
     }
   );
 }
+
+export const StoreContext = createContext<ReturnType<typeof createStore> | null>(null);

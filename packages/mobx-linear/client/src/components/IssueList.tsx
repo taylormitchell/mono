@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
-import { useStore } from "../lib/StoreContext";
+import { useStore } from "../lib/useStore";
 
 export const IssueList = observer(() => {
   const store = useStore();
