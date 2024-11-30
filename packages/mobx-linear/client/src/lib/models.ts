@@ -61,6 +61,45 @@ class Relation extends BaseModel {
   }
 }
 
+class IssueView extends BaseModel {
+  @property()
+  accessor query: "all" = "all";
+
+  @property()
+  accessor createdAt = Date.now();
+
+  @updatedAt()
+  accessor updatedAt = Date.now();
+
+  @backlinks("issueViewPosition.parentView")
+  readonly positions = new Set<IssueViewPosition>();
+
+  constructor(props: { id?: string; placeholder?: boolean } = {}) {
+    super(props);
+  }
+
+  getAll() {
+    if (!this.store) return [];
+    const issues = this.store.getAll("issue") as Issue[];
+    const positionsById = Array.from(this.positions).reduce<Record<string, string>>((acc, p) => {
+      acc[p.from.id] = p.position;
+      return acc;
+    }, {});
+    return issues.map((issue) => ({
+      issue,
+      position: this.positions.find((p) => p.from === issue)?.position,
+    }));
+  }
+}
+
+class IssueViewPosition extends BaseModel {
+  @link("issueView")
+  accessor parentView: IssueView | null = null;
+
+  @property()
+  accessor position: string = "a0";
+}
+
 export function createStore() {
   return new Store(
     {
