@@ -387,15 +387,21 @@ export class Store<TModels extends ModelRecord> {
     {
       puller,
       pusher,
+      syncEnabled,
     }: // TODO: The 'event' doesn't work exactly how I'd want right now. Like if you create
     // a model which refs a non-existent model, that becomes two mutations. I'd want that
     // to be one. So it's like every create/delete/update by the user should result in a
     // mutation, but any internal calls to those things should be separate.
-    { puller?: Puller | string; pusher?: Pusher | string } = {}
+    { puller?: Puller | string; pusher?: Pusher | string; syncEnabled?: boolean } = {}
   ) {
     this.modelClasses = modelClasses;
     this.puller = typeof puller === "string" ? createPuller(puller) : puller;
     this.pusher = typeof pusher === "string" ? createPusher(pusher) : pusher;
+    if (syncEnabled) {
+      this.enableSync();
+    } else {
+      this.disableSync();
+    }
 
     // Initialize model storage
     for (const name in modelClasses) {
@@ -436,23 +442,18 @@ export class Store<TModels extends ModelRecord> {
 
   enableSync() {
     this.syncEnabled = true;
+    this.periodicPull();
   }
 
   disableSync() {
     this.syncEnabled = false;
   }
 
-  @action
-  emit(event: StoreEvent) {
-    if (!this.emittingEnabled) return;
-    this.redoStack = [];
-    this.stagedChanges.push(event);
-    this.eventsEmittedCount.set(this.eventsEmittedCount.get() + 1);
-    this.notifySubscribers([event]);
-  }
-
-  notifySubscribers(events: StoreEvent[]) {
-    this.eventSubscribers.forEach((subscriber) => events.forEach(subscriber));
+  async periodicPull() {
+    while (this.syncEnabled) {
+      await this.pull();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
 
   // TODO probably want a mutex for this stuff? actualy not sure. I don't think
@@ -468,6 +469,19 @@ export class Store<TModels extends ModelRecord> {
       const { patches, lastMutationId } = await this.puller(this.clientId);
       this.rebase(patches, lastMutationId);
     }
+  }
+
+  @action
+  emit(event: StoreEvent) {
+    if (!this.emittingEnabled) return;
+    this.redoStack = [];
+    this.stagedChanges.push(event);
+    this.eventsEmittedCount.set(this.eventsEmittedCount.get() + 1);
+    this.notifySubscribers([event]);
+  }
+
+  notifySubscribers(events: StoreEvent[]) {
+    this.eventSubscribers.forEach((subscriber) => events.forEach(subscriber));
   }
 
   @action
