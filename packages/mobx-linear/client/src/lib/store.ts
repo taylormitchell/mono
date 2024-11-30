@@ -509,6 +509,32 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
+  private lastPullPromise: Promise<void> | null = null;
+  private lastPullTime = 0;
+  private isCurrentlyPulling = false;
+
+  async throttledPull() {
+    // If there's an ongoing pull, return its promise
+    if (this.lastPullPromise && this.isCurrentlyPulling) {
+      return this.lastPullPromise;
+    }
+
+    // Check if enough time has passed since last pull
+    const now = Date.now();
+    if (now - this.lastPullTime < 5000) {
+      return;
+    }
+
+    // Do the pull and track it
+    this.isCurrentlyPulling = true;
+    this.lastPullPromise = this.pull().finally(() => {
+      this.isCurrentlyPulling = false;
+      this.lastPullTime = Date.now();
+    });
+
+    return this.lastPullPromise;
+  }
+
   @action
   emit(event: StoreEvent) {
     if (!this.emittingEnabled) return;
