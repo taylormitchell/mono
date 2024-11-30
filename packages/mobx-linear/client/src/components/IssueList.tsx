@@ -5,6 +5,7 @@ import { FilterBar } from "./FilterBar";
 import { useState } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
+import { EditIssueModal } from "./EditIssueModal";
 
 export const IssueList = observer(() => {
   const store = useStore();
@@ -45,23 +46,32 @@ export const IssueList = observer(() => {
 
 const IssueRow = observer(({ issue }: { issue: IssueType }) => {
   const store = useStore();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   return (
-    <div className={styles.issueRow}>
-      <div className={styles.issueStatus}>●</div>
-      <input
-        className={styles.issueTitle}
-        value={issue.title}
-        onChange={(e) => (issue.title = e.target.value)}
-      />
-      <div className={styles.issueMetadata}>
-        <span className={styles.priority}>P1</span>
-        <span className={styles.label}>Bug</span>
-        <span className={styles.status}>In Progress</span>
+    <>
+      <div className={styles.issueRow} onClick={() => setIsEditModalOpen(true)}>
+        <div className={styles.issueStatus}>●</div>
+        <div className={styles.issueTitle}>{issue.title}</div>
+        <div className={styles.issueMetadata}>
+          <span className={styles.priority}>P1</span>
+          <span className={styles.label}>Bug</span>
+          <span className={styles.status}>In Progress</span>
+        </div>
+        <button
+          className={styles.deleteButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            store.delete(issue);
+          }}
+        >
+          Delete
+        </button>
       </div>
-      <button className={styles.deleteButton} onClick={() => store.delete(issue)}>
-        Delete
-      </button>
-    </div>
+
+      {isEditModalOpen && (
+        <EditIssueModal issue={issue} onClose={() => setIsEditModalOpen(false)} />
+      )}
+    </>
   );
 });

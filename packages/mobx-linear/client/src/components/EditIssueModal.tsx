@@ -1,26 +1,22 @@
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
-import { useStore } from "../lib/useStore";
-import styles from "./CreateIssueModal.module.css";
+import { IssueType } from "../lib/models";
+import styles from "./CreateIssueModal.module.css"; // Reuse the same styles
 import { CloseIcon } from "./Icons";
 
-interface CreateIssueModalProps {
+interface EditIssueModalProps {
+  issue: IssueType;
   onClose: () => void;
 }
 
-export const CreateIssueModal = observer(({ onClose }: CreateIssueModalProps) => {
-  const store = useStore();
-  const [title, setTitle] = useState("");
+export const EditIssueModal = observer(({ issue, onClose }: EditIssueModalProps) => {
+  const [title, setTitle] = useState(issue.title);
   const [description, setDescription] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-
-    store.create("issue", {
-      title: title.trim(),
-      description: description.trim(),
-    });
+    issue.title = title.trim();
     onClose();
   };
 
@@ -29,7 +25,7 @@ export const CreateIssueModal = observer(({ onClose }: CreateIssueModalProps) =>
       <div className={styles.overlay} onClick={onClose} />
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2>Create Issue</h2>
+          <h2>Edit Issue</h2>
           <button className={styles.closeButton} onClick={onClose}>
             <CloseIcon />
           </button>
@@ -61,7 +57,7 @@ export const CreateIssueModal = observer(({ onClose }: CreateIssueModalProps) =>
               Cancel
             </button>
             <button type="submit" className={styles.createButton} disabled={!title.trim()}>
-              Create Issue
+              Save Changes
             </button>
           </div>
         </form>
