@@ -460,9 +460,7 @@ export class Store<TModels extends ModelRecord> {
       this.poker.subscribe((poke) => {
         if (poke.clientId !== this.clientId) {
           console.log("POKE", poke);
-          // TODO: Maybe make it so the periodic pull doesn't happen for a little
-          // while after the poke?
-          this.pull();
+          this.throttledPull();
         }
       });
     }
@@ -489,8 +487,8 @@ export class Store<TModels extends ModelRecord> {
 
   async periodicPull() {
     while (this.syncEnabled) {
-      await this.pull();
-      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      await this.throttledPull();
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 
@@ -522,7 +520,8 @@ export class Store<TModels extends ModelRecord> {
 
     // Check if enough time has passed since last pull
     const now = Date.now();
-    if (now - this.lastPull.time < 5000) {
+    const timeSinceLastPull = now - this.lastPull.time;
+    if (timeSinceLastPull < 5000) {
       return;
     }
 
