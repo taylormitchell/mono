@@ -460,7 +460,7 @@ export class Store<TModels extends ModelRecord> {
       this.poker.subscribe((poke) => {
         if (poke.clientId !== this.clientId) {
           console.log("POKE", poke);
-          this.throttledPull();
+          this.pull();
         }
       });
     }
@@ -486,10 +486,9 @@ export class Store<TModels extends ModelRecord> {
   }
 
   async periodicPull() {
-    while (this.syncEnabled) {
-      await this.throttledPull();
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
+    if (!this.syncEnabled) return;
+    await this.pull();
+    setTimeout(() => this.periodicPull(), 10_000);
   }
 
   // TODO probably want a mutex for this stuff? actualy not sure. I don't think
@@ -505,40 +504,6 @@ export class Store<TModels extends ModelRecord> {
       const { patches, lastMutationId } = await this.puller(this.clientId);
       this.rebase(patches, lastMutationId);
     }
-  }
-
-  private lastPull:
-    | { type: "pending"; promise: Promise<void> }
-    | { type: "fulfilled"; time: number }
-    | { type: "error"; time: number; error: unknown } = { type: "fulfilled", time: 0 };
-
-  async throttledPull() {
-    // If there's an ongoing pull, return its promise
-    if (this.lastPull.type === "pending") {
-      return this.lastPull.promise;
-    }
-
-    // Check if enough time has passed since last pull
-    const now = Date.now();
-    const timeSinceLastPull = now - this.lastPull.time;
-    if (timeSinceLastPull < 5000) {
-      return;
-    }
-
-    // Do the pull and track it
-    this.lastPull = {
-      type: "pending",
-      promise: this.pull().then(
-        () => {
-          this.lastPull = { type: "fulfilled", time: Date.now() };
-        },
-        (error) => {
-          this.lastPull = { type: "error", time: Date.now(), error };
-        }
-      ),
-    };
-
-    return this.lastPull.promise;
   }
 
   @action
