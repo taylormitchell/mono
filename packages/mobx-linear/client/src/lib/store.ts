@@ -458,7 +458,8 @@ export class Store<TModels extends ModelRecord> {
     // Set up poker
     if (this.poker) {
       this.poker.subscribe((poke) => {
-        if (poke.clientId === this.clientId) {
+        if (poke.clientId !== this.clientId) {
+          console.log("POKE", poke);
           // TODO: Maybe make it so the periodic pull doesn't happen for a little
           // while after the poke?
           this.pull();

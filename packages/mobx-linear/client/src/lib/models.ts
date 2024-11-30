@@ -71,7 +71,7 @@ export function createStore() {
     {
       puller: "/api/pull",
       pusher: "/api/push",
-      poker: "ws://localhost:5173",
+      poker: "ws://localhost:3000",
     }
   );
 }
