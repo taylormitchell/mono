@@ -1,29 +1,23 @@
 import { observer } from "mobx-react-lite";
 import { IssueList } from "./components/IssueList";
-import { StoreProvider } from "./lib/StoreContext";
+import { StoreContext } from "./lib/StoreContext";
 import styles from "./App.module.css";
-import { Store } from "./lib/store";
+import { createStore } from "./lib/models";
 
-const store = new Store();
+const store = createStore();
 
-const AppContent = observer(() => {
+const App = observer(() => {
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <button onClick={() => store.push()}>Push Changes</button>
-        <button onClick={() => store.pull()}>Pull Changes</button>
+    <StoreContext.Provider value={store}>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button onClick={() => store.push()}>Push Changes</button>
+          <button onClick={() => store.pull()}>Pull Changes</button>
+        </div>
+        <IssueList />
       </div>
-      <IssueList />
-    </div>
+    </StoreContext.Provider>
   );
 });
-
-const App = () => {
-  return (
-    <StoreProvider>
-      <AppContent />
-    </StoreProvider>
-  );
-};
 
 export default App;

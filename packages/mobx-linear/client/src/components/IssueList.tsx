@@ -1,7 +1,6 @@
 import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
 import { useStore } from "../lib/StoreContext";
-import { Issue } from "../lib/models";
 
 export const IssueList = observer(() => {
   const store = useStore();
@@ -25,7 +24,7 @@ export const IssueList = observer(() => {
       <div className={styles.list}>
         {issues
           .sort((a, b) => a.createdAt - b.createdAt)
-          .map((issue: Issue) => (
+          .map((issue) => (
             <div key={issue.id} className={styles.issueRow}>
               <div className={styles.issueStatus}>●</div>
               <input
