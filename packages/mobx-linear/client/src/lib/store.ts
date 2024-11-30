@@ -380,6 +380,7 @@ export class Store<TModels extends ModelRecord> {
   private disposers: Array<() => void> = [];
 
   private emittingEnabled = true;
+  private syncEnabled = true;
 
   constructor(
     modelClasses: TModels,
@@ -411,6 +412,9 @@ export class Store<TModels extends ModelRecord> {
         () => this.eventsEmittedCount.get(),
         () => {
           this.commit();
+          if (this.syncEnabled) {
+            this.push();
+          }
         }
       )
     );
@@ -428,6 +432,14 @@ export class Store<TModels extends ModelRecord> {
       this.localMutations.push({ mutationId: this.localMutationId++, events: changes });
     }
     Object.values(this.deletedModels).forEach((map) => map.clear());
+  }
+
+  enableSync() {
+    this.syncEnabled = true;
+  }
+
+  disableSync() {
+    this.syncEnabled = false;
   }
 
   @action
