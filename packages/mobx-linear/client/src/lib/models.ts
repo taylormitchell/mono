@@ -104,6 +104,7 @@ class IssueView extends BaseModel {
     if (!this.store) return;
     let positionBefore: string | null = null;
     let positionAfter: string | null = null;
+    // If the issues before/after don't have persisted positions, create them
     if (before && !this.issueViewPositionsById[before.id]) {
       positionBefore = createPosition(before.createdAt);
       this.store.create("issueViewPosition", {
@@ -120,6 +121,7 @@ class IssueView extends BaseModel {
         position: positionAfter,
       });
     }
+    // Create/update the position for the issue to place it between the before and after issues
     const positionBetween = createPositionBetween(positionBefore, positionAfter);
     const issueViewPosition = this.issueViewPositionsById[issue.id];
     if (issueViewPosition) {
