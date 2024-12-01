@@ -116,17 +116,18 @@ class IssueView extends BaseModel {
     // If the issues before/after don't have persisted positions, create them
     if (before && !this.issueViewPositionsById[before.id]) {
       positionBefore = createPosition(before.createdAt);
+      // TODO: The lack of type safety here really got me
       this.store.create("issueViewPosition", {
-        issue: before,
-        parentView: this,
+        issueId: before.id,
+        parentViewId: this.id,
         position: positionBefore,
       });
     }
     if (after && !this.issueViewPositionsById[after.id]) {
       positionAfter = createPosition(after.createdAt);
       this.store.create("issueViewPosition", {
-        issue: after,
-        parentView: this,
+        issueId: after.id,
+        parentViewId: this.id,
         position: positionAfter,
       });
     }
@@ -137,8 +138,8 @@ class IssueView extends BaseModel {
       issueViewPosition.position = positionBetween;
     } else {
       this.store.create("issueViewPosition", {
-        issue,
-        parentView: this,
+        issueId: issue.id,
+        parentViewId: this.id,
         position: positionBetween,
       });
     }
