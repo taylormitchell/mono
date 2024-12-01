@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store";
-import { action, computed } from "mobx";
+import { action, autorun, computed, toJS } from "mobx";
 import { createPosition, createPositionBetween } from "./position";
 
 // TODO can probably define the store interface at the top and then
@@ -93,6 +93,9 @@ class IssueView extends BaseModel {
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);
+    autorun(() => {
+      console.log("issueViewPositions", toJS(this.issueViewPositions));
+    });
   }
 
   @computed
