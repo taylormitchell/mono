@@ -91,6 +91,8 @@ class IssueView extends BaseModel {
     );
   }
 
+  private temporaryPositionsById = new Map<string, string>();
+
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);
     autorun(() => {
@@ -102,10 +104,14 @@ class IssueView extends BaseModel {
   get issues() {
     if (!this.store) return [];
     const issues = this.store.getAll("issue") as Issue[];
-    return issues.map((issue) => ({
-      issue,
-      position: this.issueViewPositionsById[issue.id]?.position ?? createPosition(issue.createdAt),
-    }));
+    return issues.map((issue) => {
+      let position = this.issueViewPositionsById[issue.id]?.position;
+      if (!position) {
+        position = this.temporaryPositionsById.get(issue.id) ?? createPosition(issue.createdAt);
+        this.temporaryPositionsById.set(issue.id, position);
+      }
+      return { issue, position };
+    });
   }
 
   @action
