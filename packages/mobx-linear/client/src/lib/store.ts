@@ -221,7 +221,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
             type: "update",
             model,
             id: this.id,
-            field: fieldName,
+            field: serializedKey,
             oldValue: oldValue?.id ?? null,
             newValue: newValue?.id ?? null,
           });
