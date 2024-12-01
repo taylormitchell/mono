@@ -165,7 +165,10 @@ export function getOrCreateJournalNote({
   switch (type) {
     case "daily":
       filepath = dateToJournalPath(targetDate);
-      templatePath = path.join(getRootDir(), "templates", "daily-note-template.md");
+      templatePath =
+        targetDate.getDay() > 0 && targetDate.getDay() < 6
+          ? path.join(getRootDir(), "templates", "weekday-note-template.md")
+          : path.join(getRootDir(), "templates", "weekend-note-template.md");
       break;
     case "weekly":
       filepath = dateToJournalPath(targetDate);
@@ -188,13 +191,8 @@ export function getOrCreateJournalNote({
   }
 
   // Use template on weekdays, otherwise just use the date
-  let templateContent = "";
   let content: string;
-  if (targetDate.getDay() > 0 && targetDate.getDay() < 6) {
-    templateContent = fs.readFileSync(templatePath, "utf-8");
-  } else {
-    templateContent = "# {{date}}";
-  }
+  const templateContent = fs.readFileSync(templatePath, "utf-8");
 
   switch (type) {
     case "daily":
