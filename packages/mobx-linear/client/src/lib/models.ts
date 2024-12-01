@@ -95,7 +95,8 @@ class IssueView extends BaseModel {
     super(props);
   }
 
-  getIssues() {
+  @computed
+  get issues() {
     if (!this.store) return [];
     const issues = this.store.getAll("issue") as Issue[];
     return issues.map((issue) => ({

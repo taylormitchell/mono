@@ -21,11 +21,9 @@ export const IssueList = observer(() => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const allIssuesView = useAllIssuesView();
 
-  const issuesWithPositions = allIssuesView
-    .getIssues()
-    .filter(
-      ({ issue }) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const issuesWithPositions = allIssuesView.issues.filter(
+    ({ issue }) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className={styles.container}>
@@ -44,15 +42,42 @@ export const IssueList = observer(() => {
         {issuesWithPositions
           .sort((a, b) => a.position.localeCompare(b.position))
           .map(({ issue, position }, index) => (
-            <IssueRow
-              key={issue.id}
-              issue={issue}
-              position={position}
-              index={index}
-              totalItems={issuesWithPositions.length}
-              issuesWithPositions={issuesWithPositions}
-              allIssuesView={allIssuesView}
-            />
+            <div key={issue.id}>
+              <div className={styles.moveButtons}>
+                <button
+                  className={styles.moveButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (index > 0) {
+                      const before = index > 1 ? issuesWithPositions[index - 2].issue : null;
+                      const after = issuesWithPositions[index - 1].issue;
+                      allIssuesView.placeBetween(issue, before, after);
+                    }
+                  }}
+                >
+                  ↑
+                </button>
+                <button
+                  className={styles.moveButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (index < issuesWithPositions.length - 1) {
+                      const before = issuesWithPositions[index + 1].issue;
+                      const after =
+                        index < issuesWithPositions.length - 2
+                          ? issuesWithPositions[index + 2].issue
+                          : null;
+                      allIssuesView.placeBetween(issue, before, after);
+                    }
+                  }}
+                >
+                  ↓
+                </button>
+              </div>
+
+              <IssueRow issue={issue} />
+              <div>{position}</div>
+            </div>
           ))}
       </div>
 
@@ -61,80 +86,34 @@ export const IssueList = observer(() => {
   );
 });
 
-const IssueRow = observer(
-  ({
-    issue,
-    position,
-    index,
-    totalItems,
-    issuesWithPositions,
-    allIssuesView,
-  }: {
-    issue: IssueType;
-    position: string;
-    index: number;
-    totalItems: number;
-    issuesWithPositions: Array<{ issue: IssueType; position: string }>;
-    allIssuesView: any;
-  }) => {
-    const store = useStore();
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const IssueRow = observer(({ issue }: { issue: IssueType }) => {
+  const store = useStore();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    return (
-      <>
-        <div className={styles.issueRow} onClick={() => setIsEditModalOpen(true)}>
-          <div className={styles.moveButtons}>
-            <button
-              className={styles.moveButton}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (index > 0) {
-                  const before = index > 1 ? issuesWithPositions[index - 2].issue : null;
-                  const after = issuesWithPositions[index - 1].issue;
-                  allIssuesView.placeBetween(issue, before, after);
-                }
-              }}
-            >
-              ↑
-            </button>
-            <button
-              className={styles.moveButton}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (index < totalItems - 1) {
-                  const before = issuesWithPositions[index + 1].issue;
-                  const after =
-                    index < totalItems - 2 ? issuesWithPositions[index + 2].issue : null;
-                  allIssuesView.placeBetween(issue, before, after);
-                }
-              }}
-            >
-              ↓
-            </button>
-          </div>
-          <div className={styles.issueStatus}>●</div>
-          <div className={styles.issueTitle}>{issue.title}</div>
-          <div className={styles.issueMetadata}>
-            <span className={styles.priority}>P1</span>
-            <span className={styles.label}>Bug</span>
-            <span className={styles.status}>In Progress</span>
-          </div>
-          <div>{position}</div>
-          <button
-            className={styles.deleteButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              store.delete(issue);
-            }}
-          >
-            Delete
-          </button>
+  return (
+    <>
+      <div className={styles.issueRow} onClick={() => setIsEditModalOpen(true)}>
+        <div className={styles.issueStatus}>●</div>
+        <div className={styles.issueTitle}>{issue.title}</div>
+        <div className={styles.issueMetadata}>
+          <span className={styles.priority}>P1</span>
+          <span className={styles.label}>Bug</span>
+          <span className={styles.status}>In Progress</span>
         </div>
+        <button
+          className={styles.deleteButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            store.delete(issue);
+          }}
+        >
+          Delete
+        </button>
+      </div>
 
-        {isEditModalOpen && (
-          <EditIssueModal issue={issue} onClose={() => setIsEditModalOpen(false)} />
-        )}
-      </>
-    );
-  }
-);
+      {isEditModalOpen && (
+        <EditIssueModal issue={issue} onClose={() => setIsEditModalOpen(false)} />
+      )}
+    </>
+  );
+});

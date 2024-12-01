@@ -65,11 +65,13 @@ export function createPositionBetween(
   } else if (before && after) {
     const beforeParts = splitPosition(before);
     const afterParts = splitPosition(after);
-    return [
-      beforeParts.hash,
-      generateKeyBetween(beforeParts.fractionalIndex, afterParts.fractionalIndex),
-      generateSomeRandomness(),
-    ].join("-");
+    const fractionIndex =
+      afterParts.hash !== beforeParts.hash
+        ? generateKeyBetween(beforeParts.fractionalIndex, null)
+        : afterParts.fractionalIndex === beforeParts.fractionalIndex
+        ? beforeParts.fractionalIndex
+        : generateKeyBetween(beforeParts.fractionalIndex, afterParts.fractionalIndex);
+    return [beforeParts.hash, fractionIndex, generateSomeRandomness()].join("-");
   } else {
     return createPosition(timestamp);
   }
