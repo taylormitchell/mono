@@ -22,15 +22,18 @@ export const IssueList = observer(() => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const allIssuesView = useAllIssuesView();
 
-  const issues = allIssuesView.issues.filter(
-    (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const getPosition = (issue: IssueType | undefined | null) => {
     if (!issue) return null;
     const issueViewPosition = allIssuesView.issueViewPositionsById[issue.id];
     return issueViewPosition?.position ?? createPosition(issue.createdAt, issue.id);
   };
+
+  const issues = allIssuesView.issues
+    .filter(
+      (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .map((issue) => ({ issue, position: getPosition(issue)! }))
+    .sort((a, b) => (a.position > b.position ? 1 : -1));
 
   return (
     <div className={styles.container}>
@@ -46,19 +49,16 @@ export const IssueList = observer(() => {
       <FilterBar onSearch={setSearchQuery} />
 
       <div className={styles.list}>
-        {issues
-          // TODO: not sure if localeCompare is correct here
-          .map((issue) => ({ issue, position: getPosition(issue)! }))
-          .sort((a, b) => (a.position > b.position ? -1 : 1))
-          .map(({ issue, position }, index) => (
+        {issues.map(({ issue, position }, index) => (
+          <div key={issue.id}>
             <div key={issue.id}>
               <div className={styles.moveButtons}>
                 <button
                   className={styles.moveButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const a = getPosition(issues[index - 2]);
-                    const b = getPosition(issues[index - 1]);
+                    const a = getPosition(issues[index - 1]?.issue);
+                    const b = getPosition(issues[index - 2]?.issue);
                     const pos = createPositionBetween(a, b);
                     allIssuesView.upsertPosition(issue, pos);
                   }}
@@ -69,8 +69,8 @@ export const IssueList = observer(() => {
                   className={styles.moveButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const a = getPosition(issues[index + 1]);
-                    const b = getPosition(issues[index + 2]);
+                    const a = getPosition(issues[index + 1]?.issue);
+                    const b = getPosition(issues[index + 2]?.issue);
                     const pos = createPositionBetween(a, b);
                     allIssuesView.upsertPosition(issue, pos);
                   }}
@@ -81,9 +81,9 @@ export const IssueList = observer(() => {
               <IssueRow issue={issue} />
               <div>{position}</div>
             </div>
-          ))}
+          </div>
+        ))}
       </div>
-
       {isCreateModalOpen && <CreateIssueModal onClose={() => setIsCreateModalOpen(false)} />}
     </div>
   );
