@@ -34,6 +34,37 @@ function createPosition(createdAt: number, id: string) {
   return hash + fixedLengthId + "a0";
 }
 
+function splitPosition(position: string) {
+  const prefix = position.slice(0, HASH_LENGTH + ID_LENGTH);
+  if (prefix.length !== HASH_LENGTH + ID_LENGTH) {
+    throw new Error("Position is shorter than the expected hash + id length");
+  }
+  const fractionalIndex = position.slice(HASH_LENGTH + ID_LENGTH);
+  return { prefix, fractionalIndex };
+}
+// function splitPosition(position: string) {
+//   const hash = position.slice(0, HASH_LENGTH);
+//   if (hash.length !== HASH_LENGTH) {
+//     throw new Error("Position is shorter than the expected hash length");
+//   }
+//   const id = position.slice(HASH_LENGTH, HASH_LENGTH + ID_LENGTH);
+//   if (id.length !== ID_LENGTH) {
+//     throw new Error("Position is shorter than the expected id length");
+//   }
+//   const fractionalIndex = position.slice(HASH_LENGTH + ID_LENGTH);
+//   return { hash, id, fractionalIndex };
+// }
+
+function createPositionBetween(a: string, b: string) {
+  const aParts = splitPosition(a);
+  const bParts = splitPosition(b);
+  if (aParts.prefix === bParts.prefix) {
+    return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, null);
+  } else {
+    return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, bParts.fractionalIndex);
+  }
+}
+
 function generateSomeRandomness() {
   return crypto.randomUUID().slice(0, RANDOMNESS_LENGTH);
 }
@@ -42,13 +73,13 @@ function generateSomeRandomness() {
 //   return generateSortableHash(timestamp) + "-" + "a0" + "-" + generateSomeRandomness();
 // }
 
-export function splitPosition(position: string) {
-  const [hash, fractionalIndex, randomness] = position.split("-");
-  if (!hash || hash.length !== HASH_LENGTH) throw new Error("Invalid position");
-  if (!fractionalIndex) throw new Error("Invalid position");
-  if (!randomness || randomness.length !== RANDOMNESS_LENGTH) throw new Error("Invalid position");
-  return { hash, fractionalIndex, randomness };
-}
+// export function splitPosition(position: string) {
+//   const [hash, fractionalIndex, randomness] = position.split("-");
+//   if (!hash || hash.length !== HASH_LENGTH) throw new Error("Invalid position");
+//   if (!fractionalIndex) throw new Error("Invalid position");
+//   if (!randomness || randomness.length !== RANDOMNESS_LENGTH) throw new Error("Invalid position");
+//   return { hash, fractionalIndex, randomness };
+// }
 
 export function createPositionBetween(
   before: string | null,
