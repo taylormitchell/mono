@@ -2,6 +2,7 @@ import { generateKeyBetween } from "fractional-indexing";
 
 const HASH_LENGTH = 12;
 const RANDOMNESS_LENGTH = 4;
+const ID_LENGTH = 4;
 
 function generateSortableHash(timestamp = Date.now()) {
   // Ensure timestamp is a number
@@ -27,8 +28,10 @@ function generateSortableHash(timestamp = Date.now()) {
   }
 }
 
-function createPosition(timestamp: number, id: string) {
-  return [generateSortableHash(timestamp), id].join("-");
+function createPosition(createdAt: number, id: string) {
+  const hash = generateSortableHash(createdAt);
+  const fixedLengthId = id.padEnd(ID_LENGTH, "0").slice(0, ID_LENGTH);
+  return hash + fixedLengthId + "a0";
 }
 
 function generateSomeRandomness() {
