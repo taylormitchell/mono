@@ -42,13 +42,23 @@ function splitPosition(position: string) {
   return { prefix, fractionalIndex };
 }
 
-export function createPositionBetween(a: string, b: string) {
-  const aParts = splitPosition(a);
-  const bParts = splitPosition(b);
-  if (aParts.prefix === bParts.prefix) {
+export function createPositionBetween(a: string | null, b: string | null) {
+  if (a && b) {
+    const aParts = splitPosition(a);
+    const bParts = splitPosition(b);
+    if (aParts.prefix === bParts.prefix) {
+      return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, null);
+    } else {
+      return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, bParts.fractionalIndex);
+    }
+  } else if (a) {
+    const aParts = splitPosition(a);
     return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, null);
+  } else if (b) {
+    const bParts = splitPosition(b);
+    return bParts.prefix + generateKeyBetween(null, bParts.fractionalIndex);
   } else {
-    return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, bParts.fractionalIndex);
+    return createPosition(Date.now(), crypto.randomUUID());
   }
 }
 
