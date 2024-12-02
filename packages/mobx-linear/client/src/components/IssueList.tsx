@@ -6,7 +6,7 @@ import { useState } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
-import { createPosition } from "../lib/position";
+import { createPosition, createPositionBetween } from "../lib/position";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -26,7 +26,8 @@ export const IssueList = observer(() => {
     (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getPosition = (issue: IssueType) => {
+  const getPosition = (issue: IssueType | undefined | null) => {
+    if (!issue) return null;
     const issueViewPosition = allIssuesView.issueViewPositionsById[issue.id];
     return issueViewPosition?.position ?? createPosition(issue.createdAt, issue.id);
   };
@@ -55,11 +56,10 @@ export const IssueList = observer(() => {
                   className={styles.moveButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (index > 0) {
-                      const before = index > 1 ? issuesWithPositions[index - 2].issue : null;
-                      const after = issuesWithPositions[index - 1].issue;
-                      allIssuesView.placeBetween(issue, before, after);
-                    }
+                    const a = getPosition(issues[index - 2]);
+                    const b = getPosition(issues[index - 1]);
+                    const pos = createPositionBetween(a, b);
+                    allIssuesView.upsertPosition(issue, pos);
                   }}
                 >
                   ↑
@@ -68,14 +68,10 @@ export const IssueList = observer(() => {
                   className={styles.moveButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (index < issuesWithPositions.length - 1) {
-                      const before = issuesWithPositions[index + 1].issue;
-                      const after =
-                        index < issuesWithPositions.length - 2
-                          ? issuesWithPositions[index + 2].issue
-                          : null;
-                      allIssuesView.placeBetween(issue, before, after);
-                    }
+                    const a = getPosition(issues[index + 1]);
+                    const b = getPosition(issues[index + 2]);
+                    const pos = createPositionBetween(a, b);
+                    allIssuesView.upsertPosition(issue, pos);
                   }}
                 >
                   ↓

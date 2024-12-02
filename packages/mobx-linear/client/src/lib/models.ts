@@ -105,6 +105,20 @@ class IssueView extends BaseModel {
   }
 
   @action
+  upsertPosition(issue: Issue, position: string) {
+    if (!this.store) return;
+    if (this.issueViewPositionsById[issue.id]) {
+      this.issueViewPositionsById[issue.id].position = position;
+    } else {
+      this.store.create("issueViewPosition", {
+        issueId: issue.id,
+        parentViewId: this.id,
+        position,
+      });
+    }
+  }
+
+  @action
   placeBetween(issue: Issue, before: Issue | null, after: Issue | null) {
     if (!this.store) return;
     let positionBefore: string | null = null;
