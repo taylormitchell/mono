@@ -1,7 +1,7 @@
 import { createContext } from "react";
 import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store";
 import { action, autorun, computed, toJS } from "mobx";
-import { createPosition, createPositionBetween } from "./position";
+import { createPosition } from "./position";
 
 // TODO can probably define the store interface at the top and then
 // provide it to the models so they know the types of the other models
@@ -117,43 +117,6 @@ class IssueView extends BaseModel {
       });
     }
   }
-
-  @action
-  placeBetween(issue: Issue, before: Issue | null, after: Issue | null) {
-    if (!this.store) return;
-    let positionBefore: string | null = null;
-    let positionAfter: string | null = null;
-    // If the issues before/after don't have persisted positions, create them
-    if (before && !this.issueViewPositionsById[before.id]) {
-      positionBefore = createPosition(before.createdAt);
-      // TODO: The lack of type safety here really got me
-      this.store.create("issueViewPosition", {
-        issueId: before.id,
-        parentViewId: this.id,
-        position: positionBefore,
-      });
-    }
-    if (after && !this.issueViewPositionsById[after.id]) {
-      positionAfter = createPosition(after.createdAt);
-      this.store.create("issueViewPosition", {
-        issueId: after.id,
-        parentViewId: this.id,
-        position: positionAfter,
-      });
-    }
-    // Create/update the position for the issue to place it between the before and after issues
-    const positionBetween = createPositionBetween(positionBefore, positionAfter);
-    const issueViewPosition = this.issueViewPositionsById[issue.id];
-    if (issueViewPosition) {
-      issueViewPosition.position = positionBetween;
-    } else {
-      this.store.create("issueViewPosition", {
-        issueId: issue.id,
-        parentViewId: this.id,
-        position: positionBetween,
-      });
-    }
-  }
 }
 
 class IssueViewPosition extends BaseModel {
@@ -164,7 +127,7 @@ class IssueViewPosition extends BaseModel {
   accessor parentView: IssueView | null = null;
 
   @property()
-  accessor position: string = createPosition(Date.now());
+  accessor position: string = createPosition(Date.now(), this.id);
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);

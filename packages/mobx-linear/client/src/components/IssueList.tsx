@@ -48,8 +48,9 @@ export const IssueList = observer(() => {
       <div className={styles.list}>
         {issues
           // TODO: not sure if localeCompare is correct here
-          .sort((a, b) => getPosition(a).localeCompare(getPosition(b)))
-          .map((issue, index) => (
+          .map((issue) => ({ issue, position: getPosition(issue)! }))
+          .sort((a, b) => (a.position > b.position ? -1 : 1))
+          .map(({ issue, position }, index) => (
             <div key={issue.id}>
               <div className={styles.moveButtons}>
                 <button
@@ -77,7 +78,6 @@ export const IssueList = observer(() => {
                   ↓
                 </button>
               </div>
-
               <IssueRow issue={issue} />
               <div>{position}</div>
             </div>
