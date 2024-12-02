@@ -27,13 +27,17 @@ function generateSortableHash(timestamp = Date.now()) {
   }
 }
 
+function createPosition(timestamp: number, id: string) {
+  return [generateSortableHash(timestamp), id].join("-");
+}
+
 function generateSomeRandomness() {
   return crypto.randomUUID().slice(0, RANDOMNESS_LENGTH);
 }
 
-export function createPosition(timestamp: number = Date.now()) {
-  return generateSortableHash(timestamp) + "-" + "a0" + "-" + generateSomeRandomness();
-}
+// export function createPosition(timestamp: number = Date.now()) {
+//   return generateSortableHash(timestamp) + "-" + "a0" + "-" + generateSomeRandomness();
+// }
 
 export function splitPosition(position: string) {
   const [hash, fractionalIndex, randomness] = position.split("-");
@@ -76,3 +80,36 @@ export function createPositionBetween(
     return createPosition(timestamp);
   }
 }
+
+function measureCreatePositionPerformance(iterations: number = 1000) {
+  const times: number[] = [];
+
+  for (let i = 0; i < iterations; i++) {
+    const now = Date.now();
+    const id = i.toString();
+    const start = performance.now();
+    createPosition(now, id);
+    const end = performance.now();
+    times.push(end - start);
+  }
+
+  const totalTime = times.reduce((sum, time) => sum + time, 0);
+  const averageTime = totalTime / iterations;
+  const minTime = Math.min(...times);
+  const maxTime = Math.max(...times);
+
+  console.log(`CreatePosition Performance Test (${iterations} iterations):`);
+  console.log(`Average time: ${averageTime.toFixed(3)}ms`);
+  console.log(`Min time: ${minTime.toFixed(3)}ms`);
+  console.log(`Max time: ${maxTime.toFixed(3)}ms`);
+  console.log(`Total time: ${totalTime.toFixed(3)}ms`);
+
+  return {
+    iterations,
+    averageTime,
+    minTime,
+    maxTime,
+    totalTime,
+  };
+}
+measureCreatePositionPerformance();
