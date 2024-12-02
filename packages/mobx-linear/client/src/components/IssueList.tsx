@@ -6,6 +6,7 @@ import { useState } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
+import { createPosition } from "../lib/position";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -21,16 +22,21 @@ export const IssueList = observer(() => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const allIssuesView = useAllIssuesView();
 
-  const issuesWithPositions = allIssuesView.issues.filter(
-    ({ issue }) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const issues = allIssuesView.issues.filter(
+    (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getPosition = (issue: IssueType) => {
+    const issueViewPosition = allIssuesView.issueViewPositionsById[issue.id];
+    return issueViewPosition?.position ?? createPosition(issue.createdAt, issue.id);
+  };
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2>Issues</h2>
-          <span className={styles.issueCount}>{issuesWithPositions.length}</span>
+          <span className={styles.issueCount}>{issues.length}</span>
         </div>
         <button className={styles.createButton} onClick={() => setIsCreateModalOpen(true)}>
           New Issue
@@ -39,9 +45,9 @@ export const IssueList = observer(() => {
       <FilterBar onSearch={setSearchQuery} />
 
       <div className={styles.list}>
-        {issuesWithPositions
-          .sort((a, b) => a.position.localeCompare(b.position))
-          .map(({ issue, position }, index) => (
+        {issues
+          .sort((a, b) => {})
+          .map((issue, index) => (
             <div key={issue.id}>
               <div className={styles.moveButtons}>
                 <button
