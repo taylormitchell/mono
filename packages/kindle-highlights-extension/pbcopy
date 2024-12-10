@@ -1,0 +1,168 @@
+----------------------------------------
+Author: Taylor Mitchell
+Date:   2024-12-09
+
+File: data/notes/ideas-list.md
+
+-- Add button to anki which wraps some text in a "shuffle" span.
++- react native app for my digital home
+
+File: data/posts/2024-12-09_13-12-09_-0600.md
+
+-notes, 
++notes - flat directory of text files, with a prefix timestamp for sorting
++
++(Maybe notes should be at the root directory? That way links are always absolute?)
++
++data - used by personal apps for persistence
++
++files - large files of any type. Not version controlled
++
++packages - distinct code packages, organized with subfolders
++
++scripts - one-off scripts
++
++Files are organized into top-level directories based on practical considerations around file systems, version control, code tools, etc. 
++
++For example, it’s often nice to have notes ordered by creation date. But because we use version control, we can’t trust the creation date on the file itself. So we put a prefix on the date which allows reverse chronological sorting.
++
++Data files could go here too, but in these cases the sorting isn’t as important, so no need to shoehorn it in when you don’t want to
++
++The “files” directory is for large things like images and videos which are unreasonable to version control. Probably a symlink to Dropbox. 
++
++You *could* put files and data together, but often my data is small enough that it can be version controlled by git. Splitting by directory is an easy way to tell give what to version control and what not too. 
++
++The term “packages” is common for src code in a monorepo. 
+
+----------------------------------------
+Author: Taylor Mitchell
+Date:   2024-12-09
+
+File: data/posts/2024-12-09_13-09-59_-0600.md
+
+-notes
++notes, data, files, packages, scripts
+
+File: data/posts/2024-12-09_13-12-09_-0600.md
+
++notes, 
+
+----------------------------------------
+Author: Taylor Mitchell
+Date:   2024-12-09
+
+File: data/posts/2024-12-09_13-09-59_-0600.md
+
++Bachelar party list
++Anki
++Reading
++notes
+
+----------------------------------------
+Author: Taylor Mitchell
+Date:   2024-12-08
+
+File: data/posts/2024-12-08_12-09-30_-0500.md
+
++Write free text notes about life
++AI can answer questions about it mostly using RAG and large context window
++But it can also persist to triple store which it can later query
++Triple store can also be the backend for different apps. Like maybe I wanna know about my family tree, and so the ai generates a UI to visualize and edit that subset of the data
+
+----------------------------------------
+Author: Taylor Mitchell
+Date:   2024-12-08
+
+File: data/posts/2024-12-04_13-00-29_-0500.md
+
+-Daniele
++Daniele, Matt?
++Justin?
++Olivia
++Caroline, Laura
+
+File: data/posts/2024-12-06_08-53-48_-0500.md
+
++# Priya and Justin’s wedding trip notes
++
++## Wednesday
++
++Woke up at 3:45 😭 for our flight
++Guy had heart attack on plane before take-off. He was ok but needed to deplane so delayed an hour
++Shuttled to hotel
++The resort front entrance is a path with shallow water on both sides. While admiring the ceiling Emily stepped right into the water 😂 . The hotel didn’t have our room ready yet so Emily needed to sit through lunch with soaking shoes! We had lunch with Laura and Carolyn, who are Priya’s friends from camp. 
++Our room had a great view and jacuzzi!
++
++
++
++Dinner with Reiko, Cam, Olivia, and Kayla
+
+File: data/posts/2024-12-08_12-09-30_-0500.md
+
+
+----------------------------------------
+Author: Taylor Mitchell
+Date:   2024-12-04
+
+File: data/posts/2024-12-01_16-58-41_-0500.md
+
+-Date, client id, 
++Date, client id, fraction index 
++Server side conflict resolution
+
+File: data/posts/2024-12-04_13-00-29_-0500.md
+
++Wedding people
++Daniele
+
+----------------------------------------
+Author: Taylor Mitchell
+Date:   2024-12-04
+
+File: data/posts/2024-12-03_20-21-48_-0500.md
+
++# Priya and Justin's Mexico Wedding Packing List
++
++## On me
++- [ ] Passport
++- [ ] Phone
++- [ ] Wallet
++- [ ] Keys
++- [ ] Airpods
++- [ ] Running shoes
++
++## Personal item
++- [x] laptop
++- [x] laptop charger
++- [x] phone charger
++- [x] portable battery
++- [x] portable battery charger
++
++## Bag
++- [x] suit
++- [ ] Plastic bags
++- [x] swim suit
++- [x] flip flops
++- [x] tank top
++- [x] shorts
++- [x] Toiletry bag
++    - [x] grab toiletry bag
++    - [x] add invisalign
++    - [x] add oura ring
++    - [x] add shaving stuff
++    - [x] maybe add laxative 
++- [x] Book
++- [x] Cuts
++- [x] Belt
++- [x] Tshirts
++- [x] Nice shirt
++- [x] Sweater
++- [x] socks and underwear
++- [x] Sweat shorts
++- [x] Work out clothes
++
++- [x] Sun glasses
++- [x] Hat
++
+
+
