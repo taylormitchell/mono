@@ -119,20 +119,6 @@ export function listDir(directory: string) {
   }
 }
 
-export function dateToJournalPath(date: Date) {
-  const dateString = date.toISOString().split("T")[0];
-  const [year, month, day] = dateString.split("-");
-  const monthNum = parseInt(month);
-  if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-    throw new Error("Invalid month number");
-  }
-  const dayNum = parseInt(day);
-  if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
-    throw new Error("Invalid day number");
-  }
-  return path.join(getNotesDir(), "journals", year, monthNum.toString(), `${dayNum}.md`);
-}
-
 export function getOrCreateJournalNote({
   type,
   date,
@@ -162,26 +148,26 @@ export function getOrCreateJournalNote({
   let filepath: string;
   let templatePath: string;
 
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+  const day = String(targetDate.getDate()).padStart(2, "0");
   switch (type) {
     case "daily":
-      filepath = dateToJournalPath(targetDate);
+      filepath = path.join(getNotesDir(), `${year}-${month}-${day}.md`);
       templatePath =
         targetDate.getDay() > 0 && targetDate.getDay() < 6
           ? path.join(getNotesDir(), "templates", "weekday-note-template.md")
           : path.join(getNotesDir(), "templates", "weekend-note-template.md");
       break;
     case "weekly":
-      filepath = dateToJournalPath(targetDate);
-      const monday = new Date(targetDate.setDate(targetDate.getDate() - targetDate.getDay() + 1));
-      const day = monday.getDate();
-      filepath = filepath.split("/").slice(0, -1).join("/");
-      filepath = path.join(filepath, `week-of-${day}.md`);
+      const monday = new Date(
+        targetDate.setDate(targetDate.getDate() - targetDate.getDay() + 1)
+      ).getDate();
+      filepath = path.join(getNotesDir(), `${year}-${month}-week-of-${monday}.md`);
       templatePath = path.join(getNotesDir(), "templates", "weekly-note-template.md");
       break;
     case "monthly":
-      filepath = dateToJournalPath(targetDate);
-      filepath = filepath.split("/").slice(0, -1).join("/");
-      filepath = path.join(filepath, "index.md");
+      filepath = path.join(getNotesDir(), `${year}-${month}.md`);
       templatePath = path.join(getNotesDir(), "templates", "monthly-note-template.md");
       break;
   }

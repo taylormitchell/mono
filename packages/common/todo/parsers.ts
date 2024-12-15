@@ -4,7 +4,7 @@ import chalk from "chalk";
 import path from "path";
 import { getRepoRoot, getNotesDir } from "../data";
 import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
-import { dateToJournalPath } from "../note";
+import { getOrCreateDailyNote } from "../note";
 chalk.level = 3;
 
 function pathToDate(pathname: string): Date | undefined {
@@ -146,7 +146,7 @@ function todoToMarkdown(todo: Todo): string {
 export function addTodo(todo: Todo, filepath?: string): string {
   if (!filepath) {
     if (todo.due) {
-      filepath = dateToJournalPath(todo.due);
+      filepath = getOrCreateDailyNote(todo.due);
     } else {
       filepath = path.join(getNotesDir(), "gtd/todo.md");
     }

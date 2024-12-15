@@ -1,6 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import { getNotesDir } from "@common/data";
-import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@common/note";
+import { createPost, getOrCreateDailyNote, getOrCreateJournalNote } from "@common/note";
 import { addTodo, getTodos } from "@common/todo/parsers";
 import fs from "fs";
 import path from "path";
@@ -280,7 +280,7 @@ app.get("/api/todos", authMiddleware, (req: Request, res) => {
 });
 
 app.post("/api/todos/today", authMiddleware, (req: Request, res) => {
-  const todayPath = dateToJournalPath(new Date());
+  const todayPath = getOrCreateDailyNote();
   return postTodoHandler(req, res, todayPath);
 });
 
