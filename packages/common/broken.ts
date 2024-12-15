@@ -1,13 +1,23 @@
 import { glob } from "glob";
 import path from "path";
 import fs from "fs";
-import { getRootDir } from "./note";
+import { getNotesDir } from "./data";
 
 function parseLinks(line: string): string[] {
   const links: string[] = [];
   let i = 0;
+  let insideBackticks = false;
+
   while (i < line.length) {
-    if (line[i] === "[") {
+    // Toggle backtick state
+    if (line[i] === "`") {
+      insideBackticks = !insideBackticks;
+      i += 1;
+      continue;
+    }
+
+    // Only process links when not inside backticks
+    if (!insideBackticks && line[i] === "[") {
       // consume text between [ and ]
       let alias = "";
       i += 1;
@@ -56,7 +66,7 @@ function parseLinks(line: string): string[] {
 
 // search for broken file references
 function cliBrokenFileReferenceSearch() {
-  const rootDir = getRootDir();
+  const rootDir = getNotesDir();
   const markdownFiles = glob.sync(`${rootDir}/**/*.md`);
   for (const file of markdownFiles) {
     const fileDir = path.dirname(file);
@@ -68,7 +78,7 @@ function cliBrokenFileReferenceSearch() {
         if (link.startsWith("http")) {
           continue;
         }
-        const filePath = path.join(fileDir, link);
+        const filePath = path.join(fileDir, link.split("#")[0]);
         if (!fs.existsSync(filePath)) {
           console.log(`Broken file reference in ${file}: ${link}`);
         }

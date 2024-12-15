@@ -2,7 +2,7 @@ import fs from "fs";
 import { glob } from "glob";
 import chalk from "chalk";
 import path from "path";
-import { getRepoRoot, getRootDir } from "../data";
+import { getRepoRoot, getNotesDir } from "../data";
 import { TODO_KEYWORDS, TODO_REGEX, Heading, Todo } from "./types";
 import { dateToJournalPath } from "../note";
 chalk.level = 3;
@@ -148,9 +148,9 @@ export function addTodo(todo: Todo, filepath?: string): string {
     if (todo.due) {
       filepath = dateToJournalPath(todo.due);
     } else {
-      filepath = path.join(getRootDir(), "gtd/todo.md");
+      filepath = path.join(getNotesDir(), "gtd/todo.md");
     }
-  } else if (!filepath.startsWith(getRootDir())) {
+  } else if (!filepath.startsWith(getNotesDir())) {
     throw new Error("Invalid filepath");
   }
   const fileDate = pathToDate(filepath);
@@ -211,7 +211,7 @@ export function listTodosDueToday(
   offset: number = 0,
   ignoreTodayPage: boolean = false
 ): void {
-  const rootDir = getRootDir();
+  const rootDir = getNotesDir();
   const todosByFile = groupBy(getTodos(pathname), "filename");
   const today = new Date();
   today.setHours(0, 0, 0, 0);

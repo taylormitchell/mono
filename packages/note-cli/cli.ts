@@ -10,7 +10,7 @@ import {
   getOrCreateWeeklyNote,
   getOrCreateMonthlyNote,
 } from "@common/note";
-import { getRepoRoot, getRootDir } from "@common/data";
+import { getRepoRoot, getNotesDir } from "@common/data";
 import { readFileSync } from "fs";
 import { addLogEntry, getTodayLogEvents } from "@common/logs/utils";
 import { LogEntry, parseDuration, formatDuration, LogEntrySchema } from "@common/logs/types";
@@ -34,7 +34,7 @@ program
   .command("list [dir]")
   .description("List directory contents")
   .action((dir) => {
-    listDir(path.join(getRootDir(), dir || ""));
+    listDir(path.join(getNotesDir(), dir || ""));
   });
 
 program
@@ -44,7 +44,7 @@ program
   .action((p: string | undefined, options: Partial<{ message: string }>) => {
     if (p !== undefined && !path.isAbsolute(p)) {
       if (p.startsWith("@")) {
-        p = path.join(getRootDir(), p.slice(1));
+        p = path.join(getNotesDir(), p.slice(1));
       } else {
         p = path.join(process.cwd(), p);
       }

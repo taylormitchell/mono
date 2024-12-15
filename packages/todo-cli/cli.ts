@@ -3,7 +3,7 @@ import chalk from "chalk";
 import fs from "fs";
 import path from "path";
 import { getTodos, groupBy, lessThanOrEqualTo, listTodosDueToday } from "@common/todo/parsers";
-import { getRootDir } from "@common/data";
+import { getNotesDir } from "@common/data";
 import { Todo } from "@common/todo/types";
 chalk.level = 3;
 
@@ -36,7 +36,7 @@ program
   .action((pathname, options) => {
     let todos = getTodos(pathname).filter((todo) => todo.status === "TODO");
     if (options.ignoreJournals) {
-      const rootDir = getRootDir();
+      const rootDir = getNotesDir();
       todos = todos.filter((todo) => !todo.filename.startsWith(path.join(rootDir, "journals")));
     }
     if (options.due) {
@@ -59,7 +59,7 @@ program
   .description("List todos due today")
   .option("-i, --ignore-today", "Ignore todos from today's daily page")
   .action((offset = 0, options) => {
-    listTodosDueToday(getRootDir(), parseInt(offset), options.ignoreToday);
+    listTodosDueToday(getNotesDir(), parseInt(offset), options.ignoreToday);
   });
 
 // add a line to the top of the /gtd/someday-maybe.md file
@@ -67,7 +67,7 @@ program
   .command("sm [line]")
   .description("Add a line to the top of the /gtd/someday-maybe.md file")
   .action((line) => {
-    const filename = path.join(getRootDir(), "gtd", "someday-maybe.md");
+    const filename = path.join(getNotesDir(), "gtd", "someday-maybe.md");
     fs.appendFileSync(filename, "\n" + line);
   });
 
@@ -76,7 +76,7 @@ program
   .command("todo [line]")
   .description("Add a todo to the bottom of the /gtd/todo.md file")
   .action((line) => {
-    const filename = path.join(getRootDir(), "gtd", "todo.md");
+    const filename = path.join(getNotesDir(), "gtd", "todo.md");
     fs.appendFileSync(filename, "\nTODO " + line);
   });
 

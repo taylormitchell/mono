@@ -2,11 +2,11 @@ import { execSync } from "child_process";
 import path from "path";
 import fs from "fs";
 import chalk from "chalk";
-import { getRootDir } from "./data";
+import { getNotesDir } from "./data";
 import { format } from "date-fns";
 
 export function getTemplatePath(name: string) {
-  return path.resolve(getRootDir(), "templates", name + ".md");
+  return path.resolve(getNotesDir(), "templates", name + ".md");
 }
 
 function replaceTemplate(props: TemplateProps) {
@@ -81,7 +81,7 @@ export function createFile(filepath: string, content: string = "") {
 export function openFile(filepath: string) {
   execSync(`cursor ${filepath}`);
   // open in obsidian
-  // const file = filepath.replace(getRootDir(), "").replace(/\\/g, "/");
+  // const file = filepath.replace(getNotesDir(), "").replace(/\\/g, "/");
   // execSync(`open -n "obsidian://open?vault=data&file=${file}"`);
 }
 
@@ -90,7 +90,7 @@ function postFileFormat(date: string | number | Date) {
 }
 
 export function createPost(directory?: string, content?: string): string {
-  directory = directory || path.join(getRootDir(), "posts");
+  directory = directory || path.join(getNotesDir(), "posts");
   const filepath = path.join(directory, postFileFormat(new Date()));
   createFile(filepath, content || "");
   return filepath;
@@ -98,7 +98,7 @@ export function createPost(directory?: string, content?: string): string {
 
 export function createNote(name?: string): string {
   const filename = name ? `${name}.md` : postFileFormat(new Date());
-  const filepath = path.join(getRootDir(), filename);
+  const filepath = path.join(getNotesDir(), filename);
   return createFile(filepath);
 }
 
@@ -130,7 +130,7 @@ export function dateToJournalPath(date: Date) {
   if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
     throw new Error("Invalid day number");
   }
-  return path.join(getRootDir(), "journals", year, monthNum.toString(), `${dayNum}.md`);
+  return path.join(getNotesDir(), "journals", year, monthNum.toString(), `${dayNum}.md`);
 }
 
 export function getOrCreateJournalNote({
@@ -167,8 +167,8 @@ export function getOrCreateJournalNote({
       filepath = dateToJournalPath(targetDate);
       templatePath =
         targetDate.getDay() > 0 && targetDate.getDay() < 6
-          ? path.join(getRootDir(), "templates", "weekday-note-template.md")
-          : path.join(getRootDir(), "templates", "weekend-note-template.md");
+          ? path.join(getNotesDir(), "templates", "weekday-note-template.md")
+          : path.join(getNotesDir(), "templates", "weekend-note-template.md");
       break;
     case "weekly":
       filepath = dateToJournalPath(targetDate);
@@ -176,13 +176,13 @@ export function getOrCreateJournalNote({
       const day = monday.getDate();
       filepath = filepath.split("/").slice(0, -1).join("/");
       filepath = path.join(filepath, `week-of-${day}.md`);
-      templatePath = path.join(getRootDir(), "templates", "weekly-note-template.md");
+      templatePath = path.join(getNotesDir(), "templates", "weekly-note-template.md");
       break;
     case "monthly":
       filepath = dateToJournalPath(targetDate);
       filepath = filepath.split("/").slice(0, -1).join("/");
       filepath = path.join(filepath, "index.md");
-      templatePath = path.join(getRootDir(), "templates", "monthly-note-template.md");
+      templatePath = path.join(getNotesDir(), "templates", "monthly-note-template.md");
       break;
   }
 

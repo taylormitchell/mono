@@ -1,5 +1,5 @@
 import { listTodosDueToday } from "@common/todo/parsers";
-import { getRootDir } from "@common/data";
+import { getNotesDir } from "@common/data";
 
 const md = `
 # Some document
@@ -19,4 +19,4 @@ last
 // const m = s.match(/\{#(\w+)\}/);
 // console.log(m);
 
-listTodosDueToday(getRootDir(), 0, true);
+listTodosDueToday(getNotesDir(), 0, true);

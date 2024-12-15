@@ -1,11 +1,11 @@
 import fs from "fs";
 import path from "path";
-import { getRootDir } from "../data";
+import { getNotesDir } from "../data";
 import { LogEntry } from "./types";
 import { format, toZonedTime } from "date-fns-tz";
 
 export function addLogEntry(logEntry: LogEntry, timeZone: string = "Canada/Eastern"): string {
-  const logPath = path.join(getRootDir(), "log.jsonl");
+  const logPath = path.join(getNotesDir(), "log.jsonl");
   const datetime = logEntry.datetime ?? new Date();
   const logLine =
     JSON.stringify({
@@ -19,7 +19,7 @@ export function addLogEntry(logEntry: LogEntry, timeZone: string = "Canada/Easte
 }
 
 export function getTodayLogEvents(): LogEntry[] {
-  const logPath = path.join(getRootDir(), "log.jsonl");
+  const logPath = path.join(getNotesDir(), "log.jsonl");
   const today = new Date().toISOString().split("T")[0];
   return fs
     .readFileSync(logPath, "utf-8")

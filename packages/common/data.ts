@@ -5,8 +5,8 @@ export function getRepoRoot() {
   return path.resolve(__dirname, "../../");
 }
 
-export function getRootDir() {
-  return path.resolve(getRepoRoot(), "data");
+export function getNotesDir() {
+  return path.resolve(getRepoRoot(), "notes");
 }
 
 export function saveFile(
@@ -24,7 +24,7 @@ export function saveFile(
   try {
     message = message || `Save ${filepath}`;
     const outputs = [
-      execSync(`cd ${getRootDir()}`).toString(),
+      execSync(`cd ${getNotesDir()}`).toString(),
       execSync(
         `git stash save "Stashing changes during data save $(date)" --include-untracked`
       ).toString(),

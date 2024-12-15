@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getRootDir } from "@common/data";
+import { getNotesDir } from "@common/data";
 import { createPost, dateToJournalPath, getOrCreateJournalNote } from "@common/note";
 import { addTodo, getTodos } from "@common/todo/parsers";
 import fs from "fs";
@@ -96,7 +96,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 app.use(express.json({ limit: "50mb" }));
-app.use(express.static(getRootDir()));
+app.use(express.static(getNotesDir()));
 
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (AUTH_DISABLED) {
@@ -119,7 +119,7 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
 // Files API
 app.get("/api/files/:path(*)", authMiddleware, (req: Request, res) => {
-  const filePath = path.join(getRootDir(), req.params.path);
+  const filePath = path.join(getNotesDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     if (fs.statSync(filePath).isFile()) {
       res.sendFile(filePath);
@@ -168,7 +168,7 @@ app.get("/api/files/:path(*)", authMiddleware, (req: Request, res) => {
 });
 
 app.put("/api/files/:path(*)", (req: Request, res) => {
-  const filePath = path.join(getRootDir(), req.params.path);
+  const filePath = path.join(getNotesDir(), req.params.path);
   const content = req.body?.content || "";
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const exists = fs.existsSync(filePath);
@@ -180,7 +180,7 @@ app.put("/api/files/:path(*)", (req: Request, res) => {
 });
 
 app.patch("/api/files/:path(*)", (req: Request, res) => {
-  const filePath = path.join(getRootDir(), req.params.path);
+  const filePath = path.join(getNotesDir(), req.params.path);
   const { method, content } = req.body;
 
   if (!method || !content) {
@@ -212,7 +212,7 @@ app.patch("/api/files/:path(*)", (req: Request, res) => {
 });
 
 app.delete("/api/files/:path(*)", (req: Request, res) => {
-  const filePath = path.join(getRootDir(), req.params.path);
+  const filePath = path.join(getNotesDir(), req.params.path);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
     if (COMMIT_ON_SAVE) commitAndPush(filePath, "Delete file");
@@ -267,7 +267,7 @@ function handleNoteRequest(type: "daily" | "weekly" | "monthly", req: Request, r
 app.post("/api/note/post/:dir(*)", (req, res) => {
   const { dir } = req.params;
   const content = req.body?.content || "";
-  const dirPath = path.join(getRootDir(), dir);
+  const dirPath = path.join(getNotesDir(), dir);
   const filePath = createPost(dirPath, content);
   if (COMMIT_ON_SAVE) commitAndPush(filePath, "Create new post");
   res.status(201).json({ message: "Post created successfully", path: filePath });
@@ -285,13 +285,13 @@ app.post("/api/todos/today", authMiddleware, (req: Request, res) => {
 });
 
 app.post("/api/todos/someday", authMiddleware, (req: Request, res) => {
-  const somedayPath = path.join(getRootDir(), "gtd", "someday-maybe.md");
+  const somedayPath = path.join(getNotesDir(), "gtd", "someday-maybe.md");
   return postTodoHandler(req, res, somedayPath);
 });
 
 app.post("/api/todos/:path(*)?", authMiddleware, (req: Request, res) => {
   const { path: relativePath } = req.params;
-  return postTodoHandler(req, res, path.join(getRootDir(), relativePath));
+  return postTodoHandler(req, res, path.join(getNotesDir(), relativePath));
 });
 
 function postTodoHandler(req: Request, res: Response, filepath?: string) {
@@ -302,7 +302,7 @@ function postTodoHandler(req: Request, res: Response, filepath?: string) {
     console.error(error);
     return res.status(400).json({ error: "Invalid todo" });
   }
-  filepath = filepath || path.join(getRootDir(), "gtd", "todo.md");
+  filepath = filepath || path.join(getNotesDir(), "gtd", "todo.md");
   console.log("filepath", filepath);
   addTodo(todo, filepath);
   if (COMMIT_ON_SAVE) commitAndPush(filepath, "Add todo");
