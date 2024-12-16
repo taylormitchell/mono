@@ -16,32 +16,37 @@
  * (this only does one less vowel check. we _could_ keep track of the each index is vowel or not, then we only need to check a boolean instead of a vowel array check)
  */
 
-const vowels = ["a", "e", "i", "o", "u"];
-
 function main(s: string, k: number): number {
+  const vowels = new Set(["a", "e", "i", "o", "u"]);
   if (s.length === 0) {
     return 0;
   }
+
   let maxVowels = 0;
   let currentVowels = 0;
   let start = 0;
   let end = Math.min(s.length - 1, k - 1);
 
-  // Count next vowel
+  // Count first window
+  for (let i = start; i <= end; i++) {
+    currentVowels += vowels.has(s[i]) ? 1 : 0;
+  }
+  if (currentVowels === k) {
+    return k;
+  }
+
+  // Count the rest of the windows
   while (end < s.length) {
-    if (start === 0) {
-      for (let i = start; i <= end; i++) {
-        currentVowels += vowels.includes(s[i]) ? 1 : 0;
-      }
-    } else {
-      if (vowels.includes(s[start - 1])) {
-        currentVowels--;
-      }
-      if (vowels.includes(s[end])) {
-        currentVowels++;
-      }
+    if (vowels.has(s[start - 1])) {
+      currentVowels--;
     }
-    maxVowels = Math.max(maxVowels, currentVowels);
+    if (vowels.has(s[end])) {
+      currentVowels++;
+    }
+    maxVowels = currentVowels > maxVowels ? currentVowels : maxVowels;
+    if (maxVowels === k) {
+      return k;
+    }
     start++;
     end++;
   }
