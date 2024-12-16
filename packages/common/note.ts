@@ -156,19 +156,19 @@ export function getOrCreateJournalNote({
       filepath = path.join(getNotesDir(), `${year}-${month}-${day}.md`);
       templatePath =
         targetDate.getDay() > 0 && targetDate.getDay() < 6
-          ? path.join(getNotesDir(), "templates", "weekday-note-template.md")
-          : path.join(getNotesDir(), "templates", "weekend-note-template.md");
+          ? path.join(getNotesDir(), "weekday-note-template.md")
+          : path.join(getNotesDir(), "weekend-note-template.md");
       break;
     case "weekly":
       const monday = new Date(
         targetDate.setDate(targetDate.getDate() - targetDate.getDay() + 1)
       ).getDate();
       filepath = path.join(getNotesDir(), `${year}-${month}-week-of-${monday}.md`);
-      templatePath = path.join(getNotesDir(), "templates", "weekly-note-template.md");
+      templatePath = path.join(getNotesDir(), "weekly-note-template.md");
       break;
     case "monthly":
       filepath = path.join(getNotesDir(), `${year}-${month}.md`);
-      templatePath = path.join(getNotesDir(), "templates", "monthly-note-template.md");
+      templatePath = path.join(getNotesDir(), "monthly-note-template.md");
       break;
   }
 
