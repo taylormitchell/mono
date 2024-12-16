@@ -25,7 +25,7 @@ function main(s: string, k: number): number {
   let maxVowels = 0;
   let currentVowels = 0;
   let start = 0;
-  let end = Math.min(s.length - 1, k);
+  let end = Math.min(s.length - 1, k - 1);
 
   // Count next vowel
   while (end < s.length) {
@@ -34,10 +34,10 @@ function main(s: string, k: number): number {
         currentVowels += vowels.includes(s[i]) ? 1 : 0;
       }
     } else {
-      if (vowels.includes[s[start - 1]]) {
+      if (vowels.includes(s[start - 1])) {
         currentVowels--;
       }
-      if (vowels.includes[s[end]]) {
+      if (vowels.includes(s[end])) {
         currentVowels++;
       }
     }
@@ -52,3 +52,5 @@ function main(s: string, k: number): number {
 function test() {
   main("abciiidef", 3);
 }
+
+test();
