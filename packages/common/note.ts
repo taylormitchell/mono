@@ -90,7 +90,7 @@ function postFileFormat(date: string | number | Date) {
 }
 
 export function createPost(directory?: string, content?: string): string {
-  directory = directory || path.join(getNotesDir(), "posts");
+  directory = directory || getNotesDir();
   const filepath = path.join(directory, postFileFormat(new Date()));
   createFile(filepath, content || "");
   return filepath;
