@@ -4,7 +4,7 @@ const HASH_LENGTH = 12;
 
 const RANDOM_LENGTH = 8;
 
-function generateReverseSortableTimestampHash(timestamp = Date.now()) {
+function generateReverseSortableTimestampHash(timestamp = Date.now(), length = HASH_LENGTH) {
   // Invert the timestamp by subtracting it from MAX_SAFE_INTEGER
   // This makes newer timestamps sort before older ones
   const invertedTimestamp = Number.MAX_SAFE_INTEGER - timestamp;
@@ -18,32 +18,25 @@ function generateReverseSortableTimestampHash(timestamp = Date.now()) {
 
   // If the padded timestamp is longer than desired length, take the rightmost characters
   // If it's shorter, pad with zeros on the right
-  if (paddedTimestamp.length > HASH_LENGTH) {
-    return paddedTimestamp.slice(-HASH_LENGTH);
+  if (paddedTimestamp.length > length) {
+    return paddedTimestamp.slice(-length);
   } else {
-    return paddedTimestamp.padEnd(HASH_LENGTH, "0");
+    return paddedTimestamp.padEnd(length, "0");
   }
-}
-
-// function which produces 32bits of randomness as base36 string
-function generateRandomBase36String() {
-  const randomNumber = Math.floor(Math.random() * 0x100000000);
-  return randomNumber.toString(36).padStart(RANDOM_LENGTH, "0").slice(0, RANDOM_LENGTH);
 }
 
 export function createPosition(createdAt: number) {
-  const hash = generateReverseSortableTimestampHash(createdAt);
-  const random = generateRandomBase36String();
-  return hash + random + "a0";
+  const createdAtHash = generateReverseSortableTimestampHash(createdAt, HASH_LENGTH);
+  const nowHash = generateReverseSortableTimestampHash(Date.now(), RANDOM_LENGTH);
+  return [createdAtHash, "a0", nowHash].join("-");
 }
 
 function splitPosition(position: string) {
-  const prefix = position.slice(0, HASH_LENGTH + RANDOM_LENGTH);
-  if (prefix.length !== HASH_LENGTH + RANDOM_LENGTH) {
+  const [createdAtHash, fractionalIndex, nowHash] = position.split("-");
+  if (createdAtHash.length !== HASH_LENGTH || nowHash.length !== RANDOM_LENGTH) {
     throw new Error("Position is shorter than the expected hash + random length");
   }
-  const fractionalIndex = position.slice(HASH_LENGTH + RANDOM_LENGTH);
-  return { prefix, fractionalIndex };
+  return { createdAtHash, fractionalIndex, nowHash };
 }
 
 export function createPositionBetween(a: string | null, b: string | null) {
