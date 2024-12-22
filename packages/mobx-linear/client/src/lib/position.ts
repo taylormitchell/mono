@@ -44,9 +44,9 @@ export function createPositionBetween(a: string | null, b: string | null) {
     const aParts = splitPosition(a);
     const bParts = splitPosition(b);
     if (aParts.prefix === bParts.prefix) {
-      return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, null);
-    } else {
       return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, bParts.fractionalIndex);
+    } else {
+      return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, null);
     }
   } else if (a) {
     const aParts = splitPosition(a);

@@ -3,8 +3,8 @@ import { createPosition, createPositionBetween } from "../position";
 describe("position utilities", () => {
   describe("createPositionBetween", () => {
     it("should create position between two existing positions", () => {
-      const pos1 = createPosition(1000, "a0");
-      const pos2 = createPosition(2000, "a0");
+      const pos1 = createPosition(2000, "a0");
+      const pos2 = createPosition(1000, "a0");
       const between = createPositionBetween(pos1, pos2);
 
       expect(between > pos1).toBe(true);
