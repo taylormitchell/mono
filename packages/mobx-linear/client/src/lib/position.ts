@@ -143,18 +143,20 @@ export function getNewPositionsForMove<T>(
   fromIndex: number,
   toIndex: number
 ) {
+  if (fromIndex === toIndex || items.length <= 1) {
+    return new Map();
+  }
   const itemToMove = items[fromIndex];
   if (!itemToMove) {
     throw new Error("Item to move not found");
   }
-  const itemMoveAfter = items[toIndex];
-  if (!itemMoveAfter) {
-    throw new Error("Item to move after not found");
-  }
-  const filteredIssues = items.filter((i) => i.id !== itemToMove.id);
+  const newToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+  const filteredItems = items.filter((i) => i !== itemToMove);
   const { newPosition, rePositions } = getNewPositionsForInsert(
-    filteredIssues,
+    filteredItems,
     getPosition,
-    toIndex
+    newToIndex
   );
+  rePositions.set(itemToMove, newPosition);
+  return rePositions;
 }

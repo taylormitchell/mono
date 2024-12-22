@@ -6,7 +6,7 @@ import { useState } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
-import { createPosition, getNewPositionsForInsert } from "../lib/position";
+import { createPosition, getNewPositionsForMove } from "../lib/position";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -29,32 +29,14 @@ export const IssueList = observer(() => {
   };
 
   const handleMoveUp = (index: number) => {
-    if (issues.length <= 1) return;
-    const issue = issues[index]?.issue;
-    if (!issue) return;
-    const filteredIssues = issues.filter((i) => i.issue.id !== issue.id);
-    const { newPosition, rePositions } = getNewPositionsForInsert(
-      filteredIssues,
-      ({ position }) => position,
-      index - 2
-    );
-    allIssuesView.upsertPosition(issue, newPosition);
+    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, index - 2);
     rePositions.forEach((position, item) => {
       allIssuesView.upsertPosition(item.issue, position);
     });
   };
 
   const handleMoveDown = (index: number) => {
-    if (issues.length <= 1) return;
-    const issue = issues[index]?.issue;
-    if (!issue) return;
-    const filteredIssues = issues.filter((i) => i.issue.id !== issue.id);
-    const { newPosition, rePositions } = getNewPositionsForInsert(
-      filteredIssues,
-      ({ position }) => position,
-      index // this give index + 1 cause we removed the issue from the array
-    );
-    allIssuesView.upsertPosition(issue, newPosition);
+    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, index + 1);
     rePositions.forEach((position, item) => {
       allIssuesView.upsertPosition(item.issue, position);
     });
