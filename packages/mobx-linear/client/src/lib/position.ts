@@ -77,13 +77,26 @@ export function getNewPositions<T>(
   const positionAbove = itemAbove ? getPosition(itemAbove) : null;
   const positionBelow = itemBelow ? getPosition(itemBelow) : null;
 
-  if (positionAbove !== positionBelow) {
+  if (!positionAbove || !positionBelow || positionAbove !== positionBelow) {
     const positionBetween = createPositionBetween(positionAbove, positionBelow);
     return {
       newPosition: positionBetween,
       rePositions: new Map([[toIndex, positionBetween]]),
     };
   }
+
+  // If the position is the same, we need to reposition all items after toIndex
+  // which have the same position as the item at toIndex
+  let lastIndex = toIndex + 1;
+  while (lastIndex < items.length) {
+    const item = items[lastIndex];
+    const position = getPosition(item);
+    if (position !== positionAbove) {
+      break;
+    }
+    lastIndex++;
+  }
+  const createdAtHash = splitPosition(positionAbove).createdAtHash;
 
   return result;
 }
