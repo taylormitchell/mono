@@ -1,7 +1,8 @@
 import { observer } from "mobx-react-lite";
 import styles from "./FilterBar.module.css";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FilterDropdown } from "./FilterDropdown";
+import { useKeyDown } from "./useKeyDown";
 
 interface FilterBarProps {
   onSearch: (query: string) => void;
@@ -10,11 +11,17 @@ interface FilterBarProps {
 export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
 
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-    onSearch(value);
-  };
+  useKeyDown("Escape", () => {
+    if (ref.current) {
+      setSearchQuery("");
+    }
+  });
+
+  useEffect(() => {
+    onSearch(searchQuery);
+  }, [searchQuery, onSearch]);
 
   return (
     <div className={styles.container}>
@@ -28,10 +35,11 @@ export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
       <div className={styles.searchContainer}>
         <SearchIcon />
         <input
+          ref={ref}
           type="text"
           placeholder="Search issues..."
           value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className={styles.searchInput}
         />
       </div>

@@ -28,17 +28,15 @@ export const IssueList = observer(() => {
     setIsCreateModalOpen(true);
   });
 
-  const getPosition = (issue: IssueType | undefined | null) => {
-    if (!issue) return null;
-    const issueViewPosition = allIssuesView.issueViewPositionsById[issue.id];
-    return issueViewPosition?.position ?? createPosition(issue.createdAt);
-  };
-
   const issues = allIssuesView.issues
     .filter(
       (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    .map((issue) => ({ issue, position: getPosition(issue)! }))
+    .map((issue) => ({
+      issue,
+      position:
+        allIssuesView.issueViewPositionsById[issue.id]?.position ?? createPosition(issue.createdAt),
+    }))
     .sort((a, b) => (a.position > b.position ? 1 : -1));
 
   const handleMoveUp = (index: number) => {
