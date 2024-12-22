@@ -25,7 +25,7 @@ export const IssueList = observer(() => {
   const getPosition = (issue: IssueType | undefined | null) => {
     if (!issue) return null;
     const issueViewPosition = allIssuesView.issueViewPositionsById[issue.id];
-    return issueViewPosition?.position ?? createPosition(issue.createdAt, issue.id);
+    return issueViewPosition?.position ?? createPosition(issue.createdAt);
   };
 
   const issues = allIssuesView.issues
@@ -57,8 +57,8 @@ export const IssueList = observer(() => {
                   className={styles.moveButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const a = getPosition(issues[index - 1]?.issue);
-                    const b = getPosition(issues[index - 2]?.issue);
+                    const a = getPosition(issues[index - 2]?.issue);
+                    const b = getPosition(issues[index - 1]?.issue);
                     const pos = createPositionBetween(a, b);
                     allIssuesView.upsertPosition(issue, pos);
                   }}
