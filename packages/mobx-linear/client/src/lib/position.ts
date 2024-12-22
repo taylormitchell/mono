@@ -95,22 +95,28 @@ export function createNPositionsBetween(a: string | null, b: string | null, n: n
   }
 }
 
-export function getNewPositions<T>(
+/**
+ *
+ * - items must be sorted
+ * - if you're generating a new position for an existing item in the list,
+ *   remove the item from the list before calling this function
+ */
+export function getNewPositionsForInsert<T>(
   items: T[],
   getPosition: (item: T) => string,
-  toIndex: number
+  insertAfterIndex: number
 ): {
   newPosition: string;
   rePositions: Map<number, string>;
 } {
   /**
    *
-   * 999zz
-   * 123a0 ← toIndex    123a0
-   * 123a0              123a1
-   * 123a0 ← fromIndex  123a2
-   * 123a0              123a3
-   * 123a1 ← nextIndexWithDifferentPosition
+   * a 999zz
+   * b 123a0 ← toIndex
+   * c 123a0
+   * d 123a0 ← fromIndex
+   * e 123a0
+   * f 123a1 ← nextIndex
    *
    * 999zz
    * 123a0 ← toIndex
@@ -121,9 +127,8 @@ export function getNewPositions<T>(
    *
    */
 
-  const itemAbove = items[toIndex]; // TODO handle case where toIndex outside of items
-  const positionAbove = itemAbove ? getPosition(itemAbove) : null;
-  let nextItemWithDiffPositionIndex = toIndex + 1;
+  const positionAbove = items[insertAfterIndex] ? getPosition(items[insertAfterIndex]) : null;
+  let nextItemWithDiffPositionIndex = insertAfterIndex + 1;
   while (nextItemWithDiffPositionIndex < items.length) {
     const item = items[nextItemWithDiffPositionIndex];
     const position = getPosition(item);
@@ -134,14 +139,14 @@ export function getNewPositions<T>(
   }
   const itemBelow = items[nextItemWithDiffPositionIndex];
   const positionBelow = itemBelow ? getPosition(itemBelow) : null;
-  const n = nextItemWithDiffPositionIndex - toIndex;
+  const n = nextItemWithDiffPositionIndex - insertAfterIndex;
 
   const newPositions = createNPositionsBetween(positionAbove, positionBelow, n);
 
   return {
     newPosition: newPositions[0],
     rePositions: new Map(
-      newPositions.slice(1).map((position, index) => [toIndex + index + 1, position])
+      newPositions.slice(1).map((position, index) => [insertAfterIndex + index + 1, position])
     ),
   };
 }
