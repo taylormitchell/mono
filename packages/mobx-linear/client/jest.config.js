@@ -4,7 +4,6 @@ export default {
   transform: {
     "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.test.json" }],
     "^.+\\.js$": "babel-jest",
-    // "^.+\\.js$": "./babel-transform.js",
   },
   transformIgnorePatterns: ["node_modules/(?!(fractional-indexing)/)"],
   moduleNameMapper: {
