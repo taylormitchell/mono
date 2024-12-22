@@ -15,6 +15,7 @@
     "noImplicitReturns": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "esModuleInterop": true,
 
     // Allow more flexible type handling
     "skipLibCheck": true,
