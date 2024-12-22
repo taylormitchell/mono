@@ -106,9 +106,10 @@ export function getNewPositions<T>(
   /**
    *
    * 999zz
-   * 123a0 ← toIndex
-   * 123a0
-   * 123a0
+   * 123a0 ← toIndex    123a0
+   * 123a0              123a1
+   * 123a0 ← fromIndex  123a2
+   * 123a0              123a3
    * 123a1 ← nextIndexWithDifferentPosition
    *
    * 999zz
