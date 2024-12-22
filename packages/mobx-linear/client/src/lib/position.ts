@@ -1,4 +1,4 @@
-import { generateKeyBetween } from "fractional-indexing";
+import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
 
 const HASH_LENGTH = 12;
 
@@ -61,6 +61,36 @@ export function createPositionBetween(a: string | null, b: string | null) {
   }
 }
 
+/**
+ * Creates N positions between a and b
+ *
+ * @throws Error if a and b are the same
+ */
+export function createNPositionsBetween(a: string | null, b: string | null, n: number) {
+  if (a && b) {
+    if (a === b) {
+      throw new Error("Cannot create N positions between the same position");
+    }
+    const aParts = splitPosition(a);
+    const bParts = splitPosition(b);
+    if (aParts.createdAtHash === bParts.createdAtHash) {
+      const indices = generateNKeysBetween(aParts.fractionalIndex, bParts.fractionalIndex, n);
+      return indices.map((index) => aParts.createdAtHash + index);
+    } else {
+      const indices = generateNKeysBetween(aParts.fractionalIndex, null, n);
+      return indices.map((index) => aParts.createdAtHash + index);
+    }
+  } else if (a) {
+    const aParts = splitPosition(a);
+    return aParts.createdAtHash + generateKeyBetween(aParts.fractionalIndex, null);
+  } else if (b) {
+    const bParts = splitPosition(b);
+    return bParts.createdAtHash + generateKeyBetween(null, bParts.fractionalIndex);
+  } else {
+    return createPosition(Date.now());
+  }
+}
+
 export function getNewPositions<T>(
   items: T[],
   getPosition: (item: T) => string,
@@ -71,11 +101,17 @@ export function getNewPositions<T>(
 } {
   const rePositions = new Map<number, string>();
 
-  const itemAbove = items[toIndex];
-  const itemBelow = items[toIndex + 1];
-
+  const itemAbove = items[toIndex]; // TODO handle case where toIndex outside of items
   const positionAbove = itemAbove ? getPosition(itemAbove) : null;
-  const positionBelow = itemBelow ? getPosition(itemBelow) : null;
+  let nextIndexWithDifferentPosition = toIndex + 1;
+  while (nextIndexWithDifferentPosition < items.length) {
+    const item = items[nextIndexWithDifferentPosition];
+    const position = getPosition(item);
+    if (position !== positionAbove) {
+      break;
+    }
+    nextIndexWithDifferentPosition++;
+  }
 
   if (!positionAbove || !positionBelow || positionAbove !== positionBelow) {
     const positionBetween = createPositionBetween(positionAbove, positionBelow);
@@ -87,16 +123,19 @@ export function getNewPositions<T>(
 
   // If the position is the same, we need to reposition all items after toIndex
   // which have the same position as the item at toIndex
-  let lastIndex = toIndex + 1;
-  while (lastIndex < items.length) {
-    const item = items[lastIndex];
+  let itemBelowIndex = toIndex + 2;
+  while (itemBelowIndex < items.length) {
+    const item = items[itemBelowIndex];
     const position = getPosition(item);
     if (position !== positionAbove) {
       break;
     }
-    lastIndex++;
+    itemBelowIndex++;
   }
-  const createdAtHash = splitPosition(positionAbove).createdAtHash;
+  const itemBelow = items[itemBelowIndex];
+  const itemBelowParts = splitPosition(itemBelow);
+
+  const lastItemParts = splitPosition(items[lastIndex - 1]);
 
   return result;
 }
