@@ -66,28 +66,12 @@ export const IssueList = observer(() => {
         {issues.map(({ issue, position }, index) => (
           <div key={issue.id}>
             <div key={issue.id}>
-              <div className={styles.moveButtons}>
-                <button
-                  className={styles.moveButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMoveUp(index);
-                  }}
-                >
-                  ↑
-                </button>
-                <button
-                  className={styles.moveButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMoveDown(index);
-                  }}
-                >
-                  ↓
-                </button>
-              </div>
-              <IssueRow issue={issue} />
-              <div>{position}</div>
+              <IssueRow
+                issue={issue}
+                position={position}
+                moveUpHandler={() => handleMoveUp(index)}
+                moveDownHandler={() => handleMoveDown(index)}
+              />
             </div>
           </div>
         ))}
@@ -97,34 +81,57 @@ export const IssueList = observer(() => {
   );
 });
 
-const IssueRow = observer(({ issue }: { issue: IssueType }) => {
-  const store = useStore();
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const IssueRow = observer(
+  ({
+    issue,
+    position,
+    moveUpHandler,
+    moveDownHandler,
+  }: {
+    issue: IssueType;
+    position: string;
+    moveUpHandler: () => void;
+    moveDownHandler: () => void;
+  }) => {
+    const store = useStore();
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  return (
-    <>
-      <div className={styles.issueRow} onClick={() => setIsEditModalOpen(true)}>
-        <div className={styles.issueStatus}>●</div>
-        <div className={styles.issueTitle}>{issue.title}</div>
-        <div className={styles.issueMetadata}>
-          <span className={styles.priority}>P1</span>
-          <span className={styles.label}>Bug</span>
-          <span className={styles.status}>In Progress</span>
+    return (
+      <>
+        <div className={styles.issueRow} onClick={() => setIsEditModalOpen(true)}>
+          <div className={styles.issueStatus}>●</div>
+          <div className={styles.issueTitle}>{issue.title}</div>
+          <div>{position}</div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              moveUpHandler();
+            }}
+          >
+            ↑
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              moveDownHandler();
+            }}
+          >
+            ↓
+          </button>
+          <button
+            className={styles.deleteButton}
+            onClick={(e) => {
+              e.stopPropagation();
+              store.delete(issue);
+            }}
+          >
+            Delete
+          </button>
         </div>
-        <button
-          className={styles.deleteButton}
-          onClick={(e) => {
-            e.stopPropagation();
-            store.delete(issue);
-          }}
-        >
-          Delete
-        </button>
-      </div>
-
-      {isEditModalOpen && (
-        <EditIssueModal issue={issue} onClose={() => setIsEditModalOpen(false)} />
-      )}
-    </>
-  );
-});
+        {isEditModalOpen && (
+          <EditIssueModal issue={issue} onClose={() => setIsEditModalOpen(false)} />
+        )}
+      </>
+    );
+  }
+);

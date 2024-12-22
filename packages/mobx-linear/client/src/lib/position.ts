@@ -98,8 +98,8 @@ export function createNPositionsBetween(a: string | null, b: string | null, n: n
 /**
  *
  * - items must be sorted
- * - if you're generating a new position for an existing item in the list,
- *   remove the item from the list before calling this function
+ * - used for inserting a new item in the list. if you want to move an item,
+ *   use {@link getNewPositionsForMove} instead
  *
  * TODO: add tests
  * TODO: maybe add helper for moving (or just better interface?)
@@ -137,6 +137,9 @@ export function getNewPositionsForInsert<T>(
   };
 }
 
+/**
+ * - items must be sorted
+ */
 export function getNewPositionsForMove<T>(
   items: T[],
   getPosition: (item: T) => string,
