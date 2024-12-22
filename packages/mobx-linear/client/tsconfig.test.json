@@ -17,12 +17,10 @@
     "noUnusedParameters": false,
     "esModuleInterop": true,
 
-    "allowJs": true,
-
     // Allow more flexible type handling
     "skipLibCheck": true,
     "suppressImplicitAnyIndexErrors": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "**/*.test.ts", "**/*.test.tsx", "**/*.js"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "**/*.test.ts", "**/*.test.tsx"],
   "exclude": ["node_modules"]
 }
