@@ -2,6 +2,8 @@ import { generateKeyBetween } from "fractional-indexing";
 
 const HASH_LENGTH = 12;
 
+const RANDOM_LENGTH = 8;
+
 function generateReverseSortableTimestampHash(timestamp = Date.now()) {
   // Invert the timestamp by subtracting it from MAX_SAFE_INTEGER
   // This makes newer timestamps sort before older ones
@@ -23,22 +25,33 @@ function generateReverseSortableTimestampHash(timestamp = Date.now()) {
   }
 }
 
+// function which produces 32bits of randomness as base36 string
+function generateRandomBase36String() {
+  const randomNumber = Math.floor(Math.random() * 0x100000000);
+  return randomNumber.toString(36).padStart(RANDOM_LENGTH, "0").slice(0, RANDOM_LENGTH);
+}
+
 export function createPosition(createdAt: number) {
   const hash = generateReverseSortableTimestampHash(createdAt);
-  return hash + "a0";
+  const random = generateRandomBase36String();
+  return hash + random + "a0";
 }
 
 function splitPosition(position: string) {
-  const prefix = position.slice(0, HASH_LENGTH);
-  if (prefix.length !== HASH_LENGTH) {
-    throw new Error("Position is shorter than the expected hash length");
+  const prefix = position.slice(0, HASH_LENGTH + RANDOM_LENGTH);
+  if (prefix.length !== HASH_LENGTH + RANDOM_LENGTH) {
+    throw new Error("Position is shorter than the expected hash + random length");
   }
-  const fractionalIndex = position.slice(HASH_LENGTH);
+  const fractionalIndex = position.slice(HASH_LENGTH + RANDOM_LENGTH);
   return { prefix, fractionalIndex };
 }
 
 export function createPositionBetween(a: string | null, b: string | null) {
   if (a && b) {
+    if (a === b) {
+      // TODO: edge case.
+      return a;
+    }
     const aParts = splitPosition(a);
     const bParts = splitPosition(b);
     if (aParts.prefix === bParts.prefix) {

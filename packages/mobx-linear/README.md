@@ -5,3 +5,4 @@ TODO re-order issues
 TODO lables, priorities, statuses
 TODO filter
 MAYBE throw when accessing property of deleted object
+MAYBE add docs about limitations of position
