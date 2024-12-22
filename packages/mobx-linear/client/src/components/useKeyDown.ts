@@ -1,10 +1,11 @@
 import { useEffect } from "react";
+import isHotkey from "is-hotkey";
 
-export function useKeyDown(key: string, callback: () => void) {
+export function useKeyDown(key: string, callback: (e: KeyboardEvent) => void) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === key) {
-        callback();
+      if (isHotkey(key, e)) {
+        callback(e);
       }
     };
     window.addEventListener("keydown", handleKeyDown);

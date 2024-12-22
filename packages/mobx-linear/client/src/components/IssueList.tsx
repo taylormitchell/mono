@@ -2,11 +2,12 @@ import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
 import { useStore } from "../lib/useStore";
 import { FilterBar } from "./FilterBar";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
 import { createPosition, getNewPositionsForMove } from "../lib/position";
+import { useKeyDown } from "./useKeyDown";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -22,28 +23,23 @@ export const IssueList = observer(() => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const allIssuesView = useAllIssuesView();
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "c" && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        setIsCreateModalOpen(true);
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setIsCreateModalOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
+  useKeyDown("c", (e) => {
+    e.preventDefault();
+    setIsCreateModalOpen(true);
+  });
 
   const getPosition = (issue: IssueType | undefined | null) => {
     if (!issue) return null;
     const issueViewPosition = allIssuesView.issueViewPositionsById[issue.id];
     return issueViewPosition?.position ?? createPosition(issue.createdAt);
   };
+
+  const issues = allIssuesView.issues
+    .filter(
+      (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .map((issue) => ({ issue, position: getPosition(issue)! }))
+    .sort((a, b) => (a.position > b.position ? 1 : -1));
 
   const handleMoveUp = (index: number) => {
     const moveAfterIndex = index - 2;
@@ -72,13 +68,6 @@ export const IssueList = observer(() => {
       allIssuesView.upsertPosition(itemMovedAfter.issue, itemMovedAfter.position);
     }
   };
-
-  const issues = allIssuesView.issues
-    .filter(
-      (issue) => !searchQuery || issue.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .map((issue) => ({ issue, position: getPosition(issue)! }))
-    .sort((a, b) => (a.position > b.position ? 1 : -1));
 
   return (
     <div className={styles.container}>
