@@ -40,24 +40,25 @@ function splitPosition(position: string) {
 }
 
 export function createPositionBetween(a: string | null, b: string | null) {
+  const nowHash = generateReverseSortableTimestampHash(Date.now(), RANDOM_LENGTH);
   if (a && b) {
-    if (a === b) {
-      // TODO: edge case.
-      return a;
-    }
     const aParts = splitPosition(a);
     const bParts = splitPosition(b);
-    if (aParts.prefix === bParts.prefix) {
-      return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, bParts.fractionalIndex);
+    if (aParts.createdAtHash === bParts.createdAtHash) {
+      const fractionalIndex = generateKeyBetween(aParts.fractionalIndex, bParts.fractionalIndex);
+      return [aParts.createdAtHash, fractionalIndex, nowHash].join("-");
     } else {
-      return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, null);
+      const fractionalIndex = generateKeyBetween(aParts.fractionalIndex, null);
+      return [aParts.createdAtHash, fractionalIndex, nowHash].join("-");
     }
   } else if (a) {
     const aParts = splitPosition(a);
-    return aParts.prefix + generateKeyBetween(aParts.fractionalIndex, null);
+    const fractionalIndex = generateKeyBetween(aParts.fractionalIndex, null);
+    return [aParts.createdAtHash, fractionalIndex, nowHash].join("-");
   } else if (b) {
     const bParts = splitPosition(b);
-    return bParts.prefix + generateKeyBetween(null, bParts.fractionalIndex);
+    const fractionalIndex = generateKeyBetween(null, bParts.fractionalIndex);
+    return [bParts.createdAtHash, fractionalIndex, nowHash].join("-");
   } else {
     return createPosition(Date.now());
   }
