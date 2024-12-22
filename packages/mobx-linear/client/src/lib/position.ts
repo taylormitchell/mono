@@ -61,6 +61,33 @@ export function createPositionBetween(a: string | null, b: string | null) {
   }
 }
 
+export function getNewPositions<T>(
+  items: T[],
+  getPosition: (item: T) => string,
+  toIndex: number
+): {
+  newPosition: string;
+  rePositions: Map<number, string>;
+} {
+  const rePositions = new Map<number, string>();
+
+  const itemAbove = items[toIndex];
+  const itemBelow = items[toIndex + 1];
+
+  const positionAbove = itemAbove ? getPosition(itemAbove) : null;
+  const positionBelow = itemBelow ? getPosition(itemBelow) : null;
+
+  if (positionAbove !== positionBelow) {
+    const positionBetween = createPositionBetween(positionAbove, positionBelow);
+    return {
+      newPosition: positionBetween,
+      rePositions: new Map([[toIndex, positionBetween]]),
+    };
+  }
+
+  return result;
+}
+
 // function measureCreatePositionPerformance(iterations: number = 1000) {
 //   const times: number[] = [];
 
