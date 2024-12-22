@@ -29,6 +29,7 @@ export const IssueList = observer(() => {
   };
 
   const handleMoveUp = (index: number) => {
+    if (issues.length <= 1) return;
     const issue = issues[index]?.issue;
     if (!issue) return;
     const filteredIssues = issues.filter((i) => i.issue.id !== issue.id);
@@ -44,6 +45,7 @@ export const IssueList = observer(() => {
   };
 
   const handleMoveDown = (index: number) => {
+    if (issues.length <= 1) return;
     const issue = issues[index]?.issue;
     if (!issue) return;
     const filteredIssues = issues.filter((i) => i.issue.id !== issue.id);

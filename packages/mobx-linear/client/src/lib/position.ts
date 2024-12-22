@@ -136,3 +136,25 @@ export function getNewPositionsForInsert<T>(
     ),
   };
 }
+
+export function getNewPositionsForMove<T>(
+  items: T[],
+  getPosition: (item: T) => string,
+  fromIndex: number,
+  toIndex: number
+) {
+  const itemToMove = items[fromIndex];
+  if (!itemToMove) {
+    throw new Error("Item to move not found");
+  }
+  const itemMoveAfter = items[toIndex];
+  if (!itemMoveAfter) {
+    throw new Error("Item to move after not found");
+  }
+  const filteredIssues = items.filter((i) => i.id !== itemToMove.id);
+  const { newPosition, rePositions } = getNewPositionsForInsert(
+    filteredIssues,
+    getPosition,
+    toIndex
+  );
+}
