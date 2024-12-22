@@ -124,7 +124,7 @@ class IssueViewPosition extends BaseModel {
   accessor parentView: IssueView | null = null;
 
   @property()
-  accessor position: string = createPosition(Date.now(), this.id);
+  accessor position: string = createPosition(Date.now());
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);

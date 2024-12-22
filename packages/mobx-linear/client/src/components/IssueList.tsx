@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
 import { useStore } from "../lib/useStore";
 import { FilterBar } from "./FilterBar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
@@ -21,6 +21,23 @@ export const IssueList = observer(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const allIssuesView = useAllIssuesView();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "c" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setIsCreateModalOpen(true);
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setIsCreateModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const getPosition = (issue: IssueType | undefined | null) => {
     if (!issue) return null;
