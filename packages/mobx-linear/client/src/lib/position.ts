@@ -82,12 +82,16 @@ export function createNPositionsBetween(a: string | null, b: string | null, n: n
     }
   } else if (a) {
     const aParts = splitPosition(a);
-    return aParts.createdAtHash + generateKeyBetween(aParts.fractionalIndex, null);
+    const indices = generateNKeysBetween(aParts.fractionalIndex, null, n);
+    return indices.map((index) => aParts.createdAtHash + index);
   } else if (b) {
     const bParts = splitPosition(b);
-    return bParts.createdAtHash + generateKeyBetween(null, bParts.fractionalIndex);
+    const indices = generateNKeysBetween(null, bParts.fractionalIndex, n);
+    return indices.map((index) => bParts.createdAtHash + index);
   } else {
-    return createPosition(Date.now());
+    const createdAtHash = generateReverseSortableTimestampHash(Date.now(), HASH_LENGTH);
+    const indices = generateNKeysBetween(null, null, n);
+    return indices.map((index) => createdAtHash + index);
   }
 }
 
@@ -99,45 +103,46 @@ export function getNewPositions<T>(
   newPosition: string;
   rePositions: Map<number, string>;
 } {
-  const rePositions = new Map<number, string>();
+  /**
+   *
+   * 999zz
+   * 123a0 ← toIndex
+   * 123a0
+   * 123a0
+   * 123a1 ← nextIndexWithDifferentPosition
+   *
+   * 999zz
+   * 123a0 ← toIndex
+   * 123a0
+   * 123a0
+   * 222a0 ← nextIndexWithDifferentPosition
+   *
+   *
+   */
 
   const itemAbove = items[toIndex]; // TODO handle case where toIndex outside of items
   const positionAbove = itemAbove ? getPosition(itemAbove) : null;
-  let nextIndexWithDifferentPosition = toIndex + 1;
-  while (nextIndexWithDifferentPosition < items.length) {
-    const item = items[nextIndexWithDifferentPosition];
+  let nextItemWithDiffPositionIndex = toIndex + 1;
+  while (nextItemWithDiffPositionIndex < items.length) {
+    const item = items[nextItemWithDiffPositionIndex];
     const position = getPosition(item);
     if (position !== positionAbove) {
       break;
     }
-    nextIndexWithDifferentPosition++;
+    nextItemWithDiffPositionIndex++;
   }
+  const itemBelow = items[nextItemWithDiffPositionIndex];
+  const positionBelow = itemBelow ? getPosition(itemBelow) : null;
+  const n = nextItemWithDiffPositionIndex - toIndex;
 
-  if (!positionAbove || !positionBelow || positionAbove !== positionBelow) {
-    const positionBetween = createPositionBetween(positionAbove, positionBelow);
-    return {
-      newPosition: positionBetween,
-      rePositions: new Map([[toIndex, positionBetween]]),
-    };
-  }
+  const newPositions = createNPositionsBetween(positionAbove, positionBelow, n);
 
-  // If the position is the same, we need to reposition all items after toIndex
-  // which have the same position as the item at toIndex
-  let itemBelowIndex = toIndex + 2;
-  while (itemBelowIndex < items.length) {
-    const item = items[itemBelowIndex];
-    const position = getPosition(item);
-    if (position !== positionAbove) {
-      break;
-    }
-    itemBelowIndex++;
-  }
-  const itemBelow = items[itemBelowIndex];
-  const itemBelowParts = splitPosition(itemBelow);
-
-  const lastItemParts = splitPosition(items[lastIndex - 1]);
-
-  return result;
+  return {
+    newPosition: newPositions[0],
+    rePositions: new Map(
+      newPositions.slice(1).map((position, index) => [toIndex + index + 1, position])
+    ),
+  };
 }
 
 // function measureCreatePositionPerformance(iterations: number = 1000) {
