@@ -6,7 +6,7 @@ import { useState } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
-import { createPosition, createPositionBetween } from "../lib/position";
+import { createPosition, createPositionBetween, getNewPositionsForInsert } from "../lib/position";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -26,6 +26,19 @@ export const IssueList = observer(() => {
     if (!issue) return null;
     const issueViewPosition = allIssuesView.issueViewPositionsById[issue.id];
     return issueViewPosition?.position ?? createPosition(issue.createdAt);
+  };
+
+  const handleMoveUp = (index: number) => {
+    const filteredIssues = issues.filter(({ issue }) => issue.id !== issues[index]?.issue.id);
+    const { newPosition, rePositions } = getNewPositionsForInsert(
+      filteredIssues,
+      ({ position }) => position,
+      index - 2
+    );
+    allIssuesView.upsertPosition(issue, newPosition);
+    rePositions.forEach((position, index) => {
+      allIssuesView.upsertPosition(filteredIssues[index].issue, position);
+    });
   };
 
   const issues = allIssuesView.issues
@@ -57,10 +70,16 @@ export const IssueList = observer(() => {
                   className={styles.moveButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const a = getPosition(issues[index - 2]?.issue);
-                    const b = getPosition(issues[index - 1]?.issue);
-                    const pos = createPositionBetween(a, b);
-                    allIssuesView.upsertPosition(issue, pos);
+                    const filteredIssues = issues.filter(({ issue }) => issue.id !== issue.id);
+                    const { newPosition, rePositions } = getNewPositionsForInsert(
+                      filteredIssues,
+                      ({ position }) => position,
+                      index - 2
+                    );
+                    allIssuesView.upsertPosition(issue, newPosition);
+                    rePositions.forEach((position, index) => {
+                      allIssuesView.upsertPosition(filteredIssues[index].issue, position);
+                    });
                   }}
                 >
                   ↑

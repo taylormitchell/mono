@@ -140,7 +140,6 @@ export function getNewPositionsForInsert<T>(
   const itemBelow = items[nextItemWithDiffPositionIndex];
   const positionBelow = itemBelow ? getPosition(itemBelow) : null;
   const n = nextItemWithDiffPositionIndex - insertAfterIndex;
-
   const newPositions = createNPositionsBetween(positionAbove, positionBelow, n);
 
   return {
