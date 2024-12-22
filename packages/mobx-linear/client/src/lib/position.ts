@@ -3,10 +3,7 @@ import { generateKeyBetween } from "fractional-indexing";
 const HASH_LENGTH = 12;
 const ID_LENGTH = 4;
 
-function generateSortableHash(timestamp = Date.now()) {
-  // Ensure timestamp is a number
-  timestamp = Number(timestamp);
-
+function generateReverseSortableTimestampHash(timestamp = Date.now()) {
   // Invert the timestamp by subtracting it from MAX_SAFE_INTEGER
   // This makes newer timestamps sort before older ones
   const invertedTimestamp = Number.MAX_SAFE_INTEGER - timestamp;
@@ -28,7 +25,7 @@ function generateSortableHash(timestamp = Date.now()) {
 }
 
 export function createPosition(createdAt: number, id: string) {
-  const hash = generateSortableHash(createdAt);
+  const hash = generateReverseSortableTimestampHash(createdAt);
   const shortId = id.padEnd(ID_LENGTH, "0").slice(0, ID_LENGTH);
   return hash + shortId + "a0";
 }
