@@ -1,7 +1,6 @@
 import { generateKeyBetween } from "fractional-indexing";
 
 const HASH_LENGTH = 12;
-const ID_LENGTH = 4;
 
 function generateReverseSortableTimestampHash(timestamp = Date.now()) {
   // Invert the timestamp by subtracting it from MAX_SAFE_INTEGER
@@ -24,18 +23,17 @@ function generateReverseSortableTimestampHash(timestamp = Date.now()) {
   }
 }
 
-export function createPosition(createdAt: number, id: string) {
+export function createPosition(createdAt: number) {
   const hash = generateReverseSortableTimestampHash(createdAt);
-  const shortId = id.padEnd(ID_LENGTH, "0").slice(0, ID_LENGTH);
-  return hash + shortId + "a0";
+  return hash + "a0";
 }
 
 function splitPosition(position: string) {
-  const prefix = position.slice(0, HASH_LENGTH + ID_LENGTH);
-  if (prefix.length !== HASH_LENGTH + ID_LENGTH) {
-    throw new Error("Position is shorter than the expected hash + id length");
+  const prefix = position.slice(0, HASH_LENGTH);
+  if (prefix.length !== HASH_LENGTH) {
+    throw new Error("Position is shorter than the expected hash length");
   }
-  const fractionalIndex = position.slice(HASH_LENGTH + ID_LENGTH);
+  const fractionalIndex = position.slice(HASH_LENGTH);
   return { prefix, fractionalIndex };
 }
 
@@ -55,38 +53,38 @@ export function createPositionBetween(a: string | null, b: string | null) {
     const bParts = splitPosition(b);
     return bParts.prefix + generateKeyBetween(null, bParts.fractionalIndex);
   } else {
-    return createPosition(Date.now(), crypto.randomUUID());
+    return createPosition(Date.now());
   }
 }
 
-function measureCreatePositionPerformance(iterations: number = 1000) {
-  const times: number[] = [];
+// function measureCreatePositionPerformance(iterations: number = 1000) {
+//   const times: number[] = [];
 
-  for (let i = 0; i < iterations; i++) {
-    const now = Date.now();
-    const id = i.toString();
-    const start = performance.now();
-    createPosition(now, id);
-    const end = performance.now();
-    times.push(end - start);
-  }
+//   for (let i = 0; i < iterations; i++) {
+//     const now = Date.now();
+//     const id = i.toString();
+//     const start = performance.now();
+//     createPosition(now, id);
+//     const end = performance.now();
+//     times.push(end - start);
+//   }
 
-  const totalTime = times.reduce((sum, time) => sum + time, 0);
-  const averageTime = totalTime / iterations;
-  const minTime = Math.min(...times);
-  const maxTime = Math.max(...times);
+//   const totalTime = times.reduce((sum, time) => sum + time, 0);
+//   const averageTime = totalTime / iterations;
+//   const minTime = Math.min(...times);
+//   const maxTime = Math.max(...times);
 
-  console.log(`CreatePosition Performance Test (${iterations} iterations):`);
-  console.log(`Average time: ${averageTime.toFixed(3)}ms`);
-  console.log(`Min time: ${minTime.toFixed(3)}ms`);
-  console.log(`Max time: ${maxTime.toFixed(3)}ms`);
-  console.log(`Total time: ${totalTime.toFixed(3)}ms`);
+//   console.log(`CreatePosition Performance Test (${iterations} iterations):`);
+//   console.log(`Average time: ${averageTime.toFixed(3)}ms`);
+//   console.log(`Min time: ${minTime.toFixed(3)}ms`);
+//   console.log(`Max time: ${maxTime.toFixed(3)}ms`);
+//   console.log(`Total time: ${totalTime.toFixed(3)}ms`);
 
-  return {
-    iterations,
-    averageTime,
-    minTime,
-    maxTime,
-    totalTime,
-  };
-}
+//   return {
+//     iterations,
+//     averageTime,
+//     minTime,
+//     maxTime,
+//     totalTime,
+//   };
+// }

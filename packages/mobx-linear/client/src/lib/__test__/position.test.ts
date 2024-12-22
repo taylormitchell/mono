@@ -3,8 +3,8 @@ import { createPosition, createPositionBetween } from "../position";
 describe("position utilities", () => {
   describe("createPositionBetween", () => {
     it("should create position between two existing positions", () => {
-      const pos1 = createPosition(2000, "a0");
-      const pos2 = createPosition(1000, "a0");
+      const pos1 = createPosition(2000);
+      const pos2 = createPosition(1000);
       const between = createPositionBetween(pos1, pos2);
 
       expect(between > pos1).toBe(true);
@@ -12,14 +12,14 @@ describe("position utilities", () => {
     });
 
     it("should handle moving to start of list", () => {
-      const firstPos = createPosition(1000, "a");
+      const firstPos = createPosition(1000);
       const newFirst = createPositionBetween(null, firstPos);
 
       expect(newFirst < firstPos).toBe(true);
     });
 
     it("should handle moving to end of list", () => {
-      const lastPos = createPosition(1000, "a");
+      const lastPos = createPosition(1000);
       const newLast = createPositionBetween(lastPos, null);
 
       expect(newLast > lastPos).toBe(true);
@@ -35,10 +35,10 @@ describe("position utilities", () => {
     it("should correctly reorder items in a list", () => {
       // Create a list of 4 items
       const positions = [
-        createPosition(1000, "a"),
-        createPosition(2000, "b"),
-        createPosition(3000, "c"),
-        createPosition(4000, "d"),
+        createPosition(4000),
+        createPosition(3000),
+        createPosition(2000),
+        createPosition(1000),
       ];
 
       // Move item up (from index 2 to between 0 and 1)
