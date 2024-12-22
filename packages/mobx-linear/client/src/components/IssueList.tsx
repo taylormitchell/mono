@@ -38,10 +38,8 @@ export const IssueList = observer(() => {
       index - 2
     );
     allIssuesView.upsertPosition(issue, newPosition);
-    rePositions.forEach((position, index) => {
-      const issue = filteredIssues[index].issue;
-      if (!issue) return;
-      allIssuesView.upsertPosition(issue, position);
+    rePositions.forEach((position, item) => {
+      allIssuesView.upsertPosition(item.issue, position);
     });
   };
 
@@ -55,10 +53,8 @@ export const IssueList = observer(() => {
       index // this give index + 1 cause we removed the issue from the array
     );
     allIssuesView.upsertPosition(issue, newPosition);
-    rePositions.forEach((position, index) => {
-      const issue = filteredIssues[index].issue;
-      if (!issue) return;
-      allIssuesView.upsertPosition(issue, position);
+    rePositions.forEach((position, item) => {
+      allIssuesView.upsertPosition(item.issue, position);
     });
   };
 

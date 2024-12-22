@@ -7,9 +7,9 @@ const store = createStore();
 // store.create("issue", { title: "1", createdAt: 3 });
 // store.create("issue", { title: "2", createdAt: 2 });
 // store.create("issue", { title: "3", createdAt: 1 });
-store.create("issue", { title: "1", createdAt: 2 });
-store.create("issue", { title: "2", createdAt: 2 });
-store.create("issue", { title: "3", createdAt: 1 });
+store.create("issue", { title: "a1", createdAt: 3 });
+store.create("issue", { title: "a2", createdAt: 2 });
+store.create("issue", { title: "b1", createdAt: 1 });
 
 const App = observer(() => {
   return (

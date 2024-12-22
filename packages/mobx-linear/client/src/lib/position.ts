@@ -100,6 +100,9 @@ export function createNPositionsBetween(a: string | null, b: string | null, n: n
  * - items must be sorted
  * - if you're generating a new position for an existing item in the list,
  *   remove the item from the list before calling this function
+ *
+ * TODO: add tests
+ * TODO: maybe add helper for moving (or just better interface?)
  */
 export function getNewPositionsForInsert<T>(
   items: T[],
@@ -109,24 +112,6 @@ export function getNewPositionsForInsert<T>(
   newPosition: string;
   rePositions: Map<T, string>;
 } {
-  /**
-   *
-   * a 999zz
-   * b 123a0 ← toIndex
-   * c 123a0
-   * d 123a0 ← fromIndex
-   * e 123a0
-   * f 123a1 ← nextIndex
-   *
-   * 999zz
-   * 123a0 ← toIndex
-   * 123a0
-   * 123a0
-   * 222a0 ← nextIndexWithDifferentPosition
-   *
-   *
-   */
-
   const positionAbove = items[insertAfterIndex] ? getPosition(items[insertAfterIndex]) : null;
   let nextItemWithDiffPositionIndex = insertAfterIndex + 1;
   while (nextItemWithDiffPositionIndex < items.length) {
@@ -151,55 +136,3 @@ export function getNewPositionsForInsert<T>(
     ),
   };
 }
-
-export function getNewPositionsMoveMove(
-  items: T[],
-  getPosition: (item: T) => string,
-  fromIndex: number,
-  toIndex: number
-): {
-  newPositions: string[];
-  rePositions: Map<T, string>;
-} {
-  const item = items[fromIndex];
-  if (!item) {
-    throw new Error("Item not found");
-  }
-  const filteredIssues = items.filter((i) => i.id !== item.id);
-
-  const position = getPosition(item);
-  const newPositions = createNPositionsBetween(position, null, toIndex - fromIndex);
-  return newPositions;
-}
-
-// function measureCreatePositionPerformance(iterations: number = 1000) {
-//   const times: number[] = [];
-
-//   for (let i = 0; i < iterations; i++) {
-//     const now = Date.now();
-//     const id = i.toString();
-//     const start = performance.now();
-//     createPosition(now, id);
-//     const end = performance.now();
-//     times.push(end - start);
-//   }
-
-//   const totalTime = times.reduce((sum, time) => sum + time, 0);
-//   const averageTime = totalTime / iterations;
-//   const minTime = Math.min(...times);
-//   const maxTime = Math.max(...times);
-
-//   console.log(`CreatePosition Performance Test (${iterations} iterations):`);
-//   console.log(`Average time: ${averageTime.toFixed(3)}ms`);
-//   console.log(`Min time: ${minTime.toFixed(3)}ms`);
-//   console.log(`Max time: ${maxTime.toFixed(3)}ms`);
-//   console.log(`Total time: ${totalTime.toFixed(3)}ms`);
-
-//   return {
-//     iterations,
-//     averageTime,
-//     minTime,
-//     maxTime,
-//     totalTime,
-//   };
-// }
