@@ -29,17 +29,31 @@ export const IssueList = observer(() => {
   };
 
   const handleMoveUp = (index: number) => {
-    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, index - 2);
+    const moveAfterIndex = index - 2;
+    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, moveAfterIndex);
+    if (rePositions.size === 0) return;
     rePositions.forEach((position, item) => {
       allIssuesView.upsertPosition(item.issue, position);
     });
+    // If the item we're moving after doesn't have a persisted position, persist it
+    const itemMovedAfter = issues[moveAfterIndex];
+    if (itemMovedAfter && !allIssuesView.issueViewPositionsById[itemMovedAfter.issue.id]) {
+      allIssuesView.upsertPosition(itemMovedAfter.issue, itemMovedAfter.position);
+    }
   };
 
   const handleMoveDown = (index: number) => {
-    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, index + 1);
+    const moveAfterIndex = index + 1;
+    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, moveAfterIndex);
+    if (rePositions.size === 0) return;
     rePositions.forEach((position, item) => {
       allIssuesView.upsertPosition(item.issue, position);
     });
+    // If the item we're moving after doesn't have a persisted position, persist it
+    const itemMovedAfter = issues[moveAfterIndex];
+    if (itemMovedAfter && !allIssuesView.issueViewPositionsById[itemMovedAfter.issue.id]) {
+      allIssuesView.upsertPosition(itemMovedAfter.issue, itemMovedAfter.position);
+    }
   };
 
   const issues = allIssuesView.issues
