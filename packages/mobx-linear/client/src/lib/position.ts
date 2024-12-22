@@ -107,7 +107,7 @@ export function getNewPositionsForInsert<T>(
   insertAfterIndex: number
 ): {
   newPosition: string;
-  rePositions: Map<number, string>;
+  rePositions: Map<T, string>;
 } {
   /**
    *
@@ -145,9 +145,31 @@ export function getNewPositionsForInsert<T>(
   return {
     newPosition: newPositions[0],
     rePositions: new Map(
-      newPositions.slice(1).map((position, index) => [insertAfterIndex + index + 1, position])
+      newPositions
+        .slice(1)
+        .map((position, index) => [items[insertAfterIndex + index + 1], position])
     ),
   };
+}
+
+export function getNewPositionsMoveMove(
+  items: T[],
+  getPosition: (item: T) => string,
+  fromIndex: number,
+  toIndex: number
+): {
+  newPositions: string[];
+  rePositions: Map<T, string>;
+} {
+  const item = items[fromIndex];
+  if (!item) {
+    throw new Error("Item not found");
+  }
+  const filteredIssues = items.filter((i) => i.id !== item.id);
+
+  const position = getPosition(item);
+  const newPositions = createNPositionsBetween(position, null, toIndex - fromIndex);
+  return newPositions;
 }
 
 // function measureCreatePositionPerformance(iterations: number = 1000) {

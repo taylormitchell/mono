@@ -52,7 +52,7 @@ export const IssueList = observer(() => {
     const { newPosition, rePositions } = getNewPositionsForInsert(
       filteredIssues,
       ({ position }) => position,
-      index + 1
+      index // this give index + 1 cause we removed the issue from the array
     );
     allIssuesView.upsertPosition(issue, newPosition);
     rePositions.forEach((position, index) => {
