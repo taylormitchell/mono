@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import styles from "./CreateIssueModal.module.css"; // Reuse the same styles
 import { CloseIcon } from "./Icons";
 import { useKeyDown } from "./useKeyDown";
@@ -16,9 +16,11 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
   const issue = store.get("issue", issueId);
   const [title, setTitle] = useState(issue?.title || "");
   const [body, setBody] = useState(issue?.body || "");
+  const [selectedLabelIds, setSelectedLabelIds] = useState(
+    new Set(issue?.labels.map((label) => label.id) || [])
+  );
 
   const labels = store.getAll("label");
-  const selectedLabelIds = new Set(issue?.labels.map((label) => label.id) || []);
 
   useKeyDown("Escape", () => {
     onClose();
@@ -31,16 +33,23 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
     if (!title.trim()) return;
     issue.title = title.trim();
     issue.body = body.trim();
+    issue.labels = Array.from(selectedLabelIds)
+      .map((id) => store.get("label", id))
+      .filter((label) => label !== undefined);
     onClose();
   };
 
-  const toggleLabel = (labelId: string) => {
-    if (selectedLabelIds.has(labelId)) {
-      selectedLabelIds.delete(labelId);
-    } else {
-      selectedLabelIds.add(labelId);
-    }
-  };
+  const toggleLabel = useCallback((labelId: string) => {
+    setSelectedLabelIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(labelId)) {
+        newSet.delete(labelId);
+      } else {
+        newSet.add(labelId);
+      }
+      return newSet;
+    });
+  }, []);
 
   return (
     <>
