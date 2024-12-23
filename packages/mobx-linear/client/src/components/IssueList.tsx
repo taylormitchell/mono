@@ -69,7 +69,7 @@ export const IssueList = observer(() => {
     }
   };
 
-  const ROW_HEIGHT = 40; // Adjust based on your actual row height
+  const ROW_HEIGHT = 70; // Adjust based on your actual row height
 
   return (
     <div className={styles.container}>
