@@ -12,7 +12,7 @@ issues.forEach((issue) =>
     title: issue.title,
     createdAt: new Date(issue.created_at).getTime(),
     user: issue.user,
-    labels: issue.labels,
+    labels: issue.labels.map((label) => store.create("label", { id: label, name: label })),
     state: issue.state,
     body: issue.body,
   })

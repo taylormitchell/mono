@@ -14,7 +14,7 @@ class Issue extends BaseModel {
   accessor user: string = "";
 
   @property()
-  accessor labels: string[] = [];
+  accessor labels: Label[] = [];
 
   @property()
   accessor state: string = "";
@@ -128,6 +128,15 @@ class IssueView extends BaseModel {
   }
 }
 
+class Label extends BaseModel {
+  @property()
+  accessor name: string = "";
+
+  constructor(props: { id?: string; placeholder?: boolean } = {}) {
+    super(props);
+  }
+}
+
 class IssueViewPosition extends BaseModel {
   @link("issue")
   accessor issue: Issue | null = null;
@@ -151,6 +160,7 @@ export function createStore() {
       relation: Relation,
       issueView: IssueView,
       issueViewPosition: IssueViewPosition,
+      label: Label,
     }
     // {
     //   puller: "/api/pull",
