@@ -8,7 +8,8 @@ import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
 import { createPosition, getNewPositionsForMove } from "../lib/position";
 import { useKeyDown } from "./useKeyDown";
-import { FixedSizeList } from "react-window";
+import { FixedSizeList as List } from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -38,8 +39,7 @@ export const IssueList = observer(() => {
       position:
         allIssuesView.issueViewPositionsById[issue.id]?.position ?? createPosition(issue.createdAt),
     }))
-    .sort((a, b) => (a.position > b.position ? 1 : -1))
-    .slice(0, 1000);
+    .sort((a, b) => (a.position > b.position ? 1 : -1));
 
   const handleMoveUp = (index: number) => {
     const moveAfterIndex = index - 2;
@@ -85,19 +85,23 @@ export const IssueList = observer(() => {
       <FilterBar onSearch={setSearchQuery} />
 
       <div className={styles.list}>
-        <FixedSizeList
-          height={600} // Adjust based on your needs
-          width="100%"
-          itemCount={issues.length}
-          itemSize={ROW_HEIGHT}
-          itemData={{
-            issues,
-            handleMoveUp,
-            handleMoveDown,
-          }}
-        >
-          {VirtualRow}
-        </FixedSizeList>
+        <AutoSizer>
+          {({ height, width }) => (
+            <List
+              height={height}
+              width={width}
+              itemCount={issues.length}
+              itemSize={ROW_HEIGHT}
+              itemData={{
+                issues,
+                handleMoveUp,
+                handleMoveDown,
+              }}
+            >
+              {VirtualRow}
+            </List>
+          )}
+        </AutoSizer>
       </div>
       {isCreateModalOpen && <CreateIssueModal onClose={() => setIsCreateModalOpen(false)} />}
     </div>
