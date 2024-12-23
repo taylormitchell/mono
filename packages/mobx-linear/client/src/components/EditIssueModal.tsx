@@ -16,6 +16,9 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
   const [title, setTitle] = useState(issue?.title || "");
   const [body, setBody] = useState(issue?.body || "");
 
+  const labels = store.getAll("label");
+  const selectedLabelIds = new Set(issue?.labels.map((label) => label.id) || []);
+
   useKeyDown("Escape", () => {
     onClose();
   });
@@ -26,7 +29,16 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
     e.preventDefault();
     if (!title.trim()) return;
     issue.title = title.trim();
+    issue.body = body.trim();
     onClose();
+  };
+
+  const toggleLabel = (labelId: string) => {
+    if (selectedLabelIds.has(labelId)) {
+      selectedLabelIds.delete(labelId);
+    } else {
+      selectedLabelIds.add(labelId);
+    }
   };
 
   return (
@@ -59,6 +71,23 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
                 className={styles.descriptionInput}
                 rows={4}
               />
+            </div>
+            <div className={styles.field}>
+              <div className={styles.labels}>
+                {labels.map((label) => (
+                  <button
+                    key={label.id}
+                    type="button"
+                    className={`${styles.labelButton} ${
+                      selectedLabelIds.has(label.id) ? styles.labelSelected : ""
+                    }`}
+                    style={{ backgroundColor: label.name }}
+                    onClick={() => toggleLabel(label.id)}
+                  >
+                    {label.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div className={styles.footer}>

@@ -135,3 +135,29 @@
   background: var(--primary-color-disabled);
   cursor: not-allowed;
 }
+
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.labelButton {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: white;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.labelButton:hover {
+  opacity: 1;
+}
+
+.labelSelected {
+  opacity: 1;
+}
