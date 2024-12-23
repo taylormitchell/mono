@@ -30,7 +30,6 @@ interface BacklinksMetadataField {
 type ModelMetadataField = PropertyMetadataField | LinkMetadataField | BacklinksMetadataField;
 
 type ModelMetadata = {
-  name: string;
   fields: Record<string, ModelMetadataField>;
   updatedAtField?: UpdatedAtMetadataField;
 };
@@ -90,7 +89,6 @@ const modelMetadataRegistry = new Map<Function, ModelMetadata>();
 function getModelMetadata(target: Function): ModelMetadata {
   if (!modelMetadataRegistry.has(target)) {
     modelMetadataRegistry.set(target, {
-      name: target.name,
       fields: {},
     });
   }
@@ -561,6 +559,16 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
+  private getModelName(model: BaseModel) {
+    const ModelClass = model.constructor;
+    for (const [name, cls] of Object.entries(this.modelClasses)) {
+      if (cls === ModelClass) {
+        return name;
+      }
+    }
+    return null;
+  }
+
   private setupBacklinksTrigger() {
     this.subscribe((event) => {
       // Get model class and metadata early
@@ -753,7 +761,7 @@ export class Store<TModels extends ModelRecord> {
    */
   @action
   delete(model: BaseModel) {
-    const modelName = modelMetadataRegistry.get(model.constructor)?.name;
+    const modelName = this.getModelName(model);
     if (!modelName) throw new Error("Unknown model");
     this.models[modelName].delete(model.id);
     this.deletedModels[modelName].set(model.id, model as InstanceType<TModels[keyof TModels]>);
