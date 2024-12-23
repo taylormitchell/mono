@@ -10,6 +10,18 @@ class Issue extends BaseModel {
   @property()
   accessor title: string = "";
 
+  @property()
+  accessor user: string = "";
+
+  @property()
+  accessor labels: string[] = [];
+
+  @property()
+  accessor state: string = "";
+
+  @property()
+  accessor body: string = "";
+
   @link()
   accessor project: Project | null = null;
 

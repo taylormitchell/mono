@@ -12,7 +12,7 @@ interface CreateIssueModalProps {
 export const CreateIssueModal = observer(({ onClose }: CreateIssueModalProps) => {
   const store = useStore();
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [body, setBody] = useState("");
 
   useKeyDown("Escape", onClose);
 
@@ -22,7 +22,7 @@ export const CreateIssueModal = observer(({ onClose }: CreateIssueModalProps) =>
 
     store.create("issue", {
       title: title.trim(),
-      description: description.trim(),
+      body: body.trim(),
     });
     onClose();
   };
@@ -52,8 +52,8 @@ export const CreateIssueModal = observer(({ onClose }: CreateIssueModalProps) =>
             <div className={styles.field}>
               <textarea
                 placeholder="Add a description..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
                 className={styles.descriptionInput}
                 rows={4}
               />

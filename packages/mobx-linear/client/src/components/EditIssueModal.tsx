@@ -14,7 +14,7 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
   const store = useStore();
   const issue = store.get("issue", issueId);
   const [title, setTitle] = useState(issue?.title || "");
-  const [description, setDescription] = useState("");
+  const [body, setBody] = useState(issue?.body || "");
 
   useKeyDown("Escape", () => {
     onClose();
@@ -54,8 +54,8 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
             <div className={styles.field}>
               <textarea
                 placeholder="Add a description..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
                 className={styles.descriptionInput}
                 rows={4}
               />
