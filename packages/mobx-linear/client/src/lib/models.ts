@@ -52,7 +52,7 @@ class Project extends BaseModel {
   @updatedAt()
   accessor updatedAt = Date.now();
 
-  @backlinks("Issue.project")
+  @backlinks("issue.project")
   readonly issues = new Set<Issue>();
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
@@ -61,10 +61,10 @@ class Project extends BaseModel {
 }
 
 class Relation extends BaseModel {
-  @link("Issue")
+  @link("issue")
   accessor from: Issue | null = null;
 
-  @link("Issue")
+  @link("issue")
   accessor to: Issue | null = null;
 
   @property()
@@ -88,7 +88,7 @@ class IssueView extends BaseModel {
   @updatedAt()
   accessor updatedAt = Date.now();
 
-  @backlinks("IssueViewPosition.parentView")
+  @backlinks("issueViewPosition.parentView")
   readonly issueViewPositions = new Set<IssueViewPosition>();
 
   @computed
@@ -138,10 +138,10 @@ class Label extends BaseModel {
 }
 
 class IssueViewPosition extends BaseModel {
-  @link("Issue")
+  @link("issue")
   accessor issue: Issue | null = null;
 
-  @link("IssueView")
+  @link("issueView")
   accessor parentView: IssueView | null = null;
 
   @property()
