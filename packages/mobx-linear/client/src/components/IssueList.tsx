@@ -8,6 +8,7 @@ import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
 import { createPosition, getNewPositionsForMove } from "../lib/position";
 import { useKeyDown } from "./useKeyDown";
+import { FixedSizeList } from "react-window";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -37,7 +38,8 @@ export const IssueList = observer(() => {
       position:
         allIssuesView.issueViewPositionsById[issue.id]?.position ?? createPosition(issue.createdAt),
     }))
-    .sort((a, b) => (a.position > b.position ? 1 : -1));
+    .sort((a, b) => (a.position > b.position ? 1 : -1))
+    .slice(0, 1000);
 
   const handleMoveUp = (index: number) => {
     const moveAfterIndex = index - 2;
@@ -67,6 +69,8 @@ export const IssueList = observer(() => {
     }
   };
 
+  const ROW_HEIGHT = 40; // Adjust based on your actual row height
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -81,20 +85,36 @@ export const IssueList = observer(() => {
       <FilterBar onSearch={setSearchQuery} />
 
       <div className={styles.list}>
-        {issues.map(({ issue, position }, index) => (
-          <div key={issue.id}>
-            <div key={issue.id}>
-              <IssueRow
-                issue={issue}
-                position={position}
-                moveUpHandler={() => handleMoveUp(index)}
-                moveDownHandler={() => handleMoveDown(index)}
-              />
-            </div>
-          </div>
-        ))}
+        <FixedSizeList
+          height={600} // Adjust based on your needs
+          width="100%"
+          itemCount={issues.length}
+          itemSize={ROW_HEIGHT}
+          itemData={{
+            issues,
+            handleMoveUp,
+            handleMoveDown,
+          }}
+        >
+          {VirtualRow}
+        </FixedSizeList>
       </div>
       {isCreateModalOpen && <CreateIssueModal onClose={() => setIsCreateModalOpen(false)} />}
+    </div>
+  );
+});
+
+const VirtualRow = observer(({ index, style, data }: any) => {
+  const { issue, position } = data.issues[index];
+
+  return (
+    <div style={style}>
+      <IssueRow
+        issue={issue}
+        position={position}
+        moveUpHandler={() => data.handleMoveUp(index)}
+        moveDownHandler={() => data.handleMoveDown(index)}
+      />
     </div>
   );
 });

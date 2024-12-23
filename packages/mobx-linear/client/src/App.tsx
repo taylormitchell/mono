@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import { IssueList } from "./components/IssueList";
 import styles from "./App.module.css";
 import { createStore, StoreContext } from "./lib/models";
-import issues from "../public/react-issues.json";
+import issues from "./assets/all-react-issues.json";
 
 const store = createStore();
 // store.create("issue", { title: "a1", createdAt: 3 });
