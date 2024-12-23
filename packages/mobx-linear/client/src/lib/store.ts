@@ -250,6 +250,13 @@ export function backlinks(sourceRef: string) {
     const fieldName = String(context.name);
     return function (this: BaseModel, initialValue: unknown) {
       const metadata = getModelMetadata(this.constructor);
+      console.log("setting backlinks metdata", {
+        constructor: this.constructor,
+        metadata,
+        fieldName,
+        sourceModel,
+        sourceKey,
+      });
       metadata.fields[fieldName] = {
         type: "backlinks",
         fieldKey: fieldName,
