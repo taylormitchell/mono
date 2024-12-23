@@ -14,8 +14,13 @@ export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
   const ref = useRef<HTMLInputElement>(null);
 
   useKeyDown("Escape", () => {
-    if (ref.current) {
-      setSearchQuery("");
+    console.log("Escape");
+    if (ref.current && ref.current.contains(document.activeElement)) {
+      if (ref.current.value !== "") {
+        setSearchQuery("");
+      } else {
+        ref.current.blur();
+      }
     }
   });
 
