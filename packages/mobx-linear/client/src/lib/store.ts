@@ -90,7 +90,7 @@ const modelMetadataRegistry = new Map<Function, ModelMetadata>();
 function getModelMetadata(target: Function): ModelMetadata {
   if (!modelMetadataRegistry.has(target)) {
     modelMetadataRegistry.set(target, {
-      name: target.name.toLowerCase(),
+      name: target.name,
       fields: {},
     });
   }
