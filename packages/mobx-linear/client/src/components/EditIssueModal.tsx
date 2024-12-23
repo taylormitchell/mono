@@ -4,6 +4,7 @@ import styles from "./CreateIssueModal.module.css"; // Reuse the same styles
 import { CloseIcon } from "./Icons";
 import { useKeyDown } from "./useKeyDown";
 import { useStore } from "../lib/useStore";
+import { MultiSelect } from "./MultiSelect";
 
 interface EditIssueModalProps {
   issueId: string;
@@ -73,21 +74,12 @@ export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProp
               />
             </div>
             <div className={styles.field}>
-              <div className={styles.labels}>
-                {labels.map((label) => (
-                  <button
-                    key={label.id}
-                    type="button"
-                    className={`${styles.labelButton} ${
-                      selectedLabelIds.has(label.id) ? styles.labelSelected : ""
-                    }`}
-                    style={{ backgroundColor: label.name }}
-                    onClick={() => toggleLabel(label.id)}
-                  >
-                    {label.name}
-                  </button>
-                ))}
-              </div>
+              <MultiSelect
+                options={labels}
+                selectedIds={selectedLabelIds}
+                onToggle={toggleLabel}
+                placeholder="Select labels..."
+              />
             </div>
           </div>
           <div className={styles.footer}>

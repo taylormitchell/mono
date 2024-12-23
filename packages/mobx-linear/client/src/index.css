@@ -24,6 +24,10 @@ body,
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
+  --z-index-modal-overlay: 1000;
+  --z-index-modal: 1001;
+  --z-index-popover: 2000;
+
   /* Light theme variables */
   --bg-primary: #fafafa;
   --bg-secondary: rgba(0, 0, 0, 0.05);
