@@ -14,7 +14,6 @@ export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
   const ref = useRef<HTMLInputElement>(null);
 
   useKeyDown("Escape", () => {
-    console.log("Escape");
     if (ref.current && ref.current.contains(document.activeElement)) {
       if (ref.current.value !== "") {
         setSearchQuery("");
@@ -22,6 +21,18 @@ export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
         ref.current.blur();
       }
     }
+  });
+
+  useKeyDown("f", (e) => {
+    if (
+      !ref.current ||
+      document.activeElement instanceof HTMLInputElement ||
+      document.activeElement instanceof HTMLTextAreaElement
+    ) {
+      return;
+    }
+    e.preventDefault();
+    ref.current.focus();
   });
 
   useEffect(() => {
