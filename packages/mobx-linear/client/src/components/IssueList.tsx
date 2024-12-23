@@ -45,34 +45,6 @@ export const IssueList = observer(() => {
     }))
     .sort((a, b) => (a.position > b.position ? 1 : -1));
 
-  const handleMoveUp = (index: number) => {
-    const moveAfterIndex = index - 2;
-    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, moveAfterIndex);
-    if (rePositions.size === 0) return;
-    rePositions.forEach((position, item) => {
-      allIssuesView.upsertPosition(item.issue, position);
-    });
-    // If the item we're moving after doesn't have a persisted position, persist it
-    const itemMovedAfter = issues[moveAfterIndex];
-    if (itemMovedAfter && !allIssuesView.issueViewPositionsById[itemMovedAfter.issue.id]) {
-      allIssuesView.upsertPosition(itemMovedAfter.issue, itemMovedAfter.position);
-    }
-  };
-
-  const handleMoveDown = (index: number) => {
-    const moveAfterIndex = index + 1;
-    const rePositions = getNewPositionsForMove(issues, (i) => i.position, index, moveAfterIndex);
-    if (rePositions.size === 0) return;
-    rePositions.forEach((position, item) => {
-      allIssuesView.upsertPosition(item.issue, position);
-    });
-    // If the item we're moving after doesn't have a persisted position, persist it
-    const itemMovedAfter = issues[moveAfterIndex];
-    if (itemMovedAfter && !allIssuesView.issueViewPositionsById[itemMovedAfter.issue.id]) {
-      allIssuesView.upsertPosition(itemMovedAfter.issue, itemMovedAfter.position);
-    }
-  };
-
   const ROW_HEIGHT = 70; // Adjust based on your actual row height
 
   return (
@@ -106,8 +78,6 @@ export const IssueList = observer(() => {
                       <IssueRow
                         issue={issue}
                         position={position}
-                        moveUpHandler={() => handleMoveUp(index)}
-                        moveDownHandler={() => handleMoveDown(index)}
                         setIsEditModalOpen={() => setModal({ type: "edit", issueId: issue.id })}
                         moveItem={(dragId: string, hoverId: string) => {
                           const dragIndex = issues.findIndex((i) => i.issue.id === dragId);
@@ -144,15 +114,11 @@ const IssueRow = observer(
   ({
     issue,
     position,
-    moveUpHandler,
-    moveDownHandler,
     setIsEditModalOpen,
     moveItem,
   }: {
     issue: IssueType;
-    position: string;
-    moveUpHandler: () => void;
-    moveDownHandler: () => void;
+    position?: string;
     setIsEditModalOpen: (open: boolean) => void;
     moveItem: (dragId: string, hoverId: string) => void;
   }) => {
@@ -192,23 +158,7 @@ const IssueRow = observer(
         <div className={styles.dragHandle}>⋮⋮</div>
         <div className={styles.issueStatus}>●</div>
         <div className={styles.issueTitle}>{issue.title}</div>
-        <div>{position}</div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            moveUpHandler();
-          }}
-        >
-          ↑
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            moveDownHandler();
-          }}
-        >
-          ↓
-        </button>
+        {/* <div>{position}</div> */}
         <button
           className={styles.deleteButton}
           onClick={(e) => {
