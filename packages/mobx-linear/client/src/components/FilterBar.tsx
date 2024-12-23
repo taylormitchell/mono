@@ -45,7 +45,7 @@ export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
           placeholder="Search issues..."
           value={searchQuery}
           onKeyDown={(e) => {
-            if (ref.current && ref.current.contains(document.activeElement)) {
+            if (ref.current && ref.current.contains(document.activeElement) && e.key !== "Escape") {
               e.stopPropagation();
             }
           }}

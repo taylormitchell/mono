@@ -3,6 +3,7 @@ import { useState } from "react";
 import { IssueType } from "../lib/models";
 import styles from "./CreateIssueModal.module.css"; // Reuse the same styles
 import { CloseIcon } from "./Icons";
+import { useKeyDown } from "./useKeyDown";
 
 interface EditIssueModalProps {
   issue: IssueType;
@@ -12,6 +13,10 @@ interface EditIssueModalProps {
 export const EditIssueModal = observer(({ issue, onClose }: EditIssueModalProps) => {
   const [title, setTitle] = useState(issue.title);
   const [description, setDescription] = useState("");
+
+  useKeyDown("Escape", () => {
+    onClose();
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
