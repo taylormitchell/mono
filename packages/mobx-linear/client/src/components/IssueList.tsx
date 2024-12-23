@@ -30,6 +30,12 @@ export const IssueList = observer(() => {
   const allIssuesView = useAllIssuesView();
 
   useKeyDown("c", (e) => {
+    if (
+      document.activeElement instanceof HTMLInputElement ||
+      document.activeElement instanceof HTMLTextAreaElement
+    ) {
+      return;
+    }
     e.preventDefault();
     setModal({ type: "create" });
   });
@@ -45,7 +51,7 @@ export const IssueList = observer(() => {
     }))
     .sort((a, b) => (a.position > b.position ? 1 : -1));
 
-  const ROW_HEIGHT = 70; // Adjust based on your actual row height
+  const ROW_HEIGHT = 50; // Adjust based on your actual row height
 
   return (
     <DndProvider backend={HTML5Backend}>
