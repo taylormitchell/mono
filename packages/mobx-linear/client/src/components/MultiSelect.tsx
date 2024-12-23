@@ -23,6 +23,7 @@ export const MultiSelect = ({
   placeholder = "Select items...",
 }: MultiSelectProps) => {
   const [search, setSearch] = React.useState("");
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   const filteredOptions = options.filter((option) =>
     option.name.toLowerCase().includes(search.toLowerCase())
@@ -35,7 +36,7 @@ export const MultiSelect = ({
       </Popover.Trigger>
 
       <Popover.Portal>
-        <Popover.Content className={styles.content} sideOffset={5}>
+        <Popover.Content className={styles.content} sideOffset={5} ref={contentRef}>
           <input
             type="text"
             placeholder="Search..."
