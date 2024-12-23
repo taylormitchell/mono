@@ -39,7 +39,14 @@ export const FilterBar = observer(({ onSearch }: FilterBarProps) => {
           type="text"
           placeholder="Search issues..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (ref.current && ref.current.contains(document.activeElement)) {
+              e.stopPropagation();
+            }
+          }}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+          }}
           className={styles.searchInput}
         />
       </div>
