@@ -23,6 +23,28 @@ body,
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Light theme variables */
+  --bg-primary: #fafafa;
+  --bg-secondary: rgba(0, 0, 0, 0.05);
+  --bg-secondary-hover: rgba(0, 0, 0, 0.08);
+  --text-primary: #111111;
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: rgba(255, 255, 255, 0.05);
+    --bg-secondary-hover: rgba(255, 255, 255, 0.08);
+    --text-primary: rgba(255, 255, 255, 0.87);
+    --border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  color: var(--text-primary);
 }
 
 a {

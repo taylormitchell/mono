@@ -59,14 +59,14 @@
   display: flex;
   align-items: center;
   padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--bg-secondary);
   border-radius: 6px;
   gap: 12px;
   cursor: pointer;
 }
 
 .issueRow:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-secondary-hover);
 }
 
 .issueStatus {
@@ -76,7 +76,7 @@
 
 .issueTitle {
   flex: 1;
-  color: #111111;
+  color: var(--text-primary);
   font-size: 14px;
   padding: 4px;
   border-radius: 4px;
@@ -86,7 +86,7 @@
 }
 
 .issueTitle:focus {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-secondary-hover);
   outline: none;
 }
 
@@ -120,7 +120,7 @@
   opacity: 0;
   background: transparent;
   border: none;
-  color: #111111;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
@@ -132,5 +132,5 @@
 
 .deleteButton:hover {
   opacity: 1 !important;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-secondary-hover);
 }

@@ -4,7 +4,6 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
   z-index: 100;
 }
 
@@ -15,7 +14,7 @@
   transform: translate(-50%, -50%);
   width: 100%;
   max-width: 600px;
-  background: #ffffff;
+  background: var(--bg-primary);
   border-radius: 8px;
   box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
   z-index: 101;
@@ -23,7 +22,7 @@
 
 .header {
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -33,14 +32,14 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #111111;
+  color: var(--text-primary);
 }
 
 .closeButton {
   background: transparent;
   border: none;
   padding: 4px;
-  color: #666666;
+  color: var(--text-primary);
   cursor: pointer;
   border-radius: 4px;
   display: flex;
@@ -49,8 +48,8 @@
 }
 
 .closeButton:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #111111;
+  background: var(--bg-secondary-hover);
+  color: var(--text-primary);
 }
 
 .content {
@@ -68,12 +67,12 @@
 .titleInput,
 .descriptionInput {
   width: 100%;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 14px;
-  color: #111111;
-  background: #ffffff;
+  color: var(--text-primary);
+  background: var(--bg-primary);
 }
 
 .titleInput {
@@ -84,7 +83,7 @@
 .titleInput:focus,
 .descriptionInput:focus {
   outline: none;
-  border-color: #5e6ad2;
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.2);
 }
 
@@ -96,7 +95,7 @@
 
 .footer {
   padding: 16px 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -112,26 +111,26 @@
 }
 
 .cancelButton {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-secondary);
   border: none;
-  color: #111111;
+  color: var(--text-primary);
 }
 
 .cancelButton:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--bg-secondary-hover);
 }
 
 .createButton {
-  background: #5e6ad2;
+  background: var(--primary-color);
   border: none;
   color: white;
 }
 
 .createButton:hover {
-  background: #4f58b6;
+  background: var(--primary-color-hover);
 }
 
 .createButton:disabled {
-  background: rgba(94, 106, 210, 0.5);
+  background: var(--primary-color-disabled);
   cursor: not-allowed;
 }

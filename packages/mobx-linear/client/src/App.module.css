@@ -1,25 +1,25 @@
 .container {
   height: 100%;
-  background: #fafafa;
-  color: #111111;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .header {
   padding: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   gap: 8px;
 }
 
 .header button {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-secondary);
   border: none;
-  color: #111111;
+  color: var(--text-primary);
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .header button:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--bg-secondary-hover);
 }
