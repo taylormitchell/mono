@@ -134,3 +134,14 @@
   opacity: 1 !important;
   background: var(--bg-secondary-hover);
 }
+
+.dragHandle {
+  cursor: grab;
+  padding: 0 8px;
+  color: #666;
+  user-select: none;
+}
+
+.isDragging {
+  opacity: 0.5;
+}

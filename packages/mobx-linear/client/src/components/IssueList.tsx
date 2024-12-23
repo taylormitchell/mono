@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import styles from "./IssueList.module.css";
 import { useStore } from "../lib/useStore";
 import { FilterBar } from "./FilterBar";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { IssueType } from "../lib/models";
 import { CreateIssueModal } from "./CreateIssueModal";
 import { EditIssueModal } from "./EditIssueModal";
@@ -10,6 +10,8 @@ import { createPosition, getNewPositionsForMove } from "../lib/position";
 import { useKeyDown } from "./useKeyDown";
 import { FixedSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 const useAllIssuesView = () => {
   const store = useStore();
@@ -74,55 +76,71 @@ export const IssueList = observer(() => {
   const ROW_HEIGHT = 70; // Adjust based on your actual row height
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h2>Issues</h2>
-          <span className={styles.issueCount}>{issues.length}</span>
+    <DndProvider backend={HTML5Backend}>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <h2>Issues</h2>
+            <span className={styles.issueCount}>{issues.length}</span>
+          </div>
+          <button className={styles.createButton} onClick={() => setModal({ type: "create" })}>
+            New Issue
+          </button>
         </div>
-        <button className={styles.createButton} onClick={() => setModal({ type: "create" })}>
-          New Issue
-        </button>
-      </div>
-      <FilterBar onSearch={setSearchQuery} />
+        <FilterBar onSearch={setSearchQuery} />
 
-      <div className={styles.list}>
-        <AutoSizer>
-          {({ height, width }) => (
-            <List
-              height={height}
-              width={width}
-              itemCount={issues.length}
-              itemSize={ROW_HEIGHT}
-              itemData={{
-                issues,
-                handleMoveUp,
-                handleMoveDown,
-              }}
-            >
-              {({ index, style, data }: any) => {
-                const { issue, position } = data.issues[index];
-                return (
-                  <div style={style}>
-                    <IssueRow
-                      issue={issue}
-                      position={position}
-                      moveUpHandler={() => data.handleMoveUp(index)}
-                      moveDownHandler={() => data.handleMoveDown(index)}
-                      setIsEditModalOpen={() => setModal({ type: "edit", issueId: issue.id })}
-                    />
-                  </div>
-                );
-              }}
-            </List>
-          )}
-        </AutoSizer>
+        <div className={styles.list}>
+          <AutoSizer>
+            {({ height, width }) => (
+              <List
+                height={height}
+                width={width}
+                itemCount={issues.length}
+                itemSize={ROW_HEIGHT}
+                itemData={{
+                  issues,
+                  handleMoveUp,
+                  handleMoveDown,
+                  moveItem: (dragId: string, hoverId: string) => {
+                    const dragIndex = issues.findIndex((i) => i.issue.id === dragId);
+                    const hoverIndex = issues.findIndex((i) => i.issue.id === hoverId);
+                    const rePositions = getNewPositionsForMove(
+                      issues,
+                      (i) => i.position,
+                      dragIndex,
+                      hoverIndex - 1
+                    );
+                    if (rePositions.size === 0) return;
+                    rePositions.forEach((position, item) => {
+                      allIssuesView.upsertPosition(item.issue, position);
+                    });
+                  },
+                }}
+              >
+                {({ index, style, data }: any) => {
+                  const { issue, position } = data.issues[index];
+                  return (
+                    <div style={style}>
+                      <IssueRow
+                        issue={issue}
+                        position={position}
+                        moveUpHandler={() => data.handleMoveUp(index)}
+                        moveDownHandler={() => data.handleMoveDown(index)}
+                        setIsEditModalOpen={() => setModal({ type: "edit", issueId: issue.id })}
+                      />
+                    </div>
+                  );
+                }}
+              </List>
+            )}
+          </AutoSizer>
+        </div>
+        {modal?.type === "edit" && (
+          <EditIssueModal issueId={modal.issueId} onClose={() => setModal(null)} />
+        )}
+        {modal?.type === "create" && <CreateIssueModal onClose={() => setModal(null)} />}
       </div>
-      {modal?.type === "edit" && (
-        <EditIssueModal issueId={modal.issueId} onClose={() => setModal(null)} />
-      )}
-      {modal?.type === "create" && <CreateIssueModal onClose={() => setModal(null)} />}
-    </div>
+    </DndProvider>
   );
 });
 
@@ -133,47 +151,75 @@ const IssueRow = observer(
     moveUpHandler,
     moveDownHandler,
     setIsEditModalOpen,
+    moveItem,
   }: {
     issue: IssueType;
     position: string;
     moveUpHandler: () => void;
     moveDownHandler: () => void;
     setIsEditModalOpen: (open: boolean) => void;
+    moveItem: (dragId: string, hoverId: string) => void;
   }) => {
     const store = useStore();
+
+    const [{ isDragging }, drag] = useDrag({
+      type: "ISSUE",
+      item: { id: issue.id },
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
+    });
+
+    const [, drop] = useDrop({
+      accept: "ISSUE",
+      hover: (item: { id: string }) => {
+        if (!ref.current) return;
+        const dragId = item.id;
+        const hoverId = issue.id;
+        if (dragId === hoverId) return;
+        moveItem(dragId, hoverId);
+      },
+    });
+
+    const ref = useRef<HTMLDivElement>(null);
+    drag(drop(ref));
+
     return (
-      <>
-        <div className={styles.issueRow} onClick={() => setIsEditModalOpen(true)}>
-          <div className={styles.issueStatus}>●</div>
-          <div className={styles.issueTitle}>{issue.title}</div>
-          <div>{position}</div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              moveUpHandler();
-            }}
-          >
-            ↑
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              moveDownHandler();
-            }}
-          >
-            ↓
-          </button>
-          <button
-            className={styles.deleteButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              store.delete(issue);
-            }}
-          >
-            Delete
-          </button>
-        </div>
-      </>
+      <div
+        ref={ref}
+        className={`${styles.issueRow} ${isDragging ? styles.isDragging : ""}`}
+        onClick={() => setIsEditModalOpen(true)}
+      >
+        <div className={styles.dragHandle}>⋮⋮</div>
+        <div className={styles.issueStatus}>●</div>
+        <div className={styles.issueTitle}>{issue.title}</div>
+        <div>{position}</div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            moveUpHandler();
+          }}
+        >
+          ↑
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            moveDownHandler();
+          }}
+        >
+          ↓
+        </button>
+        <button
+          className={styles.deleteButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            store.delete(issue);
+          }}
+        >
+          Delete
+        </button>
+      </div>
     );
   }
 );
