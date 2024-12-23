@@ -22,12 +22,14 @@ const useAllIssuesView = () => {
 
 export const IssueList = observer(() => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [modal, setModal] = useState<{ type: "create" } | { type: "edit"; issueId: string } | null>(
+    null
+  );
   const allIssuesView = useAllIssuesView();
 
   useKeyDown("c", (e) => {
     e.preventDefault();
-    setIsCreateModalOpen(true);
+    setModal({ type: "create" });
   });
 
   const issues = allIssuesView.issues
@@ -78,7 +80,7 @@ export const IssueList = observer(() => {
           <h2>Issues</h2>
           <span className={styles.issueCount}>{issues.length}</span>
         </div>
-        <button className={styles.createButton} onClick={() => setIsCreateModalOpen(true)}>
+        <button className={styles.createButton} onClick={() => setModal({ type: "create" })}>
           New Issue
         </button>
       </div>
@@ -98,12 +100,25 @@ export const IssueList = observer(() => {
                 handleMoveDown,
               }}
             >
-              {VirtualRow}
+              {({ index, style, data }: any) => (
+                <div style={style}>
+                  <IssueRow
+                    issue={data.issues[index]}
+                    position={data.issues[index].position}
+                    moveUpHandler={() => data.handleMoveUp(index)}
+                    moveDownHandler={() => data.handleMoveDown(index)}
+                    setIsEditModalOpen={setIsEditModalOpen}
+                  />
+                </div>
+              )}
             </List>
           )}
         </AutoSizer>
       </div>
-      {isCreateModalOpen && <CreateIssueModal onClose={() => setIsCreateModalOpen(false)} />}
+      {modal?.type === "edit" && (
+        <EditIssueModal issueId={modal.issueId} onClose={() => setModal(null)} />
+      )}
+      {modal?.type === "create" && <CreateIssueModal onClose={() => setModal(null)} />}
     </div>
   );
 });
@@ -129,14 +144,15 @@ const IssueRow = observer(
     position,
     moveUpHandler,
     moveDownHandler,
+    setIsEditModalOpen,
   }: {
     issue: IssueType;
     position: string;
     moveUpHandler: () => void;
     moveDownHandler: () => void;
+    setIsEditModalOpen: (open: boolean) => void;
   }) => {
     const store = useStore();
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     return (
       <>
@@ -170,9 +186,6 @@ const IssueRow = observer(
             Delete
           </button>
         </div>
-        {isEditModalOpen && (
-          <EditIssueModal issue={issue} onClose={() => setIsEditModalOpen(false)} />
-        )}
       </>
     );
   }

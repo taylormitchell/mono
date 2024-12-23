@@ -1,22 +1,26 @@
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
-import { IssueType } from "../lib/models";
 import styles from "./CreateIssueModal.module.css"; // Reuse the same styles
 import { CloseIcon } from "./Icons";
 import { useKeyDown } from "./useKeyDown";
+import { useStore } from "../lib/useStore";
 
 interface EditIssueModalProps {
-  issue: IssueType;
+  issueId: string;
   onClose: () => void;
 }
 
-export const EditIssueModal = observer(({ issue, onClose }: EditIssueModalProps) => {
-  const [title, setTitle] = useState(issue.title);
+export const EditIssueModal = observer(({ issueId, onClose }: EditIssueModalProps) => {
+  const store = useStore();
+  const issue = store.get("issue", issueId);
+  const [title, setTitle] = useState(issue?.title || "");
   const [description, setDescription] = useState("");
 
   useKeyDown("Escape", () => {
     onClose();
   });
+
+  if (!issue) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
