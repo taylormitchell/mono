@@ -100,17 +100,20 @@ export const IssueList = observer(() => {
                 handleMoveDown,
               }}
             >
-              {({ index, style, data }: any) => (
-                <div style={style}>
-                  <IssueRow
-                    issue={data.issues[index]}
-                    position={data.issues[index].position}
-                    moveUpHandler={() => data.handleMoveUp(index)}
-                    moveDownHandler={() => data.handleMoveDown(index)}
-                    setIsEditModalOpen={setIsEditModalOpen}
-                  />
-                </div>
-              )}
+              {({ index, style, data }: any) => {
+                const { issue, position } = data.issues[index];
+                return (
+                  <div style={style}>
+                    <IssueRow
+                      issue={issue}
+                      position={position}
+                      moveUpHandler={() => data.handleMoveUp(index)}
+                      moveDownHandler={() => data.handleMoveDown(index)}
+                      setIsEditModalOpen={() => setModal({ type: "edit", issueId: issue.id })}
+                    />
+                  </div>
+                );
+              }}
             </List>
           )}
         </AutoSizer>
@@ -119,21 +122,6 @@ export const IssueList = observer(() => {
         <EditIssueModal issueId={modal.issueId} onClose={() => setModal(null)} />
       )}
       {modal?.type === "create" && <CreateIssueModal onClose={() => setModal(null)} />}
-    </div>
-  );
-});
-
-const VirtualRow = observer(({ index, style, data }: any) => {
-  const { issue, position } = data.issues[index];
-
-  return (
-    <div style={style}>
-      <IssueRow
-        issue={issue}
-        position={position}
-        moveUpHandler={() => data.handleMoveUp(index)}
-        moveDownHandler={() => data.handleMoveDown(index)}
-      />
     </div>
   );
 });
@@ -153,7 +141,6 @@ const IssueRow = observer(
     setIsEditModalOpen: (open: boolean) => void;
   }) => {
     const store = useStore();
-
     return (
       <>
         <div className={styles.issueRow} onClick={() => setIsEditModalOpen(true)}>
