@@ -63,6 +63,7 @@
   border-radius: 6px;
   gap: 12px;
   cursor: pointer;
+  position: relative;
 }
 
 .issueRow:hover {
@@ -144,4 +145,18 @@
 
 .isDragging {
   opacity: 0.5;
+}
+
+.issueRow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  pointer-events: none;
+}
+
+.issueRow[data-is-over="true"]::after {
+  background: #0066ff;
 }

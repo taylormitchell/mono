@@ -97,25 +97,7 @@ export const IssueList = observer(() => {
                 width={width}
                 itemCount={issues.length}
                 itemSize={ROW_HEIGHT}
-                itemData={{
-                  issues,
-                  handleMoveUp,
-                  handleMoveDown,
-                  moveItem: (dragId: string, hoverId: string) => {
-                    const dragIndex = issues.findIndex((i) => i.issue.id === dragId);
-                    const hoverIndex = issues.findIndex((i) => i.issue.id === hoverId);
-                    const rePositions = getNewPositionsForMove(
-                      issues,
-                      (i) => i.position,
-                      dragIndex,
-                      hoverIndex - 1
-                    );
-                    if (rePositions.size === 0) return;
-                    rePositions.forEach((position, item) => {
-                      allIssuesView.upsertPosition(item.issue, position);
-                    });
-                  },
-                }}
+                itemData={{ issues }}
               >
                 {({ index, style, data }: any) => {
                   const { issue, position } = data.issues[index];
@@ -124,9 +106,23 @@ export const IssueList = observer(() => {
                       <IssueRow
                         issue={issue}
                         position={position}
-                        moveUpHandler={() => data.handleMoveUp(index)}
-                        moveDownHandler={() => data.handleMoveDown(index)}
+                        moveUpHandler={() => handleMoveUp(index)}
+                        moveDownHandler={() => handleMoveDown(index)}
                         setIsEditModalOpen={() => setModal({ type: "edit", issueId: issue.id })}
+                        moveItem={(dragId: string, hoverId: string) => {
+                          const dragIndex = issues.findIndex((i) => i.issue.id === dragId);
+                          const hoverIndex = issues.findIndex((i) => i.issue.id === hoverId);
+                          const rePositions = getNewPositionsForMove(
+                            issues,
+                            (i) => i.position,
+                            dragIndex,
+                            hoverIndex - 1
+                          );
+                          if (rePositions.size === 0) return;
+                          rePositions.forEach((position, item) => {
+                            allIssuesView.upsertPosition(item.issue, position);
+                          });
+                        }}
                       />
                     </div>
                   );
@@ -170,15 +166,17 @@ const IssueRow = observer(
       }),
     });
 
-    const [, drop] = useDrop({
+    const [{ isOver }, drop] = useDrop({
       accept: "ISSUE",
-      hover: (item: { id: string }) => {
-        if (!ref.current) return;
+      drop: (item: { id: string }) => {
         const dragId = item.id;
         const hoverId = issue.id;
         if (dragId === hoverId) return;
         moveItem(dragId, hoverId);
       },
+      collect: (monitor) => ({
+        isOver: monitor.isOver(),
+      }),
     });
 
     const ref = useRef<HTMLDivElement>(null);
@@ -188,6 +186,7 @@ const IssueRow = observer(
       <div
         ref={ref}
         className={`${styles.issueRow} ${isDragging ? styles.isDragging : ""}`}
+        data-is-over={isOver}
         onClick={() => setIsEditModalOpen(true)}
       >
         <div className={styles.dragHandle}>⋮⋮</div>
