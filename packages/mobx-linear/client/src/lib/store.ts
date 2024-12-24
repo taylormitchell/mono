@@ -17,7 +17,7 @@ interface LinkMetadataField {
   type: "link";
   fieldKey: string;
   serializedKey: string;
-  targetModel: string;
+  targetModelName: string;
 }
 
 interface BacklinksMetadataField {
@@ -93,6 +93,10 @@ function getModelMetadata(target: Function): ModelMetadata {
     });
   }
   return modelMetadataRegistry.get(target)!;
+}
+
+function setModelMetadata(target: Function, metadata: ModelMetadata) {
+  modelMetadataRegistry.set(target, metadata);
 }
 
 export abstract class BaseModel {
@@ -198,7 +202,7 @@ export function updatedAt(opts: { serializedKey?: string } = {}) {
   };
 }
 
-export function link(targetModel?: string, opts: { serializedKey?: string } = {}) {
+export function link(targetModelName?: string, opts: { serializedKey?: string } = {}) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const fieldName = String(context.name);
     const serializedKey = opts.serializedKey ?? `${fieldName}Id`;
@@ -231,7 +235,7 @@ export function link(targetModel?: string, opts: { serializedKey?: string } = {}
           type: "link",
           fieldKey: fieldName,
           serializedKey,
-          targetModel: targetModel ?? fieldName,
+          targetModelName: targetModelName ?? fieldName,
         };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
@@ -611,7 +615,7 @@ export class Store<TModels extends ModelRecord> {
 
       // Process all link changes through the same code path
       linkChanges.forEach(({ field, sourceInst, oldTargetId, newTargetId }) => {
-        const TargetClass = this.modelClasses[field.targetModel];
+        const TargetClass = this.modelClasses[field.targetModelName];
         if (!TargetClass) return;
 
         const targetMetadata = getModelMetadata(TargetClass);
@@ -624,14 +628,14 @@ export class Store<TModels extends ModelRecord> {
 
         if (backlink) {
           if (oldTargetId) {
-            const oldTarget = this.models[field.targetModel].get(oldTargetId) as any;
+            const oldTarget = this.models[field.targetModelName].get(oldTargetId) as any;
             if (oldTarget) {
               (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst);
             }
           }
 
           if (newTargetId) {
-            const newTarget = this.models[field.targetModel].get(newTargetId) as any;
+            const newTarget = this.models[field.targetModelName].get(newTargetId) as any;
             if (newTarget) {
               (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst);
             }
@@ -696,7 +700,10 @@ export class Store<TModels extends ModelRecord> {
           if (serializedProps[field.serializedKey]) {
             const targetId = serializedProps[field.serializedKey] as string;
             // constructorProps[fieldName] = this.getOrCreatePlaceholder(field.targetModel, targetId);
-            (instance as any)[fieldName] = this.getOrCreatePlaceholder(field.targetModel, targetId);
+            (instance as any)[fieldName] = this.getOrCreatePlaceholder(
+              field.targetModelName,
+              targetId
+            );
           }
           break;
       }
@@ -842,7 +849,7 @@ export class Store<TModels extends ModelRecord> {
         const metadata = getModelMetadata(model.constructor);
         const field = metadata.fields[event.field];
         if (field?.type === "link" && event.newValue) {
-          const targetModel = this.models[field.targetModel].get(event.newValue as string);
+          const targetModel = this.models[field.targetModelName].get(event.newValue as string);
           (model as any)[event.field] = targetModel;
         } else {
           (model as any)[event.field] = event.newValue;
