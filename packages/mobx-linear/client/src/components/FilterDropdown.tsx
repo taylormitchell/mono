@@ -3,6 +3,7 @@ import styles from "./FilterDropdown.module.css";
 import { useState } from "react";
 import { CheckIcon } from "lucide-react";
 import { StatusIcon, PriorityIcon, AssigneeIcon, LabelIcon, ChevronIcon, BackIcon } from "./Icons";
+import { useStore } from "../lib/useStore";
 
 interface FilterOption {
   id: string;
@@ -28,6 +29,7 @@ interface FilterDropdownProps {
 }
 
 export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps) => {
+  const store = useStore();
   const [options, setOptions] = useState<
     | {
         type: "property";
@@ -36,37 +38,47 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
     | {
         type: "value";
         propertyId: FilterOption["id"];
-        values: Set<string>;
-      }[]
+        values: { id: string; name: string }[];
+      }
   >({ type: "property", properties: FILTER_OPTIONS });
-
-  const [selectedProperty, setSelectedProperty] = useState<FilterOption | null>(null);
-  const [selectedValues, setSelectedValues] = useState<Record<string, Set<string>>>({});
 
   if (!isOpen) return null;
 
   const handlePropertyClick = (option: FilterOption) => {
-    setSelectedProperty(option);
+    if (option.id === "labels") {
+      const labels = store.getAll("label");
+      setOptions({ type: "value", propertyId: option.id, values: labels });
+    } else {
+      setOptions({
+        type: "value",
+        propertyId: option.id,
+        values: option.values?.map((value) => ({ id: value, name: value })) || [],
+      });
+    }
   };
 
   const handleValueClick = (value: string) => {
-    if (!selectedProperty) return;
+    if (options.type !== "value") return;
+    setOptions({
+      type: "property",
+      properties: FILTER_OPTIONS,
+    });
 
-    const propertyId = selectedProperty.id;
-    const currentValues = selectedValues[propertyId] || new Set();
+    // const propertyId = options.propertyId;
+    // const currentValues = options.values || new Set();
 
-    const newValues = new Set(currentValues);
-    if (newValues.has(value)) {
-      newValues.delete(value);
-    } else {
-      newValues.add(value);
-    }
+    // const newValues = new Set(currentValues);
+    // if (newValues.has(value)) {
+    //   newValues.delete(value);
+    // } else {
+    //   newValues.add(value);
+    // }
 
-    setSelectedValues({ ...selectedValues, [propertyId]: newValues });
+    // setOptions({ ...options, values: newValues });
   };
 
   const handleBackClick = () => {
-    setSelectedProperty(null);
+    setOptions({ type: "property", properties: FILTER_OPTIONS });
   };
 
   return (
