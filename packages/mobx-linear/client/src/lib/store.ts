@@ -313,7 +313,9 @@ export function backlinks(sourceRef: string) {
   };
 }
 
-type ModelRecord = Record<string, new (...args: any[]) => BaseModel>;
+type BaseModelConstructor = new (...args: any[]) => BaseModel;
+
+type ModelRecord = Record<string, BaseModelConstructor>;
 
 export type OptimisticMutation = {
   mutationId: number;
@@ -387,7 +389,7 @@ export class Store<TModels extends ModelRecord> {
 
   modelMetadata = {} as Record<keyof TModels, ModelMetadata>;
 
-  private modelClassConstructors: TModels;
+  private modelNameToConstructor = {} as Record<string, BaseModelConstructor>;
   private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
 
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
@@ -423,7 +425,7 @@ export class Store<TModels extends ModelRecord> {
       syncEnabled?: boolean;
     } = {}
   ) {
-    this.modelClassConstructors = modelClassConstructors;
+    this.modelNameToConstructor = modelClassConstructors;
     this.puller = typeof puller === "string" ? createPuller(puller) : puller;
     this.pusher = typeof pusher === "string" ? createPusher(pusher) : pusher;
     this.poker = typeof poker === "string" ? createPoker(poker) : poker;
@@ -432,11 +434,13 @@ export class Store<TModels extends ModelRecord> {
     for (const modelCollectionKey in modelClassConstructors) {
       const ModelClass = modelClassConstructors[modelCollectionKey];
       new ModelClass(); // Initializes metadata (TODO: kinda weird)
+      const modelName = ModelClass.name;
+      this.modelNameToConstructor[modelName] = ModelClass;
+      this.modelNameToCollectionKey[modelName] = modelCollectionKey;
+
       this.models[modelCollectionKey] = observable.map();
       this.deletedModels[modelCollectionKey] = observable.map();
       this.modelMetadata[modelCollectionKey] = getModelMetadata(ModelClass);
-      const modelName = ModelClass.name;
-      this.modelNameToCollectionKey[modelName] = modelCollectionKey;
     }
 
     // Set up auto-commit
@@ -565,7 +569,7 @@ export class Store<TModels extends ModelRecord> {
   private setupBacklinksTrigger() {
     this.subscribe((event) => {
       // Get model class and metadata early
-      const ModelClass = this.modelClassConstructors[event.model];
+      const ModelClass = this.modelNameToConstructor[event.model];
       if (!ModelClass) return;
       const metadata = getModelMetadata(ModelClass);
 
@@ -604,7 +608,7 @@ export class Store<TModels extends ModelRecord> {
 
       // Process all link changes through the same code path
       linkChanges.forEach(({ field, sourceInst, oldTargetId, newTargetId }) => {
-        const TargetClass = this.modelClassConstructors[field.targetModelName];
+        const TargetClass = this.modelNameToConstructor[field.targetModelName];
         if (!TargetClass) return;
 
         const targetMetadata = getModelMetadata(TargetClass);
@@ -636,7 +640,7 @@ export class Store<TModels extends ModelRecord> {
 
   private setupUpdatedAtTrigger() {
     this.subscribe((event) => {
-      const metadata = getModelMetadata(this.modelClassConstructors[event.model]);
+      const metadata = getModelMetadata(this.modelNameToConstructor[event.model]);
       if (
         event.type === "update" &&
         metadata.updatedAtField &&
@@ -655,7 +659,7 @@ export class Store<TModels extends ModelRecord> {
     modelName: K,
     serializedProps: Record<string, unknown> = {}
   ): InstanceType<TModels[K]> {
-    const ModelClass = this.modelClassConstructors[modelName];
+    const ModelClass = this.modelNameToConstructor[modelName];
     if (!ModelClass) {
       throw new Error(`Unknown model: ${String(modelName)}`);
     }
