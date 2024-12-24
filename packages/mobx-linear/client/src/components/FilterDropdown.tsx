@@ -19,7 +19,6 @@ const FILTER_OPTIONS: FilterOption[] = [
     id: "labels",
     label: "Labels",
     icon: <LabelIcon />,
-    values: ["Bug", "Feature", "Documentation"],
   },
 ];
 
@@ -29,6 +28,18 @@ interface FilterDropdownProps {
 }
 
 export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps) => {
+  const [options, setOptions] = useState<
+    | {
+        type: "property";
+        properties: FilterOption[];
+      }
+    | {
+        type: "value";
+        propertyId: FilterOption["id"];
+        values: Set<string>;
+      }[]
+  >({ type: "property", properties: FILTER_OPTIONS });
+
   const [selectedProperty, setSelectedProperty] = useState<FilterOption | null>(null);
   const [selectedValues, setSelectedValues] = useState<Record<string, Set<string>>>({});
 
