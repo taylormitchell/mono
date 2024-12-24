@@ -1,8 +1,15 @@
 import { observer } from "mobx-react-lite";
 import styles from "./FilterDropdown.module.css";
 import { useState } from "react";
-import { CheckIcon } from "lucide-react";
-import { StatusIcon, PriorityIcon, AssigneeIcon, LabelIcon, ChevronIcon, BackIcon } from "./Icons";
+import {
+  StatusIcon,
+  PriorityIcon,
+  AssigneeIcon,
+  LabelIcon,
+  ChevronIcon,
+  BackIcon,
+  CheckIcon,
+} from "./Icons";
 import { useStore } from "../lib/useStore";
 
 interface FilterOption {
@@ -41,6 +48,12 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
         values: { id: string; name: string }[];
       }
   >({ type: "property", properties: FILTER_OPTIONS });
+  const [selectedValues, setSelectedValues] = useState<
+    {
+      property: FilterOption;
+      value: { id: string; name: string };
+    }[]
+  >([]);
 
   if (!isOpen) return null;
 
@@ -85,7 +98,7 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
     <>
       <div className={styles.overlay} onClick={onClose} />
       <div className={styles.dropdown}>
-        {!selectedProperty ? (
+        {options.type === "property" ? (
           <>
             <div className={styles.header}>Filter</div>
             <div className={styles.options}>
@@ -108,19 +121,17 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
               <button className={styles.backButton} onClick={handleBackClick}>
                 <BackIcon />
               </button>
-              {selectedProperty.label}
+              {options.propertyId}
             </div>
             <div className={styles.values}>
-              {selectedProperty.values?.map((value) => (
+              {options.values?.map((value) => (
                 <button
-                  key={value}
-                  className={`${styles.valueButton} ${
-                    selectedValues[selectedProperty.id]?.has(value) ? styles.selected : ""
-                  }`}
-                  onClick={() => handleValueClick(value)}
+                  key={value.id}
+                  className={`${styles.valueButton}`}
+                  onClick={() => handleValueClick(value.id)}
                 >
                   <CheckIcon />
-                  {value}
+                  {value.name}
                 </button>
               ))}
             </div>
