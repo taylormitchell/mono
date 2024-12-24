@@ -98,7 +98,9 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
       {selectedValues.length > 0 && (
         <div className={styles.selectedValues}>
           {selectedValues.map((sv) => (
-            <div key={sv.value.id}>{sv.value.name}</div>
+            <div key={sv.value.id}>
+              {sv.property.label}: {sv.value.name}
+            </div>
           ))}
         </div>
       )}

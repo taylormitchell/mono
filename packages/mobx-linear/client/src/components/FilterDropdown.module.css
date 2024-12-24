@@ -89,5 +89,14 @@
 
 .selectedValues {
   display: flex;
-  gap: 4px;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.selectedValues > div {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
 }
