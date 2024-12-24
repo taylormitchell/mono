@@ -55,8 +55,6 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
     }[]
   >([]);
 
-  if (!isOpen) return null;
-
   const handlePropertyClick = (option: FilterOption) => {
     if (option.id === "labels") {
       const labels = store.getAll("label").map((label) => ({
@@ -97,50 +95,61 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
   console.log(selectedValues);
   return (
     <>
-      <div className={styles.overlay} onClick={onClose} />
-      <div className={styles.dropdown}>
-        {options.type === "property" ? (
-          <>
-            <div className={styles.header}>Filter</div>
-            <div className={styles.options}>
-              {FILTER_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  className={styles.optionButton}
-                  onClick={() => handlePropertyClick(option)}
-                >
-                  <span className={styles.icon}>{option.icon}</span>
-                  {option.label}
-                  <ChevronIcon />
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className={styles.header}>
-              <button className={styles.backButton} onClick={handleBackClick}>
-                <BackIcon />
-              </button>
-              {options.propertyId}
-            </div>
-            <div className={styles.values}>
-              {options.values?.map((value) => (
-                <button
-                  key={value.id}
-                  className={`${styles.valueButton} ${
-                    selectedValues.some((sv) => sv.value.id === value.id) ? styles.selected : ""
-                  }`}
-                  onClick={() => handleValueClick(value)}
-                >
-                  <CheckIcon />
-                  {value.name}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      {selectedValues.length > 0 && (
+        <div className={styles.selectedValues}>
+          {selectedValues.map((sv) => (
+            <div key={sv.value.id}>{sv.value.name}</div>
+          ))}
+        </div>
+      )}
+      {isOpen && (
+        <>
+          <div className={styles.overlay} onClick={onClose} />
+          <div className={styles.dropdown}>
+            {options.type === "property" ? (
+              <>
+                <div className={styles.header}>Filter</div>
+                <div className={styles.options}>
+                  {FILTER_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      className={styles.optionButton}
+                      onClick={() => handlePropertyClick(option)}
+                    >
+                      <span className={styles.icon}>{option.icon}</span>
+                      {option.label}
+                      <ChevronIcon />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.header}>
+                  <button className={styles.backButton} onClick={handleBackClick}>
+                    <BackIcon />
+                  </button>
+                  {options.propertyId}
+                </div>
+                <div className={styles.values}>
+                  {options.values?.map((value) => (
+                    <button
+                      key={value.id}
+                      className={`${styles.valueButton} ${
+                        selectedValues.some((sv) => sv.value.id === value.id) ? styles.selected : ""
+                      }`}
+                      onClick={() => handleValueClick(value)}
+                    >
+                      <CheckIcon />
+                      {value.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </>
   );
 });

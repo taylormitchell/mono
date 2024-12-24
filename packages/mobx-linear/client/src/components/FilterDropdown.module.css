@@ -86,3 +86,8 @@
 .valueButton.selected svg {
   opacity: 1;
 }
+
+.selectedValues {
+  display: flex;
+  gap: 4px;
+}
