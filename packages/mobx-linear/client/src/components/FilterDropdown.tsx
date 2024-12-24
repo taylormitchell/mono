@@ -45,13 +45,13 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
     | {
         type: "value";
         propertyId: FilterOption["id"];
-        values: { id: string; name: string }[];
+        values: { id: string; propertyId: string; name: string }[];
       }
   >({ type: "property", properties: FILTER_OPTIONS });
   const [selectedValues, setSelectedValues] = useState<
     {
       property: FilterOption;
-      value: { id: string; name: string };
+      value: { id: string; propertyId: string; name: string };
     }[]
   >([]);
 
@@ -59,41 +59,42 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
 
   const handlePropertyClick = (option: FilterOption) => {
     if (option.id === "labels") {
-      const labels = store.getAll("label");
+      const labels = store.getAll("label").map((label) => ({
+        id: label.id,
+        propertyId: option.id,
+        name: label.name,
+      }));
       setOptions({ type: "value", propertyId: option.id, values: labels });
     } else {
       setOptions({
         type: "value",
         propertyId: option.id,
-        values: option.values?.map((value) => ({ id: value, name: value })) || [],
+        values:
+          option.values?.map((value) => ({ id: value, propertyId: option.id, name: value })) || [],
       });
     }
   };
 
-  const handleValueClick = (value: string) => {
-    if (options.type !== "value") return;
-    setOptions({
-      type: "property",
-      properties: FILTER_OPTIONS,
+  const handleValueClick = (value: { id: string; propertyId: string; name: string }) => {
+    const property = FILTER_OPTIONS.find((p) => p.id === value.propertyId);
+    if (!property) return;
+    setSelectedValues((prev) => {
+      const newValues = [...prev];
+      const index = newValues.findIndex((sv) => sv.value.id === value.id);
+      if (index === -1) {
+        newValues.push({ property, value });
+      } else {
+        newValues.splice(index, 1);
+      }
+      return newValues;
     });
-
-    // const propertyId = options.propertyId;
-    // const currentValues = options.values || new Set();
-
-    // const newValues = new Set(currentValues);
-    // if (newValues.has(value)) {
-    //   newValues.delete(value);
-    // } else {
-    //   newValues.add(value);
-    // }
-
-    // setOptions({ ...options, values: newValues });
   };
 
   const handleBackClick = () => {
     setOptions({ type: "property", properties: FILTER_OPTIONS });
   };
 
+  console.log(selectedValues);
   return (
     <>
       <div className={styles.overlay} onClick={onClose} />
@@ -127,8 +128,10 @@ export const FilterDropdown = observer(({ isOpen, onClose }: FilterDropdownProps
               {options.values?.map((value) => (
                 <button
                   key={value.id}
-                  className={`${styles.valueButton}`}
-                  onClick={() => handleValueClick(value.id)}
+                  className={`${styles.valueButton} ${
+                    selectedValues.some((sv) => sv.value.id === value.id) ? styles.selected : ""
+                  }`}
+                  onClick={() => handleValueClick(value)}
                 >
                   <CheckIcon />
                   {value.name}
