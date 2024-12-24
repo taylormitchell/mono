@@ -388,7 +388,7 @@ export class Store<TModels extends ModelRecord> {
   modelMetadata = {} as Record<keyof TModels, ModelMetadata>;
 
   private modelClasses: TModels;
-  private modelClassToCollectionKey = {} as Record<keyof TModels, string>;
+  private modelNameToCollectionKey = {} as Record<keyof TModels, string>;
 
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
 
@@ -435,7 +435,7 @@ export class Store<TModels extends ModelRecord> {
       this.models[name] = observable.map();
       this.deletedModels[name] = observable.map();
       this.modelMetadata[name] = getModelMetadata(ModelClass);
-      this.modelClassToCollectionKey[name] = name;
+      this.modelNameToCollectionKey[name] = name;
     }
 
     // Set up auto-commit
@@ -559,16 +559,6 @@ export class Store<TModels extends ModelRecord> {
     } finally {
       this.emittingEnabled = true;
     }
-  }
-
-  private getModelName(model: BaseModel) {
-    const ModelClass = model.constructor;
-    for (const [name, cls] of Object.entries(this.modelClasses)) {
-      if (cls === ModelClass) {
-        return name;
-      }
-    }
-    return null;
   }
 
   private setupBacklinksTrigger() {
@@ -697,7 +687,6 @@ export class Store<TModels extends ModelRecord> {
         case "link":
           if (serializedProps[field.serializedKey]) {
             const targetId = serializedProps[field.serializedKey] as string;
-            // constructorProps[fieldName] = this.getOrCreatePlaceholder(field.targetModel, targetId);
             (instance as any)[fieldName] = this.getOrCreatePlaceholder(
               field.targetModelName,
               targetId
@@ -737,7 +726,8 @@ export class Store<TModels extends ModelRecord> {
     modelName: keyof typeof this.models,
     id: string
   ): T {
-    const existing = this.models[modelName].get(id) as T;
+    const key = this.modelNameToCollectionKey[modelName];
+    const existing = this.models[key].get(id) as T;
     if (existing) return existing;
     return this.create(modelName, { id, placeholder: true }) as T;
   }
@@ -766,8 +756,7 @@ export class Store<TModels extends ModelRecord> {
    */
   @action
   delete(model: BaseModel) {
-    const modelName = this.getModelName(model);
-    if (!modelName) throw new Error("Unknown model");
+    const modelName = this.modelNameToCollectionKey[model.constructor.name];
     this.models[modelName].delete(model.id);
     this.deletedModels[modelName].set(model.id, model as InstanceType<TModels[keyof TModels]>);
     this.emit({ type: "delete", model: modelName, id: model.id });
