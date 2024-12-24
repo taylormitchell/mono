@@ -98,7 +98,7 @@ function getModelMetadata(target: Function): ModelMetadata {
 export abstract class BaseModel {
   readonly id: string;
   placeholder = false;
-  protected store?: Store<any>;
+  _store?: Store<any>;
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     this.id = props.id ?? crypto.randomUUID();
@@ -106,20 +106,20 @@ export abstract class BaseModel {
   }
 
   protected emitIfStored(event: StoreEvent) {
-    this.store?.emit(event);
+    this._store?.emit(event);
   }
 
   protected applyIfStored(event: StoreEvent) {
-    this.store?.applyEvent(event);
+    this._store?.applyEvent(event);
   }
 
   inStore() {
-    return !!this.store;
+    return !!this._store;
   }
 
   // TODO: Can only belong to one store?
   _setStore(store: Store<any>) {
-    this.store = store;
+    this._store = store;
   }
 }
 
@@ -237,8 +237,8 @@ export function link(targetModelName?: string, opts: { serializedKey?: string } 
 }
 
 export function backlinks(sourceRef: string) {
-  const [sourceModel, sourceKey] = sourceRef.split(".");
-  if (!sourceModel || !sourceKey) {
+  const [sourceModelName, sourceKey] = sourceRef.split(".");
+  if (!sourceModelName || !sourceKey) {
     throw new Error("Invalid backlinks reference format. Expected 'model.field'");
   }
   return (_: any, context: ClassFieldDecoratorContext) => {
@@ -249,13 +249,13 @@ export function backlinks(sourceRef: string) {
         constructor: this.constructor,
         metadata,
         fieldName,
-        sourceModel,
+        sourceModelName,
         sourceKey,
       });
       metadata.fields[fieldName] = {
         type: "backlinks",
         fieldKey: fieldName,
-        sourceModelName: sourceModel,
+        sourceModelName,
         sourceKey,
       };
       if (!(initialValue instanceof Set)) {
@@ -264,40 +264,44 @@ export function backlinks(sourceRef: string) {
       const set = observable.set();
       const setAdd = set.add.bind(set);
       const setDelete = set.delete.bind(set);
-      set.add = action((linkingModel: BaseModel) => {
-        const result = setAdd(linkingModel);
-        // TODO: handle case where they're in different stores?
-        if (this.inStore()) {
-          if (linkingModel.constructor.name !== sourceModel) {
-            console.warn(
-              `Backlink ${linkingModel.constructor.name} does not match source model ${sourceModel}`
-            );
-          }
-          if ((linkingModel as any)[sourceKey] !== this) {
-            this.applyIfStored({
-              type: "update",
-              model: sourceModel,
-              id: linkingModel.id,
-              field: sourceKey,
-              oldValue: (linkingModel as any)[sourceKey],
-              newValue: this.id,
-            });
-          }
+      set.add = action((sourceModel: BaseModel) => {
+        const result = setAdd(sourceModel);
+        if (sourceModel._store !== this._store) {
+          console.warn(
+            `Backlink ${sourceModel.constructor.name} is in a different store than the linking model ${this.constructor.name}`
+          );
+        }
+        if (sourceModel.constructor.name !== sourceModelName) {
+          console.warn(
+            `Backlink ${sourceModel.constructor.name} does not match source model ${sourceModelName}`
+          );
+        }
+        const alreadyLinksToThis = (sourceModel as any)[sourceKey] === this;
+        if (!alreadyLinksToThis) {
+          this.applyIfStored({
+            type: "update",
+            model: sourceModel.constructor.name,
+            id: sourceModel.id,
+            field: sourceKey,
+            oldValue: (sourceModel as any)[sourceKey],
+            newValue: this.id,
+          });
         }
         return result;
       });
-      set.delete = action((value: BaseModel) => {
-        const result = setDelete(value);
+      set.delete = action((sourceModel: BaseModel) => {
+        const result = setDelete(sourceModel);
         if (this.inStore()) {
-          const metadata = getModelMetadata(value.constructor);
-          if (metadata.name !== sourceModel) {
-            console.warn(`Backlink ${metadata.name} does not match source model ${sourceModel}`);
+          if (sourceModel.constructor.name !== sourceModelName) {
+            console.warn(
+              `Backlink ${sourceModel.constructor.name} does not match source model ${sourceModelName}`
+            );
           }
-          if ((value as any)[sourceKey] === this) {
+          if ((sourceModel as any)[sourceKey] === this) {
             this.applyIfStored({
               type: "update",
-              model: sourceModel,
-              id: value.id,
+              model: sourceModel.constructor.name,
+              id: sourceModel.id,
               field: sourceKey,
               oldValue: this.id,
               newValue: null,

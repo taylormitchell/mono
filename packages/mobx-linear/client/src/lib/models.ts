@@ -109,17 +109,17 @@ class IssueView extends BaseModel {
 
   @computed
   get issues() {
-    if (!this.store) return [];
-    return this.store.getAll("issue") as Issue[];
+    if (!this._store) return [];
+    return this._store.getAll("issue") as Issue[];
   }
 
   @action
   upsertPosition(issue: Issue, position: string) {
-    if (!this.store) return;
+    if (!this._store) return;
     if (this.issueViewPositionsById[issue.id]) {
       this.issueViewPositionsById[issue.id].position = position;
     } else {
-      this.store.create("issueViewPosition", {
+      this._store.create("issueViewPosition", {
         issueId: issue.id,
         parentViewId: this.id,
         position,
