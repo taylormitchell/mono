@@ -573,6 +573,7 @@ export class Store<TModels extends ModelRecord> {
       const ModelClass = this.modelNameToConstructor[event.model];
       if (!ModelClass) return;
       const metadata = getModelMetadata(ModelClass);
+      const collectionKey = this.modelNameToCollectionKey[event.model];
 
       // Gather all link changes
       const linkChanges: {
@@ -586,7 +587,7 @@ export class Store<TModels extends ModelRecord> {
         if (field?.type === "link") {
           linkChanges.push({
             field,
-            sourceInst: this.models[event.model].get(event.id)!,
+            sourceInst: this.models[collectionKey].get(event.id)!,
             oldTargetId: event.oldValue as string | null,
             newTargetId: event.newValue as string | null,
           });
@@ -599,7 +600,7 @@ export class Store<TModels extends ModelRecord> {
             if (targetId) {
               linkChanges.push({
                 field,
-                sourceInst: this.models[event.model].get(event.id)!,
+                sourceInst: this.models[collectionKey].get(event.id)!,
                 oldTargetId: null,
                 newTargetId: targetId,
               });
@@ -611,6 +612,7 @@ export class Store<TModels extends ModelRecord> {
       linkChanges.forEach(({ field, sourceInst, oldTargetId, newTargetId }) => {
         const TargetClass = this.modelNameToConstructor[field.targetModelName];
         if (!TargetClass) return;
+        const targetCollectionKey = this.modelNameToCollectionKey[field.targetModelName];
 
         const targetMetadata = getModelMetadata(TargetClass);
         const backlink = Object.values(targetMetadata.fields).find(
@@ -622,14 +624,14 @@ export class Store<TModels extends ModelRecord> {
 
         if (backlink) {
           if (oldTargetId) {
-            const oldTarget = this.models[field.targetModelName].get(oldTargetId) as any;
+            const oldTarget = this.models[targetCollectionKey].get(oldTargetId) as any;
             if (oldTarget) {
               (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst);
             }
           }
 
           if (newTargetId) {
-            const newTarget = this.models[field.targetModelName].get(newTargetId) as any;
+            const newTarget = this.models[targetCollectionKey].get(newTargetId) as any;
             if (newTarget) {
               (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst);
             }
@@ -647,7 +649,8 @@ export class Store<TModels extends ModelRecord> {
         metadata.updatedAtField &&
         event.field !== metadata.updatedAtField.serializedKey
       ) {
-        const model = this.models[event.model].get(event.id);
+        const collectionKey = this.modelNameToCollectionKey[event.model];
+        const model = this.models[collectionKey].get(event.id);
         if (model) {
           (model as any)[metadata.updatedAtField.fieldKey] = Date.now();
         }
@@ -668,10 +671,10 @@ export class Store<TModels extends ModelRecord> {
 
     const existing =
       typeof serializedProps.id === "string"
-        ? this.models[modelName].get(serializedProps.id) ??
+        ? this.models[collectionKey].get(serializedProps.id) ??
           // In case where we rollback a created model and then re-create it
           // we want to use the same instance from before rolling back.
-          this.deletedModels[modelName].get(serializedProps.id)
+          this.deletedModels[collectionKey].get(serializedProps.id)
         : undefined;
     const instance =
       existing ??
@@ -730,10 +733,10 @@ export class Store<TModels extends ModelRecord> {
   }
 
   private getOrCreatePlaceholder<T extends BaseModel>(modelName: string, id: string): T {
-    const key = this.modelNameToCollectionKey[modelName];
-    const existing = this.models[key].get(id) as T;
+    const collectionKey = this.modelNameToCollectionKey[modelName];
+    const existing = this.models[collectionKey].get(id) as T;
     if (existing) return existing;
-    return this.create(modelName, { id, placeholder: true }) as T;
+    return this.create(collectionKey, { id, placeholder: true }) as T;
   }
 
   /**
@@ -766,13 +769,13 @@ export class Store<TModels extends ModelRecord> {
     this.emit({ type: "delete", model: model.constructor.name, id: model.id });
   }
 
-  get<K extends keyof TModels>(modelName: K, id: string) {
-    const model = this.models[modelName].get(id);
+  get<K extends keyof TModels>(collectionKey: K, id: string) {
+    const model = this.models[collectionKey].get(id);
     return model as InstanceType<TModels[K]> | undefined;
   }
 
-  getAll<K extends keyof TModels>(modelName: K) {
-    return Array.from(this.models[modelName].values()) as InstanceType<TModels[K]>[];
+  getAll<K extends keyof TModels>(collectionKey: K) {
+    return Array.from(this.models[collectionKey].values()) as InstanceType<TModels[K]>[];
   }
 
   subscribe(handler: (event: StoreEvent) => void) {
@@ -833,7 +836,8 @@ export class Store<TModels extends ModelRecord> {
         this.create(event.model, { ...event.props, id: event.id });
         break;
       case "update": {
-        const model = this.models[event.model].get(event.id);
+        const collectionKey = this.modelNameToCollectionKey[event.model];
+        const model = this.models[collectionKey].get(event.id);
         if (!model) {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
@@ -848,7 +852,8 @@ export class Store<TModels extends ModelRecord> {
         break;
       }
       case "delete": {
-        const model = this.models[event.model].get(event.id);
+        const collectionKey = this.modelNameToCollectionKey[event.model];
+        const model = this.models[collectionKey].get(event.id);
         if (!model) {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
@@ -862,7 +867,8 @@ export class Store<TModels extends ModelRecord> {
   }
 
   patchToEvent(patch: Patch): StoreEvent[] {
-    const instance = this.models[patch.model].get(patch.id);
+    const collectionKey = this.modelNameToCollectionKey[patch.model];
+    const instance = this.models[collectionKey].get(patch.id);
     if (patch.props === null) {
       return [{ type: "delete", model: patch.model, id: patch.id }];
     } else {
