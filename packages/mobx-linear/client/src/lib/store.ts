@@ -391,6 +391,7 @@ export class Store<TModels extends ModelRecord> {
 
   private modelNameToConstructor = {} as Record<string, BaseModelConstructor>;
   private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
+  private collectionKeyToModelName = {} as Record<keyof TModels, string>;
 
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
 
@@ -425,7 +426,6 @@ export class Store<TModels extends ModelRecord> {
       syncEnabled?: boolean;
     } = {}
   ) {
-    this.modelNameToConstructor = modelClassConstructors;
     this.puller = typeof puller === "string" ? createPuller(puller) : puller;
     this.pusher = typeof pusher === "string" ? createPusher(pusher) : pusher;
     this.poker = typeof poker === "string" ? createPoker(poker) : poker;
@@ -437,6 +437,7 @@ export class Store<TModels extends ModelRecord> {
       const modelName = ModelClass.name;
       this.modelNameToConstructor[modelName] = ModelClass;
       this.modelNameToCollectionKey[modelName] = modelCollectionKey;
+      this.collectionKeyToModelName[modelCollectionKey] = modelName;
 
       this.models[modelCollectionKey] = observable.map();
       this.deletedModels[modelCollectionKey] = observable.map();
@@ -656,9 +657,10 @@ export class Store<TModels extends ModelRecord> {
 
   // Model operations with type safety
   create<K extends keyof TModels>(
-    modelName: K,
+    collectionKey: K, // TODO: Just make this the model name?
     serializedProps: Record<string, unknown> = {}
   ): InstanceType<TModels[K]> {
+    const modelName = this.collectionKeyToModelName[collectionKey];
     const ModelClass = this.modelNameToConstructor[modelName];
     if (!ModelClass) {
       throw new Error(`Unknown model: ${String(modelName)}`);
@@ -714,12 +716,12 @@ export class Store<TModels extends ModelRecord> {
     instance._setStore(this);
 
     // Register in store
-    this.models[modelName].set(instance.id, instance);
+    this.models[collectionKey].set(instance.id, instance);
 
     // Emit create event
     this.emit({
       type: "create",
-      model: String(modelName),
+      model: instance.constructor.name,
       id: instance.id,
       props: serializedProps,
     });
@@ -758,10 +760,10 @@ export class Store<TModels extends ModelRecord> {
    */
   @action
   delete(model: BaseModel) {
-    const modelName = this.modelNameToCollectionKey[model.constructor.name];
-    this.models[modelName].delete(model.id);
-    this.deletedModels[modelName].set(model.id, model as InstanceType<TModels[keyof TModels]>);
-    this.emit({ type: "delete", model: modelName, id: model.id });
+    const collectionKey = this.modelNameToCollectionKey[model.constructor.name];
+    this.models[collectionKey].delete(model.id);
+    this.deletedModels[collectionKey].set(model.id, model as InstanceType<TModels[keyof TModels]>);
+    this.emit({ type: "delete", model: model.constructor.name, id: model.id });
   }
 
   get<K extends keyof TModels>(modelName: K, id: string) {
