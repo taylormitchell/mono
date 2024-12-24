@@ -387,7 +387,7 @@ export class Store<TModels extends ModelRecord> {
 
   modelMetadata = {} as Record<keyof TModels, ModelMetadata>;
 
-  private modelClasses: TModels;
+  private modelClassConstructors: TModels;
   private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
 
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
@@ -406,7 +406,7 @@ export class Store<TModels extends ModelRecord> {
   private syncEnabled = true;
 
   constructor(
-    modelClasses: TModels,
+    modelClassConstructors: TModels,
     {
       puller,
       pusher,
@@ -423,20 +423,20 @@ export class Store<TModels extends ModelRecord> {
       syncEnabled?: boolean;
     } = {}
   ) {
-    this.modelClasses = modelClasses;
+    this.modelClassConstructors = modelClassConstructors;
     this.puller = typeof puller === "string" ? createPuller(puller) : puller;
     this.pusher = typeof pusher === "string" ? createPusher(pusher) : pusher;
     this.poker = typeof poker === "string" ? createPoker(poker) : poker;
 
     // Initialize model storage
-    for (const name in modelClasses) {
-      const ModelClass = modelClasses[name];
+    for (const modelCollectionKey in modelClassConstructors) {
+      const ModelClass = modelClassConstructors[modelCollectionKey];
       new ModelClass(); // Initializes metadata (TODO: kinda weird)
-      this.models[name] = observable.map();
-      this.deletedModels[name] = observable.map();
-      this.modelMetadata[name] = getModelMetadata(ModelClass);
+      this.models[modelCollectionKey] = observable.map();
+      this.deletedModels[modelCollectionKey] = observable.map();
+      this.modelMetadata[modelCollectionKey] = getModelMetadata(ModelClass);
       const modelName = ModelClass.name;
-      this.modelNameToCollectionKey[modelName] = name;
+      this.modelNameToCollectionKey[modelName] = modelCollectionKey;
     }
 
     // Set up auto-commit
@@ -565,7 +565,7 @@ export class Store<TModels extends ModelRecord> {
   private setupBacklinksTrigger() {
     this.subscribe((event) => {
       // Get model class and metadata early
-      const ModelClass = this.modelClasses[event.model];
+      const ModelClass = this.modelClassConstructors[event.model];
       if (!ModelClass) return;
       const metadata = getModelMetadata(ModelClass);
 
@@ -604,7 +604,7 @@ export class Store<TModels extends ModelRecord> {
 
       // Process all link changes through the same code path
       linkChanges.forEach(({ field, sourceInst, oldTargetId, newTargetId }) => {
-        const TargetClass = this.modelClasses[field.targetModelName];
+        const TargetClass = this.modelClassConstructors[field.targetModelName];
         if (!TargetClass) return;
 
         const targetMetadata = getModelMetadata(TargetClass);
@@ -636,7 +636,7 @@ export class Store<TModels extends ModelRecord> {
 
   private setupUpdatedAtTrigger() {
     this.subscribe((event) => {
-      const metadata = getModelMetadata(this.modelClasses[event.model]);
+      const metadata = getModelMetadata(this.modelClassConstructors[event.model]);
       if (
         event.type === "update" &&
         metadata.updatedAtField &&
@@ -655,7 +655,7 @@ export class Store<TModels extends ModelRecord> {
     modelName: K,
     serializedProps: Record<string, unknown> = {}
   ): InstanceType<TModels[K]> {
-    const ModelClass = this.modelClasses[modelName];
+    const ModelClass = this.modelClassConstructors[modelName];
     if (!ModelClass) {
       throw new Error(`Unknown model: ${String(modelName)}`);
     }
