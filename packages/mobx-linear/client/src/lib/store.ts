@@ -388,7 +388,7 @@ export class Store<TModels extends ModelRecord> {
   modelMetadata = {} as Record<keyof TModels, ModelMetadata>;
 
   private modelClasses: TModels;
-  private modelNameToCollectionKey = {} as Record<keyof TModels, string>;
+  private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
 
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
 
@@ -435,7 +435,8 @@ export class Store<TModels extends ModelRecord> {
       this.models[name] = observable.map();
       this.deletedModels[name] = observable.map();
       this.modelMetadata[name] = getModelMetadata(ModelClass);
-      this.modelNameToCollectionKey[name] = name;
+      const modelName = ModelClass.name;
+      this.modelNameToCollectionKey[modelName] = name;
     }
 
     // Set up auto-commit
@@ -722,10 +723,7 @@ export class Store<TModels extends ModelRecord> {
     return instance;
   }
 
-  private getOrCreatePlaceholder<T extends BaseModel>(
-    modelName: keyof typeof this.models,
-    id: string
-  ): T {
+  private getOrCreatePlaceholder<T extends BaseModel>(modelName: string, id: string): T {
     const key = this.modelNameToCollectionKey[modelName];
     const existing = this.models[key].get(id) as T;
     if (existing) return existing;
