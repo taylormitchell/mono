@@ -23,7 +23,7 @@ interface LinkMetadataField {
 interface BacklinksMetadataField {
   type: "backlinks";
   fieldKey: string;
-  sourceModel: string;
+  sourceModelName: string;
   sourceKey: string;
 }
 
@@ -95,10 +95,6 @@ function getModelMetadata(target: Function): ModelMetadata {
   return modelMetadataRegistry.get(target)!;
 }
 
-function setModelMetadata(target: Function, metadata: ModelMetadata) {
-  modelMetadataRegistry.set(target, metadata);
-}
-
 export abstract class BaseModel {
   readonly id: string;
   placeholder = false;
@@ -140,13 +136,12 @@ export function property(opts: { serializedKey?: string } = {}) {
         return observableResult.get?.call(this);
       },
       set(this: BaseModel, newValue: unknown) {
-        const metadata = getModelMetadata(this.constructor);
         const oldValue = observableResult.get?.call(this);
         runInAction(() => {
           observableResult.set?.call(this, newValue);
           this.emitIfStored({
             type: "update",
-            model: metadata.name,
+            model: this.constructor.name,
             id: this.id,
             field: fieldName,
             oldValue,
@@ -176,13 +171,12 @@ export function updatedAt(opts: { serializedKey?: string } = {}) {
         return observableResult.get?.call(this);
       },
       set(this: BaseModel, newValue: unknown) {
-        const metadata = getModelMetadata(this.constructor);
         const oldValue = observableResult.get?.call(this);
         runInAction(() => {
           observableResult.set?.call(this, newValue);
           this.emitIfStored({
             type: "update",
-            model: metadata.name,
+            model: this.constructor.name,
             id: this.id,
             field: fieldName,
             oldValue,
@@ -216,12 +210,11 @@ export function link(targetModelName?: string, opts: { serializedKey?: string } 
       },
       set(this: BaseModel, newValue: BaseModel | null) {
         const oldValue = observableResult.get?.call(this);
-        const model = getModelMetadata(this.constructor).name;
         runInAction(() => {
           observableResult.set?.call(this, newValue);
           this.emitIfStored({
             type: "update",
-            model,
+            model: this.constructor.name,
             id: this.id,
             field: serializedKey,
             oldValue: oldValue?.id ?? null,
@@ -262,7 +255,7 @@ export function backlinks(sourceRef: string) {
       metadata.fields[fieldName] = {
         type: "backlinks",
         fieldKey: fieldName,
-        sourceModel: sourceModel,
+        sourceModelName: sourceModel,
         sourceKey,
       };
       if (!(initialValue instanceof Set)) {
@@ -271,21 +264,22 @@ export function backlinks(sourceRef: string) {
       const set = observable.set();
       const setAdd = set.add.bind(set);
       const setDelete = set.delete.bind(set);
-      set.add = action((value: BaseModel) => {
-        const result = setAdd(value);
+      set.add = action((linkingModel: BaseModel) => {
+        const result = setAdd(linkingModel);
         // TODO: handle case where they're in different stores?
         if (this.inStore()) {
-          const metadata = getModelMetadata(value.constructor);
-          if (metadata.name !== sourceModel) {
-            console.warn(`Backlink ${metadata.name} does not match source model ${sourceModel}`);
+          if (linkingModel.constructor.name !== sourceModel) {
+            console.warn(
+              `Backlink ${linkingModel.constructor.name} does not match source model ${sourceModel}`
+            );
           }
-          if ((value as any)[sourceKey] !== this) {
+          if ((linkingModel as any)[sourceKey] !== this) {
             this.applyIfStored({
               type: "update",
               model: sourceModel,
-              id: value.id,
+              id: linkingModel.id,
               field: sourceKey,
-              oldValue: (value as any)[sourceKey],
+              oldValue: (linkingModel as any)[sourceKey],
               newValue: this.id,
             });
           }
@@ -622,7 +616,7 @@ export class Store<TModels extends ModelRecord> {
         const backlink = Object.values(targetMetadata.fields).find(
           (f) =>
             f.type === "backlinks" &&
-            f.sourceModel === event.model &&
+            f.sourceModelName === event.model &&
             f.sourceKey === field.fieldKey
         ) as BacklinksMetadataField | undefined;
 
