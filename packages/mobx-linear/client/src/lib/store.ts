@@ -659,6 +659,7 @@ export class Store<TModels extends ModelRecord> {
   }
 
   // Model operations with type safety
+  @action
   create<K extends keyof TModels>(
     collectionKey: K, // TODO: Just make this the model name?
     serializedProps: Record<string, unknown> = {}

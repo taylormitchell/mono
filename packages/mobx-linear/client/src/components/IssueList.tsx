@@ -76,6 +76,7 @@ export const IssueList = observer(() => {
                 itemCount={issues.length}
                 itemSize={ROW_HEIGHT}
                 itemData={{ issues }}
+                overscanCount={10}
               >
                 {({ index, style, data }: any) => {
                   const { issue, position } = data.issues[index];
