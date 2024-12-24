@@ -245,13 +245,6 @@ export function backlinks(sourceRef: string) {
     const fieldName = String(context.name);
     return function (this: BaseModel, initialValue: unknown) {
       const metadata = getModelMetadata(this.constructor);
-      console.log(`setting backlinks metdata on ${this.constructor.name}`, {
-        constructor: this.constructor,
-        metadata,
-        fieldName,
-        sourceModelName,
-        sourceKey,
-      });
       metadata.fields[fieldName] = {
         type: "backlinks",
         fieldKey: fieldName,
@@ -291,22 +284,26 @@ export function backlinks(sourceRef: string) {
       });
       set.delete = action((sourceModel: BaseModel) => {
         const result = setDelete(sourceModel);
-        if (this.inStore()) {
-          if (sourceModel.constructor.name !== sourceModelName) {
-            console.warn(
-              `Backlink ${sourceModel.constructor.name} does not match source model ${sourceModelName}`
-            );
-          }
-          if ((sourceModel as any)[sourceKey] === this) {
-            this.applyIfStored({
-              type: "update",
-              model: sourceModel.constructor.name,
-              id: sourceModel.id,
-              field: sourceKey,
-              oldValue: this.id,
-              newValue: null,
-            });
-          }
+        if (sourceModel._store !== this._store) {
+          console.warn(
+            `Backlink ${sourceModel.constructor.name} is in a different store than the linking model ${this.constructor.name}`
+          );
+        }
+        if (sourceModel.constructor.name !== sourceModelName) {
+          console.warn(
+            `Backlink ${sourceModel.constructor.name} does not match source model ${sourceModelName}`
+          );
+        }
+        const alreadyLinksToThis = (sourceModel as any)[sourceKey] === this;
+        if (!alreadyLinksToThis) {
+          this.applyIfStored({
+            type: "update",
+            model: sourceModel.constructor.name,
+            id: sourceModel.id,
+            field: sourceKey,
+            oldValue: this.id,
+            newValue: null,
+          });
         }
         return result;
       });
@@ -391,6 +388,8 @@ export class Store<TModels extends ModelRecord> {
   modelMetadata = {} as Record<keyof TModels, ModelMetadata>;
 
   private modelClasses: TModels;
+  private modelClassToCollectionKey = {} as Record<keyof TModels, string>;
+
   private eventSubscribers = new Set<(event: StoreEvent) => void>();
 
   private undoStack: StoreEvent[][] = [];
@@ -436,6 +435,7 @@ export class Store<TModels extends ModelRecord> {
       this.models[name] = observable.map();
       this.deletedModels[name] = observable.map();
       this.modelMetadata[name] = getModelMetadata(ModelClass);
+      this.modelClassToCollectionKey[name] = name;
     }
 
     // Set up auto-commit
