@@ -1,5 +1,22 @@
 import { action, observable, reaction, runInAction } from "mobx";
 
+// @ClientModel("Users")
+// export class User extends Model {
+//     Property()
+//     public id: string = uuid()
+
+//     @Property()
+//     public name: string = "";
+
+//     @ManyToOne<Team>("members")
+//     public team: Team;
+
+//     @OneToMany()
+//     public readonly issues = new Collection<Issue>();
+// }
+
+// It's a reference to a team, and in that team there's a property called members. When the team is assigned, the decorator goes to the team and assigns the user to the team's members collection.
+
 // Types and utilities
 interface PropertyMetadataField {
   type: "property";
@@ -251,15 +268,18 @@ class Collection extends Set<BaseModel> {
 
   add(model: BaseModel) {
     super.add(model);
-    (model as any)[this.refPropName] = this.owner;
+    if (this.owner) {
+      (model as any)[this.refPropName] = this.owner;
+    } else {
+      console.warn("Added model to collection without setting owner");
+    }
     return this;
   }
 
   delete(model: BaseModel) {
     const res = super.delete(model);
     if (res) {
-      const refPropName = "";
-      (model as any)[refPropName] = null;
+      (model as any)[this.refPropName] = null;
     }
     return res;
   }
