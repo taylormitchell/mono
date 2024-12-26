@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { IssueList } from "./components/IssueList";
 import { createStore, StoreContext } from "./lib/models";
-import issues from "./assets/all-react-issues-simple.json";
+import issues from "./data/all-react-issues-simple.json";
 
 const store = createStore();
 // store.create("issue", { title: "a1", createdAt: 3 });
