@@ -254,6 +254,8 @@ export function link(targetModelName?: string, opts: { serializedKey?: string } 
   };
 }
 
+const collectionSets = new WeakMap<BaseModel, Set<BaseModel>>();
+
 export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const propertyName = String(context.name);
@@ -299,8 +301,6 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
   };
 }
 
-const collectionSets = new WeakMap<BaseModel, Set<BaseModel>>();
-
 export function OneToMany() {
   return () => {
     return function (this: BaseModel, initialValue: unknown) {
@@ -317,11 +317,30 @@ export function OneToMany() {
 /**
  * Like a set but it's read-only
  */
-class Collection {
+class Collection implements Omit<Set<BaseModel>, "add" | "delete" | "clear"> {
   constructor(private set: Set<BaseModel> = new Set()) {}
 
   has(model: BaseModel) {
     return this.set.has(model);
+  }
+
+  forEach(
+    callbackfn: (value: BaseModel, value2: BaseModel, set: Set<BaseModel>) => void,
+    thisArg?: any
+  ) {
+    this.set.forEach(callbackfn, thisArg);
+  }
+
+  entries() {
+    return this.set.entries();
+  }
+
+  keys() {
+    return this.set.keys();
+  }
+
+  values() {
+    return this.set.values();
   }
 
   get size() {
@@ -331,6 +350,8 @@ class Collection {
   *[Symbol.iterator]() {
     yield* this.set;
   }
+
+  [Symbol.toStringTag] = "Collection";
 }
 
 export function backlinks(sourceRef: string) {
