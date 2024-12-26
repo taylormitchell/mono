@@ -236,6 +236,27 @@ export function link(targetModelName?: string, opts: { serializedKey?: string } 
   };
 }
 
+class Collection {
+  private set: Set<BaseModel> = new Set();
+  constructor() {}
+
+  add(model: BaseModel) {
+    this.set.add(model);
+  }
+
+  delete(model: BaseModel) {
+    this.set.delete(model);
+  }
+
+  has(model: BaseModel) {
+    return this.set.has(model);
+  }
+
+  [Symbol.iterator]() {
+    return this.set[Symbol.iterator]();
+  }
+}
+
 export function backlinks(sourceRef: string) {
   const [sourceModelName, sourceKey] = sourceRef.split(".");
   if (!sourceModelName || !sourceKey) {
