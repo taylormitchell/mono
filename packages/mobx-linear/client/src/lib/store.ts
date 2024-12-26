@@ -306,21 +306,19 @@ export function OneToMany() {
 
     let collection: Collection | null = null;
 
-    return {
-      get(this: BaseModel) {
-        return collection!;
-      },
-      init(this: BaseModel, initialValue: unknown) {
-        if (!(initialValue instanceof Collection)) {
-          throw new Error("OneToMany must be initialized with a Collection");
-        }
-        collection = new Collection(observable.set(Array.from(initialValue)));
-        return collection;
-      },
+    return function (initialValue: unknown) {
+      if (!(initialValue instanceof Collection)) {
+        throw new Error("OneToMany must be initialized with a Collection");
+      }
+      collection = new Collection(observable.set(Array.from(initialValue)));
+      return collection;
     };
   };
 }
 
+/**
+ * Like a set but it's read-only
+ */
 class Collection {
   constructor(private set: Set<BaseModel> = new Set()) {}
 
