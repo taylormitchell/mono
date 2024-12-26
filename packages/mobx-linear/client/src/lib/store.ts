@@ -1,4 +1,5 @@
 import { action, observable, reaction, runInAction } from "mobx";
+import { Store } from "../old/state";
 
 // @ClientModel("Users")
 // export class User extends Model {
@@ -253,6 +254,50 @@ export function link(targetModelName?: string, opts: { serializedKey?: string } 
   };
 }
 
+export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
+  return (target: any, context: ClassAccessorDecoratorContext) => {
+    const propertyName = String(context.name);
+
+    const observableResult = observable(target, context);
+    if (!observableResult) throw new Error("Failed to create observable link");
+
+    return {
+      get(this: BaseModel) {
+        return observableResult.get?.call(this);
+      },
+      set(this: BaseModel, newParent: BaseModel | null) {
+        const oldParent = observableResult.get?.call(this);
+        observableResult.set?.call(this, newParent);
+        if (oldParent) {
+          oldParent[collectionName].delete(this);
+        }
+        if (newParent) {
+          newParent[collectionName].add(this);
+        }
+        runInAction(() => {
+          this.emitIfStored({
+            type: "update",
+            model: this.constructor.name,
+            id: this.id,
+            field: `${propertyName}Id`,
+            oldValue: oldParent?.id ?? null,
+            newValue: newParent?.id ?? null,
+          });
+        });
+      },
+      init(this: BaseModel, initialValue: unknown) {
+        const metadata = getModelMetadata(this.constructor);
+        metadata.fields[fieldName] = {
+          type: "manyToOne",
+          fieldKey: fieldName,
+          serializedKey,
+          collectionName,
+        };
+        return runInAction(() => observableResult.init?.call(this, initialValue));
+      },
+    };
+  };
+
 class Collection extends Set<BaseModel> {
   private owner: BaseModel;
   private refPropName: string;
@@ -268,7 +313,7 @@ class Collection extends Set<BaseModel> {
 
   add(model: BaseModel) {
     super.add(model);
-    if (this.owner) {
+    if (this.owner && model[this.refPropName] !== this.owner) {
       (model as any)[this.refPropName] = this.owner;
     } else {
       console.warn("Added model to collection without setting owner");
