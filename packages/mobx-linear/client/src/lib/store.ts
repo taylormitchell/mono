@@ -236,24 +236,32 @@ export function link(targetModelName?: string, opts: { serializedKey?: string } 
   };
 }
 
-class Collection {
-  private set: Set<BaseModel> = new Set();
-  constructor() {}
+class Collection extends Set<BaseModel> {
+  private owner: BaseModel;
+  private refPropName: string;
+
+  constructor() {
+    super();
+  }
+
+  _setup(owner: BaseModel, refPropName: string) {
+    this.owner = owner;
+    this.refPropName = refPropName;
+  }
 
   add(model: BaseModel) {
-    this.set.add(model);
+    super.add(model);
+    (model as any)[this.refPropName] = this.owner;
+    return this;
   }
 
   delete(model: BaseModel) {
-    this.set.delete(model);
-  }
-
-  has(model: BaseModel) {
-    return this.set.has(model);
-  }
-
-  [Symbol.iterator]() {
-    return this.set[Symbol.iterator]();
+    const res = super.delete(model);
+    if (res) {
+      const refPropName = "";
+      (model as any)[refPropName] = null;
+    }
+    return res;
   }
 }
 
