@@ -270,10 +270,10 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
         observableResult.set?.call(this, newParent);
         runInAction(() => {
           if (oldParent) {
-            oldParent[collectionName].delete(this);
+            oldParent[collectionName]._set.delete(this);
           }
           if (newParent) {
-            newParent[collectionName].add(this);
+            newParent[collectionName]._set.add(this);
           }
           this.emitIfStored({
             type: "update",
