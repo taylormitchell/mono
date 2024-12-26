@@ -299,19 +299,41 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
   };
 }
 
+export function OneToMany() {
+  return (target: any, context: ClassFieldDecoratorContext) => {
+    const observableResult = observable(target, context);
+    if (!observableResult) throw new Error("Failed to create observable link");
+
+    let collection: Collection | null = null;
+
+    return {
+      get(this: BaseModel) {
+        return collection!;
+      },
+      init(this: BaseModel, initialValue: unknown) {
+        if (!(initialValue instanceof Collection)) {
+          throw new Error("OneToMany must be initialized with a Collection");
+        }
+        collection = new Collection(observable.set(Array.from(initialValue)));
+        return collection;
+      },
+    };
+  };
+}
+
 class Collection {
-  private _set = new Set<BaseModel>();
+  constructor(private set: Set<BaseModel> = new Set()) {}
 
   has(model: BaseModel) {
-    return this._set.has(model);
+    return this.set.has(model);
   }
 
   get size() {
-    return this._set.size;
+    return this.set.size;
   }
 
   *[Symbol.iterator]() {
-    yield* this._set;
+    yield* this.set;
   }
 }
 
