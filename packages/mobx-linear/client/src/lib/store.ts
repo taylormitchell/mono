@@ -268,13 +268,13 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
       set(this: BaseModel, newParent: BaseModel | null) {
         const oldParent = observableResult.get?.call(this);
         observableResult.set?.call(this, newParent);
-        if (oldParent) {
-          oldParent[collectionName].delete(this);
-        }
-        if (newParent) {
-          newParent[collectionName].add(this);
-        }
         runInAction(() => {
+          if (oldParent) {
+            oldParent[collectionName].delete(this);
+          }
+          if (newParent) {
+            newParent[collectionName].add(this);
+          }
           this.emitIfStored({
             type: "update",
             model: this.constructor.name,
@@ -297,36 +297,21 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
       },
     };
   };
+}
 
-class Collection extends Set<BaseModel> {
-  private owner: BaseModel;
-  private refPropName: string;
+class Collection {
+  private _set = new Set<BaseModel>();
 
-  constructor() {
-    super();
+  has(model: BaseModel) {
+    return this._set.has(model);
   }
 
-  _setup(owner: BaseModel, refPropName: string) {
-    this.owner = owner;
-    this.refPropName = refPropName;
+  get size() {
+    return this._set.size;
   }
 
-  add(model: BaseModel) {
-    super.add(model);
-    if (this.owner && model[this.refPropName] !== this.owner) {
-      (model as any)[this.refPropName] = this.owner;
-    } else {
-      console.warn("Added model to collection without setting owner");
-    }
-    return this;
-  }
-
-  delete(model: BaseModel) {
-    const res = super.delete(model);
-    if (res) {
-      (model as any)[this.refPropName] = null;
-    }
-    return res;
+  *[Symbol.iterator]() {
+    yield* this._set;
   }
 }
 
