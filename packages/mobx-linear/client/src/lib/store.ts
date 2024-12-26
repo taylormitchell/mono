@@ -270,10 +270,10 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
         observableResult.set?.call(this, newParent);
         runInAction(() => {
           if (oldParent) {
-            oldParent[collectionName]._set.delete(this);
+            collectionSets.get(oldParent)?.delete(this);
           }
           if (newParent) {
-            newParent[collectionName]._set.add(this);
+            collectionSets.get(newParent)?.add(this);
           }
           this.emitIfStored({
             type: "update",
@@ -299,19 +299,17 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
   };
 }
 
+const collectionSets = new WeakMap<BaseModel, Set<BaseModel>>();
+
 export function OneToMany() {
-  return (target: any, context: ClassFieldDecoratorContext) => {
-    const observableResult = observable(target, context);
-    if (!observableResult) throw new Error("Failed to create observable link");
-
-    let collection: Collection | null = null;
-
-    return function (initialValue: unknown) {
+  return () => {
+    return function (this: BaseModel, initialValue: unknown) {
       if (!(initialValue instanceof Collection)) {
         throw new Error("OneToMany must be initialized with a Collection");
       }
-      collection = new Collection(observable.set(Array.from(initialValue)));
-      return collection;
+      const set = observable.set(Array.from(initialValue));
+      collectionSets.set(this, set);
+      return new Collection(set);
     };
   };
 }
