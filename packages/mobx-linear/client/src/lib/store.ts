@@ -1,5 +1,4 @@
 import { action, observable, reaction, runInAction } from "mobx";
-import { Store } from "../old/state";
 
 // @ClientModel("Users")
 // export class User extends Model {
@@ -48,8 +47,8 @@ interface BacklinksMetadataField {
 type ModelMetadataField = PropertyMetadataField | LinkMetadataField | BacklinksMetadataField;
 
 type ModelMetadata = {
-  fields: Record<string, ModelMetadataField>;
-  updatedAtField?: UpdatedAtMetadataField;
+  properties: Record<string, ModelMetadataField>;
+  updatedAtProperty?: UpdatedAtMetadataField;
 };
 
 // Event types
@@ -107,7 +106,7 @@ const modelMetadataRegistry = new Map<Function, ModelMetadata>();
 function getModelMetadata(target: Function): ModelMetadata {
   if (!modelMetadataRegistry.has(target)) {
     modelMetadataRegistry.set(target, {
-      fields: {},
+      properties: {},
     });
   }
   return modelMetadataRegistry.get(target)!;
@@ -141,7 +140,7 @@ export abstract class BaseModel {
   }
 }
 
-export function property(opts: { serializedKey?: string } = {}) {
+export function Property(opts: { serializedKey?: string } = {}) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const fieldName = String(context.name);
     const serializedKey = opts.serializedKey ?? fieldName;
@@ -165,18 +164,25 @@ export function property(opts: { serializedKey?: string } = {}) {
             oldValue,
             newValue,
           });
+
+          // Update updatedAt property
+          const metadata = getModelMetadata(this.constructor);
+          if (metadata.updatedAtProperty) {
+            const fieldKey = metadata.updatedAtProperty.fieldKey;
+            (this as any)[fieldKey] = Date.now();
+          }
         });
       },
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
-        metadata.fields[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
+        metadata.properties[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
   };
 }
 
-export function updatedAt(opts: { serializedKey?: string } = {}) {
+export function UpdatedAt(opts: { serializedKey?: string } = {}) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const fieldName = String(context.name);
     const serializedKey = opts.serializedKey ?? fieldName;
@@ -204,57 +210,20 @@ export function updatedAt(opts: { serializedKey?: string } = {}) {
       },
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
-        if (metadata.updatedAtField && metadata.updatedAtField.fieldKey !== fieldName) {
+        if (metadata.updatedAtProperty && metadata.updatedAtProperty.fieldKey !== fieldName) {
           throw new Error("UpdatedAt field already set. Only one is allowed.");
         }
-        metadata.updatedAtField = { type: "updatedAt", serializedKey, fieldKey: fieldName };
+        if (typeof initialValue !== "number") {
+          throw new Error("UpdatedAt property must be a number");
+        }
+        metadata.updatedAtProperty = { type: "updatedAt", serializedKey, fieldKey: fieldName };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
   };
 }
 
-export function link(targetModelName?: string, opts: { serializedKey?: string } = {}) {
-  return (target: any, context: ClassAccessorDecoratorContext) => {
-    const fieldName = String(context.name);
-    const serializedKey = opts.serializedKey ?? `${fieldName}Id`;
-
-    const observableResult = observable(target, context);
-    if (!observableResult) throw new Error("Failed to create observable link");
-
-    return {
-      get(this: BaseModel) {
-        return observableResult.get?.call(this);
-      },
-      set(this: BaseModel, newValue: BaseModel | null) {
-        const oldValue = observableResult.get?.call(this);
-        runInAction(() => {
-          observableResult.set?.call(this, newValue);
-          this.emitIfStored({
-            type: "update",
-            model: this.constructor.name,
-            id: this.id,
-            field: serializedKey,
-            oldValue: oldValue?.id ?? null,
-            newValue: newValue?.id ?? null,
-          });
-        });
-      },
-      init(this: BaseModel, initialValue: unknown) {
-        const metadata = getModelMetadata(this.constructor);
-        metadata.fields[fieldName] = {
-          type: "link",
-          fieldKey: fieldName,
-          serializedKey,
-          targetModelName: targetModelName ?? fieldName,
-        };
-        return runInAction(() => observableResult.init?.call(this, initialValue));
-      },
-    };
-  };
-}
-
-const collectionSets = new WeakMap<BaseModel, Set<BaseModel>>();
+const modelInstanceToCollectionSets = new WeakMap<BaseModel, Map<string, Set<BaseModel>>>();
 
 export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
@@ -269,14 +238,18 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
       },
       set(this: BaseModel, newParent: BaseModel | null) {
         const oldParent = observableResult.get?.call(this);
-        observableResult.set?.call(this, newParent);
         runInAction(() => {
+          // Set property value
+          observableResult.set?.call(this, newParent);
+
+          // Update collections
           if (oldParent) {
-            collectionSets.get(oldParent)?.delete(this);
+            modelInstanceToCollectionSets.get(oldParent)?.get(String(collectionName))?.delete(this);
           }
           if (newParent) {
-            collectionSets.get(newParent)?.add(this);
+            modelInstanceToCollectionSets.get(newParent)?.get(String(collectionName))?.add(this);
           }
+
           this.emitIfStored({
             type: "update",
             model: this.constructor.name,
@@ -285,16 +258,16 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
             oldValue: oldParent?.id ?? null,
             newValue: newParent?.id ?? null,
           });
+
+          // Update updatedAt property
+          const metadata = getModelMetadata(this.constructor);
+          if (metadata.updatedAtProperty) {
+            const fieldKey = metadata.updatedAtProperty.fieldKey;
+            (this as any)[fieldKey] = Date.now();
+          }
         });
       },
       init(this: BaseModel, initialValue: unknown) {
-        const metadata = getModelMetadata(this.constructor);
-        metadata.fields[fieldName] = {
-          type: "manyToOne",
-          fieldKey: fieldName,
-          serializedKey,
-          collectionName,
-        };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
@@ -302,13 +275,16 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
 }
 
 export function OneToMany() {
-  return () => {
+  return (_: any, context: ClassFieldDecoratorContext) => {
+    const propertyName = String(context.name);
     return function (this: BaseModel, initialValue: unknown) {
       if (!(initialValue instanceof Collection)) {
         throw new Error("OneToMany must be initialized with a Collection");
       }
       const set = observable.set(Array.from(initialValue));
-      collectionSets.set(this, set);
+      const collectionSets = modelInstanceToCollectionSets.get(this) || new Map();
+      collectionSets.set(propertyName, set);
+      modelInstanceToCollectionSets.set(this, collectionSets);
       return new Collection(set);
     };
   };
@@ -317,17 +293,14 @@ export function OneToMany() {
 /**
  * Like a set but it's read-only
  */
-class Collection implements Omit<Set<BaseModel>, "add" | "delete" | "clear"> {
-  constructor(private set: Set<BaseModel> = new Set()) {}
+export class Collection<T extends BaseModel> implements Omit<Set<T>, "add" | "delete" | "clear"> {
+  constructor(private set: Set<T> = new Set()) {}
 
-  has(model: BaseModel) {
+  has(model: T) {
     return this.set.has(model);
   }
 
-  forEach(
-    callbackfn: (value: BaseModel, value2: BaseModel, set: Set<BaseModel>) => void,
-    thisArg?: any
-  ) {
+  forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any) {
     this.set.forEach(callbackfn, thisArg);
   }
 
@@ -352,83 +325,6 @@ class Collection implements Omit<Set<BaseModel>, "add" | "delete" | "clear"> {
   }
 
   [Symbol.toStringTag] = "Collection";
-}
-
-export function backlinks(sourceRef: string) {
-  const [sourceModelName, sourceKey] = sourceRef.split(".");
-  if (!sourceModelName || !sourceKey) {
-    throw new Error("Invalid backlinks reference format. Expected 'model.field'");
-  }
-  return (_: any, context: ClassFieldDecoratorContext) => {
-    const fieldName = String(context.name);
-    return function (this: BaseModel, initialValue: unknown) {
-      const metadata = getModelMetadata(this.constructor);
-      metadata.fields[fieldName] = {
-        type: "backlinks",
-        fieldKey: fieldName,
-        sourceModelName,
-        sourceKey,
-      };
-      if (!(initialValue instanceof Set)) {
-        throw new Error("Backlinks must be initialized with a Set");
-      }
-      const set = observable.set();
-      const setAdd = set.add.bind(set);
-      const setDelete = set.delete.bind(set);
-      set.add = action((sourceModel: BaseModel) => {
-        const result = setAdd(sourceModel);
-        if (sourceModel._store !== this._store) {
-          console.warn(
-            `Backlink ${sourceModel.constructor.name} is in a different store than the linking model ${this.constructor.name}`
-          );
-        }
-        if (sourceModel.constructor.name !== sourceModelName) {
-          console.warn(
-            `Backlink ${sourceModel.constructor.name} does not match source model ${sourceModelName}`
-          );
-        }
-        const alreadyLinksToThis = (sourceModel as any)[sourceKey] === this;
-        if (!alreadyLinksToThis) {
-          this.applyIfStored({
-            type: "update",
-            model: sourceModel.constructor.name,
-            id: sourceModel.id,
-            field: sourceKey,
-            oldValue: (sourceModel as any)[sourceKey],
-            newValue: this.id,
-          });
-        }
-        return result;
-      });
-      set.delete = action((sourceModel: BaseModel) => {
-        const result = setDelete(sourceModel);
-        if (sourceModel._store !== this._store) {
-          console.warn(
-            `Backlink ${sourceModel.constructor.name} is in a different store than the linking model ${this.constructor.name}`
-          );
-        }
-        if (sourceModel.constructor.name !== sourceModelName) {
-          console.warn(
-            `Backlink ${sourceModel.constructor.name} does not match source model ${sourceModelName}`
-          );
-        }
-        const alreadyLinksToThis = (sourceModel as any)[sourceKey] === this;
-        if (!alreadyLinksToThis) {
-          this.applyIfStored({
-            type: "update",
-            model: sourceModel.constructor.name,
-            id: sourceModel.id,
-            field: sourceKey,
-            oldValue: this.id,
-            newValue: null,
-          });
-        }
-        return result;
-      });
-
-      return set;
-    };
-  };
 }
 
 type BaseModelConstructor = new (...args: any[]) => BaseModel;
@@ -575,10 +471,6 @@ export class Store<TModels extends ModelRecord> {
       )
     );
 
-    // Set up triggers
-    this.setupBacklinksTrigger();
-    this.setupUpdatedAtTrigger();
-
     // Start syncing
     if (syncEnabled) {
       this.enableSync();
@@ -586,7 +478,7 @@ export class Store<TModels extends ModelRecord> {
       this.disableSync();
     }
 
-    // Set up poker
+    // Subscribe to poker
     if (this.poker) {
       this.poker.subscribe((poke) => {
         if (poke.clientId !== this.clientId) {
@@ -685,96 +577,23 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
-  private setupBacklinksTrigger() {
-    this.subscribe((event) => {
-      // Get model class and metadata early
-      const ModelClass = this.modelNameToConstructor[event.model];
-      if (!ModelClass) return;
-      const metadata = getModelMetadata(ModelClass);
-      const collectionKey = this.modelNameToCollectionKey[event.model];
-
-      // Gather all link changes
-      const linkChanges: {
-        field: LinkMetadataField;
-        sourceInst: BaseModel;
-        oldTargetId: string | null;
-        newTargetId: string | null;
-      }[] = [];
-      if (event.type === "update") {
-        const field = metadata.fields[event.field];
-        if (field?.type === "link") {
-          linkChanges.push({
-            field,
-            sourceInst: this.models[collectionKey].get(event.id)!,
-            oldTargetId: event.oldValue as string | null,
-            newTargetId: event.newValue as string | null,
-          });
-        }
-      } else if (event.type === "create") {
-        Object.values(metadata.fields)
-          .filter((f): f is LinkMetadataField => f.type === "link")
-          .forEach((field) => {
-            const targetId = event.props?.[field.serializedKey] as string | undefined;
-            if (targetId) {
-              linkChanges.push({
-                field,
-                sourceInst: this.models[collectionKey].get(event.id)!,
-                oldTargetId: null,
-                newTargetId: targetId,
-              });
-            }
-          });
-      }
-
-      // Process all link changes through the same code path
-      linkChanges.forEach(({ field, sourceInst, oldTargetId, newTargetId }) => {
-        const TargetClass = this.modelNameToConstructor[field.targetModelName];
-        if (!TargetClass) return;
-        const targetCollectionKey = this.modelNameToCollectionKey[field.targetModelName];
-
-        const targetMetadata = getModelMetadata(TargetClass);
-        const backlink = Object.values(targetMetadata.fields).find(
-          (f) =>
-            f.type === "backlinks" &&
-            f.sourceModelName === event.model &&
-            f.sourceKey === field.fieldKey
-        ) as BacklinksMetadataField | undefined;
-
-        if (backlink) {
-          if (oldTargetId) {
-            const oldTarget = this.models[targetCollectionKey].get(oldTargetId) as any;
-            if (oldTarget) {
-              (oldTarget[backlink.fieldKey] as Set<BaseModel>).delete(sourceInst);
-            }
-          }
-
-          if (newTargetId) {
-            const newTarget = this.models[targetCollectionKey].get(newTargetId) as any;
-            if (newTarget) {
-              (newTarget[backlink.fieldKey] as Set<BaseModel>).add(sourceInst);
-            }
-          }
-        }
-      });
-    });
-  }
-
-  private setupUpdatedAtTrigger() {
-    this.subscribe((event) => {
-      const metadata = getModelMetadata(this.modelNameToConstructor[event.model]);
-      if (
-        event.type === "update" &&
-        metadata.updatedAtField &&
-        event.field !== metadata.updatedAtField.serializedKey
-      ) {
-        const collectionKey = this.modelNameToCollectionKey[event.model];
-        const model = this.models[collectionKey].get(event.id);
-        if (model) {
-          (model as any)[metadata.updatedAtField.fieldKey] = Date.now();
-        }
-      }
-    });
-  }
+  // TODO replace with update inside the UpdatedAt / Property decorators
+  // private setupUpdatedAtTrigger() {
+  //   this.subscribe((event) => {
+  //     const metadata = getModelMetadata(this.modelNameToConstructor[event.model]);
+  //     if (
+  //       event.type === "update" &&
+  //       metadata.updatedAtField &&
+  //       event.field !== metadata.updatedAtField.serializedKey
+  //     ) {
+  //       const collectionKey = this.modelNameToCollectionKey[event.model];
+  //       const model = this.models[collectionKey].get(event.id);
+  //       if (model) {
+  //         (model as any)[metadata.updatedAtField.fieldKey] = Date.now();
+  //       }
+  //     }
+  //   });
+  // }
 
   // Model operations with type safety
   @action
@@ -804,7 +623,7 @@ export class Store<TModels extends ModelRecord> {
 
     // Transform serialized props into constructor props
     const metadata = getModelMetadata(ModelClass);
-    Object.entries(metadata.fields).forEach(([fieldName, field]) => {
+    Object.entries(metadata.properties).forEach(([fieldName, field]) => {
       switch (field.type) {
         case "property":
           if (serializedProps[field.serializedKey] !== undefined) {
@@ -824,10 +643,10 @@ export class Store<TModels extends ModelRecord> {
           break;
       }
     });
-    if (metadata.updatedAtField) {
-      const updatedAt = serializedProps[metadata.updatedAtField.serializedKey];
+    if (metadata.updatedAtProperty) {
+      const updatedAt = serializedProps[metadata.updatedAtProperty.serializedKey];
       if (updatedAt !== undefined) {
-        (instance as any)[metadata.updatedAtField.fieldKey] = updatedAt;
+        (instance as any)[metadata.updatedAtProperty.fieldKey] = updatedAt;
       }
     }
 
@@ -879,6 +698,8 @@ export class Store<TModels extends ModelRecord> {
    *
    * TODO: Maybe want to do something more robust in the future. Or at least
    * document the trade offs.
+   * TODO: Maybe just do soft deletes? Like where the model has a deletedAt
+   * field?
    */
   @action
   delete(model: BaseModel) {
@@ -895,11 +716,6 @@ export class Store<TModels extends ModelRecord> {
 
   getAll<K extends keyof TModels>(collectionKey: K) {
     return Array.from(this.models[collectionKey].values()) as InstanceType<TModels[K]>[];
-  }
-
-  subscribe(handler: (event: StoreEvent) => void) {
-    this.eventSubscribers.add(handler);
-    return () => this.eventSubscribers.delete(handler);
   }
 
   /**
@@ -961,7 +777,7 @@ export class Store<TModels extends ModelRecord> {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
         const metadata = getModelMetadata(model.constructor);
-        const field = metadata.fields[event.field];
+        const field = metadata.properties[event.field];
         if (field?.type === "link" && event.newValue) {
           const targetModel = this.models[field.targetModelName].get(event.newValue as string);
           (model as any)[event.field] = targetModel;

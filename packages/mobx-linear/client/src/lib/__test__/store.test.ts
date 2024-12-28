@@ -1,9 +1,9 @@
-import { backlinks, BaseModel, link, property, Store } from "../store";
+import { backlinks, BaseModel, link, Property, Store } from "../store";
 import { InMemoryServer } from "../../../../shared/InMemoryServer";
 
 describe("Store", () => {
   class Project extends BaseModel {
-    @property()
+    @Property()
     accessor title = "";
 
     @backlinks("issue.project")
@@ -16,7 +16,7 @@ describe("Store", () => {
   }
 
   class Issue extends BaseModel {
-    @property()
+    @Property()
     accessor title: string;
 
     @link()

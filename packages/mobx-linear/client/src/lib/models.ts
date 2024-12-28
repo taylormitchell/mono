@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { property, backlinks, link, BaseModel, Store, updatedAt } from "./store";
+import { Property, BaseModel, Store, UpdatedAt, Collection, OneToMany, ManyToOne } from "./store";
 import { action, computed } from "mobx";
 import { createPosition } from "./position";
 
@@ -7,35 +7,29 @@ import { createPosition } from "./position";
 // provide it to the models so they know the types of the other models
 
 class Issue extends BaseModel {
-  @property()
+  @Property()
   accessor title: string = "";
 
-  @property()
+  @Property()
   accessor user: string = "";
 
-  @property()
+  @Property()
   accessor labels: Label[] = [];
 
-  @property()
+  @Property()
   accessor state: string = "";
 
-  @property()
+  @Property()
   accessor body: string = "";
 
-  @link("Project")
+  @ManyToOne<Project>("issues")
   accessor project: Project | null = null;
 
-  @property()
+  @Property()
   accessor createdAt: number = Date.now();
 
-  @updatedAt()
+  @UpdatedAt()
   accessor updatedAt: number = Date.now();
-
-  @backlinks("Relation.from")
-  readonly relationsFrom = new Set<Relation>();
-
-  @backlinks("Relation.to")
-  readonly relationsTo = new Set<Relation>();
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);
@@ -43,35 +37,17 @@ class Issue extends BaseModel {
 }
 
 class Project extends BaseModel {
-  @property()
+  @Property()
   accessor title = "";
 
-  @property()
+  @Property()
   accessor createdAt = Date.now();
 
-  @updatedAt()
+  @UpdatedAt()
   accessor updatedAt = Date.now();
 
-  @backlinks("Issue.project")
-  readonly issues = new Set<Issue>();
-
-  constructor(props: { id?: string; placeholder?: boolean } = {}) {
-    super(props);
-  }
-}
-
-class Relation extends BaseModel {
-  @link("Issue")
-  accessor from: Issue | null = null;
-
-  @link("Issue")
-  accessor to: Issue | null = null;
-
-  @property()
-  accessor createdAt = Date.now();
-
-  @updatedAt()
-  accessor updatedAt = Date.now();
+  @OneToMany()
+  readonly issues = new Collection<Issue>();
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
     super(props);
@@ -79,24 +55,24 @@ class Relation extends BaseModel {
 }
 
 class IssueView extends BaseModel {
-  @property()
+  @Property()
   accessor query: "all" = "all";
 
-  @property()
+  @Property()
   accessor createdAt = Date.now();
 
-  @updatedAt()
+  @UpdatedAt()
   accessor updatedAt = Date.now();
 
-  @backlinks("IssueViewPosition.parentView")
-  readonly issueViewPositions = new Set<IssueViewPosition>();
+  @OneToMany()
+  readonly issueViewPositions = new Collection<IssueViewPosition>();
 
   @computed
   get issueViewPositionsById() {
     return Array.from(this.issueViewPositions).reduce<Record<string, IssueViewPosition>>(
       (acc, p) => {
-        if (!p.issue) return acc;
-        acc[p.issue.id] = p;
+        if (!p.issueId) return acc;
+        acc[p.issueId] = p;
         return acc;
       },
       {}
@@ -129,7 +105,7 @@ class IssueView extends BaseModel {
 }
 
 class Label extends BaseModel {
-  @property()
+  @Property()
   accessor name: string = "";
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
@@ -138,13 +114,13 @@ class Label extends BaseModel {
 }
 
 class IssueViewPosition extends BaseModel {
-  @link("Issue")
-  accessor issue: Issue | null = null;
+  @Property()
+  accessor issueId: string | null = null;
 
-  @link("IssueView")
+  @ManyToOne<IssueView>("issueViewPositions")
   accessor parentView: IssueView | null = null;
 
-  @property()
+  @Property()
   accessor position: string = createPosition(Date.now());
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
@@ -157,7 +133,6 @@ export function createStore() {
     {
       issue: Issue,
       project: Project,
-      relation: Relation,
       issueView: IssueView,
       issueViewPosition: IssueViewPosition,
       label: Label,
@@ -173,7 +148,5 @@ export function createStore() {
 export type IssueType = Issue;
 
 export type ProjectType = Project;
-
-export type RelationType = Relation;
 
 export const StoreContext = createContext<ReturnType<typeof createStore> | null>(null);
