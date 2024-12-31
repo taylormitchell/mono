@@ -557,7 +557,12 @@ export class Store<TModels extends ModelRecord> {
     const collectionKey = this.modelNameToCollectionKey[model.constructor.name];
     this.models[collectionKey].delete(model.id);
     this.deletedModels[collectionKey].set(model.id, model as InstanceType<TModels[keyof TModels]>);
-    this.emit({ type: "delete", model: model.constructor.name, id: model.id });
+    this.emit({
+      type: "delete",
+      model: model.constructor.name,
+      id: model.id,
+      oldProps: serializeModel(model),
+    });
   }
 
   get<K extends keyof TModels>(collectionKey: K, id: string) {
@@ -664,7 +669,9 @@ export class Store<TModels extends ModelRecord> {
     const collectionKey = this.modelNameToCollectionKey[patch.model];
     const instance = this.models[collectionKey].get(patch.id);
     if (patch.props === null) {
-      return [{ type: "delete", model: patch.model, id: patch.id, oldProps: serialize(instance) }];
+      // TODO: Feels weird to have an empty oldProps object. Doesn't matter cause they
+      // aren't used during rebase, which is the only place this is called.
+      return [{ type: "delete", model: patch.model, id: patch.id, oldProps: {} }];
     } else {
       if (instance) {
         return Object.entries(patch.props).map(([field, value]) => ({
@@ -684,4 +691,11 @@ export class Store<TModels extends ModelRecord> {
   dispose() {
     this.disposers.forEach((dispose) => dispose());
   }
+}
+
+// TODO: This is a hack. We need to figure out a better way to serialize
+function serializeModel(model: BaseModel) {
+  return Object.fromEntries(
+    Object.entries(model).filter(([key]) => key !== "id" && key !== "placeholder")
+  );
 }
