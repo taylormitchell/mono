@@ -534,7 +534,7 @@ export class Store<TModels extends ModelRecord> {
     }
 
     // Create or update the model
-    let instance: BaseModel | undefined =
+    let instance: InstanceType<TModels[K]> | undefined =
       typeof props.id === "string"
         ? this.models[collectionKey].get(props.id) ??
           // In case where we rollback a created model and then re-create it
@@ -542,12 +542,12 @@ export class Store<TModels extends ModelRecord> {
           this.deletedModels[collectionKey].get(props.id)
         : undefined;
     if (instance) {
-      Object.assign(instance, resolvedProps);
+      Object.assign(instance, props);
       if (props.placeholder === undefined) {
         instance.placeholder = false;
       }
     } else {
-      instance = new ModelClass(resolvedProps);
+      instance = new ModelClass(props);
       instance._setStore(this);
       this.models[collectionKey].set(instance.id, instance);
     }
