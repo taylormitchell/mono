@@ -350,12 +350,11 @@ export class Store<TModels extends ModelRecord> {
     // Initialize model storage
     for (const modelCollectionKey in modelClassConstructors) {
       const ModelClass = modelClassConstructors[modelCollectionKey];
-      new ModelClass(); // Initializes metadata (TODO: kinda weird)
-      const modelName = ModelClass.name;
-      this.modelNameToConstructor[modelName] = ModelClass;
-      this.modelNameToCollectionKey[modelName] = modelCollectionKey;
-      this.collectionKeyToModelName[modelCollectionKey] = modelName;
-
+      // const modelName = ModelClass.name;
+      // this.modelNameToConstructor[modelName] = ModelClass;
+      this.modelNameToConstructor[modelCollectionKey] = ModelClass;
+      // this.modelNameToCollectionKey[modelName] = modelCollectionKey;
+      // this.collectionKeyToModelName[modelCollectionKey] = modelName;
       this.models[modelCollectionKey] = observable.map();
       this.deletedModels[modelCollectionKey] = observable.map();
     }
@@ -485,8 +484,9 @@ export class Store<TModels extends ModelRecord> {
     collectionKey: K, // TODO: Just make this the model name?
     props: Record<string, unknown> = {}
   ): InstanceType<TModels[K]> {
-    const modelName = this.collectionKeyToModelName[collectionKey];
-    const ModelClass = this.modelNameToConstructor[modelName];
+    // const modelName = this.collectionKeyToModelName[collectionKey];
+    // const ModelClass = this.modelNameToConstructor[modelName];
+    const ModelClass = this.modelNameToConstructor[collectionKey];
     if (!ModelClass) {
       throw new Error(`Unknown model: ${String(modelName)}`);
     }
@@ -696,6 +696,12 @@ export class Store<TModels extends ModelRecord> {
 // TODO: This is a hack. We need to figure out a better way to serialize
 function serializeModel(model: BaseModel) {
   return Object.fromEntries(
-    Object.entries(model).filter(([key]) => key !== "id" && key !== "placeholder")
+    Object.entries(model)
+      .map(([key, value]) => {
+        if (key === "id" || key === "placeholder") return null;
+        if (value instanceof BaseModel) return [key + "Id", value.id];
+        return [key, value];
+      })
+      .filter((entry): entry is [string, unknown] => entry !== null)
   );
 }
