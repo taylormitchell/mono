@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { Property, BaseModel, Store, UpdatedAt, Collection, OneToMany, ManyToOne } from "./store";
+import { Property, BaseModel, Store, Collection, OneToMany, ManyToOne } from "./store";
 import { action, computed } from "mobx";
 import { createPosition } from "./position";
 
@@ -28,7 +28,7 @@ class Issue extends BaseModel {
   @Property()
   accessor createdAt: number = Date.now();
 
-  @UpdatedAt()
+  @Property()
   accessor updatedAt: number = Date.now();
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
@@ -43,7 +43,7 @@ class Project extends BaseModel {
   @Property()
   accessor createdAt = Date.now();
 
-  @UpdatedAt()
+  @Property()
   accessor updatedAt = Date.now();
 
   @OneToMany()
@@ -61,7 +61,7 @@ class IssueView extends BaseModel {
   @Property()
   accessor createdAt = Date.now();
 
-  @UpdatedAt()
+  @Property()
   accessor updatedAt = Date.now();
 
   @OneToMany()

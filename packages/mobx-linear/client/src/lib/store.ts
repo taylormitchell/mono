@@ -24,12 +24,6 @@ interface PropertyMetadataField {
   serializedKey: string;
 }
 
-interface UpdatedAtMetadataField {
-  type: "updatedAt";
-  fieldKey: string;
-  serializedKey: string;
-}
-
 interface LinkMetadataField {
   type: "link";
   fieldKey: string;
@@ -48,7 +42,6 @@ type ModelMetadataField = PropertyMetadataField | LinkMetadataField | BacklinksM
 
 type ModelMetadata = {
   properties: Record<string, ModelMetadataField>;
-  updatedAtProperty?: UpdatedAtMetadataField;
 };
 
 // Event types
@@ -164,59 +157,11 @@ export function Property(opts: { serializedKey?: string } = {}) {
             oldValue,
             newValue,
           });
-
-          // Update updatedAt property
-          const metadata = getModelMetadata(this.constructor);
-          if (metadata.updatedAtProperty) {
-            const fieldKey = metadata.updatedAtProperty.fieldKey;
-            (this as any)[fieldKey] = Date.now();
-          }
         });
       },
       init(this: BaseModel, initialValue: unknown) {
         const metadata = getModelMetadata(this.constructor);
         metadata.properties[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
-        return runInAction(() => observableResult.init?.call(this, initialValue));
-      },
-    };
-  };
-}
-
-export function UpdatedAt(opts: { serializedKey?: string } = {}) {
-  return (target: any, context: ClassAccessorDecoratorContext) => {
-    const fieldName = String(context.name);
-    const serializedKey = opts.serializedKey ?? fieldName;
-
-    const observableResult = observable(target, context);
-    if (!observableResult) throw new Error("Failed to create observable property");
-
-    return {
-      get(this: BaseModel) {
-        return observableResult.get?.call(this);
-      },
-      set(this: BaseModel, newValue: unknown) {
-        const oldValue = observableResult.get?.call(this);
-        runInAction(() => {
-          observableResult.set?.call(this, newValue);
-          this.emitIfStored({
-            type: "update",
-            model: this.constructor.name,
-            id: this.id,
-            field: fieldName,
-            oldValue,
-            newValue,
-          });
-        });
-      },
-      init(this: BaseModel, initialValue: unknown) {
-        const metadata = getModelMetadata(this.constructor);
-        if (metadata.updatedAtProperty && metadata.updatedAtProperty.fieldKey !== fieldName) {
-          throw new Error("UpdatedAt field already set. Only one is allowed.");
-        }
-        if (typeof initialValue !== "number") {
-          throw new Error("UpdatedAt property must be a number");
-        }
-        metadata.updatedAtProperty = { type: "updatedAt", serializedKey, fieldKey: fieldName };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
@@ -238,6 +183,7 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
       },
       set(this: BaseModel, newParent: BaseModel | null) {
         const oldParent = observableResult.get?.call(this);
+        if (oldParent === newParent) return;
         runInAction(() => {
           // Set property value
           observableResult.set?.call(this, newParent);
@@ -258,13 +204,6 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
             oldValue: oldParent?.id ?? null,
             newValue: newParent?.id ?? null,
           });
-
-          // Update updatedAt property
-          const metadata = getModelMetadata(this.constructor);
-          if (metadata.updatedAtProperty) {
-            const fieldKey = metadata.updatedAtProperty.fieldKey;
-            (this as any)[fieldKey] = Date.now();
-          }
         });
       },
       init(this: BaseModel, initialValue: unknown) {
@@ -577,24 +516,6 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
-  // TODO replace with update inside the UpdatedAt / Property decorators
-  // private setupUpdatedAtTrigger() {
-  //   this.subscribe((event) => {
-  //     const metadata = getModelMetadata(this.modelNameToConstructor[event.model]);
-  //     if (
-  //       event.type === "update" &&
-  //       metadata.updatedAtField &&
-  //       event.field !== metadata.updatedAtField.serializedKey
-  //     ) {
-  //       const collectionKey = this.modelNameToCollectionKey[event.model];
-  //       const model = this.models[collectionKey].get(event.id);
-  //       if (model) {
-  //         (model as any)[metadata.updatedAtField.fieldKey] = Date.now();
-  //       }
-  //     }
-  //   });
-  // }
-
   // Model operations with type safety
   @action
   create<K extends keyof TModels>(
@@ -643,12 +564,6 @@ export class Store<TModels extends ModelRecord> {
           break;
       }
     });
-    if (metadata.updatedAtProperty) {
-      const updatedAt = serializedProps[metadata.updatedAtProperty.serializedKey];
-      if (updatedAt !== undefined) {
-        (instance as any)[metadata.updatedAtProperty.fieldKey] = updatedAt;
-      }
-    }
 
     if (existing && serializedProps.placeholder === undefined) {
       instance.placeholder = false;
