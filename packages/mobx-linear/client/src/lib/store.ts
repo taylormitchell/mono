@@ -540,6 +540,18 @@ export class Store<TModels extends ModelRecord> {
           // we want to use the same instance from before rolling back.
           this.deletedModels[collectionKey].get(serializedProps.id)
         : undefined;
+
+    // Resolve any link fields to their target models
+    const resolvedProps = Object.fromEntries(
+      Object.entries(serializedProps).map(([key, value]) => {
+        if (key.endsWith("Id") && typeof value === "string") {
+          const modelName = key.slice(0, -2);
+          return [key.slice(0, -2), this.getOrCreatePlaceholder(modelName, value)];
+        }
+        return [key, value];
+      })
+    );
+
     const instance =
       existing ??
       (new ModelClass({
