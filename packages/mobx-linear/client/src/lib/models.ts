@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { Property, BaseModel, Store, Collection, OneToMany, ManyToOne } from "./store";
+import { Property, BaseModel, Store, Collection, Backlinks, Link } from "./store";
 import { action, computed } from "mobx";
 import { createPosition } from "./position";
 
@@ -22,7 +22,7 @@ class Issue extends BaseModel {
   @Property()
   accessor body: string = "";
 
-  @ManyToOne<Project>("issues")
+  @Link<Project>("issues")
   accessor project: Project | null = null;
 
   @Property()
@@ -46,7 +46,7 @@ class Project extends BaseModel {
   @Property()
   accessor updatedAt = Date.now();
 
-  @OneToMany()
+  @Backlinks()
   readonly issues = new Collection<Issue>();
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
@@ -64,7 +64,7 @@ class IssueView extends BaseModel {
   @Property()
   accessor updatedAt = Date.now();
 
-  @OneToMany()
+  @Backlinks()
   readonly issueViewPositions = new Collection<IssueViewPosition>();
 
   @computed
@@ -117,7 +117,7 @@ class IssueViewPosition extends BaseModel {
   @Property()
   accessor issueId: string | null = null;
 
-  @ManyToOne<IssueView>("issueViewPositions")
+  @Link<IssueView>("issueViewPositions")
   accessor parentView: IssueView | null = null;
 
   @Property()

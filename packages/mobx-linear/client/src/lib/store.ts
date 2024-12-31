@@ -170,7 +170,7 @@ export function Property(opts: { serializedKey?: string } = {}) {
 
 const modelInstanceToCollectionSets = new WeakMap<BaseModel, Map<string, Set<BaseModel>>>();
 
-export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
+export function Link<T extends BaseModel>(collectionName?: keyof T) {
   return (target: any, context: ClassAccessorDecoratorContext) => {
     const propertyName = String(context.name);
 
@@ -189,10 +189,10 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
           observableResult.set?.call(this, newParent);
 
           // Update collections
-          if (oldParent) {
+          if (collectionName && oldParent) {
             modelInstanceToCollectionSets.get(oldParent)?.get(String(collectionName))?.delete(this);
           }
-          if (newParent) {
+          if (collectionName && newParent) {
             modelInstanceToCollectionSets.get(newParent)?.get(String(collectionName))?.add(this);
           }
 
@@ -206,14 +206,19 @@ export function ManyToOne<T extends BaseModel>(collectionName: keyof T) {
           });
         });
       },
-      init(this: BaseModel, initialValue: unknown) {
-        return runInAction(() => observableResult.init?.call(this, initialValue));
+      init(this: BaseModel, initialValue: BaseModel | null) {
+        return runInAction(() => {
+          if (collectionName && initialValue) {
+            modelInstanceToCollectionSets.get(initialValue)?.get(String(collectionName))?.add(this);
+          }
+          return observableResult.init?.call(this, initialValue);
+        });
       },
     };
   };
 }
 
-export function OneToMany() {
+export function Backlinks() {
   return (_: any, context: ClassFieldDecoratorContext) => {
     const propertyName = String(context.name);
     return function (this: BaseModel, initialValue: unknown) {
