@@ -303,8 +303,11 @@ export class Store<TModels extends ModelRecord> {
     Map<string, InstanceType<TModels[keyof TModels]>>
   >;
   private modelNameToConstructor = {} as Record<string, BaseModelConstructor>;
-  private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
-  private collectionKeyToModelName = {} as Record<keyof TModels, string>;
+  private constructorToModelName = (constructor: BaseModelConstructor) =>
+    Object.entries(this.modelNameToConstructor).find((e) => e[1] === constructor)?.[0];
+
+  // private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
+  // private collectionKeyToModelName = {} as Record<keyof TModels, string>;
 
   // Events
 
@@ -350,11 +353,7 @@ export class Store<TModels extends ModelRecord> {
     // Initialize model storage
     for (const modelCollectionKey in modelClassConstructors) {
       const ModelClass = modelClassConstructors[modelCollectionKey];
-      // const modelName = ModelClass.name;
-      // this.modelNameToConstructor[modelName] = ModelClass;
       this.modelNameToConstructor[modelCollectionKey] = ModelClass;
-      // this.modelNameToCollectionKey[modelName] = modelCollectionKey;
-      // this.collectionKeyToModelName[modelCollectionKey] = modelName;
       this.models[modelCollectionKey] = observable.map();
       this.deletedModels[modelCollectionKey] = observable.map();
     }
@@ -481,12 +480,10 @@ export class Store<TModels extends ModelRecord> {
   // Model operations with type safety
   @action
   create<K extends keyof TModels>(
-    collectionKey: K, // TODO: Just make this the model name?
+    modelName: K, // TODO: Just make this the model name?
     props: Record<string, unknown> = {}
   ): InstanceType<TModels[K]> {
-    // const modelName = this.collectionKeyToModelName[collectionKey];
-    // const ModelClass = this.modelNameToConstructor[modelName];
-    const ModelClass = this.modelNameToConstructor[collectionKey];
+    const ModelClass = this.modelNameToConstructor[modelName];
     if (!ModelClass) {
       throw new Error(`Unknown model: ${String(modelName)}`);
     }
@@ -494,10 +491,10 @@ export class Store<TModels extends ModelRecord> {
     // Create or update the model
     let instance: InstanceType<TModels[K]> | undefined =
       typeof props.id === "string"
-        ? this.models[collectionKey].get(props.id) ??
+        ? this.models[modelName].get(props.id) ??
           // In case where we rollback a created model and then re-create it
           // we want to use the same instance from before rolling back.
-          this.deletedModels[collectionKey].get(props.id)
+          this.deletedModels[modelName].get(props.id)
         : undefined;
     if (instance) {
       Object.assign(instance, props);
@@ -507,7 +504,7 @@ export class Store<TModels extends ModelRecord> {
     } else {
       instance = new ModelClass(props);
       instance._setStore(this);
-      this.models[collectionKey].set(instance.id, instance);
+      this.models[modelName].set(instance.id, instance);
     }
 
     // Emit create event
@@ -521,8 +518,7 @@ export class Store<TModels extends ModelRecord> {
     return instance as InstanceType<TModels[K]>;
   }
 
-  private getOrCreatePlaceholder<T extends BaseModel>(modelName: string, id: string): T {
-    const collectionKey = this.modelNameToCollectionKey[modelName];
+  private getOrCreatePlaceholder<T extends BaseModel>(collectionKey: string, id: string): T {
     const existing = this.models[collectionKey].get(id) as T;
     if (existing) return existing;
     return this.create(collectionKey, { id, placeholder: true }) as T;
@@ -554,9 +550,14 @@ export class Store<TModels extends ModelRecord> {
    */
   @action
   delete(model: BaseModel) {
-    const collectionKey = this.modelNameToCollectionKey[model.constructor.name];
-    this.models[collectionKey].delete(model.id);
-    this.deletedModels[collectionKey].set(model.id, model as InstanceType<TModels[keyof TModels]>);
+    const modelName = Object.entries(this.modelNameToConstructor).find(
+      (e) => e[1] === model.constructor
+    )?.[0];
+    if (!modelName) {
+      throw new Error(`Unknown model: ${model.constructor.name}`);
+    }
+    this.models[modelName].delete(model.id);
+    this.deletedModels[modelName].set(model.id, model as InstanceType<TModels[keyof TModels]>);
     this.emit({
       type: "delete",
       model: model.constructor.name,
@@ -641,8 +642,13 @@ export class Store<TModels extends ModelRecord> {
         break;
       }
       case "update": {
-        const collectionKey = this.modelNameToCollectionKey[event.model];
-        const model = this.models[collectionKey].get(event.id);
+        const modelName = Object.entries(this.modelNameToConstructor).find(
+          (e) => e[1] === event.model
+        )?.[0];
+        if (!modelName) {
+          return new Error(`Unknown model ${event.model}`);
+        }
+        const model = this.models[modelName].get(event.id);
         if (!model) {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
