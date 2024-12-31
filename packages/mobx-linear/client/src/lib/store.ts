@@ -37,6 +37,7 @@ export type StoreEvent =
       type: "delete";
       model: string;
       id: string;
+      oldProps: Record<string, unknown>;
     };
 
 // Create, update, or delete a single model
@@ -50,7 +51,7 @@ export type Patch = {
 function reverseEvent(event: StoreEvent): StoreEvent {
   switch (event.type) {
     case "create":
-      return { type: "delete", model: event.model, id: event.id };
+      return { type: "delete", model: event.model, id: event.id, oldProps: event.props ?? {} };
     case "update":
       return {
         type: "update",
@@ -61,7 +62,7 @@ function reverseEvent(event: StoreEvent): StoreEvent {
         newValue: event.oldValue,
       };
     case "delete":
-      return { type: "create", model: event.model, id: event.id };
+      return { type: "create", model: event.model, id: event.id, props: event.oldProps };
   }
 }
 
@@ -605,6 +606,18 @@ export class Store<TModels extends ModelRecord> {
     }
   }
 
+  resolveProps(props: Record<string, unknown>) {
+    return Object.entries(props).reduce((acc, [key, value]) => {
+      if (key.endsWith("Id") && typeof value === "string") {
+        const targetModel = this.getOrCreatePlaceholder(key.slice(0, -2), value);
+        acc[key.slice(0, -2)] = targetModel;
+      } else {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, unknown>);
+  }
+
   /**
    * Update the store with an event. Usually you update state by mutating a
    * model or through methods on the store. But for some internal operations
@@ -616,16 +629,7 @@ export class Store<TModels extends ModelRecord> {
   applyEvent(event: StoreEvent): Error | undefined {
     switch (event.type) {
       case "create": {
-        const resolvedProps =
-          event.props?.reduce((acc, [key, value]) => {
-            if (key.endsWith("Id") && typeof value === "string") {
-              const targetModel = this.getOrCreatePlaceholder(key.slice(0, -2), value);
-              acc[key.slice(0, -2)] = targetModel;
-            } else {
-              acc[key] = value;
-            }
-            return acc;
-          }, {} as Record<string, unknown>) ?? {};
+        const resolvedProps = this.resolveProps(event.props ?? {});
         this.create(event.model, { ...resolvedProps, id: event.id });
         break;
       }
@@ -635,12 +639,8 @@ export class Store<TModels extends ModelRecord> {
         if (!model) {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
-        if (event.field.endsWith("Id") && typeof event.newValue === "string") {
-          const targetModel = this.getOrCreatePlaceholder(event.field.slice(0, -2), event.newValue);
-          (model as any)[event.field] = targetModel;
-        } else {
-          (model as any)[event.field] = event.newValue;
-        }
+        const resolvedProps = this.resolveProps({ [event.field]: event.newValue });
+        Object.assign(model, resolvedProps);
         break;
       }
       case "delete": {
