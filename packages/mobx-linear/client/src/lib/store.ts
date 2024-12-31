@@ -17,33 +17,6 @@ import { action, observable, reaction, runInAction } from "mobx";
 
 // It's a reference to a team, and in that team there's a property called members. When the team is assigned, the decorator goes to the team and assigns the user to the team's members collection.
 
-// Types and utilities
-interface PropertyMetadataField {
-  type: "property";
-  fieldKey: string;
-  serializedKey: string;
-}
-
-interface LinkMetadataField {
-  type: "link";
-  fieldKey: string;
-  serializedKey: string;
-  targetModelName: string;
-}
-
-interface BacklinksMetadataField {
-  type: "backlinks";
-  fieldKey: string;
-  sourceModelName: string;
-  sourceKey: string;
-}
-
-type ModelMetadataField = PropertyMetadataField | LinkMetadataField | BacklinksMetadataField;
-
-type ModelMetadata = {
-  properties: Record<string, ModelMetadataField>;
-};
-
 // Event types
 export type StoreEvent =
   | {
@@ -90,19 +63,6 @@ function reverseEvent(event: StoreEvent): StoreEvent {
     case "delete":
       return { type: "create", model: event.model, id: event.id };
   }
-}
-
-// Global metadata registry
-// This allows classes to work without a store while still maintaining their metadata
-const modelMetadataRegistry = new Map<Function, ModelMetadata>();
-
-function getModelMetadata(target: Function): ModelMetadata {
-  if (!modelMetadataRegistry.has(target)) {
-    modelMetadataRegistry.set(target, {
-      properties: {},
-    });
-  }
-  return modelMetadataRegistry.get(target)!;
 }
 
 export abstract class BaseModel {
@@ -160,8 +120,6 @@ export function Property(opts: { serializedKey?: string } = {}) {
         });
       },
       init(this: BaseModel, initialValue: unknown) {
-        const metadata = getModelMetadata(this.constructor);
-        metadata.properties[fieldName] = { type: "property", serializedKey, fieldKey: fieldName };
         return runInAction(() => observableResult.init?.call(this, initialValue));
       },
     };
@@ -345,8 +303,6 @@ export class Store<TModels extends ModelRecord> {
     Map<string, InstanceType<TModels[keyof TModels]>>
   >;
 
-  modelMetadata = {} as Record<keyof TModels, ModelMetadata>;
-
   private modelNameToConstructor = {} as Record<string, BaseModelConstructor>;
   private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
   private collectionKeyToModelName = {} as Record<keyof TModels, string>;
@@ -399,7 +355,6 @@ export class Store<TModels extends ModelRecord> {
 
       this.models[modelCollectionKey] = observable.map();
       this.deletedModels[modelCollectionKey] = observable.map();
-      this.modelMetadata[modelCollectionKey] = getModelMetadata(ModelClass);
     }
 
     // Set up auto-commit
@@ -660,19 +615,28 @@ export class Store<TModels extends ModelRecord> {
    */
   applyEvent(event: StoreEvent): Error | undefined {
     switch (event.type) {
-      case "create":
-        this.create(event.model, { ...event.props, id: event.id });
+      case "create": {
+        const resolvedProps =
+          event.props?.reduce((acc, [key, value]) => {
+            if (key.endsWith("Id") && typeof value === "string") {
+              const targetModel = this.getOrCreatePlaceholder(key.slice(0, -2), value);
+              acc[key.slice(0, -2)] = targetModel;
+            } else {
+              acc[key] = value;
+            }
+            return acc;
+          }, {} as Record<string, unknown>) ?? {};
+        this.create(event.model, { ...resolvedProps, id: event.id });
         break;
+      }
       case "update": {
         const collectionKey = this.modelNameToCollectionKey[event.model];
         const model = this.models[collectionKey].get(event.id);
         if (!model) {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
-        const metadata = getModelMetadata(model.constructor);
-        const field = metadata.properties[event.field];
-        if (field?.type === "link" && event.newValue) {
-          const targetModel = this.models[field.targetModelName].get(event.newValue as string);
+        if (event.field.endsWith("Id") && typeof event.newValue === "string") {
+          const targetModel = this.getOrCreatePlaceholder(event.field.slice(0, -2), event.newValue);
           (model as any)[event.field] = targetModel;
         } else {
           (model as any)[event.field] = event.newValue;
