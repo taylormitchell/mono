@@ -664,7 +664,7 @@ export class Store<TModels extends ModelRecord> {
     const collectionKey = this.modelNameToCollectionKey[patch.model];
     const instance = this.models[collectionKey].get(patch.id);
     if (patch.props === null) {
-      return [{ type: "delete", model: patch.model, id: patch.id }];
+      return [{ type: "delete", model: patch.model, id: patch.id, oldProps: serialize(instance) }];
     } else {
       if (instance) {
         return Object.entries(patch.props).map(([field, value]) => ({
