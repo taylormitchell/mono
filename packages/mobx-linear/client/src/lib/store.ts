@@ -112,7 +112,7 @@ export function Property(opts: { serializedKey?: string } = {}) {
           observableResult.set?.call(this, newValue);
           this.emitIfStored({
             type: "update",
-            model: this.constructor.name,
+            model: modelName,
             id: this.id,
             field: fieldName,
             oldValue,
@@ -550,9 +550,7 @@ export class Store<TModels extends ModelRecord> {
    */
   @action
   delete(model: BaseModel) {
-    const modelName = Object.entries(this.modelNameToConstructor).find(
-      (e) => e[1] === model.constructor
-    )?.[0];
+    const modelName = this.constructorToModelName(model.constructor);
     if (!modelName) {
       throw new Error(`Unknown model: ${model.constructor.name}`);
     }
@@ -560,7 +558,7 @@ export class Store<TModels extends ModelRecord> {
     this.deletedModels[modelName].set(model.id, model as InstanceType<TModels[keyof TModels]>);
     this.emit({
       type: "delete",
-      model: model.constructor.name,
+      model: modelName,
       id: model.id,
       oldProps: serializeModel(model),
     });
@@ -642,13 +640,8 @@ export class Store<TModels extends ModelRecord> {
         break;
       }
       case "update": {
-        const modelName = Object.entries(this.modelNameToConstructor).find(
-          (e) => e[1] === event.model
-        )?.[0];
-        if (!modelName) {
-          return new Error(`Unknown model ${event.model}`);
-        }
-        const model = this.models[modelName].get(event.id);
+        const modelName = event.model;
+        const model = this.models[modelName]?.get(event.id);
         if (!model) {
           return new Error(`Unknown model ${event.model} with id ${event.id}`);
         }
