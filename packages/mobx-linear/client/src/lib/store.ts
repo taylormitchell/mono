@@ -533,14 +533,6 @@ export class Store<TModels extends ModelRecord> {
       throw new Error(`Unknown model: ${String(modelName)}`);
     }
 
-    const existing =
-      typeof serializedProps.id === "string"
-        ? this.models[collectionKey].get(serializedProps.id) ??
-          // In case where we rollback a created model and then re-create it
-          // we want to use the same instance from before rolling back.
-          this.deletedModels[collectionKey].get(serializedProps.id)
-        : undefined;
-
     // Resolve any link fields to their target models
     const resolvedProps = Object.fromEntries(
       Object.entries(serializedProps).map(([key, value]) => {
@@ -552,44 +544,27 @@ export class Store<TModels extends ModelRecord> {
       })
     );
 
-    const instance =
-      existing ??
-      (new ModelClass({
-        id: serializedProps.id,
-        placeholder: serializedProps.placeholder,
-      }) as InstanceType<TModels[K]>);
+    const existing =
+      typeof serializedProps.id === "string"
+        ? this.models[collectionKey].get(serializedProps.id) ??
+          // In case where we rollback a created model and then re-create it
+          // we want to use the same instance from before rolling back.
+          this.deletedModels[collectionKey].get(serializedProps.id)
+        : undefined;
 
-    // Transform serialized props into constructor props
-    const metadata = getModelMetadata(ModelClass);
-    Object.entries(metadata.properties).forEach(([fieldName, field]) => {
-      switch (field.type) {
-        case "property":
-          if (serializedProps[field.serializedKey] !== undefined) {
-            // constructorProps[fieldName] = serializedProps[field.serializedKey];
-            (instance as any)[fieldName] = serializedProps[field.serializedKey];
-          }
-          break;
-
-        case "link":
-          if (serializedProps[field.serializedKey]) {
-            const targetId = serializedProps[field.serializedKey] as string;
-            (instance as any)[fieldName] = this.getOrCreatePlaceholder(
-              field.targetModelName,
-              targetId
-            );
-          }
-          break;
+    // Create or update the model
+    let instance: InstanceType<TModels[K]>;
+    if (existing) {
+      instance = existing;
+      Object.assign(instance, resolvedProps);
+      if (serializedProps.placeholder === undefined) {
+        instance.placeholder = false;
       }
-    });
-
-    if (existing && serializedProps.placeholder === undefined) {
-      instance.placeholder = false;
+    } else {
+      instance = new ModelClass(resolvedProps);
+      instance._setStore(this);
+      this.models[collectionKey].set(instance.id, instance);
     }
-
-    instance._setStore(this);
-
-    // Register in store
-    this.models[collectionKey].set(instance.id, instance);
 
     // Emit create event
     this.emit({
