@@ -525,7 +525,7 @@ export class Store<TModels extends ModelRecord> {
   @action
   create<K extends keyof TModels>(
     collectionKey: K, // TODO: Just make this the model name?
-    serializedProps: Record<string, unknown> = {}
+    props: Record<string, unknown> = {}
   ): InstanceType<TModels[K]> {
     const modelName = this.collectionKeyToModelName[collectionKey];
     const ModelClass = this.modelNameToConstructor[modelName];
@@ -533,31 +533,17 @@ export class Store<TModels extends ModelRecord> {
       throw new Error(`Unknown model: ${String(modelName)}`);
     }
 
-    // Resolve any link fields to their target models
-    const resolvedProps = Object.fromEntries(
-      Object.entries(serializedProps).map(([key, value]) => {
-        if (key.endsWith("Id") && typeof value === "string") {
-          const modelName = key.slice(0, -2);
-          return [key.slice(0, -2), this.getOrCreatePlaceholder(modelName, value)];
-        }
-        return [key, value];
-      })
-    );
-
-    const existing =
-      typeof serializedProps.id === "string"
-        ? this.models[collectionKey].get(serializedProps.id) ??
+    // Create or update the model
+    let instance: BaseModel | undefined =
+      typeof props.id === "string"
+        ? this.models[collectionKey].get(props.id) ??
           // In case where we rollback a created model and then re-create it
           // we want to use the same instance from before rolling back.
-          this.deletedModels[collectionKey].get(serializedProps.id)
+          this.deletedModels[collectionKey].get(props.id)
         : undefined;
-
-    // Create or update the model
-    let instance: InstanceType<TModels[K]>;
-    if (existing) {
-      instance = existing;
+    if (instance) {
       Object.assign(instance, resolvedProps);
-      if (serializedProps.placeholder === undefined) {
+      if (props.placeholder === undefined) {
         instance.placeholder = false;
       }
     } else {
@@ -571,10 +557,10 @@ export class Store<TModels extends ModelRecord> {
       type: "create",
       model: instance.constructor.name,
       id: instance.id,
-      props: serializedProps,
+      props: props,
     });
 
-    return instance;
+    return instance as InstanceType<TModels[K]>;
   }
 
   private getOrCreatePlaceholder<T extends BaseModel>(modelName: string, id: string): T {
