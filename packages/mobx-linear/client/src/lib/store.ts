@@ -289,9 +289,8 @@ function createPoker(url: string) {
 // Store implementation
 export class Store<TModels extends ModelRecord> {
   readonly clientId = crypto.randomUUID();
-  private puller?: Puller;
-  private pusher?: Pusher;
-  private poker?: Pocker;
+
+  // Models
 
   private models = {} as Record<keyof TModels, Map<string, InstanceType<TModels[keyof TModels]>>>;
   /**
@@ -303,25 +302,28 @@ export class Store<TModels extends ModelRecord> {
     keyof TModels,
     Map<string, InstanceType<TModels[keyof TModels]>>
   >;
-
   private modelNameToConstructor = {} as Record<string, BaseModelConstructor>;
   private modelNameToCollectionKey = {} as Record<string, keyof TModels>;
   private collectionKeyToModelName = {} as Record<keyof TModels, string>;
 
-  private eventSubscribers = new Set<(event: StoreEvent) => void>();
+  // Events
 
+  private emittingEnabled = true;
   private undoStack: StoreEvent[][] = [];
   private redoStack: StoreEvent[][] = [];
   private stagedChanges: StoreEvent[] = [];
-
-  private localMutationId = 0;
-  private localMutations: OptimisticMutation[] = [];
-
   private eventsEmittedCount = observable.box(0);
   private disposers: Array<() => void> = [];
+  private eventSubscribers = new Set<(event: StoreEvent) => void>();
 
-  private emittingEnabled = true;
+  // Sync
+
   private syncEnabled = true;
+  private localMutationId = 0;
+  private localMutations: OptimisticMutation[] = [];
+  private puller?: Puller;
+  private pusher?: Pusher;
+  private poker?: Pocker;
 
   constructor(
     modelClassConstructors: TModels,
