@@ -31,8 +31,6 @@ async function initDB(db: Database) {
       due_date TEXT,         -- YYYY-MM-DD format, nullable
       interval INTEGER,      -- for exponential backoff, nullable
       ord INTEGER NOT NULL,
-      deleted BOOLEAN NOT NULL,
-      version INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS replicache_client (
@@ -48,6 +46,12 @@ async function initDB(db: Database) {
   if (!server) {
     await db.run("INSERT INTO replicache_server (id, version) VALUES (?, 1)", serverID);
   }
+}
+
+export async function getServerVersion() {
+  const db = await getDB();
+  const version = await db.get("SELECT version FROM replicache_server WHERE id = ?", serverID);
+  return version;
 }
 
 export async function withTransaction<T>(cb: (db: Database) => Promise<T>): Promise<T> {

@@ -12,6 +12,7 @@ import { config } from "dotenv";
 import { execSync } from "child_process";
 import cors from "cors";
 import { handlePush, handlePull } from "./replicache";
+import { getServerVersion } from "./db";
 
 function flattenOptionalParams(optionalParams: any[]) {
   return optionalParams.map((param) => {
@@ -391,7 +392,13 @@ app.get("/api/git/sync", authMiddleware, (req: Request, res) => {
 // Db API
 
 // Add these routes before your error handling middleware
-app.get("/api/db", () => {});
+app.get("/api/db/version", (req: Request, res: Response) => {
+  getServerVersion().then((version) => {
+    res.status(200).json({
+      version,
+    });
+  });
+});
 
 app.post("/api/db/push", authMiddleware, handlePush);
 app.post("/api/db/pull", authMiddleware, handlePull);
