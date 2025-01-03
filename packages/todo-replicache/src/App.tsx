@@ -14,38 +14,44 @@ type Todo = {
 
 type TodoWithID = Todo & { id: string };
 
+const mutators = {
+  async createTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
+    await tx.set(`todo/${id}`, {
+      id,
+      content,
+      dueDate,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  },
+  async updateTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
+    const todo = await tx.get(`todo/${id}`);
+    if (todo) {
+      await tx.set(`todo/${id}`, {
+        ...todo,
+        content,
+        dueDate,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  },
+};
+
+function createReplicache() {
+  return new Replicache({
+    name: "todo-user-id",
+    licenseKey: import.meta.env.VITE_REPLICACHE_LICENSE_KEY,
+    pushURL: import.meta.env.VITE_REPLICACHE_PUSH_URL,
+    pullURL: import.meta.env.VITE_REPLICACHE_PULL_URL,
+    mutators,
+  });
+}
+
 function App() {
-  const [rep, setRep] = useState<Replicache<any> | null>(null);
+  const [rep, setRep] = useState<Replicache<typeof mutators> | null>(null);
 
   useEffect(() => {
-    const r = new Replicache({
-      name: "todo-user-id",
-      licenseKey: import.meta.env.VITE_REPLICACHE_LICENSE_KEY,
-      pushURL: import.meta.env.VITE_REPLICACHE_PUSH_URL,
-      pullURL: import.meta.env.VITE_REPLICACHE_PULL_URL,
-      mutators: {
-        async createTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
-          await tx.set(`todo/${id}`, {
-            id,
-            content,
-            dueDate,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        },
-        async updateTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
-          const todo = await tx.get(`todo/${id}`);
-          if (todo) {
-            await tx.set(`todo/${id}`, {
-              ...todo,
-              content,
-              dueDate,
-              updatedAt: new Date().toISOString(),
-            });
-          }
-        },
-      },
-    });
+    const r = createReplicache();
     setRep(r);
     return () => {
       void r.close();
@@ -56,7 +62,7 @@ function App() {
     rep,
     async (tx) => {
       const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
-      list.sort(([, { order: a }], [, { order: b }]) => a - b);
+      list.sort(([, { createdAt: a }], [, { createdAt: b }]) => a.localeCompare(b));
       return list;
     },
     { default: [] }
@@ -74,6 +80,8 @@ function App() {
       id: nanoid(),
       content: contentRef.current.value,
       dueDate: dueDateRef.current?.value,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     contentRef.current.value = "";
@@ -101,18 +109,19 @@ function App() {
       </form>
 
       <div className="todo-list">
-        {todos.map(([id, todo]) => (
-          <div key={id} className={`todo-item ${todo.status}`}>
-            <input
-              type="checkbox"
-              checked={todo.status === "completed"}
-              onChange={() => toggleStatus(id.replace("todo/", ""), todo.status)}
-            />
-            <span className="content">{todo.content}</span>
-            {todo.dueDate && <span className="due-date">Due: {todo.dueDate}</span>}
-            {todo.interval && <span className="interval">Every {todo.interval} days</span>}
-          </div>
-        ))}
+        {todos
+          .sort(([, { createdAt: a }], [, { createdAt: b }]) => a.localeCompare(b))
+          .map(([id, todo]) => (
+            <div key={id} className={`todo-item`}>
+              <input
+                type="checkbox"
+                checked={false}
+                onChange={() => toggleStatus(id.replace("todo/", ""), "active")}
+              />
+              <span className="content">{todo.content}</span>
+              {todo.dueDate && <span className="due-date">Due: {todo.dueDate}</span>}
+            </div>
+          ))}
       </div>
     </div>
   );
