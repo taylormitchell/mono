@@ -391,8 +391,10 @@ app.get("/api/git/sync", authMiddleware, (req: Request, res) => {
 // Db API
 
 // Add these routes before your error handling middleware
-app.post("/api/replicache/push", authMiddleware, handlePush);
-app.post("/api/replicache/pull", authMiddleware, handlePull);
+app.get("/api/db", () => {});
+
+app.post("/api/db/push", authMiddleware, handlePush);
+app.post("/api/db/pull", authMiddleware, handlePull);
 
 // Error handling
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
