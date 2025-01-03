@@ -17,6 +17,10 @@ export async function getDB() {
   return _db;
 }
 
+export async function resetDB() {
+  _db = null;
+}
+
 async function initDB(db: Database) {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS replicache_server (

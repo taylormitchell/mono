@@ -12,7 +12,7 @@ import { config } from "dotenv";
 import { execSync } from "child_process";
 import cors from "cors";
 import { handlePush, handlePull } from "./replicache";
-import { getServerVersion } from "./db";
+import { getServerVersion, resetDB } from "./db";
 
 function flattenOptionalParams(optionalParams: any[]) {
   return optionalParams.map((param) => {
@@ -402,6 +402,11 @@ app.get("/api/db/version", (req: Request, res: Response) => {
 
 app.post("/api/db/push", authMiddleware, handlePush);
 app.post("/api/db/pull", authMiddleware, handlePull);
+
+app.use("/api/db/reset", authMiddleware, async (req: Request, res: Response) => {
+  await resetDB();
+  res.status(200).json({ message: "Database reset" });
+});
 
 // Error handling
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

@@ -4,6 +4,19 @@ import { useSubscribe } from "replicache-react";
 import { nanoid } from "nanoid";
 import "./App.css";
 
+const apiUrl = import.meta.env.VITE_API_URL;
+if (!apiUrl) {
+  throw new Error("VITE_API_URL is not set");
+}
+const licenseKey = import.meta.env.VITE_REPLICACHE_LICENSE_KEY;
+if (!licenseKey) {
+  throw new Error("VITE_REPLICACHE_LICENSE_KEY is not set");
+}
+
+const pushUrl = `${apiUrl}/api/db/push`;
+const pullUrl = `${apiUrl}/api/db/pull`;
+const resetUrl = `${apiUrl}/api/db/reset`;
+
 // Types for our Todo app
 type Todo = {
   content: string;
@@ -40,9 +53,9 @@ const mutators = {
 function createReplicache() {
   return new Replicache({
     name: "todo-user-id",
-    licenseKey: import.meta.env.VITE_REPLICACHE_LICENSE_KEY,
-    pushURL: import.meta.env.VITE_REPLICACHE_PUSH_URL,
-    pullURL: import.meta.env.VITE_REPLICACHE_PULL_URL,
+    licenseKey,
+    pushURL: pushUrl,
+    pullURL: pullUrl,
     mutators,
   });
 }
@@ -103,12 +116,18 @@ function App() {
       <div>
         <button
           onClick={async () => {
+            // Reset the database
+            const res = await fetch(resetUrl);
+            const data = await res.json();
+            console.log(data);
+            // Delete all indexedDB databases
             const dbs = await window.indexedDB.databases();
             for (const db of dbs) {
               if (db.name) {
                 window.indexedDB.deleteDatabase(db.name);
               }
             }
+            // Reload the page
             window.location.reload();
           }}
         >
