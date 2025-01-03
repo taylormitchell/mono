@@ -151,9 +151,9 @@ async function createTodo(db: Database, todo: any, version: number) {
      VALUES (?, ?, ?, ?, ?, ?)`,
     todo.id,
     todo.content,
-    todo.due_date,
-    todo.created_at,
-    todo.updated_at,
+    todo.dueDate,
+    todo.createdAt,
+    todo.updatedAt,
     version
   );
 }
@@ -162,8 +162,8 @@ async function updateTodo(db: Database, todo: any, version: number) {
   await db.run(
     `UPDATE todo SET content = ?, due_date = ?, updated_at = ?, version = ? WHERE id = ?`,
     todo.content,
-    todo.due_date,
-    todo.updated_at,
+    todo.dueDate,
+    todo.updatedAt,
     version,
     todo.id
   );
