@@ -27,10 +27,7 @@ async function initDB(db: Database) {
     CREATE TABLE IF NOT EXISTS todo (
       id TEXT PRIMARY KEY NOT NULL,
       content TEXT NOT NULL,
-      status TEXT NOT NULL,
       due_date TEXT,
-      interval INTEGER,
-      ord INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS replicache_client (

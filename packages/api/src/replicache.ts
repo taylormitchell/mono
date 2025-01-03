@@ -32,22 +32,21 @@ export async function handlePull(req: Request, res: Response) {
 
       const lastMutationID = await getLastMutationID(db, pull.clientID);
 
-      // Get all messages changed since the client's last pull
-      const changed = await db.all(
-        "SELECT * FROM message WHERE version > ? AND deleted = 0",
-        pull.cookie ?? 0
-      );
+      // Get all todos changed since the client's last pull
+      const changed = await db.all("SELECT * FROM todo WHERE version > ?", pull.cookie ?? 0);
 
       return {
         lastMutationID,
         cookie: version,
         patch: changed.map((row) => ({
           op: "put",
-          key: `message/${row.id}`,
+          key: `todo/${row.id}`,
           value: {
             id: row.id,
-            sender: row.sender,
             content: row.content,
+            status: row.status,
+            due_date: row.due_date,
+            interval: row.interval,
             order: row.ord,
           },
         })),
@@ -83,8 +82,11 @@ async function processMutation(db: Database, clientGroupID: string, mutation: an
   }
 
   switch (mutation.name) {
-    case "createMessage":
-      await createMessage(db, mutation.args, nextVersion);
+    case "createTodo":
+      await createTodo(db, mutation.args, nextVersion);
+      break;
+    case "updateTodo":
+      await updateTodo(db, mutation.args, nextVersion);
       break;
     default:
       throw new Error(`Unknown mutation: ${mutation.name}`);
@@ -128,15 +130,24 @@ async function setLastMutationID(
   }
 }
 
-async function createMessage(db: Database, message: any, version: number) {
+async function createTodo(db: Database, todo: any, version: number) {
   await db.run(
-    `INSERT INTO message (id, sender, content, ord, deleted, version)
-     VALUES (?, ?, ?, ?, 0, ?)`,
-    message.id,
-    message.from,
-    message.content,
-    message.order,
+    `INSERT INTO todo (id, content, due_date, version)
+     VALUES (?, ?, ?, ?)`,
+    todo.id,
+    todo.content,
+    todo.due_date,
     version
+  );
+}
+
+async function updateTodo(db: Database, todo: any, version: number) {
+  await db.run(
+    `UPDATE todo SET content = ?, due_date = ?, version = ? WHERE id = ?`,
+    todo.content,
+    todo.due_date,
+    version,
+    todo.id
   );
 }
 
