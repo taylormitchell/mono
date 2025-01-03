@@ -28,6 +28,8 @@ async function initDB(db: Database) {
       id TEXT PRIMARY KEY NOT NULL,
       content TEXT NOT NULL,
       due_date TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
       version INTEGER NOT NULL
     );
 

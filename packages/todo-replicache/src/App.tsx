@@ -7,10 +7,9 @@ import "./App.css";
 // Types for our Todo app
 type Todo = {
   content: string;
-  status: "active" | "completed";
   dueDate?: string;
-  interval?: number;
-  order: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type TodoWithID = Todo & { id: string };
@@ -27,8 +26,11 @@ function App() {
       mutators: {
         async createTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
           await tx.set(`todo/${id}`, {
+            id,
             content,
             dueDate,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           });
         },
         async updateTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
@@ -38,6 +40,7 @@ function App() {
               ...todo,
               content,
               dueDate,
+              updatedAt: new Date().toISOString(),
             });
           }
         },

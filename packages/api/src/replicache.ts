@@ -147,20 +147,23 @@ async function setLastMutationID(
 
 async function createTodo(db: Database, todo: any, version: number) {
   await db.run(
-    `INSERT INTO todo (id, content, due_date, version)
-     VALUES (?, ?, ?, ?)`,
+    `INSERT INTO todo (id, content, due_date, created_at, updated_at, version)
+     VALUES (?, ?, ?, ?, ?, ?)`,
     todo.id,
     todo.content,
     todo.due_date,
+    todo.created_at,
+    todo.updated_at,
     version
   );
 }
 
 async function updateTodo(db: Database, todo: any, version: number) {
   await db.run(
-    `UPDATE todo SET content = ?, due_date = ?, version = ? WHERE id = ?`,
+    `UPDATE todo SET content = ?, due_date = ?, updated_at = ?, version = ? WHERE id = ?`,
     todo.content,
     todo.due_date,
+    todo.updated_at,
     version,
     todo.id
   );
