@@ -27,10 +27,10 @@ async function initDB(db: Database) {
     CREATE TABLE IF NOT EXISTS todo (
       id TEXT PRIMARY KEY NOT NULL,
       content TEXT NOT NULL,
-      status TEXT NOT NULL,  -- 'TODO', 'DONE', or 'MAYBE'
-      due_date TEXT,         -- YYYY-MM-DD format, nullable
-      interval INTEGER,      -- for exponential backoff, nullable
-      ord INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      due_date TEXT,
+      interval INTEGER,
+      ord INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS replicache_client (
@@ -50,8 +50,8 @@ async function initDB(db: Database) {
 
 export async function getServerVersion() {
   const db = await getDB();
-  const version = await db.get("SELECT version FROM replicache_server WHERE id = ?", serverID);
-  return version;
+  const res = await db.get("SELECT version FROM replicache_server WHERE id = ?", serverID);
+  return res?.version;
 }
 
 export async function withTransaction<T>(cb: (db: Database) => Promise<T>): Promise<T> {
