@@ -1,19 +1,19 @@
-// const store = createStore({
-//   models: {
-//     issue: Issue,
-//     project: Project,
-//   },
-//   onEvent: (event) => {
-//     if (event.propertyName !== "updatedAt") {
-//       const obj = store.get(event.model, event.id);
-//       if (!obj) return;
-//       obj.updatedAt = Date.now();
-//     }
-//   },
-//   onError: (error) => {},
-// });
+const store = createStore({
+  models: {
+    issue: Issue,
+    project: Project,
+  },
+  onEvent: (event) => {
+    if (event.propertyName !== "updatedAt") {
+      const obj = store.get(event.model, event.id);
+      if (!obj) return;
+      obj.updatedAt = Date.now();
+    }
+  },
+});
 
 import { makeObservable, observable, autorun } from "mobx";
+import { createStore } from "./models";
 
 // const issue = store.create("issue", { title: "Test issue" });
 // const issue = store.models.issue.create({ title: "Test issue" });
