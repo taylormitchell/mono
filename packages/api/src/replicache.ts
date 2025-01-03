@@ -25,31 +25,46 @@ export async function handlePull(req: Request, res: Response) {
   try {
     const pull = req.body;
     const result = await withTransaction(async (db) => {
-      const { version } = await db.get(
+      // Get current version
+      const { version: currentVersion } = await db.get(
         "SELECT version FROM replicache_server WHERE id = ?",
         serverID
       );
 
+      if (pull.cookie > currentVersion) {
+        throw new Error(
+          `Cookie ${pull.cookie} is from the future - aborting. This can happen in development if the server restarts.`
+        );
+      }
+
       const lastMutationID = await getLastMutationID(db, pull.clientID);
 
-      // Get all todos changed since the client's last pull
-      const changed = await db.all("SELECT * FROM todo WHERE version > ?", pull.cookie ?? 0);
+      // Get changed todos since requested version
+      const changed = await db.all(
+        `SELECT * FROM todo 
+         WHERE version > ? `,
+        pull.cookie ?? 0
+      );
+
+      // Build patch operations
+      const patch = changed.map((row) => ({
+        op: row.deleted ? "del" : "put",
+        key: `todo/${row.id}`,
+        value: row.deleted
+          ? undefined
+          : {
+              id: row.id,
+              content: row.content,
+              due_date: row.due_date,
+            },
+      }));
 
       return {
-        lastMutationID,
-        cookie: version,
-        patch: changed.map((row) => ({
-          op: "put",
-          key: `todo/${row.id}`,
-          value: {
-            id: row.id,
-            content: row.content,
-            status: row.status,
-            due_date: row.due_date,
-            interval: row.interval,
-            order: row.ord,
-          },
-        })),
+        lastMutationIDChanges: {
+          [pull.clientID]: lastMutationID,
+        },
+        cookie: currentVersion,
+        patch,
       };
     });
 

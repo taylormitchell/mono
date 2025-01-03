@@ -1,5 +1,6 @@
 import sqlite3 from "sqlite3";
 import { open, Database } from "sqlite";
+import path from "path";
 
 export const serverID = 1;
 
@@ -8,8 +9,7 @@ let _db: Database | null = null;
 export async function getDB() {
   if (!_db) {
     _db = await open({
-      //   filename: path.join(getNotesDir(), "db.sqlite"),
-      filename: ":memory:",
+      filename: path.join("db.sqlite"),
       driver: sqlite3.Database,
     });
     await initDB(_db);
