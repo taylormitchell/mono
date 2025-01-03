@@ -11,6 +11,7 @@ import { generateJwt, verifyJwt } from "./jwt";
 import { config } from "dotenv";
 import { execSync } from "child_process";
 import cors from "cors";
+import { handlePush, handlePull } from "./replicache";
 
 function flattenOptionalParams(optionalParams: any[]) {
   return optionalParams.map((param) => {
@@ -386,6 +387,12 @@ app.get("/api/git/sync", authMiddleware, (req: Request, res) => {
     res.status(500).json({ error: "Failed to sync" });
   }
 });
+
+// Db API
+
+// Add these routes before your error handling middleware
+app.post("/api/replicache/push", authMiddleware, handlePush);
+app.post("/api/replicache/pull", authMiddleware, handlePull);
 
 // Error handling
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
