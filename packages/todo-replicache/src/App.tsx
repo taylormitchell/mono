@@ -62,7 +62,7 @@ function App() {
     rep,
     async (tx) => {
       const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
-      list.sort(([, { createdAt: a }], [, { createdAt: b }]) => a.localeCompare(b));
+      console.log(list);
       return list;
     },
     { default: [] }
@@ -100,6 +100,21 @@ function App() {
   return (
     <div className="container">
       <h1>Todo App</h1>
+      <div>
+        <button
+          onClick={async () => {
+            const dbs = await window.indexedDB.databases();
+            for (const db of dbs) {
+              if (db.name) {
+                window.indexedDB.deleteDatabase(db.name);
+              }
+            }
+            window.location.reload();
+          }}
+        >
+          Reset
+        </button>
+      </div>
 
       <form onSubmit={onSubmit} className="todo-form">
         <input ref={contentRef} placeholder="What needs to be done?" required />
