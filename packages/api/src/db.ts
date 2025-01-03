@@ -28,6 +28,7 @@ async function initDB(db: Database) {
       id TEXT PRIMARY KEY NOT NULL,
       content TEXT NOT NULL,
       due_date TEXT,
+      version INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS replicache_client (

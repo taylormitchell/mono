@@ -25,31 +25,19 @@ function App() {
       pushURL: import.meta.env.VITE_REPLICACHE_PUSH_URL,
       pullURL: import.meta.env.VITE_REPLICACHE_PULL_URL,
       mutators: {
-        async createTodo(
-          tx: WriteTransaction,
-          { id, content, status, dueDate, interval, order }: TodoWithID
-        ) {
+        async createTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
           await tx.set(`todo/${id}`, {
             content,
-            status,
             dueDate,
-            interval,
-            order,
           });
         },
-        async updateTodo(
-          tx: WriteTransaction,
-          { id, content, status, dueDate, interval, order }: TodoWithID
-        ) {
+        async updateTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
           const todo = await tx.get(`todo/${id}`);
           if (todo) {
             await tx.set(`todo/${id}`, {
               ...todo,
               content,
-              status,
               dueDate,
-              interval,
-              order,
             });
           }
         },
@@ -79,20 +67,10 @@ function App() {
     e.preventDefault();
     if (!rep || !contentRef.current?.value) return;
 
-    let last: Todo | null = null;
-    if (todos.length) {
-      const lastTodoTuple = todos[todos.length - 1];
-      last = lastTodoTuple[1];
-    }
-    const order = (last?.order ?? 0) + 1;
-
     await rep.mutate.createTodo({
       id: nanoid(),
       content: contentRef.current.value,
-      status: "active",
       dueDate: dueDateRef.current?.value,
-      interval: intervalRef.current?.value ? parseInt(intervalRef.current.value) : undefined,
-      order,
     });
 
     contentRef.current.value = "";
