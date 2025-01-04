@@ -11,7 +11,8 @@ export const todo = sqliteTable("todo", {
   dueDate: text("due_date"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
-  version: integer("version").notNull(),
+  labels: text("labels").notNull().default(""),
+  version: integer("version").notNull().default(0),
 });
 
 export const replicacheClient = sqliteTable("replicache_client", {
