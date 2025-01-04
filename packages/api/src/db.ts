@@ -32,43 +32,15 @@ export const replicacheClient = sqliteTable("replicache_client", {
 export async function getDB() {
   if (!_db) {
     _db = drizzle(":memory:");
+    // Run initial migrations
+    const sqliteDb = new Database(":memory:");
+    await initDB(sqliteDb);
   }
   return _db;
 }
 
 export async function resetDB() {
   _db = null;
-}
-
-async function initDB(db: Database) {
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS replicache_server (
-      id INTEGER PRIMARY KEY NOT NULL,
-      version INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS todo (
-      id TEXT PRIMARY KEY NOT NULL,
-      content TEXT NOT NULL,
-      due_date TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      version INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS replicache_client (
-      id VARCHAR(36) PRIMARY KEY NOT NULL,
-      client_group_id VARCHAR(36) NOT NULL,
-      last_mutation_id INTEGER NOT NULL,
-      version INTEGER NOT NULL
-    );
-  `);
-
-  // Initialize server version if not exists
-  const server = await db.get("SELECT * FROM replicache_server WHERE id = ?", serverID);
-  if (!server) {
-    await db.run("INSERT INTO replicache_server (id, version) VALUES (?, 1)", serverID);
-  }
 }
 
 export async function getServerVersion() {
