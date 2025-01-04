@@ -31,10 +31,7 @@ export async function getServerVersion(): Promise<number | undefined> {
   return result?.version;
 }
 
-export async function summary(): Promise<{
-  todoCount: number;
-  version: number;
-}> {
+export async function summary() {
   const db = await getDb();
   const todoCount = db
     .select({ count: sql<number>`COUNT(*)` })

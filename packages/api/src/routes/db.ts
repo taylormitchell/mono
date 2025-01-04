@@ -1,16 +1,19 @@
 import { Router, Request, Response } from "express";
-import { getServerVersion, resetDb } from "../db";
+import { getDb, resetDb, summary } from "../db";
 import { handlePush, handlePull } from "../lib/replicache";
 import { authMiddleware } from "../lib/auth";
+import { todo } from "src/db/schema";
 
 const router = Router();
 
 router.get("/", async (req: Request, res: Response) => {
-  const version = await getServerVersion();
-  if (version === undefined) {
-    return res.status(500).json({ error: "Server version not found" });
-  }
-  res.status(200).json({ version });
+  res.status(200).json(await summary());
+});
+
+router.get("/dump", async (req: Request, res: Response) => {
+  const db = await getDb();
+  const todos = db.select().from(todo).all();
+  res.status(200).json(todos);
 });
 
 router.post("/push", authMiddleware, handlePush);
