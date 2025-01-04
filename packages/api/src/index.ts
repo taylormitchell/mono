@@ -7,7 +7,7 @@ import path from "path";
 import { deserializeTodo } from "@common/todo/types";
 import { addLogEntry } from "@common/logs/utils";
 import { LogEntrySchema } from "@common/logs/types";
-import { generateJwt, verifyJwt } from "./jwt";
+import { generateJwt } from "./jwt";
 import { config } from "dotenv";
 import { execSync } from "child_process";
 import cors from "cors";
@@ -99,25 +99,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static(getNotesDir()));
-
-function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  if (AUTH_DISABLED) {
-    next();
-    return;
-  }
-  const auth = req.headers.authorization;
-  if (!auth) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  const token = auth.split(" ")[1];
-  try {
-    verifyJwt(token);
-    next();
-  } catch (error) {
-    console.error(error);
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-}
 
 // Files API
 app.get("/api/files/:path(*)", authMiddleware, (req: Request, res) => {
