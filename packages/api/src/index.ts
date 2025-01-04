@@ -7,12 +7,13 @@ import path from "path";
 import { deserializeTodo } from "@common/todo/types";
 import { addLogEntry } from "@common/logs/utils";
 import { LogEntrySchema } from "@common/logs/types";
-import { generateJwt } from "./jwt";
+import { generateJwt } from "./lib/jwt";
 import { config } from "dotenv";
 import { execSync } from "child_process";
 import cors from "cors";
-import { handlePush, handlePull } from "./replicache";
+import { handlePush, handlePull } from "./lib/replicache";
 import { getServerVersion, resetDB } from "./db";
+import { authMiddleware } from "./lib/auth";
 
 function flattenOptionalParams(optionalParams: any[]) {
   return optionalParams.map((param) => {

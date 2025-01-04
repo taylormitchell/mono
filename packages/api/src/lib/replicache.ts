@@ -1,5 +1,5 @@
 import { Database } from "sqlite";
-import { withTransaction, serverID } from "./db";
+import { withTransaction, serverID } from "../db";
 import type { Request, Response } from "express";
 
 export async function handlePush(req: Request, res: Response) {
