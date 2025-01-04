@@ -6,7 +6,8 @@
   "scripts": {
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "db:up": "drizzle-kit generate && drizzle-kit migrate"
   },
   "keywords": [],
   "author": "",

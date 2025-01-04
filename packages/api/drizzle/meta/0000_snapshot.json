@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "45fe27a4-f40c-4374-ac62-89594c3f4021",
+  "id": "d52c6d3d-0ad5-4e66-925f-62d6197fc1fa",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "replicache_client": {
