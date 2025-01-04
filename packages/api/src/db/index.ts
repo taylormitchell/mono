@@ -2,7 +2,8 @@ import "dotenv/config";
 import { sql } from "drizzle-orm";
 import { BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 import { replicacheServer } from "./schema";
-
+import { eq } from "drizzle-orm";
+import { log } from "src/lib/log";
 let _db: BunSQLiteDatabase | null = null;
 
 export const serverID = 1;
@@ -13,7 +14,8 @@ export function getDb(): BunSQLiteDatabase {
       throw new Error("DB_FILE_NAME is not set");
     }
     _db = drizzle(process.env.DB_FILE_NAME);
-    _db.insert(replicacheServer).values({ id: serverID, version: 0 }).onConflictDoNothing();
+    log.info("Inserting server ID into database");
+    _db.insert(replicacheServer).values({ id: serverID, version: 0 });
   }
   return _db;
 }
@@ -27,7 +29,7 @@ export function getServerVersion() {
   const result = db
     .select({ version: replicacheServer.version })
     .from(replicacheServer)
-    .where(sql`id = ${serverID}`)
+    .where(eq(replicacheServer.id, serverID))
     .get();
   return result?.version;
 }

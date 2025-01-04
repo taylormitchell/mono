@@ -7,47 +7,14 @@ import path from "path";
 import { deserializeTodo } from "@common/todo/types";
 import { addLogEntry } from "@common/logs/utils";
 import { LogEntrySchema } from "@common/logs/types";
-import { generateJwt } from "./lib/jwt";
 import { config } from "dotenv";
 import { execSync } from "child_process";
 import cors from "cors";
-import { handlePush, handlePull } from "./lib/replicache";
-import { getServerVersion, resetDB } from "./db";
-import { authMiddleware } from "./lib/auth";
-
-function flattenOptionalParams(optionalParams: any[]) {
-  return optionalParams.map((param) => {
-    if (typeof param === "object") {
-      try {
-        return JSON.stringify(param);
-      } catch (e) {
-        param = param.toString();
-      }
-    }
-    if (typeof param === "string" && param.includes("\n")) {
-      return param.replace(/\n/g, " ");
-    }
-    return param;
-  });
-}
-
-const log = {
-  info: (message?: any, ...optionalParams: any[]) => {
-    const flat = flattenOptionalParams(optionalParams);
-    console.log(`[${new Date().toISOString()}] [INFO] `, message, ...flat);
-  },
-  warn: (message?: any, ...optionalParams: any[]) => {
-    const flat = flattenOptionalParams(optionalParams);
-    console.warn(`[${new Date().toISOString()}] [WARN] `, message, ...flat);
-  },
-  error: (message?: any, ...optionalParams: any[]) => {
-    const flat = flattenOptionalParams(optionalParams);
-    console.error(`[${new Date().toISOString()}] [ERROR] `, message, ...flat);
-  },
-};
+import { authMiddleware, generateJwt } from "./lib/auth";
+import dbRouter from "./routes/db";
+import { log } from "./lib/log";
 
 const { parsed } = config();
-const AUTH_DISABLED = parsed?.AUTH_DISABLED === "true";
 const COMMIT_ON_SAVE = parsed?.COMMIT_ON_SAVE === "true";
 const SYNC_ENABLED = parsed?.SYNC_ENABLED === "true";
 const ADMIN_PASSWORD = parsed?.ADMIN_PASSWORD;
@@ -100,6 +67,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static(getNotesDir()));
+
+app.get("/", (req: Request, res: Response) => {
+  res.send("API is running");
+});
 
 // Files API
 app.get("/api/files/:path(*)", authMiddleware, (req: Request, res) => {
@@ -372,23 +343,7 @@ app.get("/api/git/sync", authMiddleware, (req: Request, res) => {
 });
 
 // Db API
-
-// Add these routes before your error handling middleware
-app.get("/api/db/version", (req: Request, res: Response) => {
-  getServerVersion().then((version) => {
-    res.status(200).json({
-      version,
-    });
-  });
-});
-
-app.post("/api/db/push", authMiddleware, handlePush);
-app.post("/api/db/pull", authMiddleware, handlePull);
-
-app.use("/api/db/reset", authMiddleware, async (req: Request, res: Response) => {
-  await resetDB();
-  res.status(200).json({ message: "Database reset" });
-});
+app.use("/api/db", dbRouter);
 
 // Error handling
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

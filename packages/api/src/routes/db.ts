@@ -5,7 +5,7 @@ import { authMiddleware } from "../lib/auth";
 
 const router = Router();
 
-router.get("/version", (req: Request, res: Response) => {
+router.get("/", (req: Request, res: Response) => {
   const version = getServerVersion();
   if (!version) {
     return res.status(500).json({ error: "Server version not found" });
