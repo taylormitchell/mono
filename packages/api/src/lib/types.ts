@@ -1,4 +1,3 @@
-import { generate } from "@rocicorp/rails";
 import { z } from "zod";
 
 export const todoSchema = z.object({
@@ -11,10 +10,18 @@ export const todoSchema = z.object({
   version: z.number(),
 });
 
-export const {
-  put: putTodo,
-  get: getTodo,
-  update: updateTodo,
-  delete: deleteTodo,
-  list: listTodos,
-} = generate("todo", todoSchema.parse);
+export const mutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  name: z.string(),
+  args: todoSchema,
+});
+
+export const pushSchema = z.object({
+  clientGroupID: z.string(),
+  mutations: z.array(mutationSchema),
+});
+
+export type Todo = z.infer<typeof todoSchema>;
+export type Mutation = z.infer<typeof mutationSchema>;
+export type Push = z.infer<typeof pushSchema>;

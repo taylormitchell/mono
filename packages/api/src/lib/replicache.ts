@@ -1,9 +1,11 @@
 import { Database } from "sqlite";
 import { withTransaction, serverID } from "../db";
 import type { Request, Response } from "express";
+import { Mutation, pushSchema } from "./types";
+import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 
 export async function handlePush(req: Request, res: Response) {
-  const push = req.body;
+  const push = pushSchema.parse(req.body);
   console.log("Processing push", JSON.stringify(push));
 
   try {
@@ -75,7 +77,7 @@ export async function handlePull(req: Request, res: Response) {
   }
 }
 
-async function processMutation(db: Database, clientGroupID: string, mutation: any) {
+async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mutation: Mutation) {
   const { clientID } = mutation;
 
   const { version: prevVersion } = await db.get(
