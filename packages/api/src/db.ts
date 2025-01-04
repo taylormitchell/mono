@@ -1,50 +1,12 @@
-import { drizzle, LibSQLDatabase } from "drizzle-orm/libsql";
-import { text, integer, sqliteTable } from "drizzle-orm/sqlite-core";
+import { drizzle } from "drizzle-orm/libsql";
 import { sql } from "drizzle-orm";
-import { Database } from "sqlite3";
+import { replicacheServer } from "./db/schema";
+import { getDb } from "./db";
 
 export const serverID = 1;
 
-let _db: LibSQLDatabase | null = null;
-
-// Define schema
-export const replicacheServer = sqliteTable("replicache_server", {
-  id: integer("id").primaryKey(),
-  version: integer("version").notNull(),
-});
-
-export const todo = sqliteTable("todo", {
-  id: text("id").primaryKey(),
-  content: text("content").notNull(),
-  dueDate: text("due_date"),
-  createdAt: text("created_at").notNull(),
-  updatedAt: text("updated_at").notNull(),
-  version: integer("version").notNull(),
-});
-
-export const replicacheClient = sqliteTable("replicache_client", {
-  id: text("id").primaryKey(),
-  clientGroupId: text("client_group_id").notNull(),
-  lastMutationId: integer("last_mutation_id").notNull(),
-  version: integer("version").notNull(),
-});
-
-export async function getDB() {
-  if (!_db) {
-    _db = drizzle(":memory:");
-    // Run initial migrations
-    const sqliteDb = new Database(":memory:");
-    await initDB(sqliteDb);
-  }
-  return _db;
-}
-
-export async function resetDB() {
-  _db = null;
-}
-
 export async function getServerVersion() {
-  const db = await getDB();
+  const db = await getDb();
   const result = await db
     .select({ version: replicacheServer.version })
     .from(replicacheServer)
