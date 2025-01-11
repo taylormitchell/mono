@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./App.css";
-import { toggle, Node, createTree } from "./tree";
+import { Node, checkAtIndex, createTree, uncheckAtIndex } from "./tree";
 
 const defaultTree: Node = createTree({
   label: "root",
@@ -34,8 +34,14 @@ const defaultTree: Node = createTree({
 
 function App() {
   const [tree, setTree] = useState(defaultTree);
-  const toggleChecked = (index: number[]) => {
-    setTree((tree) => toggle(tree, index));
+  const toggleChecked = (node: Node, index: number[]) => {
+    setTree((root) => {
+      if (node.isChecked) {
+        return uncheckAtIndex([root], index)[0];
+      } else {
+        return checkAtIndex([root], index)[0];
+      }
+    });
   };
   console.log(tree);
 
@@ -56,12 +62,16 @@ function Tree({
 }: {
   node: Node;
   index: number[];
-  toggleChecked: (index: number[]) => void;
+  toggleChecked: (node: Node, index: number[]) => void;
 }) {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <input type="checkbox" checked={node.isChecked} onChange={() => toggleChecked(index)} />
+        <input
+          type="checkbox"
+          checked={node.isChecked}
+          onChange={() => toggleChecked(node, index)}
+        />
         {node.label}
       </div>
       <div className="pl-4">

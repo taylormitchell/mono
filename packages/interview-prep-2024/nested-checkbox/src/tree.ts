@@ -88,7 +88,7 @@ function checkDescendants(node: Node): Node {
   };
 }
 
-function checkAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
+export function checkAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
   return nodes.map((node, i) => {
     if (i === index[depth]) {
       if (depth === index.length - 1) {
@@ -105,7 +105,7 @@ function checkAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[]
   });
 }
 
-function uncheckAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
+export function uncheckAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
   let found = false;
   const newNodes = nodes.map((node, i) => {
     if (i === index[depth]) {
