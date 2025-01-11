@@ -1,64 +1,118 @@
 import { useState } from "react";
-import { Digit, Expression, Operator, state_to_string, update_state } from "./calculator";
+import "./App.css";
+import { State, Action, update } from "./calculator";
+
+function state_to_string(state: State): string {
+  return state.type === "value"
+    ? state.first
+    : state.type === "incomplete_expression"
+    ? state.first + state.operator
+    : state.first + state.operator + state.second;
+}
 
 function App() {
-  const [state, setState] = useState<Expression>({ type: "empty" });
+  const [state, setState] = useState<State>({ type: "value", first: "" });
 
-  const handleDigit = (digit: Digit | ".") => {
-    setState((prevState) => update_state(prevState, { type: "add_digit", value: digit }));
-  };
-
-  const handleOperator = (operator: Operator) => {
-    setState((prevState) => update_state(prevState, { type: "add_operator", value: operator }));
-  };
-
-  const handleEvaluate = () => {
-    setState((prevState) => update_state(prevState, { type: "evaluate" }));
+  const dispatch = (action: Action) => {
+    setState(update(state, action));
   };
 
   return (
-    <div className="w-80 mx-auto mt-8 p-4 border border-gray-300 rounded-lg bg-gray-50">
-      <div className="h-16 bg-white p-4 mb-4 text-right text-2xl min-h-[4rem] border border-gray-200 rounded">
-        {state_to_string(state)}
-      </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <Button text="1" onClick={() => handleDigit("1")} />
-          <Button text="2" onClick={() => handleDigit("2")} />
-          <Button text="3" onClick={() => handleDigit("3")} />
-          <Button text="+" onClick={() => handleOperator("+")} />
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="flex flex-col gap-2 bg-white p-4 rounded-lg shadow-lg w-80">
+        <div className="bg-gray-100 p-4 rounded text-right text-2xl font-mono min-h-[60px]">
+          {state_to_string(state)}
         </div>
-        <div className="flex gap-2">
-          <Button text="4" onClick={() => handleDigit("4")} />
-          <Button text="5" onClick={() => handleDigit("5")} />
-          <Button text="6" onClick={() => handleDigit("6")} />
-          <Button text="-" onClick={() => handleOperator("-")} />
-        </div>
-        <div className="flex gap-2">
-          <Button text="7" onClick={() => handleDigit("7")} />
-          <Button text="8" onClick={() => handleDigit("8")} />
-          <Button text="9" onClick={() => handleDigit("9")} />
-          <Button text="*" onClick={() => handleOperator("*")} />
-        </div>
-        <div className="flex gap-2">
-          <Button text="0" onClick={() => handleDigit("0")} />
-          <Button text="/" onClick={() => handleOperator("/")} />
-          <Button text="=" onClick={handleEvaluate} />
-          <Button text="clear" onClick={() => setState({ type: "empty" })} />
+
+        <div className="grid grid-cols-4 gap-2">
+          <button
+            onClick={() => dispatch({ type: "clear" })}
+            className="col-span-2 bg-red-500 text-white p-4 rounded hover:bg-red-600"
+          >
+            Clear
+          </button>
+          <button
+            onClick={() => dispatch({ type: "add_negative" })}
+            className="bg-gray-200 p-4 rounded hover:bg-gray-300"
+          >
+            +/-
+          </button>
+          <button
+            onClick={() => dispatch({ type: "add_operator", operator: "/" })}
+            className="bg-orange-400 text-white p-4 rounded hover:bg-orange-500"
+          >
+            ÷
+          </button>
+
+          {[7, 8, 9].map((num) => (
+            <button
+              key={num}
+              onClick={() => dispatch({ type: "add_digit", digit: num.toString() })}
+              className="bg-gray-200 p-4 rounded hover:bg-gray-300"
+            >
+              {num}
+            </button>
+          ))}
+          <button
+            onClick={() => dispatch({ type: "add_operator", operator: "*" })}
+            className="bg-orange-400 text-white p-4 rounded hover:bg-orange-500"
+          >
+            ×
+          </button>
+
+          {[4, 5, 6].map((num) => (
+            <button
+              key={num}
+              onClick={() => dispatch({ type: "add_digit", digit: num.toString() })}
+              className="bg-gray-200 p-4 rounded hover:bg-gray-300"
+            >
+              {num}
+            </button>
+          ))}
+          <button
+            onClick={() => dispatch({ type: "add_operator", operator: "-" })}
+            className="bg-orange-400 text-white p-4 rounded hover:bg-orange-500"
+          >
+            -
+          </button>
+
+          {[1, 2, 3].map((num) => (
+            <button
+              key={num}
+              onClick={() => dispatch({ type: "add_digit", digit: num.toString() })}
+              className="bg-gray-200 p-4 rounded hover:bg-gray-300"
+            >
+              {num}
+            </button>
+          ))}
+          <button
+            onClick={() => dispatch({ type: "add_operator", operator: "+" })}
+            className="bg-orange-400 text-white p-4 rounded hover:bg-orange-500"
+          >
+            +
+          </button>
+
+          <button
+            onClick={() => dispatch({ type: "add_digit", digit: "0" })}
+            className="col-span-2 bg-gray-200 p-4 rounded hover:bg-gray-300"
+          >
+            0
+          </button>
+          <button
+            onClick={() => dispatch({ type: "add_decimal" })}
+            className="bg-gray-200 p-4 rounded hover:bg-gray-300"
+          >
+            .
+          </button>
+          <button
+            onClick={() => dispatch({ type: "evaluate" })}
+            className="bg-orange-400 text-white p-4 rounded hover:bg-orange-500"
+          >
+            =
+          </button>
         </div>
       </div>
     </div>
-  );
-}
-
-function Button({ text, onClick }: { text: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-48 h-48 p-0 border border-gray-300 rounded bg-white hover:bg-gray-100 active:bg-gray-200"
-    >
-      {text}
-    </button>
   );
 }
 
