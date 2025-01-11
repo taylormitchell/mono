@@ -112,6 +112,27 @@ const files: Directory = {
 function App() {
   const [fileTree, setFileTree] = useState(files);
 
+  const updateFileTree = (path: string[], update: (node: Node) => Node) => {
+    setFileTree((prevFiles) => {
+      const updateDirectory = (node: Directory, remainingPath: string[]): Directory => {
+        if (remainingPath.length === 0) {
+          throw new Error("updateFileTree: remainingPath is empty");
+        }
+        if (remainingPath.length == 1) {
+          if (remainingPath[0] !== node.name) {
+            throw new Error(`No node found at ${remainingPath.join("/")}`);
+          }
+          return {
+            ...node,
+            children: node.children.map((child: Node) =>
+              child === targetChild ? update(child) : child
+            ),
+          };
+        }
+      };
+    });
+  };
+
   const toggleDirectory = (path: string[]) => {
     setFileTree((prevFiles) => {
       const updateDirectory = (node: Directory, remainingPath: string[]): Node => {
