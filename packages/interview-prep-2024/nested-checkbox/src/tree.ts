@@ -13,34 +13,29 @@ export function createTree(node: NodeWithoutParent, parent: Node | null = null):
   return newNode;
 }
 
-function checkDescendants(node: Node): Node {
+function checkAllDescendants(node: Node): Node {
   return {
     ...node,
     isChecked: true,
-    children: node.children.map((child) => checkDescendants(child)),
+    children: node.children.map((child) => checkAllDescendants(child)),
   };
 }
 
-export function checkAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
-  let found = false;
+export function checkDescendants(nodes: Node[], index: number[], depth: number = 0): Node[] {
   const newNodes = nodes.map((node, i) => {
     if (i === index[depth]) {
       if (depth === index.length - 1) {
-        found = true;
-        return checkDescendants(node);
+        return checkAllDescendants(node);
       } else {
         return {
           ...node,
-          children: checkAtIndex(node.children, index, depth + 1),
+          children: checkDescendants(node.children, index, depth + 1),
         };
       }
     } else {
       return node;
     }
   });
-  if (!found) {
-    throw new Error("Node not found at index");
-  }
   return newNodes;
 }
 
@@ -48,11 +43,9 @@ export function checkAtIndex(nodes: Node[], index: number[], depth: number = 0):
  * @throws If the node is not found at the given index
  */
 export function uncheckAncestors(nodes: Node[], index: number[], depth: number = 0): Node[] {
-  let found = false;
   const newNodes = nodes.map((node, i) => {
     if (i === index[depth]) {
       if (depth === index.length - 1) {
-        found = true;
         return { ...node, isChecked: false };
       } else {
         return {
@@ -65,8 +58,5 @@ export function uncheckAncestors(nodes: Node[], index: number[], depth: number =
       return node;
     }
   });
-  if (!found) {
-    throw new Error("Node not found at index");
-  }
   return newNodes;
 }

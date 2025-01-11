@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./App.css";
-import { Node, checkAtIndex, createTree, uncheckAtIndex } from "./tree";
+import { Node, checkDescendants, createTree, uncheckAncestors } from "./tree";
 
 const defaultTree: Node = createTree({
   label: "root",
@@ -38,9 +38,9 @@ function App() {
     setTree((root) => {
       try {
         if (node.isChecked) {
-          return uncheckAtIndex([root], index)[0];
+          return uncheckAncestors([root], index)[0];
         } else {
-          return checkAtIndex([root], index)[0];
+          return checkDescendants([root], index)[0];
         }
       } catch (e) {
         console.error(e);
