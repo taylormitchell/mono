@@ -3,30 +3,37 @@ import "./App.css";
 
 type Node = {
   label: string;
+  isChecked: boolean;
   children: Node[];
 };
 
-const defaultTree: Node = {
-  label: "root",
+type Tree = {
+  children: Node[];
+};
+
+const defaultTree: Tree = {
   children: [
     {
       label: "p1",
+      isChecked: false,
       children: [
-        { label: "p1-c1", children: [] },
+        { isChecked: false, label: "p1-c1", children: [] },
         {
+          isChecked: false,
           label: "p1-c2",
           children: [
-            { label: "p1-c2-c1", children: [] },
-            { label: "p1-c2-c2", children: [] },
+            { isChecked: false, label: "p1-c2-c1", children: [] },
+            { isChecked: false, label: "p1-c2-c2", children: [] },
           ],
         },
       ],
     },
     {
+      isChecked: false,
       label: "p2",
       children: [
-        { label: "p2-c1", children: [] },
-        { label: "p2-c2", children: [] },
+        { isChecked: false, label: "p2-c1", children: [] },
+        { isChecked: false, label: "p2-c2", children: [] },
       ],
     },
   ],
@@ -39,22 +46,22 @@ function App() {
     <div>
       <h1>Nested Checkbox</h1>
       {tree.children.map((child) => (
-        <Tree tree={child} />
+        <Tree node={child} />
       ))}
     </div>
   );
 }
 
-function Tree({ tree }: { tree: Node }) {
+function Tree({ node }: { node: Node }) {
   return (
     <div>
       <div className="flex items-center gap-2">
         <input type="checkbox" />
-        {tree.label}
+        {node.label}
       </div>
       <div className="pl-4">
-        {tree.children.map((child) => (
-          <Tree tree={child} />
+        {node.children.map((child) => (
+          <Tree node={child} />
         ))}
       </div>
     </div>
