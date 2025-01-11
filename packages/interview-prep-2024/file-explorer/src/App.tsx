@@ -22,7 +22,7 @@ function App() {
               className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded mr-1"
               onClick={() => {
                 const newName = prompt("Enter new name:", name);
-                if (newName) renameNode(path, newName);
+                if (newName) setFileTree(renameNode(fileTree, path, newName));
               }}
             >
               Rename

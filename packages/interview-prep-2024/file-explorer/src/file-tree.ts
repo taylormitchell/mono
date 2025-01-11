@@ -111,7 +111,7 @@ const updateFileTree = (
     }
     if (remainingPath.length == 1) {
       if (remainingPath[0] !== node.name) {
-        console.warn(`No node found at ${remainingPath.join("/")}`);
+        console.warn(`No node found at ${path.join("/")}`);
         return node;
       }
       return update(node, parent);
@@ -119,7 +119,7 @@ const updateFileTree = (
     const newRemainingPath = remainingPath.slice(1);
     const nextDir = newRemainingPath[0];
     if (node.type !== "directory") {
-      throw new Error(`No node found at ${remainingPath.join("/")}`);
+      throw new Error(`No node found at ${path.join("/")}`);
     }
     return {
       ...node,
