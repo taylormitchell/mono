@@ -62,6 +62,8 @@ function App() {
   const [highlightedOption, setHighlightedOption] = useState<string | null>(null);
   const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const highlightedElementRef = useRef<HTMLLIElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const highlightedOptionRef = useRef<string | null>(null);
   highlightedOptionRef.current = highlightedOption;
@@ -90,6 +92,21 @@ function App() {
           if (!prev) return filteredOptions[0];
           const nextIndex = (filteredOptions.indexOf(prev) + 1) % filteredOptions.length;
           return filteredOptions[nextIndex];
+        });
+        // Add scroll logic
+        requestAnimationFrame(() => {
+          if (highlightedElementRef.current && dropdownRef.current) {
+            const container = dropdownRef.current;
+            const element = highlightedElementRef.current;
+
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+
+            // Check if element is below the visible area
+            if (elementRect.bottom > containerRect.bottom) {
+              container.scrollTop += elementRect.bottom - containerRect.bottom;
+            }
+          }
         });
       } else if (e.key === "ArrowUp") {
         setHighlightedOption((prev) => {
@@ -120,10 +137,11 @@ function App() {
         onChange={(e) => setInputValue(e.target.value)}
       />
       {inputValue && (
-        <div className="overflow-y-auto max-h-[90px]">
+        <div ref={dropdownRef} className="overflow-y-auto max-h-[90px]">
           <ul>
             {filteredOptions.map((option) => (
               <li
+                ref={option === highlightedOption ? highlightedElementRef : null}
                 className={cn(
                   option === highlightedOption ? "bg-blue-500 text-white" : "",
                   "h-[30px]"
