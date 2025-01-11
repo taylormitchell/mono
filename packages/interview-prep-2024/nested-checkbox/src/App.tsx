@@ -1,13 +1,8 @@
 import { useState } from "react";
 import "./App.css";
+import { toggle, Node, createTree } from "./tree";
 
-type Node = {
-  label: string;
-  isChecked: boolean;
-  children: Node[];
-};
-
-const defaultTree: Node = {
+const defaultTree: Node = createTree({
   label: "root",
   isChecked: false,
   children: [
@@ -35,28 +30,12 @@ const defaultTree: Node = {
       ],
     },
   ],
-};
-
-function toggle(nodes: Node[], index: number[], depth: number = 0): Node[] {
-  return nodes.map((node, i) => {
-    if (i === index[depth]) {
-      if (depth === index.length - 1) {
-        return { ...node, isChecked: !node.isChecked };
-      } else {
-        return { ...node, children: toggle(node.children, index, depth + 1) };
-      }
-    }
-    return node;
-  });
-}
+});
 
 function App() {
   const [tree, setTree] = useState(defaultTree);
   const toggleChecked = (index: number[]) => {
-    setTree((tree) => ({
-      ...tree,
-      children: toggle(tree.children, index),
-    }));
+    setTree((tree) => toggle(tree, index));
   };
   console.log(tree);
 
@@ -64,12 +43,7 @@ function App() {
     <div>
       <h1>Nested Checkbox</h1>
       {tree.children.map((child, index) => (
-        <Tree
-          node={child}
-          index={[index]}
-          isAncestorChecked={false}
-          toggleChecked={toggleChecked}
-        />
+        <Tree node={child} index={[index]} toggleChecked={toggleChecked} />
       ))}
     </div>
   );
@@ -78,29 +52,21 @@ function App() {
 function Tree({
   node,
   index,
-  isAncestorChecked,
   toggleChecked,
 }: {
   node: Node;
   index: number[];
-  isAncestorChecked: boolean;
   toggleChecked: (index: number[]) => void;
 }) {
-  const isChecked = node.isChecked || isAncestorChecked;
   return (
     <div>
       <div className="flex items-center gap-2">
-        <input type="checkbox" checked={isChecked} onChange={() => toggleChecked(index)} />
+        <input type="checkbox" checked={node.isChecked} onChange={() => toggleChecked(index)} />
         {node.label}
       </div>
       <div className="pl-4">
         {node.children.map((child, i) => (
-          <Tree
-            node={child}
-            index={[...index, i]}
-            isAncestorChecked={isChecked}
-            toggleChecked={toggleChecked}
-          />
+          <Tree node={child} index={[...index, i]} toggleChecked={toggleChecked} />
         ))}
       </div>
     </div>

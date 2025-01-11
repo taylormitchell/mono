@@ -1,41 +1,13 @@
-type Node = {
+export type Node = {
   label: string;
   isChecked: boolean;
   parent: Node | null;
   children: Node[];
 };
 
-const defaultTree: Node = createTree({
-  label: "root",
-  isChecked: false,
-  children: [
-    {
-      label: "p1",
-      isChecked: false,
-      children: [
-        { isChecked: false, label: "p1-c1", children: [] },
-        {
-          isChecked: false,
-          label: "p1-c2",
-          children: [
-            { isChecked: false, label: "p1-c2-c1", children: [] },
-            { isChecked: false, label: "p1-c2-c2", children: [] },
-          ],
-        },
-      ],
-    },
-    {
-      isChecked: false,
-      label: "p2",
-      children: [
-        { isChecked: false, label: "p2-c1", children: [] },
-        { isChecked: false, label: "p2-c2", children: [] },
-      ],
-    },
-  ],
-});
-
-function createTree(node: Omit<Node, "parent">, parent: Node | null = null): Node {
+// Helper type to create a tree from a nested object
+type NodeWithoutParent = { label: string; isChecked: boolean; children: NodeWithoutParent[] };
+export function createTree(node: NodeWithoutParent, parent: Node | null = null): Node {
   const newNode: Node = {
     ...node,
     parent,
