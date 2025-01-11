@@ -20,9 +20,9 @@ function App() {
       />
       <div className="p-4 border" ref={containerRef} style={{ width: `${defaultWidth}px` }}>
         <form className="flex">
-          <input className="bg-gray-200 min-w-0" type="text" placeholder="Name" />
-          <input className="bg-gray-200 min-w-0" type="text" placeholder="Name" />
-          <input className="bg-blue-200 min-w-0" type="submit" value="Subscribe" />
+          <input className="bg-gray-200" type="text" placeholder="Name" />
+          <input className="bg-gray-200" type="text" placeholder="Name" />
+          <input className="bg-blue-200" type="submit" value="Subscribe" />
         </form>
       </div>
     </div>
