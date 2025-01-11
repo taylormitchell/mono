@@ -60,12 +60,18 @@ function App() {
       children: toggle(tree.children, index),
     }));
   };
+  console.log(tree);
 
   return (
     <div>
       <h1>Nested Checkbox</h1>
       {tree.children.map((child, index) => (
-        <Tree node={child} index={[index]} toggleChecked={toggleChecked} />
+        <Tree
+          node={child}
+          index={[index]}
+          isAncestorChecked={false}
+          toggleChecked={toggleChecked}
+        />
       ))}
     </div>
   );
@@ -74,21 +80,29 @@ function App() {
 function Tree({
   node,
   index,
+  isAncestorChecked,
   toggleChecked,
 }: {
   node: Node;
   index: number[];
+  isAncestorChecked: boolean;
   toggleChecked: (index: number[]) => void;
 }) {
+  const isChecked = node.isChecked || isAncestorChecked;
   return (
     <div>
       <div className="flex items-center gap-2">
-        <input type="checkbox" checked={node.isChecked} onChange={() => toggleChecked(index)} />
+        <input type="checkbox" checked={isChecked} onChange={() => toggleChecked(index)} />
         {node.label}
       </div>
       <div className="pl-4">
         {node.children.map((child, i) => (
-          <Tree node={child} index={[...index, i]} toggleChecked={toggleChecked} />
+          <Tree
+            node={child}
+            index={[...index, i]}
+            isAncestorChecked={isChecked}
+            toggleChecked={toggleChecked}
+          />
         ))}
       </div>
     </div>
