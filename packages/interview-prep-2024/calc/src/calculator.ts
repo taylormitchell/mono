@@ -100,7 +100,7 @@ export function update(state: State, action: Action): State {
       } else {
         return {
           ...state,
-          first: state.first + ".0",
+          first: state.first + ".",
         };
       }
     } else if (state.type === "incomplete_expression") {
