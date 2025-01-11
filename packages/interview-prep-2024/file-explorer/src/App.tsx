@@ -21,6 +21,7 @@ type File = {
 type Directory = {
   type: "directory";
   name: string;
+  isOpen: boolean;
   children: (File | Directory)[];
 };
 
@@ -31,10 +32,12 @@ const files: Directory = {
     {
       type: "directory",
       name: "public",
+      isOpen: true,
       children: [
         {
           type: "directory",
           name: "images",
+          isOpen: true,
           children: [],
         },
         {
@@ -46,10 +49,12 @@ const files: Directory = {
     {
       type: "directory",
       name: "src",
+      isOpen: true,
       children: [
         {
           type: "directory",
           name: "components",
+          isOpen: true,
           children: [],
         },
         {
@@ -69,6 +74,7 @@ const files: Directory = {
     {
       type: "directory",
       name: "dist",
+      isOpen: true,
       children: [
         {
           type: "file",
