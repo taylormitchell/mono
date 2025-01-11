@@ -21,14 +21,14 @@ function App() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="flex flex-col gap-2 bg-white p-4 rounded-lg shadow-lg w-80">
         <div
-          className="bg-gray-100 p-4 rounded text-right text-2xl font-mono h-[60px] break-words overflow-y-auto"
+          className="bg-gray-100 rounded text-right text-2xl font-mono h-[60px] overflow-y-auto flex items-center justify-end"
           ref={(el) => {
             if (el) {
               el.scrollTop = el.scrollHeight;
             }
           }}
         >
-          {state_to_string(state)}
+          <div className="text-right break-words">{state_to_string(state)}</div>
         </div>
 
         <div className="grid grid-cols-4 gap-2">
