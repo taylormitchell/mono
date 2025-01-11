@@ -1,6 +1,4 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
 
 /**
@@ -25,6 +23,9 @@ type Directory = {
   children: (File | Directory)[];
 };
 
+type Node = File | Directory;
+
+// assume file paths are unique
 const files: Directory = {
   type: "directory",
   name: "root",
@@ -101,28 +102,91 @@ const files: Directory = {
   ],
 };
 
+//Create Directory and File components.  The directory only renders the children if it's open. It's toggled open on click
 function App() {
-  const [count, setCount] = useState(0);
+  const [fileTree, setFileTree] = useState(files);
+
+  const toggleDirectory = (path: string[]) => {
+    setFileTree((prevFiles) => {
+      const updateDirectory = (node: Node, remainingPath: string[]): Node => {
+        if (node.type === "file") {
+          return node;
+        }
+
+        if (remainingPath.length === 0) {
+          return {
+            ...node,
+            isOpen: !node.isOpen,
+          };
+        }
+
+        const [currentDir, ...rest] = remainingPath;
+
+        const targetChild = node.children.find((item: Node) => item.name === currentDir);
+
+        if (!targetChild) return node;
+
+        return {
+          ...node,
+          children: node.children.map((child: Node) =>
+            child.name === currentDir ? updateDirectory(child, rest) : child
+          ),
+        };
+      };
+
+      return updateDirectory(prevFiles, path.slice(1)) as Directory;
+    });
+  };
+
+  const File = ({ name }: { name: string }) => {
+    return <div className="pl-4">{name}</div>;
+  };
+
+  const Directory = ({
+    name,
+    isOpen,
+    children,
+    path,
+  }: {
+    name: string;
+    isOpen: boolean;
+    children: Node[];
+    path: string[];
+  }) => {
+    return (
+      <div>
+        <div className="cursor-pointer" onClick={() => toggleDirectory(path)}>
+          {isOpen ? "📂" : "📁"} {name}
+        </div>
+        {isOpen && children && (
+          <div className="pl-4">
+            {children.map((item, i) => (
+              <FileTreeItem key={i} node={item} path={[...path, item.name]} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const FileTreeItem = ({ node, path }: { node: Node; path: string[] }) => {
+    if (node.type === "file") {
+      return <File name={node.name} />;
+    }
+    return (
+      <Directory
+        name={node.name}
+        isOpen={node.isOpen}
+        children={node.children}
+        path={[...path, node.name]}
+      />
+    );
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-    </>
+    <div className="text-left">
+      <FileTreeItem node={fileTree} path={[fileTree.name]} />
+    </div>
   );
 }
 
