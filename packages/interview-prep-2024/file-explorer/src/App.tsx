@@ -151,28 +151,69 @@ function App() {
 
   const deleteNode = (path: string[]) => {
     setFileTree((prevFiles) => {
-      const findAndDeleteNode = (node: Node, remainingPath: string[]): Node => {
-        if (remainingPath.length <= 1) {
-          return null;
-        }
-
+      const findAndDeleteNode = (node: Directory, remainingPath: string[]): Directory => {
         const newRemainingPath = remainingPath.slice(1);
-        const nextDir = newRemainingPath[0];
+        const nextNode = newRemainingPath[0];
 
-        const targetChild = node.children.find((item: Node) => item.name === nextDir);
-
-        if (!targetChild || targetChild.type !== "directory") {
-          console.warn(`${nextDir} is not a directory`);
-          return node;
+        // Remove the node at the end of the path
+        if (remainingPath.length <= 1) {
+          return {
+            ...node,
+            children: node.children.filter((child: Node) => child.name !== nextDir),
+          };
         }
 
         return {
           ...node,
-          children: node.children.filter((child: Node) => child !== targetChild),
+          children: node.children.map((child: Node) => {
+            if (child.name === nextNode) {
+              if (child.type === "directory") {
+                return findAndDeleteNode(child as Directory, newRemainingPath);
+              } else {
+                console.warn(`${nextNode} is not a directory`);
+                return child;
+              }
+            } else {
+              return child;
+            }
+          }),
         };
       };
-
       return findAndDeleteNode(prevFiles, path) as Directory;
+    });
+  };
+
+  const renameNode = (path: string[], newName: string) => {
+    setFileTree((prevFiles) => {
+      const findAndRenameNode = (node: Directory, remainingPath: string[]): Directory => {
+        const newRemainingPath = remainingPath.slice(1);
+        const nextNode = newRemainingPath[0];
+
+        if (remainingPath.length <= 1) {
+          if (node.name === nextNode) {
+            return {
+              ...node,
+              name: newName,
+            };
+          } else {
+            console.warn(`${nextNode} not found in ${node.name}`);
+            return node;
+          }
+        }
+
+        return {
+          ...node,
+          children: node.children.map((child: Node) => {
+            if (child.name == nextNode && child.type === "directory") {
+              return findAndRenameNode(child as Directory, newRemainingPath);
+            } else {
+              console.warn(`${nextNode} is not a directory`);
+              return child;
+            }
+          }),
+        };
+      };
+      return findAndRenameNode(prevFiles, path) as Directory;
     });
   };
 
