@@ -217,8 +217,61 @@ function App() {
     });
   };
 
-  const File = ({ name }: { name: string }) => {
-    return <div>📄 {name}</div>;
+  const addNode = (path: string[], newNode: Node) => {
+    setFileTree((prevFiles) => {
+      const findAndAddNode = (node: Directory, remainingPath: string[]): Directory => {
+        const newRemainingPath = remainingPath.slice(1);
+        const nextNode = newRemainingPath[0];
+
+        if (remainingPath.length <= 1) {
+          return {
+            ...node,
+            children: [...node.children, newNode],
+          };
+        }
+
+        return {
+          ...node,
+          children: node.children.map((child: Node) =>
+            child.name === nextNode ? findAndAddNode(child as Directory, newRemainingPath) : child
+          ),
+        };
+      };
+      return findAndAddNode(prevFiles, path) as Directory;
+    });
+  };
+
+  const File = ({ name, path }: { name: string; path: string[] }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+      <div
+        className="flex items-center group"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div>📄 {name}</div>
+        {isHovered && (
+          <div className="ml-2 invisible group-hover:visible">
+            <button
+              className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded mr-1"
+              onClick={() => {
+                const newName = prompt("Enter new name:", name);
+                if (newName) renameNode(path, newName);
+              }}
+            >
+              Rename
+            </button>
+            <button
+              className="px-2 py-1 text-sm bg-red-100 hover:bg-red-200 rounded"
+              onClick={() => deleteNode(path)}
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const Directory = ({
@@ -232,10 +285,61 @@ function App() {
     children: Node[];
     path: string[];
   }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
       <div>
-        <div className="cursor-pointer" onClick={() => toggleDirectory(path)}>
-          {isOpen ? "📂" : "📁"} {name}
+        <div
+          className="flex items-center group"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <div className="cursor-pointer" onClick={() => toggleDirectory(path)}>
+            {isOpen ? "📂" : "📁"} {name}
+          </div>
+          {isHovered && (
+            <div className="ml-2 invisible group-hover:visible">
+              <button
+                className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded mr-1"
+                onClick={() => {
+                  const newName = prompt("Enter new name:", name);
+                  if (newName) renameNode(path, newName);
+                }}
+              >
+                Rename
+              </button>
+              <button
+                className="px-2 py-1 text-sm bg-green-100 hover:bg-green-200 rounded mr-1"
+                onClick={() => {
+                  const newName = prompt("Enter new file name:");
+                  if (newName) addNode(path, { type: "file", name: newName });
+                }}
+              >
+                Add File
+              </button>
+              <button
+                className="px-2 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded mr-1"
+                onClick={() => {
+                  const newName = prompt("Enter new directory name:");
+                  if (newName)
+                    addNode(path, {
+                      type: "directory",
+                      name: newName,
+                      isOpen: true,
+                      children: [],
+                    });
+                }}
+              >
+                Add Dir
+              </button>
+              <button
+                className="px-2 py-1 text-sm bg-red-100 hover:bg-red-200 rounded"
+                onClick={() => deleteNode(path)}
+              >
+                Delete
+              </button>
+            </div>
+          )}
         </div>
         {isOpen && children && (
           <div className="pl-4">
@@ -250,7 +354,7 @@ function App() {
 
   const FileTreeItem = ({ node, path }: { node: Node; path: string[] }) => {
     if (node.type === "file") {
-      return <File name={node.name} />;
+      return <File name={node.name} path={path} />;
     }
     return <Directory name={node.name} isOpen={node.isOpen} children={node.children} path={path} />;
   };
