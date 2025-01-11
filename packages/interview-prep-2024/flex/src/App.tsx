@@ -29,10 +29,10 @@ function App() {
           <input className="bg-blue-200 min-w-32" type="submit" value="Subscribe" />
         </form>
       </div>
-      <div className="border flex w-96">
-        <div className="w-16 h-16 bg-blue-200 border grow" />
-        <div className="w-16 h-16 bg-blue-200 border" />
-        <div className="w-16 h-16 bg-blue-200 border" />
+      <div className="border flex w-48">
+        <div className="w-32 h-16 bg-blue-200 border" />
+        <div className="w-32 h-16 bg-blue-200 border" />
+        <div className="w-32 h-16 bg-blue-200 border" />
       </div>
     </div>
   );
