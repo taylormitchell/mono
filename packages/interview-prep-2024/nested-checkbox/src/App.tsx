@@ -7,11 +7,9 @@ type Node = {
   children: Node[];
 };
 
-type Tree = {
-  children: Node[];
-};
-
-const defaultTree: Tree = {
+const defaultTree: Node = {
+  label: "root",
+  isChecked: false,
   children: [
     {
       label: "p1",

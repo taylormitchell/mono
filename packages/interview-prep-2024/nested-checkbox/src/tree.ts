@@ -5,6 +5,45 @@ type Node = {
   children: Node[];
 };
 
+const defaultTree: Node = createTree({
+  label: "root",
+  isChecked: false,
+  children: [
+    {
+      label: "p1",
+      isChecked: false,
+      children: [
+        { isChecked: false, label: "p1-c1", children: [] },
+        {
+          isChecked: false,
+          label: "p1-c2",
+          children: [
+            { isChecked: false, label: "p1-c2-c1", children: [] },
+            { isChecked: false, label: "p1-c2-c2", children: [] },
+          ],
+        },
+      ],
+    },
+    {
+      isChecked: false,
+      label: "p2",
+      children: [
+        { isChecked: false, label: "p2-c1", children: [] },
+        { isChecked: false, label: "p2-c2", children: [] },
+      ],
+    },
+  ],
+});
+
+function createTree(node: Omit<Node, "parent">, parent: Node | null = null): Node {
+  const newNode: Node = {
+    ...node,
+    parent,
+    children: node.children.map((child) => createTree(child, newNode)),
+  };
+  return newNode;
+}
+
 function getNode(root: Node, index: number[], depth: number = 0): Node | null {
   // Handle root node case
   if (depth === 0) {
@@ -27,7 +66,7 @@ function getNode(root: Node, index: number[], depth: number = 0): Node | null {
   return getNode(child, index, depth + 1);
 }
 
-function toggle(root: Node, index: number[]): Node {
+export function toggle(root: Node, index: number[]): Node {
   const node = getNode(root, index);
   if (!node) return root;
 
