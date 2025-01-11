@@ -29,6 +29,7 @@ type Node = File | Directory;
 const files: Directory = {
   type: "directory",
   name: "root",
+  isOpen: true,
   children: [
     {
       type: "directory",
@@ -108,33 +109,38 @@ function App() {
 
   const toggleDirectory = (path: string[]) => {
     setFileTree((prevFiles) => {
-      const updateDirectory = (node: Node, remainingPath: string[]): Node => {
-        if (node.type === "file") {
+      const updateDirectory = (node: Directory, remainingPath: string[]): Node => {
+        if (remainingPath.length <= 1) {
+          if (remainingPath[0] === node.name) {
+            return {
+              ...node,
+              isOpen: !node.isOpen,
+            };
+          } else {
+            console.warn(`${remainingPath[0]} not found in ${node.name}`);
+            return node;
+          }
+        }
+
+        const newRemainingPath = remainingPath.slice(1);
+        const nextDir = remainingPath[0];
+
+        const targetChild = node.children.find((item: Node) => item.name === nextDir);
+
+        if (!targetChild || targetChild.type !== "directory") {
+          console.warn(`${nextDir} is not a directory`);
           return node;
         }
-
-        if (remainingPath.length === 0) {
-          return {
-            ...node,
-            isOpen: !node.isOpen,
-          };
-        }
-
-        const [currentDir, ...rest] = remainingPath;
-
-        const targetChild = node.children.find((item: Node) => item.name === currentDir);
-
-        if (!targetChild) return node;
 
         return {
           ...node,
           children: node.children.map((child: Node) =>
-            child.name === currentDir ? updateDirectory(child, rest) : child
+            child === targetChild ? updateDirectory(child, newRemainingPath) : child
           ),
         };
       };
 
-      return updateDirectory(prevFiles, path.slice(1)) as Directory;
+      return updateDirectory(prevFiles, path) as Directory;
     });
   };
 
@@ -161,7 +167,7 @@ function App() {
         {isOpen && children && (
           <div className="pl-4">
             {children.map((item, i) => (
-              <FileTreeItem key={i} node={item} path={path} />
+              <FileTreeItem key={i} node={item} path={[...path, item.name]} />
             ))}
           </div>
         )}
