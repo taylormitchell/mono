@@ -1,6 +1,4 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { useMemo, useState } from "react";
 import "./App.css";
 
 const options = [
@@ -24,33 +22,51 @@ const options = [
  *  - when you press escape
  * - the dropdown should be open:
  *  - when there are any options which start with the input value
+ * - the highlighted option should:
+ *  - be null by default
+ *  - be updated when you press down or up arrow
+ * 
+ * when the dropdown first opens, don't highlight the option under the mouse until
+ * the mouse has moved. 
+ 
  * 
  * 
  
  */
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [inputValue, setInputValue] = useState("");
+  const [highlightedOption, setHighlightedOption] = useState<string | null>(null);
+
+  const filteredOptions = useMemo(() => {
+    const loweredInputValue = inputValue.toLowerCase();
+    return options.filter((option) => option.toLowerCase().startsWith(loweredInputValue));
+  }, [inputValue]);
+  console.log(filteredOptions);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-    </>
+    <div>
+      <h1>Typeahead</h1>
+      <input
+        className="border border-gray-300 rounded-md p-2"
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+      />
+      {inputValue && (
+        <ul>
+          {filteredOptions.map((option) => (
+            <li
+              className={option === highlightedOption ? "highlighted" : ""}
+              key={option}
+              onClick={() => setHighlightedOption(option)}
+            >
+              {option}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
