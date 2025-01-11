@@ -41,10 +41,21 @@ function App() {
 
   useEffect(() => {
     const loweredInputValue = inputValue.toLowerCase();
+
+    // On empty input, clear the filtered options and highlighted option
+    if (loweredInputValue.length === 0) {
+      setFilteredOptions([]);
+      setHighlightedOption(null);
+      return;
+    }
+
+    // Filter the options based on the input value
     const filteredOptions = options.filter((option) =>
       option.toLowerCase().startsWith(loweredInputValue)
     );
+    setFilteredOptions(filteredOptions);
 
+    // Handle keyboard events
     function handleKeyDown(e: KeyboardEvent) {
       if (!filteredOptions.length) return;
       // todo handle modifier keys
@@ -63,11 +74,9 @@ function App() {
         });
       }
     }
-
-    setFilteredOptions(filteredOptions);
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [inputValue, filteredOptions]);
+  }, [inputValue]);
 
   return (
     <div>
@@ -82,9 +91,14 @@ function App() {
         <ul>
           {filteredOptions.map((option) => (
             <li
-              className={option === highlightedOption ? "highlighted" : ""}
+              className={option === highlightedOption ? "underline" : ""}
               key={option}
-              onClick={() => setHighlightedOption(option)}
+              onClick={() => {
+                setInputValue(option);
+              }}
+              onMouseEnter={() => {
+                setHighlightedOption(option);
+              }}
             >
               {option}
             </li>
