@@ -105,16 +105,26 @@ function checkAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[]
   });
 }
 
-function toggle2(root: Node, index: number[]): Node {
-  const node = getNode([root], index);
-  if (!node) return root;
-  function checkDescendants(node: Node): Node {
-    return {
-      ...node,
-      isChecked: true,
-      children: node.children.map((child) => checkDescendants(child)),
-    };
+function uncheckAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
+  let found = false;
+  const newNodes = nodes.map((node, i) => {
+    if (i === index[depth]) {
+      if (depth === index.length - 1) {
+        found = true;
+        return { ...node, isChecked: false };
+      } else {
+        return {
+          ...node,
+          isChecked: false,
+          children: uncheckAtIndex(node.children, index, depth + 1),
+        };
+      }
+    } else {
+      return node;
+    }
+  });
+  if (!found) {
+    return nodes;
   }
-  const [newRoot] = updateAtIndex([root], index, checkDescendants);
-  return newRoot;
+  return newNodes;
 }
