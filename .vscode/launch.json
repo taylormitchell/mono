@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "Launch Chrome against localhost",
       "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}/packages/interview-prep-2024/typeahead"
+      "webRoot": "${workspaceFolder}/packages/interview-prep-2024/file-explorer"
     },
     {
       "type": "bun",

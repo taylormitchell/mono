@@ -161,7 +161,7 @@ function App() {
         {isOpen && children && (
           <div className="pl-4">
             {children.map((item, i) => (
-              <FileTreeItem key={i} node={item} path={[...path, item.name]} />
+              <FileTreeItem key={i} node={item} path={path} />
             ))}
           </div>
         )}
@@ -173,14 +173,7 @@ function App() {
     if (node.type === "file") {
       return <File name={node.name} />;
     }
-    return (
-      <Directory
-        name={node.name}
-        isOpen={node.isOpen}
-        children={node.children}
-        path={[...path, node.name]}
-      />
-    );
+    return <Directory name={node.name} isOpen={node.isOpen} children={node.children} path={path} />;
   };
 
   return (
