@@ -1,19 +1,19 @@
-type File = {
+export type File = {
   type: "file";
   name: string;
 };
 
-type Directory = {
+export type Directory = {
   type: "directory";
   name: string;
   isOpen: boolean;
   children: (File | Directory)[];
 };
 
-type Node = File | Directory;
+export type Node = File | Directory;
 
 // assume file paths are unique
-const files: Directory = {
+export const mockFileTree: Directory = {
   type: "directory",
   name: "root",
   isOpen: true,
@@ -172,3 +172,115 @@ function addNode(fileTree: Directory, path: string[], newNode: Node): Directory 
     };
   });
 }
+
+// write some tests
+
+function test() {
+  // Test toggleDirectory
+  {
+    const testFiles: Directory = {
+      type: "directory",
+      name: "root",
+      isOpen: true,
+      children: [
+        {
+          type: "directory",
+          name: "dir1",
+          isOpen: false,
+          children: [],
+        },
+      ],
+    };
+
+    const result = toggleDirectory(testFiles, ["root", "dir1"]);
+    console.assert(result.children[0].isOpen === true, "toggleDirectory should toggle isOpen");
+  }
+
+  // Test deleteNode
+  {
+    const testFiles: Directory = {
+      type: "directory",
+      name: "root",
+      isOpen: true,
+      children: [
+        {
+          type: "file",
+          name: "file1",
+        },
+      ],
+    };
+
+    const result = deleteNode(testFiles, ["root", "file1"]);
+    console.assert(result.children.length === 0, "deleteNode should remove the node");
+  }
+
+  // Test renameNode
+  {
+    const testFiles: Directory = {
+      type: "directory",
+      name: "root",
+      isOpen: true,
+      children: [
+        {
+          type: "file",
+          name: "oldName",
+        },
+      ],
+    };
+
+    const result = renameNode(testFiles, ["root", "oldName"], "newName");
+    console.assert(result.children[0].name === "newName", "renameNode should update the name");
+  }
+
+  // Test addNode
+  {
+    const testFiles: Directory = {
+      type: "directory",
+      name: "root",
+      isOpen: true,
+      children: [],
+    };
+
+    const newFile: File = {
+      type: "file",
+      name: "newFile",
+    };
+
+    const result = addNode(testFiles, ["root"], newFile);
+    console.assert(result.children.length === 1, "addNode should add the new node");
+    console.assert(result.children[0].name === "newFile", "addNode should add the correct node");
+  }
+
+  // Test error cases
+  {
+    const testFiles: Directory = {
+      type: "directory",
+      name: "root",
+      isOpen: true,
+      children: [
+        {
+          type: "file",
+          name: "file1",
+        },
+      ],
+    };
+
+    // Try to add to a file instead of directory
+    try {
+      addNode(testFiles, ["root", "file1"], { type: "file", name: "newFile" });
+      console.assert(false, "addNode should throw when adding to a file");
+    } catch (e) {
+      console.assert(true, "addNode correctly threw error");
+    }
+
+    // Try to toggle a file
+    try {
+      toggleDirectory(testFiles, ["root", "file1"]);
+      console.assert(false, "toggleDirectory should throw when toggling a file");
+    } catch (e) {
+      console.assert(true, "toggleDirectory correctly threw error");
+    }
+  }
+}
+
+test();
