@@ -18,17 +18,29 @@ type Node = {
 //   });
 // }
 
-function getNode(nodes: Node[], index: number[], depth: number = 0): Node | null {
-  for (let i = 0; i < nodes.length; i++) {
-    if (i === index[depth]) {
-      if (depth === index.length - 1) {
-        return nodes[i];
-      } else {
-        return getNode(nodes[i].children, index, depth + 1);
+function getNode(root: Node, index: number[], depth: number = 0): Node | null {
+  const nextIndex = index[depth + 1];
+  if (nextIndex !== undefined) {
+    for (let i = 0; i < root.children.length; i++) {
+      if (i === nextIndex) {
+        if (depth + 1 === index.length - 1) {
+          return root.children[i];
+        } else {
+          return getNode(root.children[i], index, depth + 1);
+        }
       }
     }
   }
   return null;
+}
+
+function toggleAtIndex(root: Node, index: number[]): Node {
+  if (index.length === 0) return toggle(root);
+
+  const node = getNode(root, index);
+  if (!node) return root;
+
+  return toggle(node);
 }
 
 function toggle(node: Node): Node {
