@@ -43,7 +43,7 @@ function App() {
     <div>
       <h1>Nested Checkbox</h1>
       {tree.children.map((child, index) => (
-        <Tree key={index} node={child} index={[index]} toggleChecked={toggleChecked} />
+        <Tree key={index} node={child} index={[0, index]} toggleChecked={toggleChecked} />
       ))}
     </div>
   );

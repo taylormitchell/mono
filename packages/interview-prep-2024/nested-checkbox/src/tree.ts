@@ -13,15 +13,10 @@ export function createTree(node: NodeWithoutParent, parent: Node | null = null):
   return newNode;
 }
 
-function getNode(root: Node, index: number[], depth: number = 0): Node | null {
-  // Handle root node case
-  if (depth === 0) {
-    return index[0] === 0 ? root : null;
-  }
-
+function getNode(node: Node[], index: number[], depth: number = 0): Node | null {
   // Get current index for this depth level
   const currentIndex = index[depth];
-  const child = root.children[currentIndex];
+  const child = node[currentIndex];
 
   // If no child exists at this index, return null
   if (!child) return null;
@@ -32,11 +27,11 @@ function getNode(root: Node, index: number[], depth: number = 0): Node | null {
   }
 
   // Otherwise, continue searching deeper
-  return getNode(child, index, depth + 1);
+  return getNode(child.children, index, depth + 1);
 }
 
 export function toggle(root: Node, index: number[]): Node {
-  const node = getNode(root, index);
+  const node = getNode([root], index);
   if (!node) return root;
 
   if (node.isChecked) {
