@@ -18,7 +18,7 @@ function App() {
           }
         }}
       />
-      <div ref={containerRef} style={{ width: `${defaultWidth}px` }}>
+      <div className="p-4 border" ref={containerRef} style={{ width: `${defaultWidth}px` }}>
         <form>
           <input className="bg-gray-200" type="text" placeholder="Name" />
           <input className="bg-gray-200" type="email" placeholder="Email Address" />
