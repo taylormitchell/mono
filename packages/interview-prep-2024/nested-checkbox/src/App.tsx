@@ -36,10 +36,15 @@ function App() {
   const [tree, setTree] = useState(defaultTree);
   const toggleChecked = (node: Node, index: number[]) => {
     setTree((root) => {
-      if (node.isChecked) {
-        return uncheckAtIndex([root], index)[0];
-      } else {
-        return checkAtIndex([root], index)[0];
+      try {
+        if (node.isChecked) {
+          return uncheckAtIndex([root], index)[0];
+        } else {
+          return checkAtIndex([root], index)[0];
+        }
+      } catch (e) {
+        console.error(e);
+        return root;
       }
     });
   };
