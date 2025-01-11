@@ -34,6 +34,15 @@ const options = [
   "Nigeria",
   "South Africa",
   "Kenya",
+  "Caaaa",
+  "Cbbbb",
+  "Ccccc",
+  "Cdddd",
+  "Ceeee",
+  "Cffff",
+  "Cgggg",
+  "Chhhh",
+  "Ciiii",
 ];
 
 /**
@@ -102,9 +111,10 @@ function App() {
             const containerRect = container.getBoundingClientRect();
             const elementRect = element.getBoundingClientRect();
 
-            // Check if element is below the visible area
-            if (elementRect.bottom > containerRect.bottom) {
-              container.scrollTop += elementRect.bottom - containerRect.bottom;
+            const bottomThreshold = containerRect.bottom - containerRect.height * 0.1;
+
+            if (elementRect.bottom > bottomThreshold) {
+              container.scrollTop += container.scrollTop + containerRect.height / 2;
             }
           }
         });
@@ -114,6 +124,21 @@ function App() {
           const nextIndex =
             (filteredOptions.indexOf(prev) - 1 + filteredOptions.length) % filteredOptions.length;
           return filteredOptions[nextIndex];
+        });
+        requestAnimationFrame(() => {
+          if (highlightedElementRef.current && dropdownRef.current) {
+            const container = dropdownRef.current;
+            const element = highlightedElementRef.current;
+
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+
+            const topThreshold = containerRect.top + containerRect.height * 0.1;
+
+            if (elementRect.top < topThreshold) {
+              container.scrollTop -= containerRect.height / 2;
+            }
+          }
         });
       } else if (e.key === "Enter") {
         if (highlightedOptionRef.current) {
@@ -137,7 +162,7 @@ function App() {
         onChange={(e) => setInputValue(e.target.value)}
       />
       {inputValue && (
-        <div ref={dropdownRef} className="overflow-y-auto max-h-[90px]">
+        <div ref={dropdownRef} className="overflow-y-auto max-h-[150px]">
           <ul>
             {filteredOptions.map((option) => (
               <li
