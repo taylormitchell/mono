@@ -111,15 +111,17 @@ const files: Directory = {
 const updateFileTree = (
   fileTree: Directory,
   path: string[],
-  update: <T extends Node>(node: T) => T
-) => {
-  const updateNodeAtPath = <T extends Node>(node: T, remainingPath: string[]): T => {
+  update: <T extends Node>(node: T) => T | null
+): Directory => {
+  const updateNodeAtPath = <T extends Node>(node: T, remainingPath: string[]): T | null => {
     if (remainingPath.length === 0) {
-      throw new Error("updateFileTree: remainingPath is empty");
+      console.warn("updateFileTree: remainingPath is empty");
+      return node;
     }
     if (remainingPath.length == 1) {
       if (remainingPath[0] !== node.name) {
-        throw new Error(`No node found at ${remainingPath.join("/")}`);
+        console.warn(`No node found at ${remainingPath.join("/")}`);
+        return node;
       }
       return update(node);
     }
@@ -130,19 +132,58 @@ const updateFileTree = (
     }
     return {
       ...node,
-      children: node.children.map((child: Node) =>
-        child.name === nextDir ? updateNodeAtPath(child, newRemainingPath) : child
-      ),
+      children: node.children
+        .map((child: Node) =>
+          child.name === nextDir ? updateNodeAtPath(child, newRemainingPath) : child
+        )
+        .filter((child) => child !== null),
     };
   };
-  return updateNodeAtPath(fileTree, path);
+  const res = updateNodeAtPath(fileTree, path);
+  if (res === null) {
+    console.warn("Can't delete root directory");
+    return fileTree;
+  }
+  return res;
 };
 
-function toggleDirectory(fileTree: Directory, path: string[]) {
-  return updateFileTree(fileTree, path, (node) => ({
-    ...node,
-    isOpen: !node.isOpen,
-  }));
+function toggleDirectory(fileTree: Directory, path: string[]): Directory {
+  return updateFileTree(fileTree, path, (node) => {
+    if (node.type !== "directory") {
+      throw new Error(`No node found at ${path.join("/")}`);
+    }
+    return {
+      ...node,
+      isOpen: !node.isOpen,
+    };
+  });
+}
+
+function deleteNode(fileTree: Directory, path: string[]): Directory {
+  return updateFileTree(fileTree, path, () => {
+    return null;
+  });
+}
+
+function renameNode(fileTree: Directory, path: string[], newName: string): Directory {
+  return updateFileTree(fileTree, path, (node) => {
+    return {
+      ...node,
+      name: newName,
+    };
+  });
+}
+
+function addNode(fileTree: Directory, path: string[], newNode: Node): Directory {
+  return updateFileTree(fileTree, path, (node) => {
+    if (node.type !== "directory") {
+      throw new Error(`No node found at ${path.join("/")}`);
+    }
+    return {
+      ...node,
+      children: [...node.children, newNode],
+    };
+  });
 }
 
 //Create Directory and File components.  The directory only renders the children if it's open. It's toggled open on click
