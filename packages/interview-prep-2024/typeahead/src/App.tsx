@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 const options = [
@@ -37,12 +37,37 @@ const options = [
 function App() {
   const [inputValue, setInputValue] = useState("");
   const [highlightedOption, setHighlightedOption] = useState<string | null>(null);
+  const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
 
-  const filteredOptions = useMemo(() => {
+  useEffect(() => {
     const loweredInputValue = inputValue.toLowerCase();
-    return options.filter((option) => option.toLowerCase().startsWith(loweredInputValue));
-  }, [inputValue]);
-  console.log(filteredOptions);
+    const filteredOptions = options.filter((option) =>
+      option.toLowerCase().startsWith(loweredInputValue)
+    );
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!filteredOptions.length) return;
+      // todo handle modifier keys
+      if (e.key === "ArrowDown") {
+        setHighlightedOption((prev) => {
+          if (!prev) return filteredOptions[0];
+          const nextIndex = (filteredOptions.indexOf(prev) + 1) % filteredOptions.length;
+          return filteredOptions[nextIndex];
+        });
+      } else if (e.key === "ArrowUp") {
+        setHighlightedOption((prev) => {
+          if (!prev) return filteredOptions[filteredOptions.length - 1];
+          const nextIndex =
+            (filteredOptions.indexOf(prev) - 1 + filteredOptions.length) % filteredOptions.length;
+          return filteredOptions[nextIndex];
+        });
+      }
+    }
+
+    setFilteredOptions(filteredOptions);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [inputValue, filteredOptions]);
 
   return (
     <div>
