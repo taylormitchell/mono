@@ -80,8 +80,41 @@ function updateAtIndex(
   });
 }
 
+function checkDescendants(node: Node): Node {
+  return {
+    ...node,
+    isChecked: true,
+    children: node.children.map((child) => checkDescendants(child)),
+  };
+}
+
+function checkAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
+  return nodes.map((node, i) => {
+    if (i === index[depth]) {
+      if (depth === index.length - 1) {
+        return checkDescendants(node);
+      } else {
+        return {
+          ...node,
+          children: checkAtIndex(node.children, index, depth + 1),
+        };
+      }
+    } else {
+      return node;
+    }
+  });
+}
+
 function toggle2(root: Node, index: number[]): Node {
   const node = getNode([root], index);
   if (!node) return root;
-  return updateAtIndex([root], index, (node) => ({ ...node, isChecked: !node.isChecked }));
+  function checkDescendants(node: Node): Node {
+    return {
+      ...node,
+      isChecked: true,
+      children: node.children.map((child) => checkDescendants(child)),
+    };
+  }
+  const [newRoot] = updateAtIndex([root], index, checkDescendants);
+  return newRoot;
 }
