@@ -61,36 +61,38 @@ export function uncheckAncestors(nodes: Node[], index: number[], depth: number =
   return newNodes;
 }
 
-export function toggle(
-  nodes: Node[],
-  index: number[],
-  depth: number = 0
-): {
-  targetNode: Node | null;
-  newNodes: Node[];
-} {
-  let targetNode: Node | null = null;
-  const newNodes = nodes.map((node, i) => {
-    if (i === index[depth]) {
-      if (depth === index.length - 1) {
-        targetNode = node;
-        if (!node.isChecked) {
-          return checkAllDescendants(node);
-        } else {
-          return { ...node, isChecked: false };
-        }
-      } else {
-        return {
-          ...node,
-          children: checkDescendants(node.children, index, depth + 1),
-        };
-      }
-    } else {
-      return node;
-    }
-  });
-  return {
-    targetNode,
-    newNodes,
-  };
-}
+// Don't like this one. Harder to read.
+// export function toggle(
+//   nodes: Node[],
+//   index: number[],
+//   depth: number = 0
+// ): {
+//   op: "check" | "uncheck" | null;
+//   newNodes: Node[];
+// } {
+//   let op: "check" | "uncheck" | null = null;
+//   const newNodes = nodes.map((node, i) => {
+//     if (i === index[depth]) {
+//       if (depth === index.length - 1) {
+//         if (!node.isChecked) {
+//           op = "check";
+//           return checkAllDescendants(node);
+//         } else {
+//           op = "uncheck";
+//           return { ...node, isChecked: false };
+//         }
+//       } else {
+//         const res = toggle(node.children, index, depth + 1);
+//         op = op ?? res.op;
+//         return {
+//           ...node,
+//           isChecked: op === "check" ? true : op === "uncheck" ? false : node.isChecked,
+//           children: res.newNodes,
+//         };
+//       }
+//     } else {
+//       return node;
+//     }
+//   });
+//   return { op, newNodes };
+// }
