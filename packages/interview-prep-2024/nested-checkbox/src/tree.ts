@@ -5,45 +5,32 @@ type Node = {
   children: Node[];
 };
 
-// function findNode(nodes: Node[], index: number[], depth: number = 0): Node[] {
-//   return nodes.map((node, i) => {
-//     if (i === index[depth]) {
-//       if (depth === index.length - 1) {
-//         return { ...node, isChecked: !node.isChecked };
-//       } else {
-//         return { ...node, children: toggle(node.children, index, depth + 1) };
-//       }
-//     }
-//     return node;
-//   });
-// }
-
 function getNode(root: Node, index: number[], depth: number = 0): Node | null {
-  const nextIndex = index[depth + 1];
-  if (nextIndex !== undefined) {
-    for (let i = 0; i < root.children.length; i++) {
-      if (i === nextIndex) {
-        if (depth + 1 === index.length - 1) {
-          return root.children[i];
-        } else {
-          return getNode(root.children[i], index, depth + 1);
-        }
-      }
-    }
+  // Handle root node case
+  if (depth === 0) {
+    return index[0] === 0 ? root : null;
   }
-  return null;
+
+  // Get current index for this depth level
+  const currentIndex = index[depth];
+  const child = root.children[currentIndex];
+
+  // If no child exists at this index, return null
+  if (!child) return null;
+
+  // If we've reached the target depth, return the child
+  if (depth === index.length - 1) {
+    return child;
+  }
+
+  // Otherwise, continue searching deeper
+  return getNode(child, index, depth + 1);
 }
 
-function toggleAtIndex(root: Node, index: number[]): Node {
-  if (index.length === 0) return toggle(root);
-
+function toggle(root: Node, index: number[]): Node {
   const node = getNode(root, index);
   if (!node) return root;
 
-  return toggle(node);
-}
-
-function toggle(node: Node): Node {
   if (node.isChecked) {
     function uncheckAncestors(node: Node): Node {
       if (node.parent) {
