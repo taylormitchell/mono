@@ -57,3 +57,31 @@ export function toggle(root: Node, index: number[]): Node {
     return checkDescendants(node);
   }
 }
+
+function updateAtIndex(
+  nodes: Node[],
+  index: number[],
+  update: (node: Node) => Node,
+  depth: number = 0
+): Node[] {
+  return nodes.map((node, i) => {
+    if (i === index[depth]) {
+      if (depth === index.length - 1) {
+        return update(node);
+      } else {
+        return {
+          ...node,
+          children: updateAtIndex(node.children, index, update, depth + 1),
+        };
+      }
+    } else {
+      return node;
+    }
+  });
+}
+
+function toggle2(root: Node, index: number[]): Node {
+  const node = getNode([root], index);
+  if (!node) return root;
+  return updateAtIndex([root], index, (node) => ({ ...node, isChecked: !node.isChecked }));
+}
