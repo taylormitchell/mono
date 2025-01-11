@@ -24,9 +24,9 @@ function App() {
         style={{ width: `${defaultWidth}px` }}
       >
         <form className="flex flex-wrap flex-end">
-          <input className="bg-gray-200 min-w-32 is-24 grow" type="text" placeholder="Name" />
-          <input className="bg-gray-200 min-w-32 basis-32 grow-2" type="text" placeholder="Name" />
-          <input className="bg-blue-200 min-w-32 grow" type="submit" value="Subscribe" />
+          <input className="bg-gray-200 w-32" type="text" placeholder="Name" />
+          <input className="bg-gray-200 basis-16 w-32" type="text" placeholder="Name" />
+          <input className="bg-blue-200 min-w-32" type="submit" value="Subscribe" />
         </form>
       </div>
       <div className="border flex w-96">
