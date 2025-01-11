@@ -40,7 +40,12 @@ const files: Directory = {
           type: "directory",
           name: "images",
           isOpen: true,
-          children: [],
+          children: [
+            {
+              type: "file",
+              name: "image1.png",
+            },
+          ],
         },
         {
           type: "file",
@@ -123,7 +128,7 @@ function App() {
         }
 
         const newRemainingPath = remainingPath.slice(1);
-        const nextDir = remainingPath[0];
+        const nextDir = newRemainingPath[0];
 
         const targetChild = node.children.find((item: Node) => item.name === nextDir);
 
@@ -144,8 +149,35 @@ function App() {
     });
   };
 
+  const deleteNode = (path: string[]) => {
+    setFileTree((prevFiles) => {
+      const findAndDeleteNode = (node: Node, remainingPath: string[]): Node => {
+        if (remainingPath.length <= 1) {
+          return null;
+        }
+
+        const newRemainingPath = remainingPath.slice(1);
+        const nextDir = newRemainingPath[0];
+
+        const targetChild = node.children.find((item: Node) => item.name === nextDir);
+
+        if (!targetChild || targetChild.type !== "directory") {
+          console.warn(`${nextDir} is not a directory`);
+          return node;
+        }
+
+        return {
+          ...node,
+          children: node.children.filter((child: Node) => child !== targetChild),
+        };
+      };
+
+      return findAndDeleteNode(prevFiles, path) as Directory;
+    });
+  };
+
   const File = ({ name }: { name: string }) => {
-    return <div className="pl-4">{name}</div>;
+    return <div>📄 {name}</div>;
   };
 
   const Directory = ({
