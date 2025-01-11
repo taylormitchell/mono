@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
+
+function cn(...classes: string[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 const options = [
   "Canada",
@@ -11,6 +15,25 @@ const options = [
   "China",
   "Japan",
   "South Korea",
+  "France",
+  "Germany",
+  "Italy",
+  "Spain",
+  "Portugal",
+  "Greece",
+  "Brazil",
+  "Argentina",
+  "Chile",
+  "Peru",
+  "Colombia",
+  "Mexico",
+  "Cuba",
+  "Russia",
+  "Turkey",
+  "Egypt",
+  "Nigeria",
+  "South Africa",
+  "Kenya",
 ];
 
 /**
@@ -38,6 +61,7 @@ function App() {
   const [inputValue, setInputValue] = useState("");
   const [highlightedOption, setHighlightedOption] = useState<string | null>(null);
   const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loweredInputValue = inputValue.toLowerCase();
@@ -72,6 +96,10 @@ function App() {
             (filteredOptions.indexOf(prev) - 1 + filteredOptions.length) % filteredOptions.length;
           return filteredOptions[nextIndex];
         });
+      } else if (e.key === "Enter") {
+        if (highlightedOption) {
+          setInputValue(highlightedOption);
+        }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
@@ -82,28 +110,37 @@ function App() {
     <div>
       <h1>Typeahead</h1>
       <input
-        className="border border-gray-300 rounded-md p-2"
+        ref={inputRef}
+        className="border border-gray-300 rounded-md p-2 w-full"
         type="text"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
       />
       {inputValue && (
-        <ul>
-          {filteredOptions.map((option) => (
-            <li
-              className={option === highlightedOption ? "underline" : ""}
-              key={option}
-              onClick={() => {
-                setInputValue(option);
-              }}
-              onMouseEnter={() => {
-                setHighlightedOption(option);
-              }}
-            >
-              {option}
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-y-auto max-h-[90px]">
+          <ul>
+            {filteredOptions.map((option) => (
+              <li
+                className={cn(
+                  option === highlightedOption ? "bg-blue-500 text-white" : "",
+                  "h-[30px]"
+                )}
+                key={option}
+                onClick={() => {
+                  if (inputRef.current) {
+                    inputRef.current.focus();
+                  }
+                  setInputValue(option);
+                }}
+                onMouseEnter={() => {
+                  setHighlightedOption(option);
+                }}
+              >
+                {option}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
