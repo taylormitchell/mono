@@ -63,6 +63,8 @@ function App() {
   const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const highlightedOptionRef = useRef<string | null>(null);
+  highlightedOptionRef.current = highlightedOption;
   useEffect(() => {
     const loweredInputValue = inputValue.toLowerCase();
 
@@ -97,8 +99,9 @@ function App() {
           return filteredOptions[nextIndex];
         });
       } else if (e.key === "Enter") {
-        if (highlightedOption) {
-          setInputValue(highlightedOption);
+        if (highlightedOptionRef.current) {
+          setInputValue(highlightedOptionRef.current);
+          setHighlightedOption(null);
         }
       }
     }
