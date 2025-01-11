@@ -98,9 +98,13 @@ export const mockFileTree: Directory = {
 const updateFileTree = (
   fileTree: Directory,
   path: string[],
-  update: <T extends Node>(node: T) => T | null
+  update: <T extends Node>(node: T, parent: Node | null) => T | null
 ): Directory => {
-  const updateNodeAtPath = <T extends Node>(node: T, remainingPath: string[]): T | null => {
+  const updateNodeAtPath = <T extends Node>(
+    node: T,
+    remainingPath: string[],
+    parent: Node | null
+  ): T | null => {
     if (remainingPath.length === 0) {
       console.warn("updateFileTree: remainingPath is empty");
       return node;
@@ -110,7 +114,7 @@ const updateFileTree = (
         console.warn(`No node found at ${remainingPath.join("/")}`);
         return node;
       }
-      return update(node);
+      return update(node, parent);
     }
     const newRemainingPath = remainingPath.slice(1);
     const nextDir = newRemainingPath[0];
@@ -121,12 +125,12 @@ const updateFileTree = (
       ...node,
       children: node.children
         .map((child: Node) =>
-          child.name === nextDir ? updateNodeAtPath(child, newRemainingPath) : child
+          child.name === nextDir ? updateNodeAtPath(child, newRemainingPath, node) : child
         )
         .filter((child) => child !== null),
     };
   };
-  const res = updateNodeAtPath(fileTree, path);
+  const res = updateNodeAtPath(fileTree, path, null);
   if (res === null) {
     console.warn("Can't delete root directory");
     return fileTree;
@@ -134,7 +138,7 @@ const updateFileTree = (
   return res;
 };
 
-function toggleDirectory(fileTree: Directory, path: string[]): Directory {
+export function toggleDirectory(fileTree: Directory, path: string[]): Directory {
   return updateFileTree(fileTree, path, (node) => {
     if (node.type !== "directory") {
       throw new Error(`No node found at ${path.join("/")}`);
@@ -146,14 +150,21 @@ function toggleDirectory(fileTree: Directory, path: string[]): Directory {
   });
 }
 
-function deleteNode(fileTree: Directory, path: string[]): Directory {
+export function deleteNode(fileTree: Directory, path: string[]): Directory {
   return updateFileTree(fileTree, path, () => {
     return null;
   });
 }
 
-function renameNode(fileTree: Directory, path: string[], newName: string): Directory {
-  return updateFileTree(fileTree, path, (node) => {
+export function renameNode(fileTree: Directory, path: string[], newName: string): Directory {
+  return updateFileTree(fileTree, path, (node, parent) => {
+    if (parent && parent.type === "directory") {
+      for (const child of parent.children) {
+        if (child.name === newName) {
+          throw new Error(`Node with name ${newName} already exists`);
+        }
+      }
+    }
     return {
       ...node,
       name: newName,
@@ -161,10 +172,15 @@ function renameNode(fileTree: Directory, path: string[], newName: string): Direc
   });
 }
 
-function addNode(fileTree: Directory, path: string[], newNode: Node): Directory {
+export function addNode(fileTree: Directory, path: string[], newNode: Node): Directory {
   return updateFileTree(fileTree, path, (node) => {
     if (node.type !== "directory") {
       throw new Error(`No node found at ${path.join("/")}`);
+    }
+    for (const child of node.children) {
+      if (child.name === newNode.name) {
+        throw new Error(`Node with name ${newNode.name} already exists`);
+      }
     }
     return {
       ...node,

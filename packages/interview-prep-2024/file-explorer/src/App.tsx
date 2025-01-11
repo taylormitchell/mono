@@ -71,7 +71,7 @@ function App() {
                 className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded mr-1"
                 onClick={() => {
                   const newName = prompt("Enter new name:", name);
-                  if (newName) renameNode(path, newName);
+                  if (newName) setFileTree(renameNode(fileTree, path, newName));
                 }}
               >
                 Rename
@@ -80,7 +80,8 @@ function App() {
                 className="px-2 py-1 text-sm bg-green-100 hover:bg-green-200 rounded mr-1"
                 onClick={() => {
                   const newName = prompt("Enter new file name:");
-                  if (newName) addNode(path, { type: "file", name: newName });
+                  if (newName)
+                    setFileTree(addNode(fileTree, path, { type: "file", name: newName }));
                 }}
               >
                 Add File
@@ -90,12 +91,14 @@ function App() {
                 onClick={() => {
                   const newName = prompt("Enter new directory name:");
                   if (newName)
-                    addNode(path, {
-                      type: "directory",
-                      name: newName,
-                      isOpen: true,
-                      children: [],
-                    });
+                    setFileTree(
+                      addNode(fileTree, path, {
+                        type: "directory",
+                        name: newName,
+                        isOpen: true,
+                        children: [],
+                      })
+                    );
                 }}
               >
                 Add Dir
