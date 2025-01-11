@@ -108,13 +108,50 @@ const files: Directory = {
   ],
 };
 
+const updateFileTree = (
+  fileTree: Directory,
+  path: string[],
+  update: <T extends Node>(node: T) => T
+) => {
+  const updateNodeAtPath = <T extends Node>(node: T, remainingPath: string[]): T => {
+    if (remainingPath.length === 0) {
+      throw new Error("updateFileTree: remainingPath is empty");
+    }
+    if (remainingPath.length == 1) {
+      if (remainingPath[0] !== node.name) {
+        throw new Error(`No node found at ${remainingPath.join("/")}`);
+      }
+      return update(node);
+    }
+    const newRemainingPath = remainingPath.slice(1);
+    const nextDir = newRemainingPath[0];
+    if (node.type !== "directory") {
+      throw new Error(`No node found at ${remainingPath.join("/")}`);
+    }
+    return {
+      ...node,
+      children: node.children.map((child: Node) =>
+        child.name === nextDir ? updateNodeAtPath(child, newRemainingPath) : child
+      ),
+    };
+  };
+  return updateNodeAtPath(fileTree, path);
+};
+
+function toggleDirectory(fileTree: Directory, path: string[]) {
+  return updateFileTree(fileTree, path, (node) => ({
+    ...node,
+    isOpen: !node.isOpen,
+  }));
+}
+
 //Create Directory and File components.  The directory only renders the children if it's open. It's toggled open on click
 function App() {
   const [fileTree, setFileTree] = useState(files);
 
-  const updateFileTree = (path: string[], update: (node: Node) => Node) => {
+  const updateFileTree = (path: string[], update: <T extends Node>(node: T) => T) => {
     setFileTree((prevFiles) => {
-      const updateDirectory = (node: Directory, remainingPath: string[]): Directory => {
+      const updateNodeAtPath = <T extends Node>(node: T, remainingPath: string[]): T => {
         if (remainingPath.length === 0) {
           throw new Error("updateFileTree: remainingPath is empty");
         }
@@ -122,14 +159,21 @@ function App() {
           if (remainingPath[0] !== node.name) {
             throw new Error(`No node found at ${remainingPath.join("/")}`);
           }
-          return {
-            ...node,
-            children: node.children.map((child: Node) =>
-              child === targetChild ? update(child) : child
-            ),
-          };
+          return update(node);
         }
+        const newRemainingPath = remainingPath.slice(1);
+        const nextDir = newRemainingPath[0];
+        if (node.type !== "directory") {
+          throw new Error(`No node found at ${remainingPath.join("/")}`);
+        }
+        return {
+          ...node,
+          children: node.children.map((child: Node) =>
+            child.name === nextDir ? updateNodeAtPath(child, newRemainingPath) : child
+          ),
+        };
       };
+      return updateNodeAtPath(prevFiles, path);
     });
   };
 
