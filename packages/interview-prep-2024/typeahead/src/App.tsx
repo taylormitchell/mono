@@ -1,10 +1,36 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+import "./App.css";
+
+const options = [
+  "Canada",
+  "United States",
+  "United Kingdom",
+  "Australia",
+  "New Zealand",
+  "India",
+  "China",
+  "Japan",
+  "South Korea",
+];
+
+/**
+ * there's a input field and a dropdown
+ * - when you type in the input field, the dropdown should filter the options
+ * - the dropdown should be closed:
+ *  - when you click outside of it
+ *  - when you click on an option
+ *  - when you press escape
+ * - the dropdown should be open:
+ *  - when there are any options which start with the input value
+ * 
+ * 
+ 
+ */
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <>
@@ -18,18 +44,14 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

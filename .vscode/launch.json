@@ -9,8 +9,7 @@
       "request": "launch",
       "name": "Launch Chrome against localhost",
       "url": "http://localhost:5173",
-      // "webRoot": "${workspaceFolder}/packages/interview-prep-2024/nested-checkbox"
-      "webRoot": "${fileDirname}"
+      "webRoot": "${workspaceFolder}/packages/interview-prep-2024/typeahead"
     },
     {
       "type": "bun",
