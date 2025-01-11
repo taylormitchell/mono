@@ -105,7 +105,11 @@ export function checkAtIndex(nodes: Node[], index: number[], depth: number = 0):
   });
 }
 
-export function uncheckAtIndex(nodes: Node[], index: number[], depth: number = 0): Node[] {
+function _uncheckAtIndex(
+  nodes: Node[],
+  index: number[],
+  depth: number = 0
+): { newNodes: Node[]; found: boolean } {
   let found = false;
   const newNodes = nodes.map((node, i) => {
     if (i === index[depth]) {
@@ -113,10 +117,12 @@ export function uncheckAtIndex(nodes: Node[], index: number[], depth: number = 0
         found = true;
         return { ...node, isChecked: false };
       } else {
+        const res = _uncheckAtIndex(node.children, index, depth + 1);
+        found = found || res.found;
         return {
           ...node,
           isChecked: false,
-          children: uncheckAtIndex(node.children, index, depth + 1),
+          children: res.newNodes,
         };
       }
     } else {
@@ -124,7 +130,12 @@ export function uncheckAtIndex(nodes: Node[], index: number[], depth: number = 0
     }
   });
   if (!found) {
-    return nodes;
+    return { newNodes: nodes, found: false };
   }
-  return newNodes;
+  return { newNodes, found };
+}
+
+export function uncheckAtIndex(nodes: Node[], index: number[]): Node[] {
+  const res = _uncheckAtIndex(nodes, index);
+  return res.newNodes;
 }
