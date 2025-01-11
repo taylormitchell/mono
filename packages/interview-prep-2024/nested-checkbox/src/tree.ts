@@ -60,3 +60,37 @@ export function uncheckAncestors(nodes: Node[], index: number[], depth: number =
   });
   return newNodes;
 }
+
+export function toggle(
+  nodes: Node[],
+  index: number[],
+  depth: number = 0
+): {
+  targetNode: Node | null;
+  newNodes: Node[];
+} {
+  let targetNode: Node | null = null;
+  const newNodes = nodes.map((node, i) => {
+    if (i === index[depth]) {
+      if (depth === index.length - 1) {
+        targetNode = node;
+        if (!node.isChecked) {
+          return checkAllDescendants(node);
+        } else {
+          return { ...node, isChecked: false };
+        }
+      } else {
+        return {
+          ...node,
+          children: checkDescendants(node.children, index, depth + 1),
+        };
+      }
+    } else {
+      return node;
+    }
+  });
+  return {
+    targetNode,
+    newNodes,
+  };
+}
