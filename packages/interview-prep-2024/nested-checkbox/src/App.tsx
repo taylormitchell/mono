@@ -43,7 +43,7 @@ function App() {
     <div>
       <h1>Nested Checkbox</h1>
       {tree.children.map((child, index) => (
-        <Tree node={child} index={[index]} toggleChecked={toggleChecked} />
+        <Tree key={index} node={child} index={[index]} toggleChecked={toggleChecked} />
       ))}
     </div>
   );
@@ -66,7 +66,7 @@ function Tree({
       </div>
       <div className="pl-4">
         {node.children.map((child, i) => (
-          <Tree node={child} index={[...index, i]} toggleChecked={toggleChecked} />
+          <Tree key={i} node={child} index={[...index, i]} toggleChecked={toggleChecked} />
         ))}
       </div>
     </div>
