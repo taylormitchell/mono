@@ -27,11 +27,38 @@ function gsync() {
   git push
 }
 
-# Add autocomplete for npm scripts
-npm completion >> ~/.zshrc
+# Create vite app with tailwind set up
+my-create-vite() {
+    local app_name=${1:-.}
+    npm create vite@latest $app_name -- \
+        --template react-ts && \
+    cd $app_name && \
+    npm install -D tailwindcss postcss autoprefixer && \
+    npx tailwindcss init -p && \
+    echo 'module.exports = {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}' > tailwind.config.js && \
+    echo '@tailwind base;
+@tailwind components;
+@tailwind utilities;' > src/index.css
+}
+
+# Create and open
+o() {
+  touch $1
+  open $1
+}
 
 # taylor's tech
 alias t="bun /Users/taylormitchell/Code/home/packages/todo-cli/cli.ts"
 alias n="bun /Users/taylormitchell/Code/home/packages/note-cli/cli.ts"
 alias x="clear"
 export home="/Users/taylormitchell/Code/home"
+export notes="/Users/taylormitchell/Code/home/notes"
+
+
+
