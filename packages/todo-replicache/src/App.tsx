@@ -3,6 +3,7 @@ import { Replicache, WriteTransaction } from "replicache";
 import { useSubscribe } from "replicache-react";
 import { nanoid } from "nanoid";
 import "./App.css";
+import { FrontendMutators, Todo } from "./models";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 if (!apiUrl) {
@@ -18,17 +19,9 @@ const pullUrl = `${apiUrl}/api/db/pull`;
 const resetUrl = `${apiUrl}/api/db/reset`;
 
 // Types for our Todo app
-type Todo = {
-  content: string;
-  dueDate?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type TodoWithID = Todo & { id: string };
 
 const mutators = {
-  async createTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
+  async createTodo(tx: WriteTransaction, { id, content, dueDate }) {
     await tx.set(`todo/${id}`, {
       id,
       content,
@@ -37,7 +30,7 @@ const mutators = {
       updatedAt: new Date().toISOString(),
     });
   },
-  async updateTodo(tx: WriteTransaction, { id, content, dueDate }: TodoWithID) {
+  async updateTodo(tx: WriteTransaction, { id, content, dueDate }) {
     const todo = await tx.get(`todo/${id}`);
     if (todo) {
       await tx.set(`todo/${id}`, {
@@ -48,7 +41,7 @@ const mutators = {
       });
     }
   },
-};
+} satisfies FrontendMutators;
 
 function createReplicache() {
   return new Replicache({
@@ -95,6 +88,8 @@ function App() {
       dueDate: dueDateRef.current?.value,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
+      status: "active",
     });
 
     contentRef.current.value = "";
@@ -104,7 +99,7 @@ function App() {
 
   const toggleStatus = async (id: string, currentStatus: "active" | "completed") => {
     if (!rep) return;
-    await rep.mutate.updateTodoStatus({
+    await rep.mutate.updateTodo({
       id,
       status: currentStatus === "active" ? "completed" : "active",
     });
