@@ -4,7 +4,8 @@ import { generate } from "@rocicorp/rails";
 import { useSubscribe } from "replicache-react";
 import { nanoid } from "nanoid";
 import "./App.css";
-import { FrontendMutators, Todo, todoSchema } from "./models";
+import { FrontendMutators, MutationSchema, Todo, todoSchema } from "./models";
+import { z } from "zod";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 if (!apiUrl) {
@@ -50,8 +51,40 @@ const mutators = {
 } satisfies FrontendMutators;
 
 
+type Mutation = z.infer<typeof MutationSchema>;
 
-function createReplicache() {
+type MutationNames = Mutation["name"];
+
+type Action<T extends Mutation> = (args: T["args"]) => Promise<void>;
+
+/**
+ * Used to define the mutators for the frontend.
+ *
+ * @example
+ * const mutators: FrontendMutators = {
+ *   createTodo: async (tx: WriteTransaction, { id, content }) => {
+ *     await tx.set(`todo/${id}`, { id, content });
+ *   },
+ * };
+ */
+export type Actions = Partial<{
+  [K in MutationNames]: Action<Extract<Mutation, { name: K }>>;
+}>;
+
+
+const actions = {
+  async createTodo({ id, content, dueDate }) {
+    const do = async () => {
+      await rep.mutate.createTodo({ id, content, dueDate });
+    };
+    const undo = async () => {
+      await rep.mutate.deleteTodo(id);
+    };
+    undoManager.add({ do, undo });
+  },
+};
+
+function createStore() {
   const undoManager = new UndoManager();
   const rep =  new Replicache({
     name: "todo-user-id",
