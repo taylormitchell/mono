@@ -4,14 +4,16 @@ import {
   setLastMutationID,
   setServerVersion,
   getDb,
+  getLastMutationIDChanges,
 } from "./db";
+import { gt } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 
 import { z } from "zod";
 import { Mutation, mutationSchema } from "../../../shared/types";
 import { todoTable } from "./db/schema";
-import { PushRequestV1, PullRequestV1 } from "replicache";
+import { PushRequestV1, PullRequestV1, PatchOperation } from "replicache";
 
 const serverId = 0;
 
@@ -73,36 +75,39 @@ export async function handlePull(req: Request, res: Response) {
         );
       }
 
-      const lastMutationID = await getLastMutationID(tr, pull.clientGroupID);
+      const lastMutationIDChanges = await getLastMutationIDChanges(tr, pull.clientGroupID);
 
-      // Get changed todos since requested version
-      const changed = await db.all(
-        `SELECT * FROM todo 
-         WHERE version > ? `,
-        pull.cookie ?? 0
-      );
+      // Get changed domain objects since requested version
+      const changedTodos = await tr
+        .select()
+        .from(todoTable)
+        .where(gt(todoTable.version, pull.cookie))
 
       // Build patch operations
-      const patch = changed.map((row) => ({
-        op: row.deleted ? "del" : "put",
-        key: `todo/${row.id}`,
-        value: row.deleted
-          ? undefined
-          : {
-              id: row.id,
-              content: row.content,
-              due_date: row.due_date,
-            },
-      }));
+      const patch: PatchOperation[] = [];
+      for (const todo of changedTodos) {
+        patch.push({
+          op: 'put',
+          key: `todo/${todo.id}`,
+          value: {
+            id: todo.id,
+            content: todo.content,
+            dueDate: todo.dueDate,
+            createdAt: todo.createdAt,
+            updatedAt: todo.updatedAt,
+            labels: todo.labels
+          }
+        });
+      }
 
-      return {
-        lastMutationIDChanges: {
-          [pull.clientID]: lastMutationID,
-        },
-        cookie: currentVersion,
-        patch,
+      // Build and return response
+      const pullResponse: PullResponse = {
+        lastMutationIDChanges,
+        cookie: serverVersion,
+        patch
       };
-    });
+
+      return pullResponse;
 
     res.json(result);
   } catch (e) {
