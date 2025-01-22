@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { getDb, resetDb } from "./lib/db";
+import { getDb, resetDb } from "./lib/db/helpers";
 import { handlePush, handlePull } from "./lib/replicache";
 import { todoTable } from "./lib/db/schema";
 

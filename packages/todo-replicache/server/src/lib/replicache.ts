@@ -5,7 +5,7 @@ import {
   setServerVersion,
   getDb,
   getLastMutationIDChanges,
-} from "./db";
+} from "./db/helpers";
 import { gt } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
@@ -15,9 +15,7 @@ import { Mutation, mutationSchema, todoSchema } from "../../../shared/types";
 import { todoTable } from "./db/schema";
 import { PushRequestV1, PullRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 
-const serverId = 0;
-
-export const pushSchema = z.object({
+const pushSchema = z.object({
   pushVersion: z.literal(1),
   schemaVersion: z.string(),
   profileID: z.string(),
@@ -25,7 +23,7 @@ export const pushSchema = z.object({
   mutations: z.array(mutationSchema),
 });
 
-export const pullSchema = z.object({
+const pullSchema = z.object({
   pullVersion: z.literal(1),
   schemaVersion: z.string(),
   profileID: z.string(),

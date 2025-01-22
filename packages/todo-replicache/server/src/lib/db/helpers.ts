@@ -10,12 +10,8 @@ export async function getDb(): Promise<BunSQLiteDatabase> {
     if (!process.env.DB_FILE_NAME) {
       throw new Error("DB_FILE_NAME is not set");
     }
-    // Configure SQLite for serializable isolation
-    _db = drizzle(process.env.DB_FILE_NAME);
-
-    _db.run("PRAGMA journal_mode=WAL"); // Enable Write-Ahead Logging
-    _db.run("PRAGMA synchronous=NORMAL"); // Balance durability and performance
-    _db.run("PRAGMA read_uncommitted=0"); // Ensure serializable isolation
+    // _db = drizzle(process.env.DB_FILE_NAME);
+    _db = drizzle(":memory:");
 
     // Initialize server version in a transaction
     await _db.transaction(async (tx) => {
