@@ -42,6 +42,18 @@ export async function getLastMutationID(db: BunSQLiteDatabase, clientID: string)
   return result?.lastMutationID ?? 0;
 }
 
+export async function getLastMutationIDChanges(
+  db: BunSQLiteDatabase,
+  clientGroupID: string
+): Promise<Record<string, number>> {
+  const result = db
+    .select({ id: replicacheClientTable.id, lastMutationID: replicacheClientTable.lastMutationID })
+    .from(replicacheClientTable)
+    .where(eq(replicacheClientTable.clientGroupID, clientGroupID))
+    .all();
+  return Object.fromEntries(result.map((r) => [r.id, r.lastMutationID]));
+}
+
 export async function setLastMutationID(
   db: BunSQLiteDatabase,
   clientID: string,

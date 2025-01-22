@@ -1,5 +1,4 @@
 import {
-  withTransaction,
   getServerVersion,
   getLastMutationID,
   setLastMutationID,
@@ -63,9 +62,10 @@ export async function handlePush(req: Request, res: Response) {
 export async function handlePull(req: Request, res: Response) {
   try {
     const pull = pullSchema.parse(req.body) satisfies PullRequestV1;
-    const result = await withTransaction(async (db) => {
+    const db = await getDb();
+    const result = await db.transaction(async (tr) => {
       // Get current version
-      const serverVersion = (await getServerVersion()) ?? -1;
+      const serverVersion = await getServerVersion(tr);
 
       if (pull.cookie > serverVersion) {
         throw new Error(
@@ -73,7 +73,7 @@ export async function handlePull(req: Request, res: Response) {
         );
       }
 
-      const lastMutationID = await getLastMutationID(db, pull.clientID);
+      const lastMutationID = await getLastMutationID(tr, pull.clientGroupID);
 
       // Get changed todos since requested version
       const changed = await db.all(
@@ -115,7 +115,7 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
   const { clientID } = mutation;
 
   const prevVersion = await getServerVersion(db);
-  const nextVersion = (prevVersion ?? 0) + 1;
+  const nextVersion = prevVersion + 1;
 
   const lastMutationID = await getLastMutationID(db, clientID);
   const nextMutationID = lastMutationID + 1;
