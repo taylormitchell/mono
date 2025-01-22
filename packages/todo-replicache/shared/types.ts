@@ -8,7 +8,7 @@ export const todoSchema = z.object({
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),
   status: z.enum(["active", "completed"]).default("active"),
-  parentIds: z.array(z.string()).default([]), // defines the DAG of todos. see [note](@/notes/2025-01-16_07-42-08_-0500.md)
+  version: z.number().default(0),
 });
 
 export type Todo = z.infer<typeof todoSchema>;

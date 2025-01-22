@@ -11,9 +11,9 @@ import type { Request, Response } from "express";
 import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 
 import { z } from "zod";
-import { Mutation, mutationSchema } from "../../../shared/types";
+import { Mutation, mutationSchema, todoSchema } from "../../../shared/types";
 import { todoTable } from "./db/schema";
-import { PushRequestV1, PullRequestV1, PatchOperation } from "replicache";
+import { PushRequestV1, PullRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 
 const serverId = 0;
 
@@ -61,7 +61,7 @@ export async function handlePush(req: Request, res: Response) {
   }
 }
 
-export async function handlePull(req: Request, res: Response) {
+export async function handlePull(req: Request, res: Response): Promise<PullResponseV1> {
   try {
     const pull = pullSchema.parse(req.body) satisfies PullRequestV1;
     const db = await getDb();
@@ -81,34 +81,25 @@ export async function handlePull(req: Request, res: Response) {
       const changedTodos = await tr
         .select()
         .from(todoTable)
-        .where(gt(todoTable.version, pull.cookie))
+        .where(gt(todoTable.version, pull.cookie));
 
       // Build patch operations
       const patch: PatchOperation[] = [];
       for (const todo of changedTodos) {
         patch.push({
-          op: 'put',
+          op: "put",
           key: `todo/${todo.id}`,
-          value: {
-            id: todo.id,
-            content: todo.content,
-            dueDate: todo.dueDate,
-            createdAt: todo.createdAt,
-            updatedAt: todo.updatedAt,
-            labels: todo.labels
-          }
+          value: todoSchema.parse(todo),
         });
       }
 
       // Build and return response
-      const pullResponse: PullResponse = {
+      return {
         lastMutationIDChanges,
         cookie: serverVersion,
-        patch
+        patch,
       };
-
-      return pullResponse;
-
+    });
     res.json(result);
   } catch (e) {
     console.error(e);

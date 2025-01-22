@@ -11,7 +11,8 @@ export const todoTable = sqliteTable("todo", {
   dueDate: text("due_date"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
-  labels: text("labels").notNull().default(""),
+  deletedAt: text("deleted_at"),
+  status: text("status").notNull().default("active"),
   version: integer("version").notNull().default(0),
 });
 
