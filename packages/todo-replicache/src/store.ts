@@ -107,28 +107,31 @@ export function createStore() {
       },
     } satisfies FrontendMutators,
   });
-  const actions = {
-    createTodo: async (props) => {
+  return {
+    subscribe: rep.subscribe.bind(rep),
+    createTodo: async (props: Parameters<typeof rep.mutate.createTodo>[0]) => {
       const action = {
         do: () => rep.mutate.createTodo(props),
-        undo: () => rep.mutate.deleteTodo(props.id),
+        undo: () => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
       };
       await action.do();
       undoManager.add(action);
     },
-    deleteTodo: async (props) => {
+    deleteTodo: async (id: string) => {
       const action = {
-        do: () => rep.mutate.deleteTodo(props.id),
-        undo: () => rep.mutate.createTodo(props),
+        do: () => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
+        undo: () => rep.mutate.updateTodo({ id, deletedAt: null }),
       };
       await action.do();
       undoManager.add(action);
     },
-  } satisfies Actions;
-  return {
-    rep,
-    actions,
     undo: undoManager.undo,
     redo: undoManager.redo,
   };
 }
+
+const store = createStore();
+
+store.createTodo({ id: "1", content: "test", dueDate: "2025-01-01" });
+
+export default store;
