@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Replicache, WriteTransaction } from "replicache";
+import { generate } from "@rocicorp/rails";
 import { useSubscribe } from "replicache-react";
 import { nanoid } from "nanoid";
 import "./App.css";
-import { FrontendMutators, Todo } from "./models";
+import { FrontendMutators, Todo, todoSchema } from "./models";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 if (!apiUrl) {
@@ -18,22 +19,27 @@ const pushUrl = `${apiUrl}/api/db/push`;
 const pullUrl = `${apiUrl}/api/db/pull`;
 const resetUrl = `${apiUrl}/api/db/reset`;
 
+const todos = generate("todo", todoSchema.parse);
+
 // Types for our Todo app
 
 const mutators = {
   async createTodo(tx: WriteTransaction, { id, content, dueDate }) {
-    await tx.set(`todo/${id}`, {
+    return todos.set(tx, {
       id,
       content,
       dueDate,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
+      status: "active",
+      parentIds: [],
     });
   },
-  async updateTodo(tx: WriteTransaction, { id, content, dueDate }) {
-    const todo = await tx.get(`todo/${id}`);
+  async updateTodo(tx: WriteTransaction, { id, content = "", dueDate }) {
+    const todo = await todos.get(tx, id);
     if (todo) {
-      await tx.set(`todo/${id}`, {
+      await todos.set(tx, {
         ...todo,
         content,
         dueDate,
@@ -60,7 +66,7 @@ function App() {
     const r = createReplicache();
     setRep(r);
     return () => {
-      void r.close();
+      r.close();
     };
   }, []);
 

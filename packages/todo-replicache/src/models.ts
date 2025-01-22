@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { WriteTransaction } from "replicache";
 
-const todoSchema = z.object({
+export const todoSchema = z.object({
   id: z.string(),
   content: z.string(),
   dueDate: z.string().optional(),
