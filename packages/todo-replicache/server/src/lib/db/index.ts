@@ -5,17 +5,25 @@ import { sql, eq } from "drizzle-orm";
 let _db: BunSQLiteDatabase | null = null;
 
 export const serverID = 1;
-
 export async function getDb(): Promise<BunSQLiteDatabase> {
   if (!_db) {
     if (!process.env.DB_FILE_NAME) {
       throw new Error("DB_FILE_NAME is not set");
     }
+    // Configure SQLite for serializable isolation
     _db = drizzle(process.env.DB_FILE_NAME);
-    await _db
-      .insert(replicacheServerTable)
-      .values({ id: serverID, version: 0 })
-      .onConflictDoNothing();
+
+    _db.run("PRAGMA journal_mode=WAL"); // Enable Write-Ahead Logging
+    _db.run("PRAGMA synchronous=NORMAL"); // Balance durability and performance
+    _db.run("PRAGMA read_uncommitted=0"); // Ensure serializable isolation
+
+    // Initialize server version in a transaction
+    await _db.transaction(async (tx) => {
+      await tx
+        .insert(replicacheServerTable)
+        .values({ id: serverID, version: 0 })
+        .onConflictDoNothing();
+    });
   }
   return _db;
 }

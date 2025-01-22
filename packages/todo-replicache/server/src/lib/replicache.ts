@@ -25,13 +25,6 @@ export const pushSchema = z.object({
   mutations: z.array(mutationSchema),
 });
 
-const cookieSchema = z.union([
-  z.null(),
-  z.string(),
-  z.number(),
-  z.object({ order: z.union([z.number(), z.string()]) }),
-]);
-
 export const pullSchema = z.object({
   pullVersion: z.literal(1),
   schemaVersion: z.string(),
@@ -61,7 +54,7 @@ export async function handlePush(req: Request, res: Response) {
   }
 }
 
-export async function handlePull(req: Request, res: Response): Promise<PullResponseV1> {
+export async function handlePull(req: Request, res: Response) {
   try {
     const pull = pullSchema.parse(req.body) satisfies PullRequestV1;
     const db = await getDb();
@@ -100,7 +93,7 @@ export async function handlePull(req: Request, res: Response): Promise<PullRespo
         patch,
       };
     });
-    res.json(result);
+    res.json(result satisfies PullResponseV1);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
