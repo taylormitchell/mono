@@ -19,8 +19,8 @@ export type Mutators = Partial<{
 }>;
 
 type UndoableAction = {
-  do: () => Promise<void>;
-  undo: () => Promise<void>;
+  do: (rep: MyReplicache) => Promise<void>;
+  undo: (rep: MyReplicache) => Promise<void>;
 };
 
 export function createUndoManager() {
@@ -48,6 +48,26 @@ export function createUndoManager() {
     },
   };
 }
+
+export function createReplicache() {
+  const todos = generate("todo", todoSchema.parse);
+  return new Replicache({
+    name: "todo-user-id",
+    licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
+    // pushURL: env.VITE_REPLICACHE_PUSH_URL,
+    // pullURL: env.VITE_REPLICACHE_PULL_URL,
+    mutators: {
+      async createTodo(tx: WriteTransaction, props) {
+        return todos.set(tx, props);
+      },
+      async updateTodo(tx: WriteTransaction, props) {
+        return todos.update(tx, props);
+      },
+    } satisfies Mutators,
+  });
+}
+
+type MyReplicache = ReturnType<typeof createReplicache>;
 
 export function createStore() {
   const undoManager = createUndoManager();
@@ -106,5 +126,38 @@ export function createStore() {
     close: () => rep.close(),
   };
 }
+
+const undoManager = createUndoManager();
+
+const actions = {
+  createTodo: async (
+    rep: MyReplicache,
+    {
+      id = crypto.randomUUID(),
+      content = "",
+    }: {
+      id?: string;
+      content: string;
+      dueDate?: string;
+    }
+  ) => {
+    const action: UndoableAction = {
+      do: (rep) =>
+        rep.mutate.createTodo({
+          id,
+          content,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          deletedAt: null,
+          version: 0,
+        }),
+      undo: (rep) => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
+    };
+    await action.do(rep);
+    undoManager.add(action);
+  },
+  undo: (rep: MyReplicache) => undoManager.undo(rep),
+  redo: (rep: MyReplicache) => undoManager.redo(rep),
+};
 
 export type Store = ReturnType<typeof createStore>;
