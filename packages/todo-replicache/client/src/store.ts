@@ -68,6 +68,7 @@ export function createStore() {
     } satisfies Mutators,
   });
   return {
+    rep,
     subscribe: rep.subscribe.bind(rep),
     createTodo: async ({
       id = crypto.randomUUID(),
@@ -102,5 +103,8 @@ export function createStore() {
     },
     undo: undoManager.undo,
     redo: undoManager.redo,
+    close: () => rep.close(),
   };
 }
+
+export type Store = ReturnType<typeof createStore>;
