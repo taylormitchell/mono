@@ -49,14 +49,28 @@ const mutators = {
   },
 } satisfies FrontendMutators;
 
+
+
 function createReplicache() {
-  return new Replicache({
+  const undoManager = new UndoManager();
+  const rep =  new Replicache({
     name: "todo-user-id",
     licenseKey,
     pushURL: pushUrl,
     pullURL: pullUrl,
     mutators,
   });
+  return {
+    createTodo: async (todo: Todo) => {
+      const do = async () => {
+        await rep.mutate.createTodo(todo);
+      };
+      const undo = async () => {
+        await rep.mutate.deleteTodo(todo.id);
+      };
+      undoManager.add({ do, undo });
+    },
+  };
 }
 
 function App() {
@@ -92,10 +106,6 @@ function App() {
       id: nanoid(),
       content: contentRef.current.value,
       dueDate: dueDateRef.current?.value,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      deletedAt: null,
-      status: "active",
     });
 
     contentRef.current.value = "";
