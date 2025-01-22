@@ -8,10 +8,9 @@ export const replicacheServer = sqliteTable("replicache_server", {
 export const todo = sqliteTable("todo", {
   id: text("id").primaryKey(),
   content: text("content").notNull(),
-  dueDate: text("due_date"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
-  labels: text("labels").notNull().default(""),
+  deletedAt: text("deleted_at"),
   version: integer("version").notNull().default(0),
 });
 

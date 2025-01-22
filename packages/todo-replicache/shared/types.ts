@@ -3,11 +3,9 @@ import { z } from "zod";
 export const todoSchema = z.object({
   id: z.string(),
   content: z.string(),
-  dueDate: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),
-  status: z.enum(["active", "completed"]).default("active"),
   version: z.number().default(0),
 });
 

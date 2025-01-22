@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MutationSchema, todoSchema } from "./models";
+import { Mutation, todoSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache } from "replicache";
 
@@ -11,29 +11,10 @@ const envSchema = z.object({
 
 const env = envSchema.parse(import.meta.env);
 
-type Mutation = z.infer<typeof MutationSchema>;
-
+// Define mutator types
 type MutationNames = Mutation["name"];
-
 type MutatorFunction<T extends Mutation> = (tx: WriteTransaction, args: T["args"]) => Promise<void>;
-
-type Action<T extends Mutation> = (args: T["args"]) => Promise<void>;
-
-/**
- * Used to define the mutators for the frontend.
- *
- * @example
- * const mutators: FrontendMutators = {
- *   createTodo: async (tx: WriteTransaction, { id, content }) => {
- *     await tx.set(`todo/${id}`, { id, content });
- *   },
- * };
- */
-export type Actions = Partial<{
-  [K in MutationNames]: Action<Extract<Mutation, { name: K }>>;
-}>;
-
-export type FrontendMutators = Partial<{
+export type Mutators = Partial<{
   [K in MutationNames]: MutatorFunction<Extract<Mutation, { name: K }>>;
 }>;
 
@@ -84,10 +65,7 @@ export function createStore() {
       async updateTodo(tx: WriteTransaction, props) {
         return todos.update(tx, props);
       },
-      async deleteTodo(tx: WriteTransaction, props) {
-        return todos.update(tx, props);
-      },
-    } satisfies FrontendMutators,
+    } satisfies Mutators,
   });
   return {
     subscribe: rep.subscribe.bind(rep),
@@ -100,7 +78,15 @@ export function createStore() {
       dueDate?: string;
     }) => {
       const action = {
-        do: () => rep.mutate.createTodo({ id, content, dueDate }),
+        do: () =>
+          rep.mutate.createTodo({
+            id,
+            content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            deletedAt: null,
+            version: 0,
+          }),
         undo: () => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
       };
       await action.do();
@@ -118,9 +104,3 @@ export function createStore() {
     redo: undoManager.redo,
   };
 }
-
-const store = createStore();
-
-store.createTodo({ id: "1", content: "test", dueDate: "2025-01-01" });
-
-export default store;
