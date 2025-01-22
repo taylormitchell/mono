@@ -82,28 +82,14 @@ export function createStore() {
     pushURL: pushUrl,
     pullURL: pullUrl,
     mutators: {
-      async createTodo(tx: WriteTransaction, { id, content, dueDate }) {
-        return todos.set(tx, {
-          id,
-          content,
-          dueDate,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          deletedAt: null,
-          status: "active",
-          parentIds: [],
-        });
+      async createTodo(tx: WriteTransaction, props) {
+        return todos.set(tx, props);
       },
-      async updateTodo(tx: WriteTransaction, { id, content = "", dueDate }) {
-        const todo = await todos.get(tx, id);
-        if (todo) {
-          await todos.set(tx, {
-            ...todo,
-            content,
-            dueDate,
-            updatedAt: new Date().toISOString(),
-          });
-        }
+      async updateTodo(tx: WriteTransaction, props) {
+        return todos.update(tx, props);
+      },
+      async deleteTodo(tx: WriteTransaction, props) {
+        return todos.update(tx, props);
       },
     } satisfies FrontendMutators,
   });
