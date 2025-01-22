@@ -7,11 +7,13 @@ import { createStore, Store } from "./store";
 // Types for our Todo app
 
 function App() {
-  const [store, setStore] = useState<Store | null>(null);
+  const [{ isLoading, store }, setStore] = useState<
+    { isLoading: true; store: null } | { isLoading: false; store: Store }
+  >({ isLoading: true, store: null });
 
   useEffect(() => {
     const s = createStore();
-    setStore(s);
+    setStore({ isLoading: false, store: s });
     return () => {
       s.close();
     };
@@ -27,6 +29,7 @@ function App() {
     { default: [] }
   );
 
+  if (isLoading) return null;
   return (
     <div className="container">
       <h1>Todo App</h1>
@@ -41,7 +44,14 @@ function App() {
       <div className="todo-list">
         <button
           onClick={() => {
-            store?.createTodo();
+            console.log(store.rep.idbName);
+          }}
+        >
+          Clear
+        </button>
+        <button
+          onClick={() => {
+            store.createTodo({ content: "untitled" });
           }}
         >
           Create
@@ -50,11 +60,6 @@ function App() {
           .sort(([, { createdAt: a }], [, { createdAt: b }]) => a.localeCompare(b))
           .map(([id, todo]) => (
             <div key={id} className={`todo-item`}>
-              <input
-                type="checkbox"
-                checked={false}
-                // onChange={() => toggleStatus(id.replace("todo/", ""), "active")}
-              />
               <span className="content">{todo.content}</span>
               {/* {todo.dueDate && <span className="due-date">Due: {todo.dueDate}</span>} */}
               {/* {todo.dueDate && <span className="due-date">Due: {todo.dueDate}</span>} */}

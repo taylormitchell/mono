@@ -56,8 +56,8 @@ export function createStore() {
   const rep = new Replicache({
     name: "todo-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
-    pushURL: env.VITE_REPLICACHE_PUSH_URL,
-    pullURL: env.VITE_REPLICACHE_PULL_URL,
+    // pushURL: env.VITE_REPLICACHE_PUSH_URL,
+    // pullURL: env.VITE_REPLICACHE_PULL_URL,
     mutators: {
       async createTodo(tx: WriteTransaction, props) {
         return todos.set(tx, props);
