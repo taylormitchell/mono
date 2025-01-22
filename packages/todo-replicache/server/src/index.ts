@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { getDb, resetDb } from "./lib/db/helpers";
 import { handlePush, handlePull } from "./lib/replicache";
-import { todoTable } from "./lib/db/schema";
+import { replicacheClientTable, replicacheServerTable, todoTable } from "./lib/db/schema";
 
 const app = express();
 const port = process.env.PORT || 3077;
@@ -16,8 +16,11 @@ app.post("/pull", handlePull);
 
 app.get("/dump", async (req: Request, res: Response) => {
   const db = await getDb();
-  const todos = db.select().from(todoTable).all();
-  res.status(200).json(todos);
+  res.status(200).json({
+    todos: db.select().from(todoTable).all(),
+    replicacheServer: db.select().from(replicacheServerTable).all(),
+    replicacheClient: db.select().from(replicacheClientTable).all(),
+  });
 });
 
 app.use("/reset", async (req: Request, res: Response) => {

@@ -7,11 +7,10 @@ let _db: BunSQLiteDatabase | null = null;
 export const serverID = 1;
 export async function getDb(): Promise<BunSQLiteDatabase> {
   if (!_db) {
-    // if (!process.env.DB_FILE_NAME) {
-    //   throw new Error("DB_FILE_NAME is not set");
-    // }
-    // _db = drizzle(process.env.DB_FILE_NAME);
-    _db = drizzle(":memory:");
+    if (!process.env.DB_FILE_NAME) {
+      throw new Error("DB_FILE_NAME is not set");
+    }
+    _db = drizzle(process.env.DB_FILE_NAME);
 
     // Initialize server version in a transaction
     await _db.transaction(async (tx) => {

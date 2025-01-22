@@ -3,17 +3,13 @@ import { MutationSchema, todoSchema } from "./models";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache } from "replicache";
 
-const apiUrl = import.meta.env.VITE_API_URL;
-if (!apiUrl) {
-  throw new Error("VITE_API_URL is not set");
-}
-const licenseKey = import.meta.env.VITE_REPLICACHE_LICENSE_KEY;
-if (!licenseKey) {
-  throw new Error("VITE_REPLICACHE_LICENSE_KEY is not set");
-}
+const envSchema = z.object({
+  VITE_REPLICACHE_LICENSE_KEY: z.string(),
+  VITE_REPLICACHE_PUSH_URL: z.string(),
+  VITE_REPLICACHE_PULL_URL: z.string(),
+});
 
-const pushUrl = `${apiUrl}/api/db/push`;
-const pullUrl = `${apiUrl}/api/db/pull`;
+const env = envSchema.parse(import.meta.env);
 
 type Mutation = z.infer<typeof MutationSchema>;
 
@@ -78,9 +74,9 @@ export function createStore() {
   const todos = generate("todo", todoSchema.parse);
   const rep = new Replicache({
     name: "todo-user-id",
-    licenseKey,
-    pushURL: pushUrl,
-    pullURL: pullUrl,
+    licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
+    pushURL: env.VITE_REPLICACHE_PUSH_URL,
+    pullURL: env.VITE_REPLICACHE_PULL_URL,
     mutators: {
       async createTodo(tx: WriteTransaction, props) {
         return todos.set(tx, props);
@@ -95,9 +91,16 @@ export function createStore() {
   });
   return {
     subscribe: rep.subscribe.bind(rep),
-    createTodo: async (props: Parameters<typeof rep.mutate.createTodo>[0]) => {
+    createTodo: async ({
+      id = crypto.randomUUID(),
+      content = "",
+    }: {
+      id?: string;
+      content: string;
+      dueDate?: string;
+    }) => {
       const action = {
-        do: () => rep.mutate.createTodo(props),
+        do: () => rep.mutate.createTodo({ id, content, dueDate }),
         undo: () => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
       };
       await action.do();
