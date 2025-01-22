@@ -1,5 +1,11 @@
-import { Database } from "sqlite";
-import { withTransaction, serverID, getServerVersion } from "./db";
+import {
+  withTransaction,
+  getServerVersion,
+  getLastMutationID,
+  setLastMutationID,
+  setServerVersion,
+  getDb,
+} from "./db";
 import type { Request, Response } from "express";
 import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 
@@ -39,9 +45,10 @@ export async function handlePush(req: Request, res: Response) {
   console.log("Processing push", JSON.stringify(push));
 
   try {
+    const db = await getDb();
     for (const mutation of push.mutations) {
-      await withTransaction(async (db) => {
-        await processMutation(db, push.clientGroupID, mutation);
+      await db.transaction(async (tr) => {
+        return processMutation(tr, push.clientGroupID, mutation);
       });
     }
 
@@ -134,41 +141,7 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
   }
 
   await setLastMutationID(db, clientID, clientGroupID, nextMutationID, nextVersion);
-  await db.run("UPDATE replicache_server SET version = ? WHERE id = ?", nextVersion, serverID);
-}
-
-async function getLastMutationID(db: Database, clientID: string): Promise<number> {
-  const row = await db.get("SELECT last_mutation_id FROM replicache_client WHERE id = ?", clientID);
-  return row ? row.last_mutation_id : 0;
-}
-
-async function setLastMutationID(
-  db: Database,
-  clientID: string,
-  clientGroupID: string,
-  mutationID: number,
-  version: number
-) {
-  const result = await db.run(
-    `UPDATE replicache_client 
-     SET client_group_id = ?, last_mutation_id = ?, version = ?
-     WHERE id = ?`,
-    clientGroupID,
-    mutationID,
-    version,
-    clientID
-  );
-
-  if (result.changes === 0) {
-    await db.run(
-      `INSERT INTO replicache_client (id, client_group_id, last_mutation_id, version)
-       VALUES (?, ?, ?, ?)`,
-      clientID,
-      clientGroupID,
-      mutationID,
-      version
-    );
-  }
+  await setServerVersion(db, nextVersion);
 }
 
 async function sendPoke() {

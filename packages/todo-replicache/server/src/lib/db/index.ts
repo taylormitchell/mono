@@ -42,6 +42,32 @@ export async function getLastMutationID(db: BunSQLiteDatabase, clientID: string)
   return result?.lastMutationID ?? 0;
 }
 
+export async function setLastMutationID(
+  db: BunSQLiteDatabase,
+  clientID: string,
+  clientGroupID: string,
+  mutationID: number,
+  version: number
+) {
+  return await db
+    .insert(replicacheClientTable)
+    .values({ id: clientID, clientGroupID, lastMutationID: mutationID, version })
+    .onConflictDoUpdate({
+      target: [replicacheClientTable.id],
+      set: { clientGroupID, lastMutationID: mutationID, version },
+    });
+}
+
+export async function setServerVersion(db: BunSQLiteDatabase, version: number) {
+  return await db
+    .insert(replicacheServerTable)
+    .values({ id: serverID, version })
+    .onConflictDoUpdate({
+      target: [replicacheServerTable.id],
+      set: { version },
+    });
+}
+
 export async function summary() {
   const db = await getDb();
   const todoCount = db
@@ -54,17 +80,4 @@ export async function summary() {
     .where(eq(replicacheServerTable.id, serverID))
     .get()?.version;
   return { todoCount: todoCount?.count ?? 0, version };
-}
-
-export async function withTransaction<T>(cb: (db: BunSQLiteDatabase) => Promise<T>): Promise<T> {
-  const db = await getDb();
-  db.run(sql`BEGIN TRANSACTION`);
-  try {
-    const result = await cb(db);
-    db.run(sql`COMMIT`);
-    return result;
-  } catch (e) {
-    db.run(sql`ROLLBACK`);
-    throw e;
-  }
 }
