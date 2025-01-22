@@ -68,7 +68,7 @@ export function createStore() {
     } satisfies Mutators,
   });
   return {
-    rep,
+    _rep: rep,
     subscribe: rep.subscribe.bind(rep),
     createTodo: async ({
       id = crypto.randomUUID(),

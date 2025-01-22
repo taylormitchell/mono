@@ -20,7 +20,7 @@ function App() {
   }, []);
 
   const todos = useSubscribe(
-    store?.rep,
+    store?._rep,
     async (tx) => {
       const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
       console.log(list);
@@ -33,21 +33,14 @@ function App() {
   return (
     <div className="container">
       <h1>Todo App</h1>
-
-      {/* <form onSubmit={onSubmit} className="todo-form">
-        <input ref={contentRef} placeholder="What needs to be done?" required />
-        <input ref={dueDateRef} type="date" placeholder="Due date (optional)" />
-        <input ref={intervalRef} type="number" placeholder="Interval in days (optional)" />
-        <button type="submit">Add Todo</button>
-      </form> */}
-
       <div className="todo-list">
         <button
           onClick={() => {
-            console.log(store.rep.idbName);
+            indexedDB.deleteDatabase(store.rep.idbName);
+            window.location.reload();
           }}
         >
-          Clear
+          Reset
         </button>
         <button
           onClick={() => {
@@ -61,8 +54,6 @@ function App() {
           .map(([id, todo]) => (
             <div key={id} className={`todo-item`}>
               <span className="content">{todo.content}</span>
-              {/* {todo.dueDate && <span className="due-date">Due: {todo.dueDate}</span>} */}
-              {/* {todo.dueDate && <span className="due-date">Due: {todo.dueDate}</span>} */}
             </div>
           ))}
       </div>
