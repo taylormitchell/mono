@@ -20,8 +20,6 @@ const pushUrl = `${apiUrl}/api/db/push`;
 const pullUrl = `${apiUrl}/api/db/pull`;
 const resetUrl = `${apiUrl}/api/db/reset`;
 
-const todos = generate("todo", todoSchema.parse);
-
 // Types for our Todo app
 
 const mutators = {
@@ -50,10 +48,11 @@ const mutators = {
   },
 } satisfies FrontendMutators;
 
-
 type Mutation = z.infer<typeof MutationSchema>;
 
 type MutationNames = Mutation["name"];
+
+type MutatorFunction<T extends Mutation> = (tx: WriteTransaction, args: T["args"]) => Promise<void>;
 
 type Action<T extends Mutation> = (args: T["args"]) => Promise<void>;
 
@@ -71,38 +70,75 @@ export type Actions = Partial<{
   [K in MutationNames]: Action<Extract<Mutation, { name: K }>>;
 }>;
 
-
-const actions = {
-  async createTodo({ id, content, dueDate }) {
-    const do = async () => {
-      await rep.mutate.createTodo({ id, content, dueDate });
-    };
-    const undo = async () => {
-      await rep.mutate.deleteTodo(id);
-    };
-    undoManager.add({ do, undo });
-  },
-};
+export type FrontendMutators = Partial<{
+  [K in MutationNames]: MutatorFunction<Extract<Mutation, { name: K }>>;
+}>;
 
 function createStore() {
   const undoManager = new UndoManager();
-  const rep =  new Replicache({
+  const todos = generate("todo", todoSchema.parse);
+  const rep = new Replicache({
     name: "todo-user-id",
     licenseKey,
     pushURL: pushUrl,
     pullURL: pullUrl,
-    mutators,
+    mutators: {
+      async createTodo(tx: WriteTransaction, { id, content, dueDate }) {
+        return todos.set(tx, {
+          id,
+          content,
+          dueDate,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          deletedAt: null,
+          status: "active",
+          parentIds: [],
+        });
+      },
+      async updateTodo(tx: WriteTransaction, { id, content = "", dueDate }) {
+        const todo = await todos.get(tx, id);
+        if (todo) {
+          await todos.set(tx, {
+            ...todo,
+            content,
+            dueDate,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      },
+    } satisfies FrontendMutators,
   });
-  return {
-    createTodo: async (todo: Todo) => {
-      const do = async () => {
-        await rep.mutate.createTodo(todo);
+  const actions = {
+    createTodo: async (props) => {
+      const action = {
+        do: () => rep.mutate.createTodo(props),
+        undo: () => rep.mutate.deleteTodo(props.id),
       };
-      const undo = async () => {
-        await rep.mutate.deleteTodo(todo.id);
-      };
-      undoManager.add({ do, undo });
+      await action.do();
+      undoManager.add(action);
     },
+    deleteTodo: async (props) => {
+      const action = {
+        do: () => rep.mutate.deleteTodo(props.id),
+        undo: () => rep.mutate.createTodo(props),
+      };
+      await action.do();
+      undoManager.add(action);
+    },
+    someOtherAction: async (props) => {
+      const action = {
+        do: () => rep.mutate.someOtherAction(props),
+        undo: () => rep.mutate.someOtherAction(props),
+      };
+      await action.do();
+      undoManager.add(action);
+    },
+  } satisfies Actions;
+  return {
+    rep,
+    actions,
+    undo: undoManager.undo,
+    redo: undoManager.redo,
   };
 }
 
