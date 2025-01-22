@@ -105,13 +105,10 @@ export async function handlePull(req: Request, res: Response) {
 }
 
 async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mutation: Mutation) {
-  const { clientId } = mutation;
+  const { clientID } = mutation;
 
-  const { version: prevVersion } = await db.get(
-    "SELECT version FROM replicache_server WHERE id = ?",
-    serverId
-  );
-  const nextVersion = prevVersion + 1;
+  const prevVersion = await getServerVersion(db);
+  const nextVersion = (prevVersion ?? 0) + 1;
 
   const lastMutationID = await getLastMutationID(db, clientID);
   const nextMutationID = lastMutationID + 1;

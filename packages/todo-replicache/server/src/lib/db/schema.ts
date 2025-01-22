@@ -17,7 +17,7 @@ export const todoTable = sqliteTable("todo", {
 
 export const replicacheClientTable = sqliteTable("replicache_client", {
   id: text("id").primaryKey(),
-  clientGroupId: text("client_group_id").notNull(),
-  lastMutationId: integer("last_mutation_id").notNull(),
+  clientGroupID: text("client_group_id").notNull(),
+  lastMutationID: integer("last_mutation_id").notNull(),
   version: integer("version").notNull(),
 });

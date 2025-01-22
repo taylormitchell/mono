@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
-import { replicacheServerTable, todoTable } from "./schema";
+import { replicacheClientTable, replicacheServerTable, todoTable } from "./schema";
 import { sql, eq } from "drizzle-orm";
 let _db: BunSQLiteDatabase | null = null;
 
@@ -24,14 +24,22 @@ export async function resetDb() {
   _db = null;
 }
 
-export async function getServerVersion(): Promise<number | undefined> {
-  const db = await getDb();
+export async function getServerVersion(db: BunSQLiteDatabase): Promise<number> {
   const result = db
     .select({ version: replicacheServerTable.version })
     .from(replicacheServerTable)
     .where(eq(replicacheServerTable.id, serverID))
     .get();
-  return result?.version;
+  return result?.version ?? 0;
+}
+
+export async function getLastMutationID(db: BunSQLiteDatabase, clientID: string): Promise<number> {
+  const result = db
+    .select({ lastMutationID: replicacheClientTable.lastMutationID })
+    .from(replicacheClientTable)
+    .where(eq(replicacheClientTable.id, clientID))
+    .get();
+  return result?.lastMutationID ?? 0;
 }
 
 export async function summary() {
