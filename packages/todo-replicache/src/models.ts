@@ -1,6 +1,4 @@
-// Mutators
 import { z } from "zod";
-import { WriteTransaction } from "replicache";
 
 export const todoSchema = z.object({
   id: z.string(),
@@ -64,23 +62,3 @@ export const MutationSchema = z.union([
   createProjectMutationSchema,
   updateProjectMutationSchema,
 ]);
-
-type Mutation = z.infer<typeof MutationSchema>;
-
-type MutationNames = Mutation["name"];
-
-type MutatorFunction<T extends Mutation> = (tx: WriteTransaction, args: T["args"]) => Promise<void>;
-
-/**
- * Used to define the mutators for the frontend.
- *
- * @example
- * const mutators: FrontendMutators = {
- *   createTodo: async (tx: WriteTransaction, { id, content }) => {
- *     await tx.set(`todo/${id}`, { id, content });
- *   },
- * };
- */
-export type FrontendMutators = Partial<{
-  [K in MutationNames]: MutatorFunction<Extract<Mutation, { name: K }>>;
-}>;
