@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
-import { Todo } from "../../shared/types";
 import { createStore, Store } from "./store";
 
 // Types for our Todo app
@@ -22,14 +21,9 @@ function App() {
     };
   }, []);
 
-  const todos = useSubscribe(
-    store?.rep,
-    async (tx) => {
-      const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
-      return list.filter(([_, todo]) => todo.deletedAt === null);
-    },
-    { default: [] }
-  );
+  const todos = useSubscribe(store?.rep, async (tx) => (store ? store.todos.getAll(tx) : []), {
+    default: [],
+  });
 
   if (isLoading) return null;
   return (

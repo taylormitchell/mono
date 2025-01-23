@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Mutation, todoSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
-import { WriteTransaction, Replicache } from "replicache";
+import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
@@ -61,9 +61,9 @@ export function createUndoManager() {
   };
 }
 
-export function createReplicache() {
+export function createStore() {
   const todos = generate("todo", todoSchema.parse);
-  return new Replicache({
+  const rep = new Replicache({
     name: "todo-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
     // pushURL: env.VITE_REPLICACHE_PUSH_URL,
@@ -77,10 +77,6 @@ export function createReplicache() {
       },
     } satisfies Mutators,
   });
-}
-
-export function createStore() {
-  const rep = createReplicache();
   const undoManager = createUndoManager();
   return {
     rep,
@@ -116,6 +112,9 @@ export function createStore() {
         };
         await action.do();
         undoManager.add(action);
+      },
+      getAll: async (tx: ReadTransaction) => {
+        return (await todos.list(tx)).filter((todo) => todo.deletedAt === null);
       },
     },
     undo: undoManager.undo,
