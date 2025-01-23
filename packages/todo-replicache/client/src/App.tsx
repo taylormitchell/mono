@@ -27,8 +27,7 @@ function App() {
     store?.rep,
     async (tx) => {
       const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
-      console.log(list);
-      return list;
+      return list.filter(([_, todo]) => todo.deletedAt === null);
     },
     { default: [] }
   );
@@ -55,14 +54,14 @@ function App() {
         </button>
         <button
           onClick={() => {
-            store.undoManager.undo();
+            actions.undo(store);
           }}
         >
           Undo
         </button>
         <button
           onClick={() => {
-            store.undoManager.redo();
+            actions.redo(store);
           }}
         >
           Redo

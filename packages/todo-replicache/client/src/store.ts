@@ -32,17 +32,17 @@ export function createUndoManager() {
       undoStack.push(action);
       redoStack.length = 0;
     },
-    undo: async () => {
+    undo: async (rep: MyReplicache) => {
       const action = undoStack.pop();
       if (action) {
-        await action.undo();
+        await action.undo(rep);
         redoStack.push(action);
       }
     },
-    redo: async () => {
+    redo: async (rep: MyReplicache) => {
       const action = redoStack.pop();
       if (action) {
-        await action.do();
+        await action.do(rep);
         undoStack.push(action);
       }
     },
@@ -76,7 +76,7 @@ export type Store = {
 
 export const actions = {
   createTodo: async (
-    { rep, undoManager }: Store,
+    store: Store,
     {
       id = crypto.randomUUID(),
       content = "",
@@ -98,17 +98,17 @@ export const actions = {
         }),
       undo: (rep) => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
     };
-    await action.do();
-    undoManager.add(action);
+    await action.do(store.rep);
+    store.undoManager.add(action);
   },
-  deleteTodo: async ({ rep, undoManager }: Store, id: string) => {
-    const action = {
-      do: () => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
-      undo: () => rep.mutate.updateTodo({ id, deletedAt: null }),
+  deleteTodo: async (store: Store, id: string) => {
+    const action: UndoableAction = {
+      do: (rep) => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
+      undo: (rep) => rep.mutate.updateTodo({ id, deletedAt: null }),
     };
-    await action.do();
-    undoManager.add(action);
+    await action.do(store.rep);
+    store.undoManager.add(action);
   },
-  undo: async ({ undoManager }: Store) => undoManager.undo(),
-  redo: async ({ undoManager }: Store) => undoManager.redo(),
+  undo: async (store: Store) => store.undoManager.undo(store.rep),
+  redo: async (store: Store) => store.undoManager.redo(store.rep),
 };
