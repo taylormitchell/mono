@@ -46,21 +46,21 @@ function App() {
         </button>
         <button
           onClick={() => {
-            actions.createTodo(store, { content: "untitled" });
+            store.todos.create({ content: "untitled" });
           }}
         >
           Create
         </button>
         <button
           onClick={() => {
-            actions.undo(store);
+            store.undo();
           }}
         >
           Undo
         </button>
         <button
           onClick={() => {
-            actions.redo(store);
+            store.redo();
           }}
         >
           Redo
