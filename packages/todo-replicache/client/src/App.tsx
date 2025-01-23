@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
 import { Todo } from "../../shared/types";
-import { actions, createStore, Store } from "./store";
+import { createStore, Store } from "./store";
 
 // Types for our Todo app
 
@@ -18,7 +18,7 @@ function App() {
     const s = createStore();
     setStore({ isLoading: false, store: s });
     return () => {
-      s.rep.close();
+      s.destroy();
     };
   }, []);
 

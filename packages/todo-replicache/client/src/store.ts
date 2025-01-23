@@ -46,13 +46,17 @@ export function createUndoManager() {
     redo: async () => {
       const action = redoStack.pop();
       if (action) {
-        await action.do();
-        undoStack.push(action);
+        lastTask = lastTask.then(async () => {
+          await action.do();
+          undoStack.push(action);
+        });
+        return lastTask;
       }
     },
     destroy: () => {
       undoStack.length = 0;
       redoStack.length = 0;
+      lastTask = Promise.resolve();
     },
   };
 }
@@ -116,10 +120,11 @@ export function createStore() {
     },
     undo: undoManager.undo,
     redo: undoManager.redo,
-    destroy: () => {},
+    destroy: () => {
+      undoManager.destroy();
+      rep.close();
+    },
   };
 }
-
-type MyReplicache = ReturnType<typeof createReplicache>;
 
 export type Store = ReturnType<typeof createStore>;
