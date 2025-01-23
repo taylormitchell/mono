@@ -128,4 +128,44 @@ export function createStore() {
   };
 }
 
-export type Store = ReturnType<typeof createStore>;
+export type Store = {
+  rep: MyReplicache;
+  undoManager: ReturnType<typeof createUndoManager>;
+};
+
+export const actions = {
+  createTodo: async (
+    { rep, undoManager }: Store,
+    {
+      id = crypto.randomUUID(),
+      content = "",
+    }: {
+      id?: string;
+      content: string;
+      dueDate?: string;
+    }
+  ) => {
+    const action = {
+      do: () =>
+        rep.mutate.createTodo({
+          id,
+          content,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          deletedAt: null,
+          version: 0,
+        }),
+      undo: () => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
+    };
+    await action.do();
+    undoManager.add(action);
+  },
+  deleteTodo: async ({ rep, undoManager }: Store, id: string) => {
+    const action = {
+      do: () => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
+      undo: () => rep.mutate.updateTodo({ id, deletedAt: null }),
+    };
+    await action.do();
+    undoManager.add(action);
+  },
+};
