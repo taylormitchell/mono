@@ -15,12 +15,12 @@ function App() {
     const s = createStore();
     setStore({ isLoading: false, store: s });
     return () => {
-      s.close();
+      s.rep.close();
     };
   }, []);
 
   const todos = useSubscribe(
-    store?._rep,
+    store?.rep,
     async (tx) => {
       const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
       console.log(list);

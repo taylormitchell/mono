@@ -88,8 +88,7 @@ export function createStore() {
     } satisfies Mutators,
   });
   return {
-    _rep: rep,
-    subscribe: rep.subscribe.bind(rep),
+    rep,
     createTodo: async ({
       id = crypto.randomUUID(),
       content = "",
@@ -123,41 +122,7 @@ export function createStore() {
     },
     undo: undoManager.undo,
     redo: undoManager.redo,
-    close: () => rep.close(),
   };
 }
-
-const undoManager = createUndoManager();
-
-const actions = {
-  createTodo: async (
-    rep: MyReplicache,
-    {
-      id = crypto.randomUUID(),
-      content = "",
-    }: {
-      id?: string;
-      content: string;
-      dueDate?: string;
-    }
-  ) => {
-    const action: UndoableAction = {
-      do: (rep) =>
-        rep.mutate.createTodo({
-          id,
-          content,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          deletedAt: null,
-          version: 0,
-        }),
-      undo: (rep) => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
-    };
-    await action.do(rep);
-    undoManager.add(action);
-  },
-  undo: (rep: MyReplicache) => undoManager.undo(rep),
-  redo: (rep: MyReplicache) => undoManager.redo(rep),
-};
 
 export type Store = ReturnType<typeof createStore>;
