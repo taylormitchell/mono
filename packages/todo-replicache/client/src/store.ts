@@ -86,8 +86,8 @@ export const actions = {
       dueDate?: string;
     }
   ) => {
-    const action = {
-      do: () =>
+    const action: UndoableAction = {
+      do: (rep) =>
         rep.mutate.createTodo({
           id,
           content,
@@ -96,7 +96,7 @@ export const actions = {
           deletedAt: null,
           version: 0,
         }),
-      undo: () => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
+      undo: (rep) => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
     };
     await action.do();
     undoManager.add(action);
