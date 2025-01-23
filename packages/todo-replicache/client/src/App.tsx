@@ -9,7 +9,10 @@ import { createStore, Store } from "./store";
 function App() {
   const [{ isLoading, store }, setStore] = useState<
     { isLoading: true; store: null } | { isLoading: false; store: Store }
-  >({ isLoading: true, store: null });
+  >({
+    isLoading: true,
+    store: null,
+  });
 
   useEffect(() => {
     const s = createStore();
@@ -20,7 +23,7 @@ function App() {
   }, []);
 
   const todos = useSubscribe(
-    store?.rep,
+    rep,
     async (tx) => {
       const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
       console.log(list);
@@ -44,7 +47,7 @@ function App() {
         </button>
         <button
           onClick={() => {
-            store.createTodo({ content: "untitled" });
+            store.createTodo(store.rep, { content: "untitled" });
           }}
         >
           Create

@@ -89,14 +89,17 @@ export function createStore() {
   });
   return {
     rep,
-    createTodo: async ({
-      id = crypto.randomUUID(),
-      content = "",
-    }: {
-      id?: string;
-      content: string;
-      dueDate?: string;
-    }) => {
+    createTodo: async (
+      rep: MyReplicache,
+      {
+        id = crypto.randomUUID(),
+        content = "",
+      }: {
+        id?: string;
+        content: string;
+        dueDate?: string;
+      }
+    ) => {
       const action = {
         do: () =>
           rep.mutate.createTodo({
