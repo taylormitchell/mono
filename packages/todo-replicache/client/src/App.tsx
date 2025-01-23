@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
 import { Todo } from "../../shared/types";
-import { createStore, Store } from "./store";
+import { actions, createReplicache, createUndoManager, Store } from "./store";
 
 // Types for our Todo app
 
@@ -15,15 +15,16 @@ function App() {
   });
 
   useEffect(() => {
-    const s = createStore();
-    setStore({ isLoading: false, store: s });
+    const rep = createReplicache();
+    const undoManager = createUndoManager();
+    setStore({ isLoading: false, store: { rep, undoManager } });
     return () => {
-      s.rep.close();
+      rep.close();
     };
   }, []);
 
   const todos = useSubscribe(
-    rep,
+    store?.rep,
     async (tx) => {
       const list = await tx.scan<Todo>({ prefix: "todo/" }).entries().toArray();
       console.log(list);
@@ -47,10 +48,24 @@ function App() {
         </button>
         <button
           onClick={() => {
-            store.createTodo(store.rep, { content: "untitled" });
+            actions.createTodo(store, { content: "untitled" });
           }}
         >
           Create
+        </button>
+        <button
+          onClick={() => {
+            store.undoManager.undo();
+          }}
+        >
+          Undo
+        </button>
+        <button
+          onClick={() => {
+            store.undoManager.redo();
+          }}
+        >
+          Redo
         </button>
         {todos
           .sort(([, { createdAt: a }], [, { createdAt: b }]) => a.localeCompare(b))

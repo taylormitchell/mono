@@ -69,65 +69,6 @@ export function createReplicache() {
 
 type MyReplicache = ReturnType<typeof createReplicache>;
 
-export function createStore() {
-  const undoManager = createUndoManager();
-
-  const todos = generate("todo", todoSchema.parse);
-  const rep = new Replicache({
-    name: "todo-user-id",
-    licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
-    // pushURL: env.VITE_REPLICACHE_PUSH_URL,
-    // pullURL: env.VITE_REPLICACHE_PULL_URL,
-    mutators: {
-      async createTodo(tx: WriteTransaction, props) {
-        return todos.set(tx, props);
-      },
-      async updateTodo(tx: WriteTransaction, props) {
-        return todos.update(tx, props);
-      },
-    } satisfies Mutators,
-  });
-  return {
-    rep,
-    createTodo: async (
-      rep: MyReplicache,
-      {
-        id = crypto.randomUUID(),
-        content = "",
-      }: {
-        id?: string;
-        content: string;
-        dueDate?: string;
-      }
-    ) => {
-      const action = {
-        do: () =>
-          rep.mutate.createTodo({
-            id,
-            content,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            deletedAt: null,
-            version: 0,
-          }),
-        undo: () => rep.mutate.updateTodo({ id: props.id, deletedAt: new Date().toISOString() }),
-      };
-      await action.do();
-      undoManager.add(action);
-    },
-    deleteTodo: async (id: string) => {
-      const action = {
-        do: () => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
-        undo: () => rep.mutate.updateTodo({ id, deletedAt: null }),
-      };
-      await action.do();
-      undoManager.add(action);
-    },
-    undo: undoManager.undo,
-    redo: undoManager.redo,
-  };
-}
-
 export type Store = {
   rep: MyReplicache;
   undoManager: ReturnType<typeof createUndoManager>;
@@ -168,4 +109,6 @@ export const actions = {
     await action.do();
     undoManager.add(action);
   },
+  undo: async ({ undoManager }: Store) => undoManager.undo(),
+  redo: async ({ undoManager }: Store) => undoManager.redo(),
 };
