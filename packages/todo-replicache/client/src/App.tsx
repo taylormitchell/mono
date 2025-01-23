@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
 import { Todo } from "../../shared/types";
-import { actions, createReplicache, createUndoManager, Store } from "./store";
+import { actions, createStore, Store } from "./store";
 
 // Types for our Todo app
 
@@ -15,11 +15,10 @@ function App() {
   });
 
   useEffect(() => {
-    const rep = createReplicache();
-    const undoManager = createUndoManager();
-    setStore({ isLoading: false, store: { rep, undoManager } });
+    const s = createStore();
+    setStore({ isLoading: false, store: s });
     return () => {
-      rep.close();
+      s.rep.close();
     };
   }, []);
 

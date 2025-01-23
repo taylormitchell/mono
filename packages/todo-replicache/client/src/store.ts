@@ -26,25 +26,33 @@ type UndoableAction = {
 export function createUndoManager() {
   const undoStack: UndoableAction[] = [];
   const redoStack: UndoableAction[] = [];
+  let lastTask = Promise.resolve();
 
   return {
     add: (action: UndoableAction) => {
       undoStack.push(action);
       redoStack.length = 0;
     },
-    undo: async (rep: MyReplicache) => {
+    undo: () => {
       const action = undoStack.pop();
       if (action) {
-        await action.undo(rep);
-        redoStack.push(action);
+        lastTask = lastTask.then(async () => {
+          await action.undo();
+          redoStack.push(action);
+        });
+        return lastTask;
       }
     },
-    redo: async (rep: MyReplicache) => {
+    redo: async () => {
       const action = redoStack.pop();
       if (action) {
-        await action.do(rep);
+        await action.do();
         undoStack.push(action);
       }
+    },
+    destroy: () => {
+      undoStack.length = 0;
+      redoStack.length = 0;
     },
   };
 }
@@ -108,6 +116,7 @@ export function createStore() {
     },
     undo: undoManager.undo,
     redo: undoManager.redo,
+    destroy: () => {},
   };
 }
 
