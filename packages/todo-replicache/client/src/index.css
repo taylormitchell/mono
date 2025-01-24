@@ -11,3 +11,14 @@ body,
 * {
   box-sizing: border-box;
 }
+
+.bg {
+  background-color: white;
+}
+
+/* Add system-based dark mode detection */
+@media (prefers-color-scheme: dark) {
+  .bg {
+    @apply bg-gray-900;
+  }
+}
