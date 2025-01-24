@@ -36,9 +36,16 @@ function App() {
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
       if (store && e.key === "n" && !editingId && document.activeElement?.tagName !== "INPUT") {
+        e.preventDefault();
+        e.stopPropagation();
         const id = genId();
         await store.todos.create({ id, content: "" });
         setEditingId(id);
+      }
+      if (store && e.key === "Escape" && editingId) {
+        e.preventDefault();
+        e.stopPropagation();
+        setEditingId(null);
       }
     };
 
@@ -141,6 +148,50 @@ function App() {
       </div>
     </div>
   );
+}
+
+function TodoItem({
+  todo,
+  editingId,  
+  setEditingId,
+  store,
+}: {
+  todo: Todo;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+  store: Store;
+}) {
+  return (
+    <div
+      key={todo.id}
+  className="flex items-center justify-between p-3 bg-white rounded shadow"
+>
+  {editingId === todo.id ? (
+    <input
+      type="text"
+      value={todo.content}
+      onChange={(e) => store.todos.update(todo.id, { content: e.target.value })}
+      onBlur={() => setEditingId(null)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          setEditingId(null);
+        }
+      }}
+      className="flex-1 px-2 py-1 border rounded"
+      autoFocus
+    />
+  ) : (
+    <span className="text-gray-800 flex-1" onClick={() => setEditingId(todo.id)}>
+      {todo.content}
+    </span>
+  )}
+  <button
+    onClick={() => store.todos.delete(todo.id)}
+    className="ml-2 px-2 py-1 text-red-500 hover:bg-red-100 rounded"
+  >
+    x
+  </button>
+</div>
 }
 
 export default App;
