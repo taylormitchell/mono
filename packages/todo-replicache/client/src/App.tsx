@@ -1,8 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
 import { createStore, genId, Store } from "./store";
 import { Todo } from "../../shared/types";
+
+function debounce(fn: (...args: any[]) => void, ms: number) {
+  let timeout: ReturnType<typeof setTimeout> = 0;
+  const debouncedFn = (...args: any[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), ms);
+  };
+  debouncedFn.cancel = () => clearTimeout(timeout);
+  return debouncedFn;
+}
+
+function useDebounce(fn: (...args: any[]) => void, deps: any[], ms: number) {
+  const debouncedFn = useMemo(() => debounce(fn, ms), [deps, ms]);
+  useEffect(() => {
+    return () => {
+      debouncedFn.cancel();
+    };
+  }, [debouncedFn]);
+  return debouncedFn;
+}
 
 declare global {
   interface Window {
@@ -152,7 +172,7 @@ function App() {
 
 function TodoItem({
   todo,
-  editingId,  
+  editingId,
   setEditingId,
   store,
 }: {
@@ -161,37 +181,48 @@ function TodoItem({
   setEditingId: (id: string | null) => void;
   store: Store;
 }) {
+  const [content, setContent] = useState(todo.content);
+
+  const debouncedUpdate = useDebounce(
+    (id: string, content: string) => {
+      store.todos.update(id, { content });
+    },
+    [store],
+    300
+  );
+
   return (
-    <div
-      key={todo.id}
-  className="flex items-center justify-between p-3 bg-white rounded shadow"
->
-  {editingId === todo.id ? (
-    <input
-      type="text"
-      value={todo.content}
-      onChange={(e) => store.todos.update(todo.id, { content: e.target.value })}
-      onBlur={() => setEditingId(null)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          setEditingId(null);
-        }
-      }}
-      className="flex-1 px-2 py-1 border rounded"
-      autoFocus
-    />
-  ) : (
-    <span className="text-gray-800 flex-1" onClick={() => setEditingId(todo.id)}>
-      {todo.content}
-    </span>
-  )}
-  <button
-    onClick={() => store.todos.delete(todo.id)}
-    className="ml-2 px-2 py-1 text-red-500 hover:bg-red-100 rounded"
-  >
-    x
-  </button>
-</div>
+    <div key={todo.id} className="flex items-center justify-between p-3 bg-white rounded shadow">
+      {editingId === todo.id ? (
+        <input
+          type="text"
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value);
+            debouncedUpdate(todo.id, e.target.value);
+          }}
+          onBlur={() => setEditingId(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              setEditingId(null);
+            }
+          }}
+          className="flex-1 px-2 py-1 border rounded"
+          autoFocus
+        />
+      ) : (
+        <span className="text-gray-800 flex-1" onClick={() => setEditingId(todo.id)}>
+          {todo.content}
+        </span>
+      )}
+      <button
+        onClick={() => store.todos.delete(todo.id)}
+        className="ml-2 px-2 py-1 text-red-500 hover:bg-red-100 rounded"
+      >
+        x
+      </button>
+    </div>
+  );
 }
 
 export default App;
