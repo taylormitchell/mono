@@ -3,6 +3,7 @@ import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
 import { Todo } from "../../shared/types";
 import { useDebounce } from "./utils";
+import { isHotkey } from "is-hotkey";
 import "./App.css";
 
 declare global {
@@ -40,17 +41,27 @@ function App() {
   // Add keyboard shortcut handler
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      if (store && e.key === "n" && !editingId && document.activeElement?.tagName !== "INPUT") {
+      if (store && isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
         e.preventDefault();
         e.stopPropagation();
         const id = genId();
         await store.todos.create({ id, content: "" });
         setEditingId(id);
       }
-      if (store && e.key === "Escape" && editingId) {
+      if (store && isHotkey("escape", e) && editingId) {
         e.preventDefault();
         e.stopPropagation();
         setEditingId(null);
+      }
+      if (store && isHotkey("cmd+z", e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        store.undo();
+      }
+      if (store && isHotkey("cmd+shift+z", e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        store.redo();
       }
     };
 
@@ -94,7 +105,7 @@ function App() {
           <button
             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             onClick={() => {
-              store.todos.create({ content: "untitled" });
+              store.todos.create({ content: "" });
             }}
           >
             Create
@@ -179,8 +190,12 @@ function TodoItem({
           autoFocus
         />
       ) : (
-        <span className="text-gray-800 flex-1 h-full" onClick={() => setEditingId(todo.id)}>
-          {todo.content}
+        <span className="flex-1 h-full" onClick={() => setEditingId(todo.id)}>
+          {todo.content ? (
+            <span>{todo.content}</span>
+          ) : (
+            <span className="text-gray-400">untitled</span>
+          )}
         </span>
       )}
       <button

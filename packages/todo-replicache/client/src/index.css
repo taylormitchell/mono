@@ -22,7 +22,7 @@ body,
 
 /* Add system-based dark mode detection */
 @media (prefers-color-scheme: dark) {
-  * {
+  body {
     color: white;
   }
 
