@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
 import { createStore, genId, Store } from "./store";
@@ -16,13 +16,24 @@ function debounce(fn: (...args: any[]) => void, ms: number) {
 }
 
 function useDebounce(fn: (...args: any[]) => void, deps: any[], ms: number) {
-  const debouncedFn = useMemo(() => debounce(fn, ms), [deps, ms]);
+  // const debouncedFn = useMemo(() => debounce(fn, ms), [...deps, ms]);
+  const timeout = useRef<ReturnType<typeof setTimeout>>(0);
+
+  const debouncedFn = useMemo(() => {
+    const debouncedFn = (...args: any[]) => {
+      clearTimeout(timeout.current);
+      timeout.current = setTimeout(() => fn(...args), ms);
+    };
+    return debouncedFn;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, ms]);
+
   useEffect(() => {
     return () => {
-      console.log("cancelling debounce");
-      debouncedFn.cancel();
+      clearTimeout(timeout.current);
     };
   }, [debouncedFn]);
+
   return debouncedFn;
 }
 
