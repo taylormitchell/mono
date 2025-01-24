@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
-import { createStore, Store } from "./store";
+import { createStore, genId, Store } from "./store";
 import { Todo } from "../../shared/types";
 
 declare global {
@@ -18,6 +18,9 @@ function App() {
     store: null,
   });
 
+  // Add state for editing
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   useEffect(() => {
     const s = createStore();
     s.rep.pull();
@@ -28,6 +31,20 @@ function App() {
       window.store = null;
     };
   }, []);
+
+  // Add keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyPress = async (e: KeyboardEvent) => {
+      if (store && e.key === "n" && !editingId && document.activeElement?.tagName !== "INPUT") {
+        const id = genId();
+        await store.todos.create({ id, content: "" });
+        setEditingId(id);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [store, editingId]);
 
   const todos = useSubscribe(
     store?.rep,
@@ -88,13 +105,31 @@ function App() {
           </button>
         </div>
         {todos
-          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt)) // Reverse chronological order
           .map((todo) => (
             <div
               key={todo.id}
               className="flex items-center justify-between p-3 bg-white rounded shadow"
             >
-              <span className="text-gray-800">{todo.content}</span>
+              {editingId === todo.id ? (
+                <input
+                  type="text"
+                  value={todo.content}
+                  onChange={(e) => store.todos.update(todo.id, { content: e.target.value })}
+                  onBlur={() => setEditingId(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setEditingId(null);
+                    }
+                  }}
+                  className="flex-1 px-2 py-1 border rounded"
+                  autoFocus
+                />
+              ) : (
+                <span className="text-gray-800 flex-1" onClick={() => setEditingId(todo.id)}>
+                  {todo.content}
+                </span>
+              )}
               <button
                 onClick={() => store.todos.delete(todo.id)}
                 className="ml-2 px-2 py-1 text-red-500 hover:bg-red-100 rounded"

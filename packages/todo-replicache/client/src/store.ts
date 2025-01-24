@@ -1,7 +1,11 @@
 import { z } from "zod";
-import { Mutation, todoSchema } from "../../shared/types";
+import { Mutation, Todo, todoSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
+
+export function genId() {
+  return crypto.randomUUID();
+}
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
@@ -86,7 +90,7 @@ export function createStore() {
     undoManager,
     todos: {
       create: async ({
-        id = crypto.randomUUID(),
+        id = genId(),
         content = "",
       }: {
         id?: string;
@@ -104,6 +108,15 @@ export function createStore() {
               version: 0,
             }),
           undo: () => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      update: async (id: string, props: Partial<Todo>) => {
+        const todo = await rep.query((tx) => todos.get(tx, id));
+        const action: UndoableAction = {
+          do: () => rep.mutate.updateTodo({ id, ...props }),
+          undo: () => (todo ? rep.mutate.updateTodo(todo) : Promise.resolve()),
         };
         await action.do();
         undoManager.add(action);
