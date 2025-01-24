@@ -17,6 +17,7 @@ function App() {
   useEffect(() => {
     const s = createStore();
     s.rep.pull();
+    (window as any).store = s;
     setStore({ isLoading: false, store: s });
     // return () => {
     //   s.destroy();

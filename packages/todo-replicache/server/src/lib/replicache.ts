@@ -56,7 +56,7 @@ export async function handlePull(req: Request, res: Response) {
   try {
     console.log("handle pull");
     const pull = pullSchema.parse(req.body);
-    console.log(pull);
+    console.log("request body", pull);
     const db = await getDb();
     const result = await db.transaction(async (tr) => {
       // Get current version
@@ -69,7 +69,11 @@ export async function handlePull(req: Request, res: Response) {
         );
       }
 
-      const lastMutationIDChanges = await getLastMutationIDChanges(tr, pull.clientGroupID);
+      const lastMutationIDChanges = await getLastMutationIDChanges(
+        tr,
+        pull.clientGroupID,
+        clientVersion
+      );
 
       // Get changed domain objects since requested version
       const changedTodos = await tr
@@ -93,7 +97,7 @@ export async function handlePull(req: Request, res: Response) {
         cookie: serverVersion,
         patch,
       };
-      console.log(body);
+      console.log("response body", body);
       return body;
     });
     res.json(result satisfies PullResponseV1);
