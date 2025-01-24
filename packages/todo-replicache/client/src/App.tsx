@@ -16,6 +16,7 @@ function App() {
 
   useEffect(() => {
     const s = createStore();
+    s.rep.pull();
     setStore({ isLoading: false, store: s });
     // return () => {
     //   s.destroy();

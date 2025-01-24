@@ -13,7 +13,7 @@ import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { z } from "zod";
 import { Mutation, mutationSchema, todoSchema } from "../../../shared/types";
 import { todoTable } from "./db/schema";
-import { PushRequestV1, PullRequestV1, PatchOperation, PullResponseV1 } from "replicache";
+import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 
 const pushSchema = z.object({
   pushVersion: z.literal(1),
@@ -54,13 +54,16 @@ export async function handlePush(req: Request, res: Response) {
 
 export async function handlePull(req: Request, res: Response) {
   try {
-    const pull = pullSchema.parse(req.body) satisfies PullRequestV1;
+    console.log("handle pull");
+    const pull = pullSchema.parse(req.body);
+    console.log(pull);
     const db = await getDb();
     const result = await db.transaction(async (tr) => {
       // Get current version
       const serverVersion = await getServerVersion(tr);
+      const clientVersion = pull.cookie ?? -1;
 
-      if (pull.cookie > serverVersion) {
+      if (clientVersion > serverVersion) {
         throw new Error(
           `Cookie ${pull.cookie} is from the future - aborting. This can happen in development if the server restarts.`
         );
@@ -72,7 +75,7 @@ export async function handlePull(req: Request, res: Response) {
       const changedTodos = await tr
         .select()
         .from(todoTable)
-        .where(gt(todoTable.version, pull.cookie));
+        .where(gt(todoTable.version, clientVersion));
 
       // Build patch operations
       const patch: PatchOperation[] = [];
