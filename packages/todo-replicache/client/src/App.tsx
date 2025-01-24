@@ -2,8 +2,8 @@ import { useEffect, useState, createContext, useContext } from "react";
 import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
 import { Todo, View } from "../../shared/types";
-import { useDebounce } from "./utils";
 import { isHotkey } from "is-hotkey";
+import { useDebounce } from "./utils";
 
 declare global {
   interface Window {
@@ -212,7 +212,13 @@ function TodoView({ view }: { view: View }) {
           {filteredTodos
             .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
             .map((todo) => (
-              <TodoItem key={todo.id} todo={todo} editingId={null} setEditingId={() => {}} />
+              <div>
+                <TodoItem key={todo.id} todo={todo} editingId={null} setEditingId={() => {}} />
+                <div>
+                  <button>Move up</button>
+                  <button>Move down</button>
+                </div>
+              </div>
             ))}
         </div>
       </div>
