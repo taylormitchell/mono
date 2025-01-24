@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
 import { Todo } from "../../shared/types";
@@ -11,21 +11,21 @@ declare global {
   }
 }
 
-function cn(...args: (string | undefined | null)[]) {
-  return args.filter(Boolean).join(" ");
+const StoreContext = createContext<Store | null>(null);
+
+function useStore() {
+  const store = useContext(StoreContext);
+  if (!store) throw new Error("useStore must be used within StoreProvider");
+  return store;
 }
 
-function App() {
+function StoreProvider({ children }: { children: React.ReactNode }) {
   const [{ isLoading, store }, setStore] = useState<
     { isLoading: true; store: null } | { isLoading: false; store: Store }
   >({
     isLoading: true,
     store: null,
   });
-
-  // Add state for editing and search
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const s = createStore();
@@ -38,27 +38,40 @@ function App() {
     };
   }, []);
 
-  // Add keyboard shortcut handler
+  if (isLoading) return null;
+  return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
+}
+
+function cn(...args: (string | undefined | null)[]) {
+  return args.filter(Boolean).join(" ");
+}
+
+function TodoApp() {
+  const store = useStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Move keyboard shortcut handler here
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      if (store && isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
+      if (isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
         e.preventDefault();
         e.stopPropagation();
         const id = genId();
         await store.todos.create({ id, content: "" });
         setEditingId(id);
       }
-      if (store && isHotkey("escape", e) && editingId) {
+      if (isHotkey("escape", e) && editingId) {
         e.preventDefault();
         e.stopPropagation();
         setEditingId(null);
       }
-      if (store && isHotkey("cmd+z", e)) {
+      if (isHotkey("cmd+z", e)) {
         e.preventDefault();
         e.stopPropagation();
         store.undo();
       }
-      if (store && isHotkey("cmd+shift+z", e)) {
+      if (isHotkey("cmd+shift+z", e)) {
         e.preventDefault();
         e.stopPropagation();
         store.redo();
@@ -70,9 +83,9 @@ function App() {
   }, [store, editingId]);
 
   const todos = useSubscribe(
-    store?.rep,
+    store.rep,
     async (tx) => {
-      const res = await store?.todos.getAll(tx);
+      const res = await store.todos.getAll(tx);
       return res ?? [];
     },
     { default: [] as Todo[] }
@@ -82,7 +95,6 @@ function App() {
     todo.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoading) return null;
   return (
     <div className="min-h-screen bg-[#0d1117] text-white">
       <div className="max-w-[1280px] mx-auto px-4">
@@ -156,7 +168,6 @@ function App() {
                       todo={todo}
                       editingId={editingId}
                       setEditingId={setEditingId}
-                      store={store}
                     />
                   ))}
               </div>
@@ -172,13 +183,12 @@ function TodoItem({
   todo,
   editingId,
   setEditingId,
-  store,
 }: {
   todo: Todo;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
-  store: Store;
 }) {
+  const store = useStore();
   const [content, setContent] = useState(todo.content);
   const isEditing = editingId === todo.id;
 
@@ -233,6 +243,14 @@ function TodoItem({
         </svg>
       </button>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <StoreProvider>
+      <TodoApp />
+    </StoreProvider>
   );
 }
 
