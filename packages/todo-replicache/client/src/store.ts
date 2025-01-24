@@ -71,8 +71,8 @@ export function createStore() {
   const rep = new Replicache({
     name: "todo-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
-    pushURL: env.VITE_REPLICACHE_PUSH_URL,
-    pullURL: env.VITE_REPLICACHE_PULL_URL,
+    // pushURL: env.VITE_REPLICACHE_PUSH_URL,
+    // pullURL: env.VITE_REPLICACHE_PULL_URL,
     mutators: {
       async createTodo(tx: WriteTransaction, props) {
         return todos.set(tx, props);
@@ -112,6 +112,7 @@ export function createStore() {
             rep.mutate.createTodo({
               id,
               content,
+              status: "active",
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               deletedAt: null,
@@ -178,6 +179,9 @@ export function createStore() {
         };
         await action.do();
         undoManager.add(action);
+      },
+      get: async (tx: ReadTransaction, id: string) => {
+        return views.get(tx, id);
       },
       delete: async (id: string) => {
         const view = await rep.query((tx) => views.get(tx, id));

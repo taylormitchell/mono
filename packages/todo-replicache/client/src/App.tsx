@@ -83,6 +83,24 @@ function TodoApp() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [store, editingId]);
 
+  // Get or create all view
+  const allView: View | null = useSubscribe(
+    store.rep,
+    async (tx) => {
+      const allView = await store.views.get(tx, "all");
+      return allView ?? null;
+    },
+    { default: null }
+  );
+  useEffect(() => {
+    if (allView === null) {
+      store.views.create({
+        id: "all",
+        name: "All",
+      });
+    }
+  }, [allView, store]);
+
   const todos = useSubscribe(
     store.rep,
     async (tx) => {
