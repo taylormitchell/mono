@@ -12,6 +12,7 @@
   "dependencies": {
     "@rocicorp/rails": "^0.11.1",
     "@tailwindcss/vite": "^4.0.0",
+    "@types/is-hotkey": "^0.1.10",
     "is-hotkey": "^0.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

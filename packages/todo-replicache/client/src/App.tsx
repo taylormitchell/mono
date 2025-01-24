@@ -194,7 +194,7 @@ function TodoItem({
           {todo.content ? (
             <span>{todo.content}</span>
           ) : (
-            <span className="text-gray-400">untitled</span>
+            <span className="text-gray-400">Untitled</span>
           )}
         </span>
       )}
