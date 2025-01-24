@@ -6,7 +6,7 @@ import {
   getDb,
   getLastMutationIDChanges,
 } from "./db/helpers";
-import { gt } from "drizzle-orm";
+import { gt, eq } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 
@@ -119,7 +119,7 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
     throw new Error(`Mutation ${mutation.id} is from the future - aborting`);
   }
 
-  console.log("Processing mutation", mutation.id);
+  console.log(`Mutation ${mutation.id} is new - processing`);
 
   switch (mutation.name) {
     case "createTodo":
@@ -135,7 +135,8 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
         });
       break;
     case "updateTodo":
-      await db.update(todoTable).set(mutation.args);
+      const { id, ...args } = mutation.args;
+      await db.update(todoTable).set(args).where(eq(todoTable.id, id));
       break;
     default:
       mutation satisfies never;
