@@ -28,7 +28,7 @@ const pullSchema = z.object({
   schemaVersion: z.string(),
   profileID: z.string(),
   // cookie: cookieSchema,
-  cookie: z.number(),
+  cookie: z.number().nullable(),
   clientGroupID: z.string(),
 });
 

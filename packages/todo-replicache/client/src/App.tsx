@@ -17,9 +17,9 @@ function App() {
   useEffect(() => {
     const s = createStore();
     setStore({ isLoading: false, store: s });
-    return () => {
-      s.destroy();
-    };
+    // return () => {
+    //   s.destroy();
+    // };
   }, []);
 
   const todos = useSubscribe(
@@ -37,6 +37,13 @@ function App() {
     <div className="container">
       <h1>Todo App</h1>
       <div className="todo-list">
+        <button
+          onClick={() => {
+            store.rep.pull();
+          }}
+        >
+          Pull
+        </button>
         <button
           onClick={() => {
             indexedDB.deleteDatabase(store.rep.idbName);
