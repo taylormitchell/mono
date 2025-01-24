@@ -150,7 +150,10 @@ function TodoItem({
   );
 
   return (
-    <div key={todo.id} className="flex items-center justify-between p-3 bg-white rounded shadow">
+    <div
+      key={todo.id}
+      className="flex items-center justify-between min-h-10 p-3 bg-white rounded shadow text-left"
+    >
       {editingId === todo.id ? (
         <input
           type="text"
@@ -165,11 +168,11 @@ function TodoItem({
               setEditingId(null);
             }
           }}
-          className="flex-1 px-2 py-1 border rounded"
+          className="flex-1 outline-none"
           autoFocus
         />
       ) : (
-        <span className="text-gray-800 flex-1" onClick={() => setEditingId(todo.id)}>
+        <span className="text-gray-800 flex-1 h-full" onClick={() => setEditingId(todo.id)}>
           {todo.content}
         </span>
       )}
