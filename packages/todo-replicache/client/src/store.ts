@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Mutation, Todo, todoSchema, viewSchema } from "../../shared/types";
+import { Mutation, Todo, todoSchema, View, viewSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 
@@ -146,6 +146,47 @@ export function createStore() {
       getAll: async (tx: ReadTransaction) => {
         const res = await todos.list(tx);
         return res.filter((todo) => todo.deletedAt === null);
+      },
+    },
+    views: {
+      create: async ({ id = genId(), name }: { id: string; name: string }) => {
+        const action: UndoableAction = {
+          do: () =>
+            rep.mutate.createView({
+              id,
+              name,
+              filter: {},
+              sort: {
+                field: "createdAt",
+                direction: "desc",
+              },
+              positions: {},
+            }),
+          undo: () => rep.mutate.deleteView({ id, deletedAt: new Date().toISOString() }),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      update: async (id: string, props: Partial<View>) => {
+        const view = await rep.query((tx) => views.get(tx, id));
+        const prevProps: Partial<View> = view
+          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: view[key] }), {})
+          : {};
+        const action: UndoableAction = {
+          do: () => rep.mutate.updateView({ id, ...props }),
+          undo: () => (view ? rep.mutate.updateView({ id, ...prevProps }) : Promise.resolve()),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      delete: async (id: string) => {
+        const view = await rep.query((tx) => views.get(tx, id));
+        const action: UndoableAction = {
+          do: () => rep.mutate.deleteView({ id, deletedAt: new Date().toISOString() }),
+          undo: () => (view ? rep.mutate.createView(view) : Promise.resolve()),
+        };
+        await action.do();
+        undoManager.add(action);
       },
     },
     undo: undoManager.undo,
