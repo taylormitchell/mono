@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import "./App.css";
 import { createStore, Store } from "./store";
+import { Todo } from "../../shared/types";
 
 // Types for our Todo app
 
@@ -21,9 +22,15 @@ function App() {
     };
   }, []);
 
-  const todos = useSubscribe(store?.rep, async (tx) => (store ? store.todos.getAll(tx) : []), {
-    default: [],
-  });
+  const todos = useSubscribe(
+    store?.rep,
+    async (tx) => {
+      const res = await store?.todos.getAll(tx);
+      return res ?? [];
+    },
+    { default: [] as Todo[] }
+  );
+  console.log(todos);
 
   if (isLoading) return null;
   return (
@@ -60,9 +67,9 @@ function App() {
           Redo
         </button>
         {todos
-          .sort(([, { createdAt: a }], [, { createdAt: b }]) => a.localeCompare(b))
-          .map(([id, todo]) => (
-            <div key={id} className={`todo-item`}>
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((todo) => (
+            <div key={todo.id} className={`todo-item`}>
               <span className="content">{todo.content}</span>
             </div>
           ))}

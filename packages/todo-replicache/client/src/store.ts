@@ -66,8 +66,8 @@ export function createStore() {
   const rep = new Replicache({
     name: "todo-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
-    // pushURL: env.VITE_REPLICACHE_PUSH_URL,
-    // pullURL: env.VITE_REPLICACHE_PULL_URL,
+    pushURL: env.VITE_REPLICACHE_PUSH_URL,
+    pullURL: env.VITE_REPLICACHE_PULL_URL,
     mutators: {
       async createTodo(tx: WriteTransaction, props) {
         return todos.set(tx, props);
@@ -114,7 +114,8 @@ export function createStore() {
         undoManager.add(action);
       },
       getAll: async (tx: ReadTransaction) => {
-        return (await todos.list(tx)).filter((todo) => todo.deletedAt === null);
+        const res = await todos.list(tx);
+        return res.filter((todo) => todo.deletedAt === null);
       },
     },
     undo: undoManager.undo,
