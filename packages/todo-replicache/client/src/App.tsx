@@ -1,41 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSubscribe } from "replicache-react";
-import "./App.css";
 import { createStore, genId, Store } from "./store";
 import { Todo } from "../../shared/types";
-
-function debounce(fn: (...args: any[]) => void, ms: number) {
-  console.log("creating debounce");
-  let timeout: ReturnType<typeof setTimeout> = 0;
-  const debouncedFn = (...args: any[]) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), ms);
-  };
-  debouncedFn.cancel = () => clearTimeout(timeout);
-  return debouncedFn;
-}
-
-function useDebounce(fn: (...args: any[]) => void, deps: any[], ms: number) {
-  // const debouncedFn = useMemo(() => debounce(fn, ms), [...deps, ms]);
-  const timeout = useRef<ReturnType<typeof setTimeout>>(0);
-
-  const debouncedFn = useMemo(() => {
-    const debouncedFn = (...args: any[]) => {
-      clearTimeout(timeout.current);
-      timeout.current = setTimeout(() => fn(...args), ms);
-    };
-    return debouncedFn;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, ms]);
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeout.current);
-    };
-  }, [debouncedFn]);
-
-  return debouncedFn;
-}
+import { useDebounce } from "./utils";
+import "./App.css";
 
 declare global {
   interface Window {
@@ -175,7 +143,6 @@ function TodoItem({
 
   const debouncedUpdate = useDebounce(
     (id: string, content: string) => {
-      console.log("debouncing update");
       store.todos.update(id, { content });
     },
     [store],
