@@ -159,7 +159,7 @@ function TodoItem({
   return (
     <div
       key={todo.id}
-      className={cn("flex items-center p-3 text-left", isEditing ? "bg-blue-300" : "")}
+      className={cn("flex items-center p-3 text-left", isEditing ? "bg-highlight" : "")}
     >
       {isEditing ? (
         <input
