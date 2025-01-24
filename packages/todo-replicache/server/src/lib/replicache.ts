@@ -119,9 +119,20 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
     throw new Error(`Mutation ${mutation.id} is from the future - aborting`);
   }
 
+  console.log("Processing mutation", mutation.id);
+
   switch (mutation.name) {
     case "createTodo":
-      await db.insert(todoTable).values(mutation.args);
+      await db
+        .insert(todoTable)
+        .values(mutation.args)
+        .onConflictDoUpdate({
+          target: [todoTable.id],
+          set: {
+            ...mutation.args,
+            version: nextVersion,
+          },
+        });
       break;
     case "updateTodo":
       await db.update(todoTable).set(mutation.args);
