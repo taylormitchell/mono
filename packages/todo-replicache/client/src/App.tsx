@@ -4,7 +4,11 @@ import "./App.css";
 import { createStore, Store } from "./store";
 import { Todo } from "../../shared/types";
 
-// Types for our Todo app
+declare global {
+  interface Window {
+    store: Store | null;
+  }
+}
 
 function App() {
   const [{ isLoading, store }, setStore] = useState<
@@ -17,11 +21,12 @@ function App() {
   useEffect(() => {
     const s = createStore();
     s.rep.pull();
-    (window as any).store = s;
+    window.store = s;
     setStore({ isLoading: false, store: s });
-    // return () => {
-    //   s.destroy();
-    // };
+    return () => {
+      // s.destroy();
+      window.store = null;
+    };
   }, []);
 
   const todos = useSubscribe(
