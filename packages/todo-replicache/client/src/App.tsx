@@ -11,6 +11,10 @@ declare global {
   }
 }
 
+function cn(...args: (string | undefined | null)[]) {
+  return args.filter(Boolean).join(" ");
+}
+
 function App() {
   const [{ isLoading, store }, setStore] = useState<
     { isLoading: true; store: null } | { isLoading: false; store: Store }
@@ -112,17 +116,19 @@ function App() {
             Redo
           </button>
         </div>
-        {todos
-          .sort((a, b) => b.createdAt.localeCompare(a.createdAt)) // Reverse chronological order
-          .map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              editingId={editingId}
-              setEditingId={setEditingId}
-              store={store}
-            />
-          ))}
+        <div>
+          {todos
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt)) // Reverse chronological order
+            .map((todo) => (
+              <TodoItem
+                key={todo.id}
+                todo={todo}
+                editingId={editingId}
+                setEditingId={setEditingId}
+                store={store}
+              />
+            ))}
+        </div>
       </div>
     </div>
   );
@@ -140,6 +146,7 @@ function TodoItem({
   store: Store;
 }) {
   const [content, setContent] = useState(todo.content);
+  const isEditing = editingId === todo.id;
 
   const debouncedUpdate = useDebounce(
     (id: string, content: string) => {
@@ -152,9 +159,9 @@ function TodoItem({
   return (
     <div
       key={todo.id}
-      className="flex items-center justify-between min-h-10 p-3 bg-white rounded shadow text-left"
+      className={cn("flex items-center p-3 text-left", isEditing ? "bg-blue-300" : "")}
     >
-      {editingId === todo.id ? (
+      {isEditing ? (
         <input
           type="text"
           value={content}
