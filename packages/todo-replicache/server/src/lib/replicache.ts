@@ -88,11 +88,13 @@ export async function handlePull(req: Request, res: Response) {
       }
 
       // Build and return response
-      return {
+      const body = {
         lastMutationIDChanges,
         cookie: serverVersion,
         patch,
       };
+      console.log(body);
+      return body;
     });
     res.json(result satisfies PullResponseV1);
   } catch (e) {
@@ -125,7 +127,10 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
     case "createTodo":
       await db
         .insert(todoTable)
-        .values(mutation.args)
+        .values({
+          ...mutation.args,
+          version: nextVersion,
+        })
         .onConflictDoUpdate({
           target: [todoTable.id],
           set: {
@@ -136,11 +141,20 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
       break;
     case "updateTodo":
       const { id, ...args } = mutation.args;
-      await db.update(todoTable).set(args).where(eq(todoTable.id, id));
+      await db
+        .update(todoTable)
+        .set({
+          ...args,
+          version: nextVersion,
+        })
+        .where(eq(todoTable.id, id));
       break;
     case "deleteTodo":
       const { id: todoID, deletedAt } = mutation.args;
-      await db.update(todoTable).set({ deletedAt }).where(eq(todoTable.id, todoID));
+      await db
+        .update(todoTable)
+        .set({ deletedAt, version: nextVersion })
+        .where(eq(todoTable.id, todoID));
       break;
     default:
       mutation satisfies never;
