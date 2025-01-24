@@ -79,6 +79,7 @@ function App() {
           .map((todo) => (
             <div key={todo.id} className={`todo-item`}>
               <span className="content">{todo.content}</span>
+              <button onClick={() => store.todos.delete(todo.id)}>x</button>
             </div>
           ))}
       </div>

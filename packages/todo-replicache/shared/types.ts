@@ -39,15 +39,16 @@ const updateTodoMutationSchema = z.object({
   }),
 });
 
-// const deleteTodoMutationSchema = z.object({
-//   id: z.string(),
-//   clientId: z.string(),
-//   name: z.literal("deleteTodo"),
-//   args: z.object({
-//     id: z.string(),
-//     deletedAt: z.string(),
-//   }),
-// });
+const deleteTodoMutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  timestamp: z.number(),
+  name: z.literal("deleteTodo"),
+  args: z.object({
+    id: z.string(),
+    deletedAt: z.string(),
+  }),
+});
 
 // const createProjectMutationSchema = z.object({
 //   name: z.literal("createProject"),
@@ -64,7 +65,7 @@ const updateTodoMutationSchema = z.object({
 export const mutationSchema = z.union([
   createTodoMutationSchema,
   updateTodoMutationSchema,
-  //   deleteTodoMutationSchema,
+  deleteTodoMutationSchema,
   //   createProjectMutationSchema,
   //   updateProjectMutationSchema,
 ]);

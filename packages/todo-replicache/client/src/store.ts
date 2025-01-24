@@ -75,6 +75,9 @@ export function createStore() {
       async updateTodo(tx: WriteTransaction, props) {
         return todos.update(tx, props);
       },
+      async deleteTodo(tx: WriteTransaction, props) {
+        return todos.delete(tx, props.id);
+      },
     } satisfies Mutators,
   });
   const undoManager = createUndoManager();
@@ -106,9 +109,10 @@ export function createStore() {
         undoManager.add(action);
       },
       delete: async (id: string) => {
+        const todo = await rep.query((tx) => todos.get(tx, id));
         const action: UndoableAction = {
-          do: () => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
-          undo: () => rep.mutate.updateTodo({ id, deletedAt: null }),
+          do: () => rep.mutate.deleteTodo({ id, deletedAt: new Date().toISOString() }),
+          undo: () => (todo ? rep.mutate.createTodo(todo) : Promise.resolve()),
         };
         await action.do();
         undoManager.add(action);

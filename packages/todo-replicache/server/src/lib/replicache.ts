@@ -138,6 +138,10 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
       const { id, ...args } = mutation.args;
       await db.update(todoTable).set(args).where(eq(todoTable.id, id));
       break;
+    case "deleteTodo":
+      const { id: todoID, deletedAt } = mutation.args;
+      await db.update(todoTable).set({ deletedAt }).where(eq(todoTable.id, todoID));
+      break;
     default:
       mutation satisfies never;
   }
