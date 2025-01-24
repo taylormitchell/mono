@@ -114,9 +114,12 @@ export function createStore() {
       },
       update: async (id: string, props: Partial<Todo>) => {
         const todo = await rep.query((tx) => todos.get(tx, id));
+        const prevProps: Partial<Todo> = todo
+          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: todo[key] }), {})
+          : {};
         const action: UndoableAction = {
           do: () => rep.mutate.updateTodo({ id, ...props }),
-          undo: () => (todo ? rep.mutate.updateTodo(todo) : Promise.resolve()),
+          undo: () => (todo ? rep.mutate.updateTodo({ id, ...prevProps }) : Promise.resolve()),
         };
         await action.do();
         undoManager.add(action);
