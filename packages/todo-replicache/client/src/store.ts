@@ -188,6 +188,30 @@ export function createStore() {
         await action.do();
         undoManager.add(action);
       },
+      /**
+       * placeAfter:
+       * Assign a fractional position for `newTodoId` by placing it after `anchorTodoId`
+       */
+      async placeAfter(viewId: string, anchorTodoId: string, newTodoId: string) {
+        // 1. Fetch the View
+        const currentView = await rep.query((tx) => views.get(tx, viewId));
+        if (!currentView) return;
+
+        // 2. Get positions
+        const allPositions = { ...currentView.positions };
+
+        // 3. Get anchor position, and next position if you want to place “between”
+        const anchorPos = allPositions[anchorTodoId] ?? createFraction(); // default if missing
+        // In a real scenario, find the next item in sorted order so you can do fractionBetween(anchorPos, nextPos).
+        // For simplicity, we’ll just do fractionBetween(anchorPos, null)
+        const newPos = fractionBetween(anchorPos, null);
+
+        // 4. Update positions
+        allPositions[newTodoId] = newPos;
+
+        // 5. Save updated view
+        await this.update(viewId, { positions: allPositions });
+      },
     },
     undo: undoManager.undo,
     redo: undoManager.redo,

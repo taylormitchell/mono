@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const todoStatusSchema = z.enum(["active", "completed"]);
+
 export const todoSchema = z.object({
   id: z.string(),
   content: z.string(),
@@ -7,6 +9,7 @@ export const todoSchema = z.object({
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),
   version: z.number().default(0),
+  status: todoStatusSchema.default("active"),
 });
 
 export type Todo = z.infer<typeof todoSchema>;
@@ -25,7 +28,7 @@ export const viewSchema = z.object({
   id: z.string(),
   name: z.string(),
   filter: z.object({
-    status: z.enum(["all", "active", "completed"]).optional(),
+    status: todoStatusSchema.optional(),
   }),
   sort: z.object({
     field: z.enum(["position", "createdAt", "dueDate"]),

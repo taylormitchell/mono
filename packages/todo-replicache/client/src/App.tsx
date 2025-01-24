@@ -1,7 +1,7 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
-import { Todo } from "../../shared/types";
+import { Todo, View } from "../../shared/types";
 import { useDebounce } from "./utils";
 import { isHotkey } from "is-hotkey";
 
@@ -173,6 +173,47 @@ function TodoApp() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TodoView({ view }: { view: View }) {
+  const store = useStore();
+  const [searchQuery, setSearchQuery] = useState("");
+  const todos = useSubscribe(
+    store.rep,
+    async (tx) => {
+      const allTodos = await store.todos.getAll(tx);
+      if (!allTodos) return [];
+      if (!view.filter?.status) return allTodos;
+      return allTodos.filter((todo) => todo.status === view.filter.status);
+    },
+    { default: [] as Todo[] }
+  );
+  const filteredTodos = todos.filter((todo) =>
+    todo.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  return (
+    <div className="flex-1">
+      <div className="rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
+        <div className="p-4 border-b border-[#30363d]">
+          <input
+            type="text"
+            placeholder="Search todos..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+          />
+        </div>
+
+        <div className="divide-y divide-[#30363d]">
+          {filteredTodos
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+            .map((todo) => (
+              <TodoItem key={todo.id} todo={todo} editingId={null} setEditingId={() => {}} />
+            ))}
         </div>
       </div>
     </div>
