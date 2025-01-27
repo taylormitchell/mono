@@ -158,7 +158,7 @@ export function createStore() {
               name,
               filter: {},
               sort: {
-                field: "createdAt",
+                field: "position",
                 direction: "desc",
               },
               positions: {},

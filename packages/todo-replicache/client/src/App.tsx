@@ -3,8 +3,8 @@ import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
 import { Todo, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
-import { useDebounce } from "./utils";
 import { generateKeyBetween } from "fractional-indexing";
+import { useDebounce } from "./utils";
 
 declare global {
   interface Window {
@@ -101,19 +101,6 @@ function TodoApp() {
     }
   }, [allView, store]);
 
-  const todos = useSubscribe(
-    store.rep,
-    async (tx) => {
-      const res = await store.todos.getAll(tx);
-      return res ?? [];
-    },
-    { default: [] as Todo[] }
-  );
-
-  const filteredTodos = todos.filter((todo) =>
-    todo.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
     <div className="min-h-screen bg-[#0d1117] text-white">
       <div className="max-w-[1280px] mx-auto px-4">
@@ -123,9 +110,6 @@ function TodoApp() {
               <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
             </svg>
             <h1 className="text-xl font-semibold">Todos</h1>
-            <span className="px-2 py-0.5 rounded-full bg-[#30363d] text-sm ml-2">
-              {todos.length}
-            </span>
           </div>
           <button
             onClick={() => store.todos.create({ content: "" })}
@@ -136,61 +120,8 @@ function TodoApp() {
         </header>
 
         <div className="mt-4 flex gap-4">
-          <div className="w-[240px]">
-            <nav className="space-y-1">
-              <a
-                href="#"
-                className="flex items-center gap-2 px-3 py-1 rounded-md bg-[#1f6feb] text-white"
-              >
-                <span>All</span>
-                <span className="px-2 py-0.5 rounded-full bg-[#30363d] text-xs">
-                  {todos.length}
-                </span>
-              </a>
-              <a
-                href="#"
-                className="flex items-center gap-2 px-3 py-1 rounded-md text-[#c9d1d9] hover:bg-[#30363d]"
-              >
-                <span>Active</span>
-                <span className="px-2 py-0.5 rounded-full bg-[#30363d] text-xs">
-                  {todos.length}
-                </span>
-              </a>
-              <a
-                href="#"
-                className="flex items-center gap-2 px-3 py-1 rounded-md text-[#c9d1d9] hover:bg-[#30363d]"
-              >
-                <span>Completed</span>
-                <span className="px-2 py-0.5 rounded-full bg-[#30363d] text-xs">0</span>
-              </a>
-            </nav>
-          </div>
-
           <div className="flex-1">
-            <div className="rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
-              <div className="p-4 border-b border-[#30363d]">
-                <input
-                  type="text"
-                  placeholder="Search todos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
-                />
-              </div>
-
-              <div className="divide-y divide-[#30363d]">
-                {filteredTodos
-                  .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-                  .map((todo) => (
-                    <TodoItem
-                      key={todo.id}
-                      todo={todo}
-                      editingId={editingId}
-                      setEditingId={setEditingId}
-                    />
-                  ))}
-              </div>
-            </div>
+            {allView ? <TodoView view={allView} /> : <div>Loading...</div>}
           </div>
         </div>
       </div>
@@ -238,7 +169,7 @@ function TodoView({ view }: { view: View }) {
           {filteredTodos
             .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
             .map((todo, i) => (
-              <div>
+              <div className="flex items-center justify-between">
                 <TodoItem key={todo.id} todo={todo} editingId={null} setEditingId={() => {}} />
                 {view.sort.field === "position" && (
                   <div className="flex items-center gap-2">
