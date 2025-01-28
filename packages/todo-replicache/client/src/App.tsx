@@ -147,9 +147,19 @@ function TodoView({ view }: { view: View }) {
     .filter((todo) => todo.content.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (view.sort.field === "position") {
-        return (view.positions[a.id] ?? "").localeCompare(view.positions[b.id] ?? "");
+        const aPos: string | null = view.positions[a.id] ?? null;
+        const bPos: string | null = view.positions[b.id] ?? null;
+        // Handle cases where one or both items don't have positions
+        if (!aPos && !bPos) {
+          // If neither has position, sort by createdAt
+          return b.createdAt.localeCompare(a.createdAt);
+        }
+        if (!aPos) return 1; // Items without position go first
+        if (!bPos) return -1;
+        if (aPos === bPos) return 0;
+        return aPos.localeCompare(bPos);
       }
-      return a.createdAt.localeCompare(b.createdAt);
+      return b.createdAt.localeCompare(a.createdAt);
     });
 
   return (
