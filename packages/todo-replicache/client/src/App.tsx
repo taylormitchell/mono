@@ -129,19 +129,17 @@ function TodoApp() {
   );
 }
 
-function sortTodos(todos: Todo[], partialPositions: Record<string, string>) {
-  return [...todos].sort((a, b) => {
-    const aPos = partialPositions[a.id] ?? null;
-    const bPos = partialPositions[b.id] ?? null;
-    if (!aPos && !bPos) return b.createdAt.localeCompare(a.createdAt);
-    if (!aPos) return 1;
-    if (!bPos) return -1;
-    return aPos.localeCompare(bPos);
-  });
+function compareTodoPosition(a: Todo, b: Todo, partialPositions: Record<string, string>) {
+  const aPos = partialPositions[a.id] ?? null;
+  const bPos = partialPositions[b.id] ?? null;
+  if (!aPos && !bPos) return b.createdAt.localeCompare(a.createdAt);
+  if (!aPos) return 1;
+  if (!bPos) return -1;
+  return aPos.localeCompare(bPos);
 }
 
 function createPositions(todos: Todo[], partialPositions: Record<string, string>) {
-  const sortedTodos = sortTodos(todos, partialPositions);
+  const sortedTodos = [...todos].sort((a, b) => compareTodoPosition(a, b, partialPositions));
   const i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
   if (i <= 0) return partialPositions;
   const newPositions = generateNKeysBetween(null, sortedTodos[i].id, i).reduce((acc, key, i) => {
@@ -169,17 +167,7 @@ function TodoView({ view }: { view: View }) {
     .filter((todo) => todo.content.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (view.sort.field === "position") {
-        const aPos: string | null = view.positions[a.id] ?? null;
-        const bPos: string | null = view.positions[b.id] ?? null;
-        // Handle cases where one or both items don't have positions
-        if (!aPos && !bPos) {
-          // If neither has position, sort by createdAt
-          return b.createdAt.localeCompare(a.createdAt);
-        }
-        if (!aPos) return 1; // Items without position go first
-        if (!bPos) return -1;
-        if (aPos === bPos) return 0;
-        return aPos.localeCompare(bPos);
+        return compareTodoPosition(a, b, view.positions);
       }
       return b.createdAt.localeCompare(a.createdAt);
     });
@@ -201,24 +189,22 @@ function TodoView({ view }: { view: View }) {
           {filteredTodos
             .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
             .map((todo, i) => (
-              <div className="flex items-center justify-between">
-                <TodoItem key={todo.id} todo={todo} editingId={null} setEditingId={() => {}} />
+              <div key={todo.id} className="flex items-center justify-between">
+                <TodoItem todo={todo} editingId={null} setEditingId={() => {}} />
                 {view.sort.field === "position" && (
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
                         console.log("move up");
+                        const newPositions = createPositions(filteredTodos, view.positions);
                         const aTodoId = filteredTodos[i - 2]?.id;
                         const bTodoId = filteredTodos[i - 1]?.id;
-                        const aPos = aTodoId ? view.positions[aTodoId] : null;
-                        const bPos = bTodoId ? view.positions[bTodoId] : null;
-                        const newPos = generateKeyBetween(aPos, bPos);
+                        const aPos = aTodoId ? newPositions[aTodoId] : null;
+                        const bPos = bTodoId ? newPositions[bTodoId] : null;
+                        newPositions[todo.id] = generateKeyBetween(aPos, bPos);
                         store.views.update(view.id, {
                           ...view,
-                          positions: {
-                            ...view.positions,
-                            [todo.id]: newPos,
-                          },
+                          positions: newPositions,
                         });
                       }}
                     >
@@ -227,17 +213,15 @@ function TodoView({ view }: { view: View }) {
                     <button
                       onClick={() => {
                         console.log("move down");
+                        const newPositions = createPositions(filteredTodos, view.positions);
                         const aTodoId = filteredTodos[i + 1]?.id;
                         const bTodoId = filteredTodos[i + 2]?.id;
-                        const aPos = aTodoId ? view.positions[aTodoId] : null;
-                        const bPos = bTodoId ? view.positions[bTodoId] : null;
-                        const newPos = generateKeyBetween(aPos, bPos);
+                        const aPos = aTodoId ? newPositions[aTodoId] : null;
+                        const bPos = bTodoId ? newPositions[bTodoId] : null;
+                        newPositions[todo.id] = generateKeyBetween(aPos, bPos);
                         store.views.update(view.id, {
                           ...view,
-                          positions: {
-                            ...view.positions,
-                            [todo.id]: newPos,
-                          },
+                          positions: newPositions,
                         });
                       }}
                     >
@@ -277,7 +261,7 @@ function TodoItem({
   return (
     <div
       className={cn(
-        "flex items-center px-4 py-2 hover:bg-[#1c2128]",
+        "flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]",
         isEditing ? "bg-[#1c2128]" : ""
       )}
     >
