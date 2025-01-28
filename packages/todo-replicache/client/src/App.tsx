@@ -175,6 +175,7 @@ function TodoView({ view }: { view: View }) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
+                        console.log("move up");
                         const aTodoId = filteredTodos[i - 2]?.id;
                         const bTodoId = filteredTodos[i - 1]?.id;
                         const aPos = aTodoId ? view.positions[aTodoId] : null;
@@ -193,6 +194,7 @@ function TodoView({ view }: { view: View }) {
                     </button>
                     <button
                       onClick={() => {
+                        console.log("move down");
                         const aTodoId = filteredTodos[i + 1]?.id;
                         const bTodoId = filteredTodos[i + 2]?.id;
                         const aPos = aTodoId ? view.positions[aTodoId] : null;

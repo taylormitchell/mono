@@ -169,6 +169,7 @@ export function createStore() {
         undoManager.add(action);
       },
       update: async (id: string, props: Partial<View>) => {
+        console.log("update view", id, props);
         const view = await rep.query((tx) => views.get(tx, id));
         const prevProps: Partial<View> = view
           ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: view[key] }), {})
