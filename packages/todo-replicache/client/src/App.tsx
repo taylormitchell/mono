@@ -3,7 +3,7 @@ import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
 import { Todo, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
-import { generateKeyBetween } from "fractional-indexing";
+import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
 import { useDebounce } from "./utils";
 
 declare global {
@@ -127,6 +127,28 @@ function TodoApp() {
       </div>
     </div>
   );
+}
+
+function sortTodos(todos: Todo[], partialPositions: Record<string, string>) {
+  return [...todos].sort((a, b) => {
+    const aPos = partialPositions[a.id] ?? null;
+    const bPos = partialPositions[b.id] ?? null;
+    if (!aPos && !bPos) return b.createdAt.localeCompare(a.createdAt);
+    if (!aPos) return 1;
+    if (!bPos) return -1;
+    return aPos.localeCompare(bPos);
+  });
+}
+
+function createPositions(todos: Todo[], partialPositions: Record<string, string>) {
+  const sortedTodos = sortTodos(todos, partialPositions);
+  const i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
+  if (i <= 0) return partialPositions;
+  const newPositions = generateNKeysBetween(null, sortedTodos[i].id, i).reduce((acc, key, i) => {
+    acc[sortedTodos[i].id] = key;
+    return acc;
+  }, {} as Record<string, string>);
+  return { ...partialPositions, ...newPositions };
 }
 
 function TodoView({ view }: { view: View }) {
