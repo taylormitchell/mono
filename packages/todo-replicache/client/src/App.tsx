@@ -141,8 +141,10 @@ function compareTodoPosition(a: Todo, b: Todo, partialPositions: Record<string, 
 function createPositions(todos: Todo[], partialPositions: Record<string, string>) {
   const sortedTodos = [...todos].sort((a, b) => compareTodoPosition(a, b, partialPositions));
   const i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
-  const firstPos = sortedTodos[i]?.id ?? null;
-  const newPositions = generateNKeysBetween(null, firstPos, i).reduce((acc, key, i) => {
+  const keys = sortedTodos[i]
+    ? generateNKeysBetween(null, sortedTodos[i].id, i)
+    : generateNKeysBetween(null, null, sortedTodos.length);
+  const newPositions = keys.reduce((acc, key, i) => {
     acc[sortedTodos[i].id] = key;
     return acc;
   }, {} as Record<string, string>);
@@ -207,28 +209,35 @@ function TodoView({ view }: { view: View }) {
 
         <div className="divide-y divide-[#30363d]">
           {filteredTodos.map((todo, i) => (
-            <div key={todo.id} className="flex items-center justify-between">
-              <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
-              {view.sort.field === "position" && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const newPositions = moveTodo(filteredTodos, i, i - 1, view.positions);
-                      store.views.update(view.id, { ...view, positions: newPositions });
-                    }}
-                  >
-                    Move up
-                  </button>
-                  <button
-                    onClick={() => {
-                      const newPositions = moveTodo(filteredTodos, i, i + 1, view.positions);
-                      store.views.update(view.id, { ...view, positions: newPositions });
-                    }}
-                  >
-                    Move down
-                  </button>
-                </div>
-              )}
+            <div key={todo.id} className="flex flex-col">
+              <div className="flex items-center justify-between">
+                <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
+                {view.sort.field === "position" && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const newPositions = moveTodo(filteredTodos, i, i - 2, view.positions);
+                        store.views.update(view.id, { ...view, positions: newPositions });
+                      }}
+                    >
+                      Move up
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newPositions = moveTodo(filteredTodos, i, i + 1, view.positions);
+                        store.views.update(view.id, { ...view, positions: newPositions });
+                      }}
+                    >
+                      Move down
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center">
+                <div>{todo.id}</div>
+                <div>{"->"}</div>
+                <div>{view.positions[todo.id] ?? "undefined"}</div>
+              </div>
             </div>
           ))}
         </div>
