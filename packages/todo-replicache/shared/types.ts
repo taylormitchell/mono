@@ -34,7 +34,7 @@ export const viewSchema = z.object({
     field: z.enum(["position", "createdAt", "dueDate"]),
     direction: z.enum(["asc", "desc"]),
   }),
-  positions: z.record(z.string()), // Map of todoId -> position string
+  positions: z.record(z.number()), // Map of todoId -> position string
 });
 
 export type View = z.infer<typeof viewSchema>;

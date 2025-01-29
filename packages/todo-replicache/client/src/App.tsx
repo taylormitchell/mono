@@ -148,26 +148,11 @@ function comparePositions(
 }
 
 /**
- * Creates a new positions object which has indices assigned to each todo id
- * which orders the todos by position
- */
-function createPositions(
-  items: { id: string; createdAt: string }[],
-  partialPositions: Record<string, number>
-) {
-  const sortedItems = [...items].sort((a, b) => comparePositions(a, b, partialPositions));
-  return sortedItems.reduce((acc, item, i) => {
-    acc[item.id] = i;
-    return acc;
-  }, {} as Record<string, number>);
-}
-
-/**
  * Given a set of items and some positions for them, sort the items
  * by position/createdAt, then return a new positions object with the
- * all the items reordered with the item at `from` moved after the item at `to`
+ * all the items reordered with the item at `from` moved to the position `to`
  */
-function moveAfter(
+function moveTo(
   items: { id: string; createdAt: string }[],
   from: number,
   to: number,
@@ -175,10 +160,17 @@ function moveAfter(
 ) {
   const sortedItems = [...items].sort((a, b) => comparePositions(a, b, partialPositions));
   const item = sortedItems[from];
-  if (!item) return partialPositions;
+  sortedItems.splice(from, 1);
 
-  sortedItems[from] = sortedItems[to];
-  sortedItems[to] = item;
+  // When moving an item down the list, we need to adjust the target index
+  // to account for the removed item
+  const targetIndex = to <= from ? to : to - 1;
+  sortedItems.splice(Math.max(0, targetIndex), 0, item);
+
+  return sortedItems.reduce((acc, item, i) => {
+    acc[item.id] = i;
+    return acc;
+  }, {} as Record<string, number>);
 }
 
 function TodoView({ view }: { view: View }) {
@@ -230,7 +222,7 @@ function TodoView({ view }: { view: View }) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
-                        const newPositions = moveAfter(filteredTodos, i, i - 2, view.positions);
+                        const newPositions = moveTo(filteredTodos, i, i - 1, view.positions);
                         store.views.update(view.id, { ...view, positions: newPositions });
                       }}
                     >
@@ -238,7 +230,7 @@ function TodoView({ view }: { view: View }) {
                     </button>
                     <button
                       onClick={() => {
-                        const newPositions = moveAfter(filteredTodos, i, i + 1, view.positions);
+                        const newPositions = moveTo(filteredTodos, i, i + 1, view.positions);
                         store.views.update(view.id, { ...view, positions: newPositions });
                       }}
                     >
