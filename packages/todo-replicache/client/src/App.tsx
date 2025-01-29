@@ -128,7 +128,7 @@ function TodoApp() {
   );
 }
 
-function compareTodoPosition(
+function comparePositions(
   a: { id: string; createdAt: string },
   b: { id: string; createdAt: string },
   partialPositions: Record<string, number>
@@ -155,27 +155,30 @@ function createPositions(
   items: { id: string; createdAt: string }[],
   partialPositions: Record<string, number>
 ) {
-  const sortedItems = [...items].sort((a, b) => compareTodoPosition(a, b, partialPositions));
+  const sortedItems = [...items].sort((a, b) => comparePositions(a, b, partialPositions));
   return sortedItems.reduce((acc, item, i) => {
     acc[item.id] = i;
     return acc;
   }, {} as Record<string, number>);
 }
 
+/**
+ * Given a set of items and some positions for them, sort the items
+ * by position/createdAt, then return a new positions object with the
+ * all the items reordered with the item at `from` moved after the item at `to`
+ */
 function moveAfter(
   items: { id: string; createdAt: string }[],
   from: number,
   to: number,
   partialPositions: Record<string, number>
 ) {
-  const sortedItems = [...items].sort((a, b) => compareTodoPosition(a, b, partialPositions));
+  const sortedItems = [...items].sort((a, b) => comparePositions(a, b, partialPositions));
   const item = sortedItems[from];
   if (!item) return partialPositions;
-  const movedItems = [...sortedItems.slice(0, from), item, ...sortedItems.slice(from + 1)];
-  return movedItems.reduce((acc, item, i) => {
-    acc[item.id] = i;
-    return acc;
-  }, {} as Record<string, number>);
+
+  sortedItems[from] = sortedItems[to];
+  sortedItems[to] = item;
 }
 
 function TodoView({ view }: { view: View }) {
@@ -198,7 +201,7 @@ function TodoView({ view }: { view: View }) {
     .filter((todo) => todo.content.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (view.sort.field === "position") {
-        return compareTodoPosition(a, b, view.positions);
+        return comparePositions(a, b, view.positions);
       }
       return b.createdAt.localeCompare(a.createdAt);
     });
