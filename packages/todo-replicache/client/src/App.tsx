@@ -135,7 +135,7 @@ function compareTodoPosition(a: Todo, b: Todo, partialPositions: Record<string, 
   if (!aPos && !bPos) return b.createdAt.localeCompare(a.createdAt);
   if (!aPos) return 1;
   if (!bPos) return -1;
-  return aPos.localeCompare(bPos);
+  return aPos < bPos ? -1 : 1;
 }
 
 function createPositions(todos: Todo[], partialPositions: Record<string, string>) {
@@ -206,10 +206,10 @@ function TodoView({ view }: { view: View }) {
                         const bTodoId = filteredTodos[i - 1]?.id;
                         const aPos = aTodoId ? newPositions[aTodoId] : null;
                         const bPos = bTodoId ? newPositions[bTodoId] : null;
-                        newPositions[todo.id] = generateKeyBetween(aPos, bPos);
+                        const newPos = generateKeyBetween(aPos, bPos);
                         store.views.update(view.id, {
                           ...view,
-                          positions: newPositions,
+                          positions: { ...newPositions, [todo.id]: newPos },
                         });
                       }}
                     >
@@ -223,10 +223,10 @@ function TodoView({ view }: { view: View }) {
                         const bTodoId = filteredTodos[i + 2]?.id;
                         const aPos = aTodoId ? newPositions[aTodoId] : null;
                         const bPos = bTodoId ? newPositions[bTodoId] : null;
-                        newPositions[todo.id] = generateKeyBetween(aPos, bPos);
+                        const newPos = generateKeyBetween(aPos, bPos);
                         store.views.update(view.id, {
                           ...view,
-                          positions: newPositions,
+                          positions: { ...newPositions, [todo.id]: newPos },
                         });
                       }}
                     >

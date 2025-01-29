@@ -87,6 +87,7 @@ export function createStore() {
         return views.set(tx, props);
       },
       async updateView(tx: WriteTransaction, props) {
+        console.log("update view", props);
         return views.update(tx, props);
       },
       async deleteView(tx: WriteTransaction, props) {
