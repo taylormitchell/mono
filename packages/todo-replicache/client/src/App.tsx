@@ -140,10 +140,9 @@ function compareTodoPosition(a: Todo, b: Todo, partialPositions: Record<string, 
 
 function createPositions(todos: Todo[], partialPositions: Record<string, string>) {
   const sortedTodos = [...todos].sort((a, b) => compareTodoPosition(a, b, partialPositions));
-  let i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
-  i = i === -1 ? sortedTodos.length - 1 : i;
-  if (i === 0) return partialPositions;
-  const newPositions = generateNKeysBetween(null, sortedTodos[i].id, i).reduce((acc, key, i) => {
+  const i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
+  const firstPos = sortedTodos[i]?.id ?? null;
+  const newPositions = generateNKeysBetween(null, firstPos, i).reduce((acc, key, i) => {
     acc[sortedTodos[i].id] = key;
     return acc;
   }, {} as Record<string, string>);
