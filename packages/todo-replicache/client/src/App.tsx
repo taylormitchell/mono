@@ -54,7 +54,7 @@ function TodoApp() {
   // Move keyboard shortcut handler here
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      console.log("keypress", e.key);
+      console.log("keypress", e.key, isHotkey("escape", e), editingId);
       if (isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
         e.preventDefault();
         e.stopPropagation();
@@ -122,7 +122,11 @@ function TodoApp() {
 
         <div className="mt-4 flex gap-4">
           <div className="flex-1">
-            {allView ? <TodoView view={allView} /> : <div>Loading...</div>}
+            {allView ? (
+              <TodoView view={allView} editingId={editingId} setEditingId={setEditingId} />
+            ) : (
+              <div>Loading...</div>
+            )}
           </div>
         </div>
       </div>
@@ -173,10 +177,17 @@ function moveTo(
   }, {} as Record<string, number>);
 }
 
-function TodoView({ view }: { view: View }) {
+function TodoView({
+  view,
+  editingId,
+  setEditingId,
+}: {
+  view: View;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+}) {
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   const todos = useSubscribe(
     store.rep,
@@ -264,10 +275,12 @@ function TodoItem({
   todo,
   editingId,
   setEditingId,
+  move,
 }: {
   todo: Todo;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
+  move: null | { up: () => void; down: () => void };
 }) {
   const store = useStore();
   const [content, setContent] = useState(todo.content);
@@ -321,6 +334,28 @@ function TodoItem({
           </div>
         )}
       </div>
+      {move && (
+        <div className="flex items-center gap-1 mr-2">
+          <button
+            onClick={move.up}
+            className="p-1.5 text-[#6e7681] hover:text-white rounded"
+            aria-label="Move up"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+              <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
+            </svg>
+          </button>
+          <button
+            onClick={move.down}
+            className="p-1.5 text-[#6e7681] hover:text-white rounded"
+            aria-label="Move down"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+              <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
+            </svg>
+          </button>
+        </div>
+      )}
       <button
         onClick={() => store.todos.delete(todo.id)}
         className="ml-2 p-1 text-[#6e7681] hover:text-white rounded"
