@@ -6,14 +6,20 @@ import { isHotkey } from "is-hotkey";
 import { useDebounce } from "./utils";
 import {
   DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
   useSensor,
   useSensors,
-  PointerSensor,
-  DragEndEvent,
   DragOverlay,
-  DragStartEvent,
 } from "@dnd-kit/core";
-import { createPortal } from "react-dom";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 declare global {
   interface Window {
@@ -187,12 +193,10 @@ function TodoView({ view }: { view: View }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Configure sensors for drag detection
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
@@ -218,24 +222,6 @@ function TodoView({ view }: { view: View }) {
 
   console.log({ filteredTodos, view });
 
-  const handleDragStart = (event: DragStartEvent) => {
-    console.log("drag start", event);
-    setActiveId(event.active.id as string);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    console.log("drag end", event);
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (over && active.id !== over.id) {
-      const oldIndex = filteredTodos.findIndex((t) => t.id === active.id);
-      const newIndex = filteredTodos.findIndex((t) => t.id === over.id);
-      const newPositions = moveTo(filteredTodos, oldIndex, newIndex, view.positions);
-      store.views.update(view.id, { ...view, positions: newPositions });
-    }
-  };
-
   return (
     <div className="flex-1">
       <div className="rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
@@ -249,36 +235,75 @@ function TodoView({ view }: { view: View }) {
           />
         </div>
 
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="divide-y divide-[#30363d]">
-            {filteredTodos.map((todo) => (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredTodos.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="divide-y divide-[#30363d]">
+              {filteredTodos.map((todo) => (
+                <SortableTodoItem
+                  key={todo.id}
+                  todo={todo}
+                  editingId={editingId}
+                  setEditingId={setEditingId}
+                />
+              ))}
+            </div>
+          </SortableContext>
+          <DragOverlay>
+            {activeId ? (
               <TodoItem
-                key={todo.id}
-                todo={todo}
+                todo={filteredTodos.find((t) => t.id === activeId)!}
                 editingId={editingId}
                 setEditingId={setEditingId}
-                isDragging={todo.id === activeId}
               />
-            ))}
-          </div>
-
-          {createPortal(
-            <DragOverlay>
-              {activeId ? (
-                <div className="rounded-md border border-[#30363d] bg-[#161b22] shadow-lg">
-                  <TodoItem
-                    todo={filteredTodos.find((t) => t.id === activeId)!}
-                    editingId={editingId}
-                    setEditingId={setEditingId}
-                    isDragging={false}
-                  />
-                </div>
-              ) : null}
-            </DragOverlay>,
-            document.body
-          )}
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </div>
+    </div>
+  );
+
+  function handleDragStart(event: any) {
+    setActiveId(event.active.id);
+  }
+
+  function handleDragEnd(event: any) {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (active.id !== over?.id) {
+      const oldIndex = filteredTodos.findIndex((t) => t.id === active.id);
+      const newIndex = filteredTodos.findIndex((t) => t.id === over.id);
+      const newPositions = moveTo(filteredTodos, oldIndex, newIndex, view.positions);
+      store.views.update(view.id, { ...view, positions: newPositions });
+    }
+  }
+}
+
+function SortableTodoItem(props: {
+  todo: Todo;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: props.todo.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <TodoItem {...props} />
     </div>
   );
 }
@@ -287,12 +312,10 @@ function TodoItem({
   todo,
   editingId,
   setEditingId,
-  isDragging,
 }: {
   todo: Todo;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
-  isDragging: boolean;
 }) {
   const store = useStore();
   const [content, setContent] = useState(todo.content);
@@ -308,12 +331,9 @@ function TodoItem({
 
   return (
     <div
-      data-id={todo.id}
       className={cn(
         "flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]",
-        isEditing ? "bg-[#1c2128]" : "",
-        isDragging ? "opacity-50" : "",
-        "cursor-move"
+        isEditing ? "bg-[#1c2128]" : ""
       )}
     >
       <div className="mr-3">
@@ -339,11 +359,11 @@ function TodoItem({
           />
         ) : (
           <div
-          // className="cursor-pointer"
-          // onClick={() => {
-          //   console.log("click");
-          //   setEditingId(todo.id);
-          // }}
+            className="cursor-pointer"
+            onClick={() => {
+              console.log("click");
+              setEditingId(todo.id);
+            }}
           >
             {todo.content || <span className="text-[#6e7681]">Untitled</span>}
           </div>
