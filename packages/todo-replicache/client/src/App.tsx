@@ -3,7 +3,7 @@ import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
 import { Todo, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
-import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
+import { generateKeyBetween } from "fractional-indexing";
 import { useDebounce } from "./utils";
 
 declare global {
@@ -129,7 +129,9 @@ function TodoApp() {
   );
 }
 
-function compareTodoPosition(a: Todo, b: Todo, partialPositions: Record<string, string>) {
+type Positions = Record<string, number>;
+
+function compareTodoPosition(a: Todo, b: Todo, partialPositions: Positions) {
   const aPos = partialPositions[a.id] ?? null;
   const bPos = partialPositions[b.id] ?? null;
   if (!aPos && !bPos) return b.createdAt.localeCompare(a.createdAt);
@@ -138,17 +140,12 @@ function compareTodoPosition(a: Todo, b: Todo, partialPositions: Record<string, 
   return aPos < bPos ? -1 : 1;
 }
 
-function createPositions(todos: Todo[], partialPositions: Record<string, string>) {
+function createPositions(todos: Todo[], partialPositions: Positions) {
   const sortedTodos = [...todos].sort((a, b) => compareTodoPosition(a, b, partialPositions));
-  const i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
-  const keys = sortedTodos[i]
-    ? generateNKeysBetween(null, sortedTodos[i].id, i)
-    : generateNKeysBetween(null, null, sortedTodos.length);
-  const newPositions = keys.reduce((acc, key, i) => {
-    acc[sortedTodos[i].id] = key;
+  return sortedTodos.reduce((acc, todo, i) => {
+    acc[todo.id] = i;
     return acc;
-  }, {} as Record<string, string>);
-  return { ...partialPositions, ...newPositions };
+  }, {} as Positions);
 }
 
 function moveAfter(
