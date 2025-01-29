@@ -135,16 +135,16 @@ function comparePositions(
 ) {
   const aPos = partialPositions[a.id] ?? null;
   const bPos = partialPositions[b.id] ?? null;
-  if (!aPos && !bPos) {
+  if (aPos === null && bPos === null) {
     if (b.createdAt === a.createdAt) {
       return b.id.localeCompare(a.id);
     } else {
       return b.createdAt.localeCompare(a.createdAt);
     }
   }
-  if (!aPos) return 1;
-  if (!bPos) return -1;
-  return aPos < bPos ? 1 : -1;
+  if (aPos === null) return 1;
+  if (bPos === null) return -1;
+  return aPos < bPos ? -1 : 1;
 }
 
 /**
@@ -161,12 +161,7 @@ function moveTo(
   const sortedItems = [...items].sort((a, b) => comparePositions(a, b, partialPositions));
   const item = sortedItems[from];
   sortedItems.splice(from, 1);
-
-  // When moving an item down the list, we need to adjust the target index
-  // to account for the removed item
-  const targetIndex = to <= from ? to : to - 1;
-  sortedItems.splice(Math.max(0, targetIndex + 1), 0, item);
-
+  sortedItems.splice(to, 0, item);
   return sortedItems.reduce((acc, item, i) => {
     acc[item.id] = i;
     return acc;
