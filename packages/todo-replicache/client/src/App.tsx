@@ -3,7 +3,6 @@ import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
 import { Todo, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
-import { generateKeyBetween } from "fractional-indexing";
 import { useDebounce } from "./utils";
 
 declare global {
@@ -164,22 +163,19 @@ function createPositions(
 }
 
 function moveAfter(
-  todos: Todo[],
+  items: { id: string; createdAt: string }[],
   from: number,
   to: number,
   partialPositions: Record<string, number>
 ) {
-  const newPositions = createPositions(todos, partialPositions);
-  if (newPositions[from] === undefined) return newPositions;
-  const toBounded = Math.min(Math.max(to, 0), todos.length);
-  if (from === toBounded) return newPositions;
-
-  const aTodoId = todos[to]?.id;
-  const bTodoId = todos[to + 1]?.id;
-  const aPos = aTodoId ? newPositions[aTodoId] : null;
-  const bPos = bTodoId ? newPositions[bTodoId] : null;
-  const newPos = generateKeyBetween(aPos, bPos);
-  return { ...newPositions, [todos[from].id]: newPos };
+  const sortedItems = [...items].sort((a, b) => compareTodoPosition(a, b, partialPositions));
+  const item = sortedItems[from];
+  if (!item) return partialPositions;
+  const movedItems = [...sortedItems.slice(0, from), item, ...sortedItems.slice(from + 1)];
+  return movedItems.reduce((acc, item, i) => {
+    acc[item.id] = i;
+    return acc;
+  }, {} as Record<string, number>);
 }
 
 function TodoView({ view }: { view: View }) {
