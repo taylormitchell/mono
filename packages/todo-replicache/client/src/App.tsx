@@ -151,14 +151,15 @@ function createPositions(todos: Todo[], partialPositions: Record<string, string>
   return { ...partialPositions, ...newPositions };
 }
 
-function moveTodo(
+function moveAfter(
   todos: Todo[],
   from: number,
   to: number,
   partialPositions: Record<string, string>
 ) {
   const newPositions = createPositions(todos, partialPositions);
-  if (from === to) return newPositions;
+  if (from === to || to === from - 1) return newPositions; // same position
+  if (to > todos.length - 1) return newPositions; // out of bound
   const aTodoId = todos[to]?.id;
   const bTodoId = todos[to + 1]?.id;
   const aPos = aTodoId ? newPositions[aTodoId] : null;
@@ -216,7 +217,7 @@ function TodoView({ view }: { view: View }) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
-                        const newPositions = moveTodo(filteredTodos, i, i - 2, view.positions);
+                        const newPositions = moveAfter(filteredTodos, i, i - 2, view.positions);
                         store.views.update(view.id, { ...view, positions: newPositions });
                       }}
                     >
@@ -224,7 +225,7 @@ function TodoView({ view }: { view: View }) {
                     </button>
                     <button
                       onClick={() => {
-                        const newPositions = moveTodo(filteredTodos, i, i + 1, view.positions);
+                        const newPositions = moveAfter(filteredTodos, i, i + 1, view.positions);
                         store.views.update(view.id, { ...view, positions: newPositions });
                       }}
                     >
