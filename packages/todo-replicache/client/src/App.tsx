@@ -144,7 +144,7 @@ function comparePositions(
   }
   if (!aPos) return 1;
   if (!bPos) return -1;
-  return aPos < bPos ? -1 : 1;
+  return aPos < bPos ? 1 : -1;
 }
 
 /**
@@ -165,7 +165,7 @@ function moveTo(
   // When moving an item down the list, we need to adjust the target index
   // to account for the removed item
   const targetIndex = to <= from ? to : to - 1;
-  sortedItems.splice(Math.max(0, targetIndex), 0, item);
+  sortedItems.splice(Math.max(0, targetIndex + 1), 0, item);
 
   return sortedItems.reduce((acc, item, i) => {
     acc[item.id] = i;
