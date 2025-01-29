@@ -4,6 +4,16 @@ import { createStore, genId, Store } from "./store";
 import { Todo, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
 import { useDebounce } from "./utils";
+import {
+  DndContext,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import { createPortal } from "react-dom";
 
 declare global {
   interface Window {
@@ -175,6 +185,16 @@ function TodoView({ view }: { view: View }) {
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Configure sensors for drag detection
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const todos = useSubscribe(
     store.rep,
@@ -198,6 +218,24 @@ function TodoView({ view }: { view: View }) {
 
   console.log({ filteredTodos, view });
 
+  const handleDragStart = (event: DragStartEvent) => {
+    console.log("drag start", event);
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    console.log("drag end", event);
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+      const oldIndex = filteredTodos.findIndex((t) => t.id === active.id);
+      const newIndex = filteredTodos.findIndex((t) => t.id === over.id);
+      const newPositions = moveTo(filteredTodos, oldIndex, newIndex, view.positions);
+      store.views.update(view.id, { ...view, positions: newPositions });
+    }
+  };
+
   return (
     <div className="flex-1">
       <div className="rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
@@ -211,40 +249,35 @@ function TodoView({ view }: { view: View }) {
           />
         </div>
 
-        <div className="divide-y divide-[#30363d]">
-          {filteredTodos.map((todo, i) => (
-            <div key={todo.id} className="flex flex-col">
-              <div className="flex items-center justify-between">
-                <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
-                {view.sort.field === "position" && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        const newPositions = moveTo(filteredTodos, i, i - 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      }}
-                    >
-                      Move up
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newPositions = moveTo(filteredTodos, i, i + 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      }}
-                    >
-                      Move down
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center">
-                <div>{todo.id}</div>
-                <div>{"->"}</div>
-                <div>{view.positions[todo.id] ?? "undefined"}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="divide-y divide-[#30363d]">
+            {filteredTodos.map((todo) => (
+              <TodoItem
+                key={todo.id}
+                todo={todo}
+                editingId={editingId}
+                setEditingId={setEditingId}
+                isDragging={todo.id === activeId}
+              />
+            ))}
+          </div>
+
+          {createPortal(
+            <DragOverlay>
+              {activeId ? (
+                <div className="rounded-md border border-[#30363d] bg-[#161b22] shadow-lg">
+                  <TodoItem
+                    todo={filteredTodos.find((t) => t.id === activeId)!}
+                    editingId={editingId}
+                    setEditingId={setEditingId}
+                    isDragging={false}
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body
+          )}
+        </DndContext>
       </div>
     </div>
   );
@@ -254,10 +287,12 @@ function TodoItem({
   todo,
   editingId,
   setEditingId,
+  isDragging,
 }: {
   todo: Todo;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
+  isDragging: boolean;
 }) {
   const store = useStore();
   const [content, setContent] = useState(todo.content);
@@ -273,9 +308,12 @@ function TodoItem({
 
   return (
     <div
+      data-id={todo.id}
       className={cn(
         "flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]",
-        isEditing ? "bg-[#1c2128]" : ""
+        isEditing ? "bg-[#1c2128]" : "",
+        isDragging ? "opacity-50" : "",
+        "cursor-move"
       )}
     >
       <div className="mr-3">
@@ -301,11 +339,11 @@ function TodoItem({
           />
         ) : (
           <div
-            className="cursor-pointer"
-            onClick={() => {
-              console.log("click");
-              setEditingId(todo.id);
-            }}
+          // className="cursor-pointer"
+          // onClick={() => {
+          //   console.log("click");
+          //   setEditingId(todo.id);
+          // }}
           >
             {todo.content || <span className="text-[#6e7681]">Untitled</span>}
           </div>
