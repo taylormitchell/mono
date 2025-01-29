@@ -129,34 +129,51 @@ function TodoApp() {
   );
 }
 
-type Positions = Record<string, number>;
-
-function compareTodoPosition(a: Todo, b: Todo, partialPositions: Positions) {
+function compareTodoPosition(
+  a: { id: string; createdAt: string },
+  b: { id: string; createdAt: string },
+  partialPositions: Record<string, number>
+) {
   const aPos = partialPositions[a.id] ?? null;
   const bPos = partialPositions[b.id] ?? null;
-  if (!aPos && !bPos) return b.createdAt.localeCompare(a.createdAt);
+  if (!aPos && !bPos) {
+    if (b.createdAt === a.createdAt) {
+      return b.id.localeCompare(a.id);
+    } else {
+      return b.createdAt.localeCompare(a.createdAt);
+    }
+  }
   if (!aPos) return 1;
   if (!bPos) return -1;
   return aPos < bPos ? -1 : 1;
 }
 
-function createPositions(todos: Todo[], partialPositions: Positions) {
-  const sortedTodos = [...todos].sort((a, b) => compareTodoPosition(a, b, partialPositions));
-  return sortedTodos.reduce((acc, todo, i) => {
-    acc[todo.id] = i;
+/**
+ * Creates a new positions object which has indices assigned to each todo id
+ * which orders the todos by position
+ */
+function createPositions(
+  items: { id: string; createdAt: string }[],
+  partialPositions: Record<string, number>
+) {
+  const sortedItems = [...items].sort((a, b) => compareTodoPosition(a, b, partialPositions));
+  return sortedItems.reduce((acc, item, i) => {
+    acc[item.id] = i;
     return acc;
-  }, {} as Positions);
+  }, {} as Record<string, number>);
 }
 
 function moveAfter(
   todos: Todo[],
   from: number,
   to: number,
-  partialPositions: Record<string, string>
+  partialPositions: Record<string, number>
 ) {
   const newPositions = createPositions(todos, partialPositions);
-  if (from === to || to === from - 1) return newPositions; // same position
-  if (to > todos.length - 1) return newPositions; // out of bound
+  if (newPositions[from] === undefined) return newPositions;
+  const toBounded = Math.min(Math.max(to, 0), todos.length);
+  if (from === toBounded) return newPositions;
+
   const aTodoId = todos[to]?.id;
   const bTodoId = todos[to + 1]?.id;
   const aPos = aTodoId ? newPositions[aTodoId] : null;
