@@ -247,12 +247,9 @@ function TodoView({ view }: { view: View }) {
           >
             <div className="divide-y divide-[#30363d]">
               {filteredTodos.map((todo) => (
-                <SortableTodoItem
-                  key={todo.id}
-                  todo={todo}
-                  editingId={editingId}
-                  setEditingId={setEditingId}
-                />
+                <SortableItem key={todo.id} id={todo.id}>
+                  <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
+                </SortableItem>
               ))}
             </div>
           </SortableContext>
@@ -287,13 +284,9 @@ function TodoView({ view }: { view: View }) {
   }
 }
 
-function SortableTodoItem(props: {
-  todo: Todo;
-  editingId: string | null;
-  setEditingId: (id: string | null) => void;
-}) {
+function SortableItem({ children, id }: { children: React.ReactNode; id: string }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: props.todo.id,
+    id,
   });
 
   const style = {
@@ -303,7 +296,7 @@ function SortableTodoItem(props: {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TodoItem {...props} />
+      {children}
     </div>
   );
 }
