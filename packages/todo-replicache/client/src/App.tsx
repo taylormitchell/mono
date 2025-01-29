@@ -49,12 +49,10 @@ function cn(...args: (string | undefined | null)[]) {
 function TodoApp() {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Move keyboard shortcut handler here
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      console.log("keypress", e.key, isHotkey("escape", e), editingId);
       if (isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
         e.preventDefault();
         e.stopPropagation();
@@ -228,35 +226,25 @@ function TodoView({
           {filteredTodos.map((todo, i) => (
             <div key={todo.id} className="flex flex-col">
               <div className="flex items-center justify-between">
-                <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
-                {view.sort.field === "position" && (
-                  <div className="flex items-center gap-1 mr-2">
-                    <button
-                      onClick={() => {
-                        const newPositions = moveTo(filteredTodos, i, i - 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      }}
-                      className="p-1.5 text-[#6e7681] hover:text-white rounded"
-                      aria-label="Move up"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                        <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newPositions = moveTo(filteredTodos, i, i + 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      }}
-                      className="p-1.5 text-[#6e7681] hover:text-white rounded"
-                      aria-label="Move down"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                        <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
+                <TodoItem
+                  todo={todo}
+                  editingId={editingId}
+                  setEditingId={setEditingId}
+                  move={
+                    view.sort.field === "position"
+                      ? {
+                          up: () => {
+                            const newPositions = moveTo(filteredTodos, i, i - 1, view.positions);
+                            store.views.update(view.id, { ...view, positions: newPositions });
+                          },
+                          down: () => {
+                            const newPositions = moveTo(filteredTodos, i, i + 1, view.positions);
+                            store.views.update(view.id, { ...view, positions: newPositions });
+                          },
+                        }
+                      : null
+                  }
+                />
               </div>
               {/* <div className="flex items-center">
                 <div>{todo.id}</div>
@@ -315,8 +303,18 @@ function TodoItem({
             }}
             onBlur={() => setEditingId(null)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (isHotkey("enter", e)) {
                 setEditingId(null);
+              }
+              if (isHotkey("cmd+arrowup", e) && move?.up) {
+                e.preventDefault();
+                e.stopPropagation();
+                move.up();
+              }
+              if (isHotkey("cmd+arrowdown", e) && move?.down) {
+                e.preventDefault();
+                e.stopPropagation();
+                move.down();
               }
             }}
             className="w-full bg-transparent outline-none"
