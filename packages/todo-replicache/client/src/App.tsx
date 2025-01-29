@@ -140,8 +140,9 @@ function compareTodoPosition(a: Todo, b: Todo, partialPositions: Record<string, 
 
 function createPositions(todos: Todo[], partialPositions: Record<string, string>) {
   const sortedTodos = [...todos].sort((a, b) => compareTodoPosition(a, b, partialPositions));
-  const i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
-  if (i <= 0) return partialPositions;
+  let i = sortedTodos.findIndex((todo) => partialPositions[todo.id]);
+  i = i === -1 ? sortedTodos.length - 1 : i;
+  if (i === 0) return partialPositions;
   const newPositions = generateNKeysBetween(null, sortedTodos[i].id, i).reduce((acc, key, i) => {
     acc[sortedTodos[i].id] = key;
     return acc;
@@ -152,6 +153,8 @@ function createPositions(todos: Todo[], partialPositions: Record<string, string>
 function TodoView({ view }: { view: View }) {
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const todos = useSubscribe(
     store.rep,
     async (tx) => {
@@ -172,6 +175,8 @@ function TodoView({ view }: { view: View }) {
       return b.createdAt.localeCompare(a.createdAt);
     });
 
+  console.log({ filteredTodos, view });
+
   return (
     <div className="flex-1">
       <div className="rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
@@ -190,7 +195,7 @@ function TodoView({ view }: { view: View }) {
             .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
             .map((todo, i) => (
               <div key={todo.id} className="flex items-center justify-between">
-                <TodoItem todo={todo} editingId={null} setEditingId={() => {}} />
+                <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
                 {view.sort.field === "position" && (
                   <div className="flex items-center gap-2">
                     <button
@@ -287,7 +292,13 @@ function TodoItem({
             autoFocus
           />
         ) : (
-          <div className="cursor-pointer" onClick={() => setEditingId(todo.id)}>
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              console.log("click");
+              setEditingId(todo.id);
+            }}
+          >
             {todo.content || <span className="text-[#6e7681]">Untitled</span>}
           </div>
         )}
