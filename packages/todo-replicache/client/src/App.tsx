@@ -159,9 +159,12 @@ function moveTo(
   partialPositions: Record<string, number>
 ) {
   const sortedItems = [...items].sort((a, b) => comparePositions(a, b, partialPositions));
-  const item = sortedItems[from];
-  sortedItems.splice(from, 1);
-  sortedItems.splice(to, 0, item);
+  const toClamped = Math.max(0, Math.min(to, sortedItems.length - 1));
+  if (from !== toClamped) {
+    const item = sortedItems[from];
+    sortedItems.splice(from, 1);
+    sortedItems.splice(toClamped, 0, item);
+  }
   return sortedItems.reduce((acc, item, i) => {
     acc[item.id] = i;
     return acc;
