@@ -4,6 +4,22 @@ import { createStore, genId, Store } from "./store";
 import { Todo, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
 import { useDebounce } from "./utils";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 declare global {
   interface Window {
@@ -175,6 +191,14 @@ function TodoView({ view }: { view: View }) {
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const todos = useSubscribe(
     store.rep,
@@ -211,41 +235,68 @@ function TodoView({ view }: { view: View }) {
           />
         </div>
 
-        <div className="divide-y divide-[#30363d]">
-          {filteredTodos.map((todo, i) => (
-            <div key={todo.id} className="flex flex-col">
-              <div className="flex items-center justify-between">
-                <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
-                {view.sort.field === "position" && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        const newPositions = moveTo(filteredTodos, i, i - 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      }}
-                    >
-                      Move up
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newPositions = moveTo(filteredTodos, i, i + 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      }}
-                    >
-                      Move down
-                    </button>
-                  </div>
-                )}
-              </div>
-              {/* <div className="flex items-center">
-                <div>{todo.id}</div>
-                <div>{"->"}</div>
-                <div>{view.positions[todo.id] ?? "undefined"}</div>
-              </div> */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredTodos.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="divide-y divide-[#30363d]">
+              {filteredTodos.map((todo) => (
+                <SortableItem key={todo.id} id={todo.id}>
+                  <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
+                </SortableItem>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+          <DragOverlay>
+            {activeId ? (
+              <TodoItem
+                todo={filteredTodos.find((t) => t.id === activeId)!}
+                editingId={editingId}
+                setEditingId={setEditingId}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
+    </div>
+  );
+
+  function handleDragStart(event: any) {
+    setActiveId(event.active.id);
+  }
+
+  async function handleDragEnd(event: any) {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = filteredTodos.findIndex((t) => t.id === active.id);
+      const newIndex = filteredTodos.findIndex((t) => t.id === over.id);
+      const newPositions = moveTo(filteredTodos, oldIndex, newIndex, view.positions);
+      await store.views.update(view.id, { ...view, positions: newPositions });
+    }
+    setActiveId(null);
+  }
+}
+
+function SortableItem({ children, id }: { children: React.ReactNode; id: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
     </div>
   );
 }
