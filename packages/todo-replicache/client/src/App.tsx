@@ -191,51 +191,49 @@ function TodoView({ view }: { view: View }) {
         </div>
 
         <div className="divide-y divide-[#30363d]">
-          {filteredTodos
-            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-            .map((todo, i) => (
-              <div key={todo.id} className="flex items-center justify-between">
-                <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
-                {view.sort.field === "position" && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        console.log("move up");
-                        const newPositions = createPositions(filteredTodos, view.positions);
-                        const aTodoId = filteredTodos[i - 2]?.id;
-                        const bTodoId = filteredTodos[i - 1]?.id;
-                        const aPos = aTodoId ? newPositions[aTodoId] : null;
-                        const bPos = bTodoId ? newPositions[bTodoId] : null;
-                        const newPos = generateKeyBetween(aPos, bPos);
-                        store.views.update(view.id, {
-                          ...view,
-                          positions: { ...newPositions, [todo.id]: newPos },
-                        });
-                      }}
-                    >
-                      Move up
-                    </button>
-                    <button
-                      onClick={() => {
-                        console.log("move down");
-                        const newPositions = createPositions(filteredTodos, view.positions);
-                        const aTodoId = filteredTodos[i + 1]?.id;
-                        const bTodoId = filteredTodos[i + 2]?.id;
-                        const aPos = aTodoId ? newPositions[aTodoId] : null;
-                        const bPos = bTodoId ? newPositions[bTodoId] : null;
-                        const newPos = generateKeyBetween(aPos, bPos);
-                        store.views.update(view.id, {
-                          ...view,
-                          positions: { ...newPositions, [todo.id]: newPos },
-                        });
-                      }}
-                    >
-                      Move down
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+          {filteredTodos.map((todo, i) => (
+            <div key={todo.id} className="flex items-center justify-between">
+              <TodoItem todo={todo} editingId={editingId} setEditingId={setEditingId} />
+              {view.sort.field === "position" && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (i === 0) return;
+                      const newPositions = createPositions(filteredTodos, view.positions);
+                      const aTodoId = filteredTodos[i - 2]?.id;
+                      const bTodoId = filteredTodos[i - 1]?.id;
+                      const aPos = aTodoId ? newPositions[aTodoId] : null;
+                      const bPos = bTodoId ? newPositions[bTodoId] : null;
+                      const newPos = generateKeyBetween(aPos, bPos);
+                      store.views.update(view.id, {
+                        ...view,
+                        positions: { ...newPositions, [todo.id]: newPos },
+                      });
+                    }}
+                  >
+                    Move up
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (i === filteredTodos.length - 1) return;
+                      const newPositions = createPositions(filteredTodos, view.positions);
+                      const aTodoId = filteredTodos[i + 1]?.id;
+                      const bTodoId = filteredTodos[i + 2]?.id;
+                      const aPos = aTodoId ? newPositions[aTodoId] : null;
+                      const bPos = bTodoId ? newPositions[bTodoId] : null;
+                      const newPos = generateKeyBetween(aPos, bPos);
+                      store.views.update(view.id, {
+                        ...view,
+                        positions: { ...newPositions, [todo.id]: newPos },
+                      });
+                    }}
+                  >
+                    Move down
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
