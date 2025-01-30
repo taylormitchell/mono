@@ -2,7 +2,7 @@ import { useRef, useCallback, useEffect } from "react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useDebounce(fn: (...args: any[]) => void, deps: any[], ms: number) {
-  const timeout = useRef<ReturnType<typeof setTimeout>>(0);
+  const timeout = useRef<number>(0);
 
   const debouncedFn = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
