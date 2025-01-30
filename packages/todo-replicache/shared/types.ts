@@ -10,7 +10,7 @@ export const todoSchema = z.object({
   deletedAt: z.string().nullable().default(null),
   dueDate: z.string().nullable().default(null),
   version: z.number().default(0),
-  status: todoStatusSchema.default("active"),
+  status: todoStatusSchema.nullable().default(null),
 });
 
 export type Todo = z.infer<typeof todoSchema>;
