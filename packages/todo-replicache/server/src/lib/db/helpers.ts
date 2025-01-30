@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
-import { replicacheClientTable, replicacheServerTable, todoTable } from "./schema";
-import { sql, eq, gt, and } from "drizzle-orm";
+import { replicacheClientTable, replicacheServerTable } from "./schema";
+import { eq, gt, and } from "drizzle-orm";
 let _db: BunSQLiteDatabase | null = null;
 
 export const serverID = 1;
@@ -87,18 +87,4 @@ export async function setServerVersion(db: BunSQLiteDatabase, version: number) {
       target: [replicacheServerTable.id],
       set: { version },
     });
-}
-
-export async function summary() {
-  const db = await getDb();
-  const todoCount = db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(todoTable)
-    .get();
-  const version = db
-    .select({ version: replicacheServerTable.version })
-    .from(replicacheServerTable)
-    .where(eq(replicacheServerTable.id, serverID))
-    .get()?.version;
-  return { todoCount: todoCount?.count ?? 0, version };
 }

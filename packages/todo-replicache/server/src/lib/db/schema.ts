@@ -5,14 +5,14 @@ export const replicacheServerTable = sqliteTable("replicache_server", {
   version: integer("version").notNull(),
 });
 
-export const todoTable = sqliteTable("todo", {
+export const itemTable = sqliteTable("item", {
   id: text("id").primaryKey(),
   content: text("content").notNull(),
   dueDate: text("due_date"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
   deletedAt: text("deleted_at"),
-  status: text("status").notNull().default("active"),
+  status: text("status"),
   version: integer("version").notNull().default(0),
 });
 

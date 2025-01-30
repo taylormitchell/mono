@@ -1,7 +1,7 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { useSubscribe } from "replicache-react";
 import { createStore, genId, Store } from "./store";
-import { Todo, View } from "../../shared/types";
+import { Item, itemStatusList, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
 import { useDebounce } from "./utils";
 
@@ -46,7 +46,7 @@ function cn(...args: (string | undefined | null)[]) {
   return args.filter(Boolean).join(" ");
 }
 
-function TodoApp() {
+function ItemApp() {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -57,7 +57,7 @@ function TodoApp() {
         e.preventDefault();
         e.stopPropagation();
         const id = genId();
-        await store.todos.create({ id, content: "" });
+        await store.items.create({ id, content: "" });
         setEditingId(id);
       }
       if (isHotkey("escape", e) && editingId) {
@@ -104,27 +104,26 @@ function TodoApp() {
     <div className="min-h-screen bg-[#0d1117] text-white">
       <div className="max-w-[800px] mx-auto px-4">
         <header className="py-4 flex items-center justify-between border-b border-[#30363d]">
-          <div className="flex items-center gap-2">
-            <svg height="24" viewBox="0 0 16 16" width="24" className="fill-current">
-              <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
-            </svg>
-            <h1 className="text-xl font-semibold">Todos</h1>
-          </div>
           <button
-            onClick={() => store.todos.create({ content: "" })}
+            onClick={() => store.items.create({ content: "" })}
             className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md text-sm font-semibold"
           >
-            New Todo
+            New Item
+          </button>
+          <button
+            onClick={() => {
+              indexedDB.deleteDatabase(store.rep.idbName);
+              window.location.reload();
+            }}
+            className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md text-sm font-semibold"
+          >
+            Reset
           </button>
         </header>
 
         <div className="mt-4 flex gap-4">
           <div className="flex-1">
-            {allView ? (
-              <TodoView view={allView} editingId={editingId} setEditingId={setEditingId} />
-            ) : (
-              <div>Loading...</div>
-            )}
+            {allView ? <ItemView view={allView} editingId={editingId} setEditingId={setEditingId} /> : null}
           </div>
         </div>
       </div>
@@ -175,7 +174,7 @@ function moveTo(
   }, {} as Record<string, number>);
 }
 
-function TodoView({
+function ItemView({
   view,
   editingId,
   setEditingId,
@@ -187,19 +186,19 @@ function TodoView({
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const todos = useSubscribe(
+  const items = useSubscribe(
     store.rep,
     async (tx) => {
-      const allTodos = await store.todos.getAll(tx);
-      if (!allTodos) return [];
-      if (!view.filter?.status) return allTodos;
-      return allTodos.filter((todo) => todo.status === view.filter.status);
+      const allItems = await store.items.getAll(tx);
+      if (!allItems) return [];
+      if (!view.filter?.status) return allItems;
+      return allItems.filter((item) => item.status === view.filter.status);
     },
-    { default: [] as Todo[] }
+    { default: [] as Item[] }
   );
 
-  const filteredTodos = todos
-    .filter((todo) => todo.content.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredItems = items
+    .filter((item) => item.content.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (view.sort.field === "position") {
         return comparePositions(a, b, view.positions);
@@ -207,7 +206,7 @@ function TodoView({
       return b.createdAt.localeCompare(a.createdAt);
     });
 
-  console.log({ filteredTodos, view });
+  console.log({ filteredItems, view });
 
   return (
     <div className="flex-1">
@@ -215,7 +214,7 @@ function TodoView({
         <div className="p-4 border-b border-[#30363d]">
           <input
             type="text"
-            placeholder="Search todos..."
+            placeholder="Search items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
@@ -223,35 +222,27 @@ function TodoView({
         </div>
 
         <div className="divide-y divide-[#30363d]">
-          {filteredTodos.map((todo, i) => (
-            <div key={todo.id} className="flex flex-col">
-              <div className="flex items-center justify-between">
-                <TodoItem
-                  todo={todo}
-                  editingId={editingId}
-                  setEditingId={setEditingId}
-                  move={
-                    view.sort.field === "position"
-                      ? {
-                          up: () => {
-                            const newPositions = moveTo(filteredTodos, i, i - 1, view.positions);
-                            store.views.update(view.id, { ...view, positions: newPositions });
-                          },
-                          down: () => {
-                            const newPositions = moveTo(filteredTodos, i, i + 1, view.positions);
-                            store.views.update(view.id, { ...view, positions: newPositions });
-                          },
-                        }
-                      : null
-                  }
-                />
-              </div>
-              {/* <div className="flex items-center">
-                <div>{todo.id}</div>
-                <div>{"->"}</div>
-                <div>{view.positions[todo.id] ?? "undefined"}</div>
-              </div> */}
-            </div>
+          {filteredItems.map((item, i) => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              editingId={editingId}
+              setEditingId={setEditingId}
+              move={
+                view.sort.field === "position"
+                  ? {
+                      up: () => {
+                        const newPositions = moveTo(filteredItems, i, i - 1, view.positions);
+                        store.views.update(view.id, { ...view, positions: newPositions });
+                      },
+                      down: () => {
+                        const newPositions = moveTo(filteredItems, i, i + 1, view.positions);
+                        store.views.update(view.id, { ...view, positions: newPositions });
+                      },
+                    }
+                  : null
+              }
+            />
           ))}
         </div>
       </div>
@@ -259,24 +250,24 @@ function TodoView({
   );
 }
 
-function TodoItem({
-  todo,
+function ItemRow({
+  item,
   editingId,
   setEditingId,
   move,
 }: {
-  todo: Todo;
+  item: Item;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   move: null | { up: () => void; down: () => void };
 }) {
   const store = useStore();
-  const [content, setContent] = useState(todo.content);
-  const isEditing = editingId === todo.id;
+  const [content, setContent] = useState(item.content);
+  const isEditing = editingId === item.id;
 
   const debouncedUpdate = useDebounce(
     (id: string, content: string) => {
-      store.todos.update(id, { content });
+      store.items.update(id, { content });
     },
     [store],
     300
@@ -284,14 +275,23 @@ function TodoItem({
 
   return (
     <div
-      className={cn(
-        "flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]",
-        isEditing ? "bg-[#1c2128]" : ""
-      )}
+      id={item.id}
+      className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]", isEditing ? "bg-[#1c2128]" : "")}
     >
-      <div className="mr-3">
-        <input type="checkbox" className="rounded-full border-[#30363d]" />
-      </div>
+      {item.status !== null && (
+        <div className="mr-3">
+          <input
+            type="checkbox"
+            checked={item.status === "completed"}
+            onChange={(e) => {
+              store.items.update(item.id, {
+                status: e.target.checked ? "completed" : "active",
+              });
+            }}
+            className="rounded-full border-[#30363d]"
+          />
+        </div>
+      )}
       <div className="flex-1">
         <div className="flex items-center gap-4">
           <input
@@ -299,13 +299,23 @@ function TodoItem({
             value={content}
             onChange={(e) => {
               setContent(e.target.value);
-              debouncedUpdate(todo.id, e.target.value);
+              debouncedUpdate(item.id, e.target.value);
             }}
             placeholder="Untitled"
             onBlur={() => setEditingId(null)}
             onKeyDown={(e) => {
-              if (isHotkey("enter", e)) {
-                setEditingId(null);
+              if (isHotkey("escape", e)) {
+                document.getElementById(item.id)?.querySelector("input")?.blur();
+              }
+              if (isHotkey("backspace", e) && item.content === "") {
+                e.preventDefault();
+                document.getElementById(item.id)?.previousElementSibling?.querySelector("input")?.focus();
+                store.items.delete(item.id);
+              }
+              if (isHotkey("cmd+enter", e)) {
+                const i = itemStatusList.indexOf(item.status);
+                const newStatus = itemStatusList[i + 1] ?? itemStatusList[0];
+                store.items.update(item.id, { status: newStatus });
               }
               if (isHotkey("cmd+arrowup", e) && move?.up) {
                 e.preventDefault();
@@ -317,48 +327,53 @@ function TodoItem({
                 e.stopPropagation();
                 move.down();
               }
+              if (isHotkey("arrowup", e)) {
+                e.preventDefault();
+                e.stopPropagation();
+                const el = document.getElementById(item.id)?.previousElementSibling?.querySelector("input");
+                if (el) {
+                  el.focus();
+                }
+              }
+              if (isHotkey("arrowdown", e)) {
+                e.preventDefault();
+                e.stopPropagation();
+                const el = document.getElementById(item.id)?.nextElementSibling?.querySelector("input");
+                if (el) {
+                  el.focus();
+                }
+              }
             }}
             className="flex-1 bg-transparent outline-none"
             autoFocus
           />
-          <input
+          {/* <input
             type="date"
-            value={todo.dueDate || ""}
+            value={item.dueDate || ""}
             onChange={(e) => {
-              store.todos.update(todo.id, { dueDate: e.target.value || null });
+              store.items.update(item.id, { dueDate: e.target.value || null });
             }}
             onFocus={(e) => e.target.showPicker()}
             onClick={(e) => e.currentTarget.showPicker()}
             className="bg-[#0d1117] border border-[#30363d] rounded px-2 py-1 text-sm"
-          />
+          /> */}
         </div>
       </div>
       {move && (
         <div className="flex items-center gap-1 mr-2">
-          <button
-            onClick={move.up}
-            className="p-1.5 text-[#6e7681] hover:text-white rounded"
-            aria-label="Move up"
-          >
+          <button onClick={move.up} className="p-1.5 text-[#6e7681] hover:text-white rounded" aria-label="Move up">
             <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
               <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
             </svg>
           </button>
-          <button
-            onClick={move.down}
-            className="p-1.5 text-[#6e7681] hover:text-white rounded"
-            aria-label="Move down"
-          >
+          <button onClick={move.down} className="p-1.5 text-[#6e7681] hover:text-white rounded" aria-label="Move down">
             <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
               <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
             </svg>
           </button>
         </div>
       )}
-      <button
-        onClick={() => store.todos.delete(todo.id)}
-        className="ml-2 p-1 text-[#6e7681] hover:text-white rounded"
-      >
+      <button onClick={() => store.items.delete(item.id)} className="ml-2 p-1 text-[#6e7681] hover:text-white rounded">
         <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
           <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
         </svg>
@@ -370,7 +385,7 @@ function TodoItem({
 function App() {
   return (
     <StoreProvider>
-      <TodoApp />
+      <ItemApp />
     </StoreProvider>
   );
 }

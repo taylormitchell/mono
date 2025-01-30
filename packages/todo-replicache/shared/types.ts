@@ -1,8 +1,10 @@
 import { z } from "zod";
 
-const todoStatusSchema = z.enum(["active", "completed"]);
+const itemStatusSchema = z.enum(["active", "completed"]);
 
-export const todoSchema = z.object({
+export const itemStatusList = [null, ...itemStatusSchema.options] as const;
+
+export const itemSchema = z.object({
   id: z.string(),
   content: z.string(),
   createdAt: z.string(),
@@ -10,10 +12,10 @@ export const todoSchema = z.object({
   deletedAt: z.string().nullable().default(null),
   dueDate: z.string().nullable().default(null),
   version: z.number().default(0),
-  status: todoStatusSchema.nullable().default(null),
+  status: itemStatusSchema.nullable().default(null),
 });
 
-export type Todo = z.infer<typeof todoSchema>;
+export type Item = z.infer<typeof itemSchema>;
 
 const projectSchema = z.object({
   id: z.string(),
@@ -29,40 +31,40 @@ export const viewSchema = z.object({
   id: z.string(),
   name: z.string(),
   filter: z.object({
-    status: todoStatusSchema.optional(),
+    status: itemStatusSchema.optional(),
   }),
   sort: z.object({
     field: z.enum(["position", "createdAt", "dueDate"]),
     direction: z.enum(["asc", "desc"]),
   }),
-  positions: z.record(z.number()), // Map of todoId -> position string
+  positions: z.record(z.number()), // Map of itemId -> position
 });
 
 export type View = z.infer<typeof viewSchema>;
 
-const createTodoMutationSchema = z.object({
+const createItemMutationSchema = z.object({
   id: z.number(),
   clientID: z.string(),
   timestamp: z.number(),
-  name: z.literal("createTodo"),
-  args: todoSchema,
+  name: z.literal("createItem"),
+  args: itemSchema,
 });
 
-const updateTodoMutationSchema = z.object({
+const updateItemMutationSchema = z.object({
   id: z.number(),
   clientID: z.string(),
   timestamp: z.number(),
-  name: z.literal("updateTodo"),
-  args: todoSchema.partial().extend({
+  name: z.literal("updateItem"),
+  args: itemSchema.partial().extend({
     id: z.string(),
   }),
 });
 
-const deleteTodoMutationSchema = z.object({
+const deleteItemMutationSchema = z.object({
   id: z.number(),
   clientID: z.string(),
   timestamp: z.number(),
-  name: z.literal("deleteTodo"),
+  name: z.literal("deleteItem"),
   args: z.object({
     id: z.string(),
     deletedAt: z.string(),
@@ -111,9 +113,9 @@ const deleteViewMutationSchema = z.object({
 // });
 
 export const mutationSchema = z.union([
-  createTodoMutationSchema,
-  updateTodoMutationSchema,
-  deleteTodoMutationSchema,
+  createItemMutationSchema,
+  updateItemMutationSchema,
+  deleteItemMutationSchema,
   //   createProjectMutationSchema,
   //   updateProjectMutationSchema,
   createViewMutationSchema,

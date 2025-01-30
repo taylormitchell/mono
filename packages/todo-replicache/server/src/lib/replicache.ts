@@ -11,8 +11,8 @@ import type { Request, Response } from "express";
 import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 
 import { z } from "zod";
-import { Mutation, mutationSchema, todoSchema } from "../../../shared/types";
-import { todoTable } from "./db/schema";
+import { Mutation, mutationSchema, itemSchema } from "../../../shared/types";
+import { itemTable } from "./db/schema";
 import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 
 const pushSchema = z.object({
@@ -76,18 +76,18 @@ export async function handlePull(req: Request, res: Response) {
       );
 
       // Get changed domain objects since requested version
-      const changedTodos = await tr
+      const changedItems = await tr
         .select()
-        .from(todoTable)
-        .where(gt(todoTable.version, clientVersion));
+        .from(itemTable)
+        .where(gt(itemTable.version, clientVersion));
 
       // Build patch operations
       const patch: PatchOperation[] = [];
-      for (const todo of changedTodos) {
+      for (const item of changedItems) {
         patch.push({
           op: "put",
-          key: `todo/${todo.id}`,
-          value: todoSchema.parse(todo),
+          key: `item/${item.id}`,
+          value: itemSchema.parse(item),
         });
       }
 
@@ -128,39 +128,40 @@ async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mut
   console.log(`Mutation ${mutation.id} is new - processing`);
 
   switch (mutation.name) {
-    case "createTodo":
+    case "createItem":
       await db
-        .insert(todoTable)
+        .insert(itemTable)
         .values({
           ...mutation.args,
           version: nextVersion,
         })
         .onConflictDoUpdate({
-          target: [todoTable.id],
+          target: [itemTable.id],
           set: {
             ...mutation.args,
             version: nextVersion,
           },
         });
       break;
-    case "updateTodo":
+    case "updateItem":
       const { id, ...args } = mutation.args;
       await db
-        .update(todoTable)
+        .update(itemTable)
         .set({
           ...args,
           version: nextVersion,
         })
-        .where(eq(todoTable.id, id));
+        .where(eq(itemTable.id, id));
       break;
-    case "deleteTodo":
-      const { id: todoID, deletedAt } = mutation.args;
+    case "deleteItem":
+      const { id: itemID, deletedAt } = mutation.args;
       await db
-        .update(todoTable)
+        .update(itemTable)
         .set({ deletedAt, version: nextVersion })
-        .where(eq(todoTable.id, todoID));
+        .where(eq(itemTable.id, itemID));
       break;
     default:
+      console.log("unknown mutation", mutation);
       mutation satisfies never;
   }
 

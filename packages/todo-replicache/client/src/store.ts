@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Mutation, Todo, todoSchema, View, viewSchema } from "../../shared/types";
+import { Mutation, Item, itemSchema, View, viewSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 
@@ -66,22 +66,22 @@ export function createUndoManager() {
 }
 
 export function createStore() {
-  const todos = generate("todo", todoSchema.parse);
+  const items = generate("item", itemSchema.parse);
   const views = generate("view", viewSchema.parse);
   const rep = new Replicache({
-    name: "todo-user-id",
+    name: "item-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
-    // pushURL: env.VITE_REPLICACHE_PUSH_URL,
-    // pullURL: env.VITE_REPLICACHE_PULL_URL,
+    pushURL: env.VITE_REPLICACHE_PUSH_URL,
+    pullURL: env.VITE_REPLICACHE_PULL_URL,
     mutators: {
-      async createTodo(tx: WriteTransaction, props) {
-        return todos.set(tx, props);
+      async createItem(tx: WriteTransaction, props) {
+        return items.set(tx, props);
       },
-      async updateTodo(tx: WriteTransaction, props) {
-        return todos.update(tx, props);
+      async updateItem(tx: WriteTransaction, props) {
+        return items.update(tx, props);
       },
-      async deleteTodo(tx: WriteTransaction, props) {
-        return todos.delete(tx, props.id);
+      async deleteItem(tx: WriteTransaction, props) {
+        return items.delete(tx, props.id);
       },
       async createView(tx: WriteTransaction, props) {
         return views.set(tx, props);
@@ -99,55 +99,49 @@ export function createStore() {
   return {
     rep,
     undoManager,
-    todos: {
-      create: async ({
-        id = genId(),
-        content = "",
-      }: {
-        id?: string;
-        content: string;
-        dueDate?: string;
-      }) => {
+    items: {
+      create: async ({ id = genId(), content = "" }: { id?: string; content: string; dueDate?: string }) => {
         const action: UndoableAction = {
           do: () =>
-            rep.mutate.createTodo({
+            rep.mutate.createItem({
               id,
               content,
-              status: "active",
+              status: null,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               deletedAt: null,
+              dueDate: null,
               version: 0,
             }),
-          undo: () => rep.mutate.updateTodo({ id, deletedAt: new Date().toISOString() }),
+          undo: () => rep.mutate.updateItem({ id, deletedAt: new Date().toISOString() }),
         };
         await action.do();
         undoManager.add(action);
       },
-      update: async (id: string, props: Partial<Todo>) => {
-        const todo = await rep.query((tx) => todos.get(tx, id));
-        const prevProps: Partial<Todo> = todo
-          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: todo[key] }), {})
+      update: async (id: string, props: Partial<Item>) => {
+        const item = await rep.query((tx) => items.get(tx, id));
+        const prevProps: Partial<Item> = item
+          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: item[key as keyof Item] }), {})
           : {};
         const action: UndoableAction = {
-          do: () => rep.mutate.updateTodo({ id, ...props }),
-          undo: () => (todo ? rep.mutate.updateTodo({ id, ...prevProps }) : Promise.resolve()),
+          do: () => rep.mutate.updateItem({ id, ...props }),
+          undo: () => (item ? rep.mutate.updateItem({ id, ...prevProps }) : Promise.resolve()),
         };
         await action.do();
         undoManager.add(action);
       },
       delete: async (id: string) => {
-        const todo = await rep.query((tx) => todos.get(tx, id));
+        const item = await rep.query((tx) => items.get(tx, id));
         const action: UndoableAction = {
-          do: () => rep.mutate.deleteTodo({ id, deletedAt: new Date().toISOString() }),
-          undo: () => (todo ? rep.mutate.createTodo(todo) : Promise.resolve()),
+          do: () => rep.mutate.deleteItem({ id, deletedAt: new Date().toISOString() }),
+          undo: () => (item ? rep.mutate.createItem(item) : Promise.resolve()),
         };
         await action.do();
         undoManager.add(action);
       },
       getAll: async (tx: ReadTransaction) => {
-        const res = await todos.list(tx);
-        return res.filter((todo) => todo.deletedAt === null);
+        const res = await items.list(tx);
+        return res.filter((item) => item.deletedAt === null);
       },
     },
     views: {
@@ -173,7 +167,7 @@ export function createStore() {
         console.log("update view", id, props);
         const view = await rep.query((tx) => views.get(tx, id));
         const prevProps: Partial<View> = view
-          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: view[key] }), {})
+          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: view[key as keyof View] }), {})
           : {};
         const action: UndoableAction = {
           do: () => rep.mutate.updateView({ id, ...props }),
