@@ -16,7 +16,7 @@ export function useDebounce(fn: (...args: any[]) => void, deps: any[], ms: numbe
 
   useEffect(() => {
     return () => {
-      clearTimeout(timeout.current);
+      if (timeout.current) clearTimeout(timeout.current);
     };
   }, [debouncedFn]);
 
