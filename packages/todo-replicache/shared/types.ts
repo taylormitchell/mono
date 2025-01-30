@@ -8,6 +8,7 @@ export const todoSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),
+  dueDate: z.string().nullable().default(null),
   version: z.number().default(0),
   status: todoStatusSchema.default("active"),
 });

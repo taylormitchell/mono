@@ -293,7 +293,7 @@ function TodoItem({
         <input type="checkbox" className="rounded-full border-[#30363d]" />
       </div>
       <div className="flex-1">
-        {isEditing ? (
+        <div className="flex items-center gap-4">
           <input
             type="text"
             value={content}
@@ -301,6 +301,7 @@ function TodoItem({
               setContent(e.target.value);
               debouncedUpdate(todo.id, e.target.value);
             }}
+            placeholder="Untitled"
             onBlur={() => setEditingId(null)}
             onKeyDown={(e) => {
               if (isHotkey("enter", e)) {
@@ -317,20 +318,18 @@ function TodoItem({
                 move.down();
               }
             }}
-            className="w-full bg-transparent outline-none"
+            className="flex-1 bg-transparent outline-none"
             autoFocus
           />
-        ) : (
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              console.log("click");
-              setEditingId(todo.id);
+          <input
+            type="date"
+            value={todo.dueDate || ""}
+            onChange={(e) => {
+              store.todos.update(todo.id, { dueDate: e.target.value || null });
             }}
-          >
-            {todo.content || <span className="text-[#6e7681]">Untitled</span>}
-          </div>
-        )}
+            className="bg-[#0d1117] border border-[#30363d] rounded px-2 py-1 text-sm"
+          />
+        </div>
       </div>
       {move && (
         <div className="flex items-center gap-1 mr-2">
