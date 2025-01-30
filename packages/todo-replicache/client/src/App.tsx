@@ -327,6 +327,8 @@ function TodoItem({
             onChange={(e) => {
               store.todos.update(todo.id, { dueDate: e.target.value || null });
             }}
+            onFocus={(e) => e.target.showPicker()}
+            onClick={(e) => e.currentTarget.showPicker()}
             className="bg-[#0d1117] border border-[#30363d] rounded px-2 py-1 text-sm"
           />
         </div>
