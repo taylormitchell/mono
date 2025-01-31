@@ -1,17 +1,16 @@
 import "dotenv/config";
-import { BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
+import { LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
 import { replicacheClientTable, replicacheServerTable } from "./schema";
-import { Database } from "bun:sqlite";
 import { eq, gt, and } from "drizzle-orm";
-let _db: BunSQLiteDatabase | null = null;
+let _db: LibSQLDatabase | null = null;
 
 export const serverID = 1;
-export async function getDb(): Promise<BunSQLiteDatabase> {
+export async function getDb(): Promise<LibSQLDatabase> {
   if (!_db) {
     if (!process.env.DB_FILE_NAME) {
       throw new Error("DB_FILE_NAME is not set");
     }
-    _db = drizzle(new Database(process.env.DB_FILE_NAME));
+    _db = drizzle(process.env.DB_FILE_NAME);
 
     // Initialize server version in a transaction
     await _db.transaction(async (tx) => {
@@ -28,8 +27,8 @@ export async function resetDb() {
   _db = null;
 }
 
-export async function getServerVersion(db: BunSQLiteDatabase): Promise<number> {
-  const result = db
+export async function getServerVersion(db: LibSQLDatabase): Promise<number> {
+  const result = await db
     .select({ version: replicacheServerTable.version })
     .from(replicacheServerTable)
     .where(eq(replicacheServerTable.id, serverID))
@@ -37,8 +36,8 @@ export async function getServerVersion(db: BunSQLiteDatabase): Promise<number> {
   return result?.version ?? 0;
 }
 
-export async function getLastMutationID(db: BunSQLiteDatabase, clientID: string): Promise<number> {
-  const result = db
+export async function getLastMutationID(db: LibSQLDatabase, clientID: string): Promise<number> {
+  const result = await db
     .select({ lastMutationID: replicacheClientTable.lastMutationID })
     .from(replicacheClientTable)
     .where(eq(replicacheClientTable.id, clientID))
@@ -47,11 +46,11 @@ export async function getLastMutationID(db: BunSQLiteDatabase, clientID: string)
 }
 
 export async function getLastMutationIDChanges(
-  db: BunSQLiteDatabase,
+  db: LibSQLDatabase,
   clientGroupID: string,
   fromVersion: number
 ): Promise<Record<string, number>> {
-  const result = db
+  const result = await db
     .select({ id: replicacheClientTable.id, lastMutationID: replicacheClientTable.lastMutationID })
     .from(replicacheClientTable)
     .where(
@@ -65,7 +64,7 @@ export async function getLastMutationIDChanges(
 }
 
 export async function setLastMutationID(
-  db: BunSQLiteDatabase,
+  db: LibSQLDatabase,
   clientID: string,
   clientGroupID: string,
   mutationID: number,
@@ -80,7 +79,7 @@ export async function setLastMutationID(
     });
 }
 
-export async function setServerVersion(db: BunSQLiteDatabase, version: number) {
+export async function setServerVersion(db: LibSQLDatabase, version: number) {
   return await db
     .insert(replicacheServerTable)
     .values({ id: serverID, version })
