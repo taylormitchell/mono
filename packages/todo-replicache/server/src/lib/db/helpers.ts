@@ -1,20 +1,20 @@
 import "dotenv/config";
-import { LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
+import { BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
 import { replicacheClientTable, replicacheServerTable } from "./schema";
 import { eq, gt, and } from "drizzle-orm";
-import { createClient } from "@libsql/client/sqlite3";
-let _db: LibSQLDatabase | null = null;
+
+let _db: BetterSQLite3Database | null = null;
 
 export const serverID = 1;
-export async function getDb(): Promise<LibSQLDatabase> {
+export async function getDb(): Promise<BetterSQLite3Database> {
   if (!_db) {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL is not set");
     }
-    _db = drizzle(createClient({ url: process.env.DATABASE_URL }));
+    _db = drizzle(process.env.DATABASE_URL);
 
     // Initialize server version in a transaction
-    await _db.transaction(async (tx) => {
+    _db.transaction(async (tx) => {
       await tx
         .insert(replicacheServerTable)
         .values({ id: serverID, version: 0 })
@@ -28,8 +28,8 @@ export async function resetDb() {
   _db = null;
 }
 
-export async function getServerVersion(db: LibSQLDatabase): Promise<number> {
-  const result = await db
+export async function getServerVersion(db: BetterSQLite3Database): Promise<number> {
+  const result = db
     .select({ version: replicacheServerTable.version })
     .from(replicacheServerTable)
     .where(eq(replicacheServerTable.id, serverID))
@@ -37,8 +37,11 @@ export async function getServerVersion(db: LibSQLDatabase): Promise<number> {
   return result?.version ?? 0;
 }
 
-export async function getLastMutationID(db: LibSQLDatabase, clientID: string): Promise<number> {
-  const result = await db
+export async function getLastMutationID(
+  db: BetterSQLite3Database,
+  clientID: string
+): Promise<number> {
+  const result = db
     .select({ lastMutationID: replicacheClientTable.lastMutationID })
     .from(replicacheClientTable)
     .where(eq(replicacheClientTable.id, clientID))
@@ -47,11 +50,11 @@ export async function getLastMutationID(db: LibSQLDatabase, clientID: string): P
 }
 
 export async function getLastMutationIDChanges(
-  db: LibSQLDatabase,
+  db: BetterSQLite3Database,
   clientGroupID: string,
   fromVersion: number
 ): Promise<Record<string, number>> {
-  const result = await db
+  const result = db
     .select({ id: replicacheClientTable.id, lastMutationID: replicacheClientTable.lastMutationID })
     .from(replicacheClientTable)
     .where(
@@ -65,13 +68,13 @@ export async function getLastMutationIDChanges(
 }
 
 export async function setLastMutationID(
-  db: LibSQLDatabase,
+  db: BetterSQLite3Database,
   clientID: string,
   clientGroupID: string,
   mutationID: number,
   version: number
 ) {
-  return await db
+  return db
     .insert(replicacheClientTable)
     .values({ id: clientID, clientGroupID, lastMutationID: mutationID, version })
     .onConflictDoUpdate({
@@ -80,8 +83,8 @@ export async function setLastMutationID(
     });
 }
 
-export async function setServerVersion(db: LibSQLDatabase, version: number) {
-  return await db
+export async function setServerVersion(db: BetterSQLite3Database, version: number) {
+  return db
     .insert(replicacheServerTable)
     .values({ id: serverID, version })
     .onConflictDoUpdate({
