@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@libsql/client": "^0.14.0",
     "@types/cors": "^2.8.17",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -20,7 +21,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/bun": "^1.2.1",
     "@types/express": "^5.0.0",
     "drizzle-kit": "^0.30.4"
   }
