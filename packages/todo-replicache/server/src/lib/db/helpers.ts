@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 import { replicacheClientTable, replicacheServerTable } from "./schema";
+import { Database } from "bun:sqlite";
 import { eq, gt, and } from "drizzle-orm";
 let _db: BunSQLiteDatabase | null = null;
 
@@ -10,7 +11,7 @@ export async function getDb(): Promise<BunSQLiteDatabase> {
     if (!process.env.DB_FILE_NAME) {
       throw new Error("DB_FILE_NAME is not set");
     }
-    _db = drizzle(process.env.DB_FILE_NAME);
+    _db = drizzle(new Database(process.env.DB_FILE_NAME));
 
     // Initialize server version in a transaction
     await _db.transaction(async (tx) => {
