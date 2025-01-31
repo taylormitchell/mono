@@ -2,6 +2,7 @@ import "dotenv/config";
 import { LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
 import { replicacheClientTable, replicacheServerTable } from "./schema";
 import { eq, gt, and } from "drizzle-orm";
+import { createClient } from "@libsql/client/sqlite3";
 let _db: LibSQLDatabase | null = null;
 
 export const serverID = 1;
@@ -10,7 +11,7 @@ export async function getDb(): Promise<LibSQLDatabase> {
     if (!process.env.DB_FILE_NAME) {
       throw new Error("DB_FILE_NAME is not set");
     }
-    _db = drizzle(process.env.DB_FILE_NAME);
+    _db = drizzle(createClient({ url: process.env.DB_FILE_NAME }));
 
     // Initialize server version in a transaction
     await _db.transaction(async (tx) => {
