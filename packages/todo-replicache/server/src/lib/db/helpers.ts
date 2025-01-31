@@ -8,10 +8,10 @@ let _db: LibSQLDatabase | null = null;
 export const serverID = 1;
 export async function getDb(): Promise<LibSQLDatabase> {
   if (!_db) {
-    if (!process.env.DB_FILE_NAME) {
-      throw new Error("DB_FILE_NAME is not set");
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL is not set");
     }
-    _db = drizzle(createClient({ url: process.env.DB_FILE_NAME }));
+    _db = drizzle(createClient({ url: process.env.DATABASE_URL }));
 
     // Initialize server version in a transaction
     await _db.transaction(async (tx) => {
