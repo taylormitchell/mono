@@ -1,11 +1,11 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { pgTable, serial, text, integer } from "drizzle-orm/pg-core";
 
-export const replicacheServerTable = sqliteTable("replicache_server", {
-  id: integer("id").primaryKey(),
+export const replicacheServerTable = pgTable("replicache_server", {
+  id: serial("id").primaryKey(),
   version: integer("version").notNull(),
 });
 
-export const itemTable = sqliteTable("item", {
+export const itemTable = pgTable("item", {
   id: text("id").primaryKey(),
   content: text("content").notNull(),
   dueDate: text("due_date"),
@@ -16,7 +16,7 @@ export const itemTable = sqliteTable("item", {
   version: integer("version").notNull().default(0),
 });
 
-export const replicacheClientTable = sqliteTable("replicache_client", {
+export const replicacheClientTable = pgTable("replicache_client", {
   id: text("id").primaryKey(),
   clientGroupID: text("client_group_id").notNull(),
   lastMutationID: integer("last_mutation_id").notNull(),

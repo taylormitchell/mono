@@ -8,7 +8,7 @@ import {
 } from "./db/helpers";
 import { gt, eq } from "drizzle-orm";
 import type { Request, Response } from "express";
-import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { z } from "zod";
 import { Mutation, mutationSchema, itemSchema } from "../../../shared/types";
@@ -45,7 +45,7 @@ export async function handlePush(req: Request, res: Response) {
     }
 
     res.json({});
-    await sendPoke(); // You'll need to implement this based on your needs
+    await sendPoke();
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -107,7 +107,7 @@ export async function handlePull(req: Request, res: Response) {
   }
 }
 
-async function processMutation(db: BunSQLiteDatabase, clientGroupID: string, mutation: Mutation) {
+async function processMutation(db: NodePgDatabase, clientGroupID: string, mutation: Mutation) {
   const { clientID } = mutation;
 
   const prevVersion = await getServerVersion(db);

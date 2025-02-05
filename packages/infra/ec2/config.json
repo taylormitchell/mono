@@ -1,0 +1,10 @@
+{
+  "domain": "taylors.tech",
+  "sshHost": "ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com",
+  "apps": {
+    "items": {
+      "subdomain": "items",
+      "port": 3078
+    }
+  }
+}
