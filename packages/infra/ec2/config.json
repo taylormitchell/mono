@@ -1,6 +1,7 @@
 {
   "domain": "taylors.tech",
   "sshHost": "ec2-user@ec2-3-92-45-253.compute-1.amazonaws.com",
+  "repoDir": "/home/ec2-user/code/home",
   "apps": {
     "items": {
       "subdomain": "items",

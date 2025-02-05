@@ -7,6 +7,7 @@ import { z } from "zod";
 const ConfigSchema = z.object({
   domain: z.string(),
   sshHost: z.string(),
+  repoDir: z.string(),
   apps: z.record(
     z.string(),
     z.object({
@@ -36,7 +37,7 @@ async function saveConfig(config: Config): Promise<void> {
   await Bun.write(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
-async function push() {
+async function pushNginxConf() {
   const config = await loadConfig();
   const fullConfig = `
 user nginx;
@@ -123,6 +124,11 @@ http {
   }
 }
 
+async function pullRepo() {
+  const config = await loadConfig();
+  await $`ssh ${config.sshHost} 'cd ${config.repoDir} && git pull'`;
+}
+
 async function listApps() {
   const config = await loadConfig();
 
@@ -150,6 +156,7 @@ async function addApp(name: string, port: number, subdomain?: string) {
   config.apps[name] = { subdomain, port };
   await saveConfig(config);
   console.log(`Added app '${name}' (${subdomain}.${config.domain} -> port ${port})`);
+  return config;
 }
 
 async function removeApp(name: string) {
@@ -189,7 +196,7 @@ async function main() {
       break;
 
     case "push":
-      await push();
+      await pushNginxConf();
       break;
 
     default:
@@ -206,7 +213,7 @@ Commands:
   }
 }
 
-export { loadConfig, saveConfig, push, listApps, addApp, removeApp };
+export { loadConfig, saveConfig, pushNginxConf, listApps, addApp, removeApp, pullRepo };
 
 // Only run main if this is being executed as a script
 if (import.meta.main) {
