@@ -2,10 +2,7 @@ import { z } from "zod";
 import { Mutation, Item, itemSchema, View, viewSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
-
-export function genId() {
-  return crypto.randomUUID();
-}
+import { ulid } from "ulid";
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
@@ -107,7 +104,7 @@ export function createStore() {
     rep,
     undoManager,
     items: {
-      create: async ({ id = genId(), content = "" }: { id?: string; content: string; dueDate?: string }) => {
+      create: async ({ id = ulid(), content = "" }: { id?: string; content: string; dueDate?: string }) => {
         const action: UndoableAction = {
           do: () =>
             rep.mutate.createItem({
@@ -152,7 +149,7 @@ export function createStore() {
       },
     },
     views: {
-      create: async ({ id = genId(), name }: { id: string; name: string }) => {
+      create: async ({ id = ulid(), name }: { id: string; name: string }) => {
         const action: UndoableAction = {
           do: () =>
             rep.mutate.createView({

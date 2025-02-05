@@ -1,9 +1,10 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { useSubscribe } from "replicache-react";
-import { createStore, genId, Store } from "./store";
+import { createStore, Store } from "./store";
 import { Item, itemStatusList, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
 import { useDebounce } from "./utils";
+import { ulid } from "ulid";
 
 declare global {
   interface Window {
@@ -56,7 +57,7 @@ function ItemApp() {
       if (isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
         e.preventDefault();
         e.stopPropagation();
-        const id = genId();
+        const id = ulid();
         await store.items.create({ id, content: "" });
         setEditingId(id);
       }

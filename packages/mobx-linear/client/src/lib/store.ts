@@ -72,7 +72,7 @@ export abstract class BaseModel {
   _store?: Store<any>;
 
   constructor(props: { id?: string; placeholder?: boolean } = {}) {
-    this.id = props.id ?? crypto.randomUUID();
+    this.id = props.id ?? ulid();
     this.placeholder = props.placeholder ?? false;
   }
 
@@ -288,7 +288,7 @@ function createPoker(url: string) {
 
 // Store implementation
 export class Store<TModels extends ModelRecord> {
-  readonly clientId = crypto.randomUUID();
+  readonly clientId = ulid();
 
   // Models
 
