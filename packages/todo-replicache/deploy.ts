@@ -6,12 +6,13 @@ async function main() {
   await ec2.pushNginxConf();
   await ec2.pullRepo();
   const appDir = config.repoDir + "/packages/todo-replicache";
-  await $`scp server/.env.production ${config.sshHost}:~/code/home/packages/todo-replicache/server/.env`;
-  await $`scp client/.env.production ${config.sshHost}:~/code/home/packages/todo-replicache/client/.env`;
+  await $`scp server/.env.production ${config.sshHost}:${appDir}/server/.env`;
+  await $`scp client/.env.production ${config.sshHost}:${appDir}/client/.env`;
   await $`ssh ${config.sshHost} '
-        cd ${config.repoDir} &&
+        cd ${appDir} &&
         cd client && npm install && npm run build &&
-        cd ../server && npm install && npm run build &&
+        cd ../server && npm install &&
+        bun run db:up &&
         echo PORT=${config.apps.items.port} >> .env &&
         pm2 delete items || true && pm2 start "bun start" --name items
       '`;
