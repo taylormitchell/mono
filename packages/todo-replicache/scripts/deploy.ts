@@ -1,4 +1,4 @@
-import * as ec2 from "../infra/ec2/manager";
+import * as ec2 from "../../infra/ec2/manager";
 import { $ } from "bun";
 
 async function main() {
