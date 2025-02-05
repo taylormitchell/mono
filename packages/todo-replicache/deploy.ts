@@ -7,16 +7,13 @@ async function main() {
   const config = await nginxManager.loadConfig();
   await $`scp server/.env.production ${config.sshHost}:~/code/home/packages/todo-replicache/server/.env`;
   await $`ssh ${config.sshHost} '
-    cd ~/code/home/packages/todo-replicache/server && 
-    echo PORT=${config.apps.items.port} >> .env'`;
-  // await $`ssh ${config.sshHost} '
-  //     cd ~/code/home/packages/todo-replicache &&
-  //     git pull &&
-  //     cd client && npm install && npm run build &&
-  //     cd ../server && npm install && npm run build &&
-  //     echo PORT=${config.apps.items.port} >> .env &&
-  //     pm2 delete todo-replicache || true && pm2 start src/index.ts --name todo-replicache
-  //   '`;
+      cd ~/code/home/packages/todo-replicache &&
+      git pull &&
+      cd client && npm install && npm run build &&
+      cd ../server && npm install && npm run build &&
+      echo PORT=${config.apps.items.port} >> .env &&
+      pm2 delete items || true && pm2 start 'bun start' --name items
+    '`;
 }
 
 main();
