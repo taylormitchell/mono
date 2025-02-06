@@ -45,6 +45,26 @@
   margin: 0.2em 0;
 }
 
+/* Target list markers directly */
+.ProseMirror li {
+  color: #ff00ff !important;
+}
+
+/* Reset the paragraph color back to white */
+.ProseMirror li p {
+  color: white !important;
+}
+
+/* Keep the debugging borders to verify our selectors work */
+.ProseMirror ul,
+.ProseMirror ol {
+  border: 1px solid red;
+}
+
+.ProseMirror li {
+  border: 1px solid blue;
+}
+
 .ProseMirror a {
   color: #58a6ff;
   text-decoration: none;
