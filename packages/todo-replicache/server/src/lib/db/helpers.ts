@@ -22,11 +22,18 @@ export async function getDb() {
         throw new Error("DATABASE_URL is not set");
       }
       _pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      const db = drizzle(_pool);
+      await db.transaction(async (tx) => {
+        await tx
+          .insert(replicacheServerTable)
+          .values({ id: serverID, version: 0 })
+          .onConflictDoNothing();
+      });
       _db = drizzle(_pool);
     }
 
     // Initialize server version in a transaction
-    await _db.transaction(async (tx) => {
+    await _db.transaction(async (tx: ) => {
       await tx
         .insert(replicacheServerTable)
         .values({ id: serverID, version: 0 })
