@@ -413,6 +413,7 @@ function ChatlikeItemView() {
   const [draftContent, setDraftContent] = useAtom(draftContentAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [clearedAt, setClearedAt] = useState<string>(new Date().toISOString());
 
   const items = useSubscribe(
     store.rep,
@@ -420,14 +421,11 @@ function ChatlikeItemView() {
       if (!view) return [];
       const allItems = await store.items.getAll(tx);
       if (!allItems) return [];
-      return allItems;
-      // if (!view.filter?.status) return allItems;
-      // return allItems.filter((item) => item.status === view.filter?.status);
+      // Only show items created after the last clear
+      return allItems.filter((item) => item.createdAt > clearedAt);
     },
-    { default: [] as Item[], dependencies: [view] }
+    { default: [] as Item[], dependencies: [view, clearedAt] }
   );
-
-  console.log("re-rendering", { view, items, store });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView();
@@ -439,32 +437,37 @@ function ChatlikeItemView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draftContent.trim()) return;
+    const trimmedContent = draftContent.trim();
+    if (!trimmedContent) return;
 
-    await store.items.create({ content: draftContent });
-    setDraftContent(""); // This will clear both state and localStorage
+    if (trimmedContent === "/clear") {
+      setClearedAt(new Date().toISOString());
+    } else {
+      await store.items.create({ content: trimmedContent });
+    }
+    setDraftContent("");
   };
 
   return (
-    <div className="flex flex-col h-full rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
-      <div className="flex-1 overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
-        <div className="divide-y divide-[#30363d]">
+    <div className="flex flex-col h-full rounded-md border border-[#30363d] bg-[#0d1117] overflow-hidden font-mono">
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
+        <div className="space-y-2">
           {filteredItems.map((item) => (
             <ChatItemRow key={item.id} item={item} isEditing={editingId === item.id} setEditingId={setEditingId} />
           ))}
           <div ref={messagesEndRef} />
+          <form onSubmit={handleSubmit} className="flex items-center gap-2">
+            <span className="text-[#238636]">$</span>
+            <input
+              type="text"
+              value={draftContent}
+              onChange={(e) => setDraftContent(e.target.value)}
+              placeholder="Type a command..."
+              className="flex-1 bg-transparent border-none outline-none text-white placeholder-[#6e7681]"
+            />
+          </form>
         </div>
       </div>
-
-      <form onSubmit={handleSubmit} className="p-4 border-t border-[#30363d]">
-        <input
-          type="text"
-          value={draftContent}
-          onChange={(e) => setDraftContent(e.target.value)}
-          placeholder="Type a message..."
-          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
-        />
-      </form>
     </div>
   );
 }
@@ -490,7 +493,8 @@ function ChatItemRow({
   );
 
   return (
-    <div className="group flex items-center px-4 py-2 hover:bg-[#1c2128]">
+    <div className="group flex items-start gap-2">
+      <span className="text-[#238636]">$</span>
       <div className="flex-1">
         <MarkdownEditor
           item={item}
@@ -504,14 +508,6 @@ function ChatItemRow({
           placeholder="Type a message..."
         />
       </div>
-      <button
-        onClick={() => store.items.delete(item.id)}
-        className="opacity-0 group-hover:opacity-100 ml-2 p-1 text-[#6e7681] hover:text-white rounded"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-          <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-        </svg>
-      </button>
     </div>
   );
 }
