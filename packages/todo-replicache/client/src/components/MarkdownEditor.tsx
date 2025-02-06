@@ -5,6 +5,7 @@ import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosem
 import { exampleSetup } from "prosemirror-example-setup";
 import "./MarkdownEditor.css";
 import isHotkey from "is-hotkey";
+import { Item } from "../../../shared/types";
 
 function createState(content: string) {
   return EditorState.create({
@@ -14,26 +15,15 @@ function createState(content: string) {
 }
 
 interface MarkdownEditorProps {
+  item: Item;
   content: string;
   onChange: (content: string) => void;
-  autoFocus?: boolean;
   placeholder?: string;
-  onDelete?: (e: KeyboardEvent) => void;
-  onMoveUp?: (e: KeyboardEvent) => void;
-  onMoveDown?: (e: KeyboardEvent) => void;
+  isEditing?: boolean;
   setEditingId?: (id: string | null) => void;
 }
 
-export function MarkdownEditor({
-  content,
-  onChange,
-  autoFocus,
-  placeholder,
-  onDelete,
-  onMoveUp,
-  onMoveDown,
-  setEditingId,
-}: MarkdownEditorProps) {
+export function MarkdownEditor({ item, content, onChange, placeholder, isEditing, setEditingId }: MarkdownEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -56,6 +46,10 @@ export function MarkdownEditor({
           setEditingId?.(null);
           return false;
         },
+        focus: () => {
+          setEditingId?.(item.id);
+          return false;
+        },
         keydown: (view, event) => {
           if (isHotkey("escape", event)) {
             //   setEditingId?.(null);
@@ -75,10 +69,12 @@ export function MarkdownEditor({
   }, []);
 
   useEffect(() => {
-    if (autoFocus) {
+    if (isEditing && !viewRef.current?.hasFocus()) {
       viewRef.current?.focus();
+    } else if (!isEditing && viewRef.current?.hasFocus()) {
+      viewRef.current?.dom.blur();
     }
-  }, [autoFocus]);
+  }, [isEditing]);
 
   // Update content when it changes externally
   useEffect(() => {

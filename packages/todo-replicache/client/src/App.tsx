@@ -63,7 +63,6 @@ function ItemApp() {
         setEditingId(id);
       }
       if (isHotkey("escape", e) && editingId) {
-        console.log("escape");
         e.preventDefault();
         e.stopPropagation();
         setEditingId(null);
@@ -208,8 +207,6 @@ function ItemView({
       return b.createdAt.localeCompare(a.createdAt);
     });
 
-  console.log({ filteredItems, view });
-
   return (
     <div className="flex-1">
       <div className="rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
@@ -266,7 +263,6 @@ function ItemRow({
   const store = useStore();
   const [content, setContent] = useState(item.content);
   const isEditing = editingId === item.id;
-  console.log(item.id, isEditing);
 
   const debouncedUpdate = useDebounce(
     (id: string, content: string) => {
@@ -309,17 +305,14 @@ function ItemRow({
       <div className="flex-1">
         <div className="flex items-center gap-4">
           <MarkdownEditor
+            item={item}
             content={content}
             onChange={(newContent) => {
               setContent(newContent);
               debouncedUpdate(item.id, newContent);
             }}
-            editingId={editingId}
+            isEditing={isEditing}
             setEditingId={setEditingId}
-            onDelete={handleDelete}
-            onMoveUp={move?.up}
-            onMoveDown={move?.down}
-            autoFocus={isEditing}
             placeholder="Untitled"
           />
         </div>
