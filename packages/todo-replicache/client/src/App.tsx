@@ -51,6 +51,7 @@ function cn(...args: (string | undefined | null)[]) {
 function ItemApp() {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"standard" | "chat">("standard");
 
   // Move keyboard shortcut handler here
   useEffect(() => {
@@ -102,8 +103,33 @@ function ItemApp() {
   }, [allView, store]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white">
-      <div className="max-w-[800px] mx-auto px-4">
+    <div className="min-h-screen bg-[#0d1117] text-white flex">
+      {/* Sidebar */}
+      <div className="w-48 border-r border-[#30363d] p-4">
+        <div className="space-y-1">
+          <button
+            onClick={() => setViewMode("standard")}
+            className={cn(
+              "w-full px-3 py-2 text-left rounded-md",
+              viewMode === "standard" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
+            )}
+          >
+            Standard View
+          </button>
+          <button
+            onClick={() => setViewMode("chat")}
+            className={cn(
+              "w-full px-3 py-2 text-left rounded-md",
+              viewMode === "chat" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
+            )}
+          >
+            Chat View
+          </button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 px-4">
         <header className="py-4 flex items-center justify-between border-b border-[#30363d]">
           <button
             onClick={() => store.items.create({ content: "" })}
@@ -122,10 +148,14 @@ function ItemApp() {
           </button>
         </header>
 
-        <div className="mt-4 flex gap-4">
-          <div className="flex-1">
-            {allView ? <ItemView view={allView} editingId={editingId} setEditingId={setEditingId} /> : null}
-          </div>
+        <div className="mt-4">
+          {allView ? (
+            viewMode === "standard" ? (
+              <ItemView view={allView} editingId={editingId} setEditingId={setEditingId} />
+            ) : (
+              <ChatlikeItemView view={allView} />
+            )
+          ) : null}
         </div>
       </div>
     </div>
@@ -355,6 +385,87 @@ function ItemRow({
         </div>
       )}
       <button onClick={handleDelete} className="ml-2 p-1 text-[#6e7681] hover:text-white rounded">
+        <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+          <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function ChatlikeItemView({ view }: { view: View }) {
+  const store = useStore();
+  const [draftContent, setDraftContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const items = useSubscribe(
+    store.rep,
+    async (tx) => {
+      const allItems = await store.items.getAll(tx);
+      if (!allItems) return [];
+      if (!view.filter?.status) return allItems;
+      return allItems.filter((item) => item.status === view.filter?.status);
+    },
+    { default: [] as Item[] }
+  );
+
+  const filteredItems = items
+    .filter((item) => item.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt)); // Always sort oldest to newest
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!draftContent.trim()) return;
+
+    await store.items.create({ content: draftContent });
+    setDraftContent("");
+  };
+
+  return (
+    <div className="flex flex-col h-[600px] rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
+      <div className="p-4 border-b border-[#30363d]">
+        <input
+          type="text"
+          placeholder="Search items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="divide-y divide-[#30363d]">
+          {filteredItems.map((item) => (
+            <ChatItemRow key={item.id} item={item} />
+          ))}
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-4 border-t border-[#30363d]">
+        <input
+          type="text"
+          value={draftContent}
+          onChange={(e) => setDraftContent(e.target.value)}
+          placeholder="Type a message..."
+          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+        />
+      </form>
+    </div>
+  );
+}
+
+function ChatItemRow({ item }: { item: Item }) {
+  const store = useStore();
+
+  return (
+    <div className="group flex items-center px-4 py-2 hover:bg-[#1c2128]">
+      <div className="flex-1">
+        <div className="whitespace-pre-wrap break-words">{item.content}</div>
+      </div>
+      <button
+        onClick={() => store.items.delete(item.id)}
+        className="opacity-0 group-hover:opacity-100 ml-2 p-1 text-[#6e7681] hover:text-white rounded"
+      >
         <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
           <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
         </svg>

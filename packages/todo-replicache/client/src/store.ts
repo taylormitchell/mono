@@ -6,15 +6,21 @@ import { ulid } from "ulid";
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
-  VITE_REPLICACHE_PUSH_URL: z.string().regex(/^(https?:\/\/|\/)/), // starts with http or /
-  VITE_REPLICACHE_PULL_URL: z.string().regex(/^(https?:\/\/|\/)/), // starts with http or /
+  VITE_REPLICACHE_PUSH_URL: z
+    .string()
+    .regex(/^(https?:\/\/|\/)/)
+    .optional(), // starts with http or /
+  VITE_REPLICACHE_PULL_URL: z
+    .string()
+    .regex(/^(https?:\/\/|\/)/)
+    .optional(), // starts with http or /
 });
 
 const env = envSchema.parse(import.meta.env);
-if (env.VITE_REPLICACHE_PUSH_URL.startsWith("/")) {
+if (env.VITE_REPLICACHE_PUSH_URL?.startsWith("/")) {
   env.VITE_REPLICACHE_PUSH_URL = window.location.origin + env.VITE_REPLICACHE_PUSH_URL;
 }
-if (env.VITE_REPLICACHE_PULL_URL.startsWith("/")) {
+if (env.VITE_REPLICACHE_PULL_URL?.startsWith("/")) {
   env.VITE_REPLICACHE_PULL_URL = window.location.origin + env.VITE_REPLICACHE_PULL_URL;
 }
 console.log("env", env);
