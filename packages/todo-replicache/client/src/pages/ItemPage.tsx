@@ -87,11 +87,9 @@ export function ItemPage() {
   }, [id, item]);
 
   const handleScroll = useDebounce(
-    (scrollTop: number) => {
-      localStorage.setItem(`scroll-position-${id}`, scrollTop.toString());
-    },
-    [id],
-    100
+    (scrollTop: number) => localStorage.setItem(`scroll-position-${id}`, scrollTop.toString()),
+    100,
+    [id]
   );
 
   useEffect(() => {
@@ -142,14 +140,12 @@ export function ItemPage() {
     return aPos - bPos;
   });
 
-  const filteredChildren = sortedChildren.filter((child) =>
-    child.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChildren = sortedChildren.filter((child) => child.content.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div
       ref={scrollContainerRef}
-      onScroll={handleScroll}
+      onScroll={(e) => handleScroll(e.currentTarget.scrollTop)}
       className="h-full overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
     >
       <div className="max-w-3xl mx-auto pb-32">
@@ -173,10 +169,7 @@ export function ItemPage() {
 
         <div className="border-t border-[#30363d] pt-8 mb-[1000px]">
           <div className="flex items-center gap-2 mb-4">
-            <button
-              onClick={() => setShowSearch(!showSearch)}
-              className="p-1.5 text-[#6e7681] hover:text-white rounded"
-            >
+            <button onClick={() => setShowSearch(!showSearch)} className="p-1.5 text-[#6e7681] hover:text-white rounded">
               <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
                 <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
               </svg>

@@ -25,8 +25,8 @@ function ChatItemRow({
     (id: string, content: string) => {
       store.items.update(id, { content });
     },
-    [store],
-    300
+    300,
+    [store]
   );
 
   return (
