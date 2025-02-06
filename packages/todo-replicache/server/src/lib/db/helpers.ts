@@ -1,10 +1,9 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
+
 import { Pool } from "pg";
 import { replicacheClientTable, replicacheServerTable } from "./schema";
 import { eq, gt, and } from "drizzle-orm";
-import { newDb } from "pg-mem";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: Pool | null = null;
@@ -13,6 +12,7 @@ export const serverID = 1;
 export async function getDb() {
   if (!_db) {
     if (process.env.NODE_ENV === "development") {
+      import { drizzle } from "drizzle-orm/pglite";
       const pgmem = newDb();
       const PoolPgmem = pgmem.adapters.createPg().Pool;
       _pool = new PoolPgmem({ connectionString: process.env.DATABASE_URL }) as Pool;

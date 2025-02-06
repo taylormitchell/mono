@@ -24,6 +24,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@electric-sql/pglite": "^0.2.16",
     "@types/better-sqlite3": "^7.6.12",
     "@types/express": "^5.0.0",
     "drizzle-kit": "^0.30.4",
