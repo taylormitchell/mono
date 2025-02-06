@@ -53,6 +53,9 @@ function cn(...args: (string | undefined | null)[]) {
 type ViewMode = "standard" | "chat";
 const viewModeAtom = atomWithStorage<ViewMode>("viewMode", "standard");
 
+// Add this near the top of the file with other atoms
+const draftContentAtom = atomWithStorage<string>("draftContent", "");
+
 function ItemApp() {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -107,6 +110,7 @@ function ItemApp() {
     }
   }, [allView, store]);
 
+  console.log("re-rendering ItemApp");
   return (
     <div className="min-h-screen bg-[#0d1117] text-white flex">
       {/* Sidebar */}
@@ -400,7 +404,7 @@ function ItemRow({
 
 function ChatlikeItemView({ view }: { view: View }) {
   const store = useStore();
-  const [draftContent, setDraftContent] = useState("");
+  const [draftContent, setDraftContent] = useAtom(draftContentAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -426,7 +430,7 @@ function ChatlikeItemView({ view }: { view: View }) {
     if (!draftContent.trim()) return;
 
     await store.items.create({ content: draftContent });
-    setDraftContent("");
+    setDraftContent(""); // This will clear both state and localStorage
   };
 
   return (
