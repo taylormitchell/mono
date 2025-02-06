@@ -3,8 +3,8 @@ import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
 import { exampleSetup } from "prosemirror-example-setup";
-import { isHotkey } from "is-hotkey";
 import "./MarkdownEditor.css";
+import isHotkey from "is-hotkey";
 
 function createState(content: string) {
   return EditorState.create({
@@ -58,8 +58,8 @@ export function MarkdownEditor({
         },
         keydown: (view, event) => {
           if (isHotkey("escape", event)) {
-            setEditingId?.(null);
-            view.dom.blur();
+            //   setEditingId?.(null);
+            //   view.dom.blur();
             return true;
           }
           return false;
@@ -69,14 +69,16 @@ export function MarkdownEditor({
 
     viewRef.current = view;
 
-    if (autoFocus) {
-      view.focus();
-    }
-
     return () => {
       view.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    if (autoFocus) {
+      viewRef.current?.focus();
+    }
+  }, [autoFocus]);
 
   // Update content when it changes externally
   useEffect(() => {

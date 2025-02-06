@@ -266,6 +266,7 @@ function ItemRow({
   const store = useStore();
   const [content, setContent] = useState(item.content);
   const isEditing = editingId === item.id;
+  console.log(item.id, isEditing);
 
   const debouncedUpdate = useDebounce(
     (id: string, content: string) => {
@@ -313,10 +314,8 @@ function ItemRow({
               setContent(newContent);
               debouncedUpdate(item.id, newContent);
             }}
-            onBlur={() => setEditingId(null)}
-            onEscape={(e) => 
-              setEditingId(null);
-            }}
+            editingId={editingId}
+            setEditingId={setEditingId}
             onDelete={handleDelete}
             onMoveUp={move?.up}
             onMoveDown={move?.down}
