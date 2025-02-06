@@ -12,7 +12,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { z } from "zod";
 import { Mutation, mutationSchema, itemSchema } from "../../../shared/types";
-import { itemTable } from "./db/schema";
+import { itemTable, viewTable } from "./db/schema";
 import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 
 const pushSchema = z.object({
@@ -128,7 +128,7 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
   console.log(`Mutation ${mutation.id} is new - processing`);
 
   switch (mutation.name) {
-    case "createItem":
+    case "createItem": {
       await db
         .insert(itemTable)
         .values({
@@ -143,7 +143,8 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
           },
         });
       break;
-    case "updateItem":
+    }
+    case "updateItem": {
       const { id, ...args } = mutation.args;
       await db
         .update(itemTable)
@@ -153,13 +154,41 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
         })
         .where(eq(itemTable.id, id));
       break;
-    case "deleteItem":
+    }
+    case "deleteItem": {
       const { id: itemID, deletedAt } = mutation.args;
       await db
         .update(itemTable)
         .set({ deletedAt, version: nextVersion })
         .where(eq(itemTable.id, itemID));
       break;
+    }
+    case "createView": {
+      await db.insert(viewTable).values({
+        ...mutation.args,
+        version: nextVersion,
+      });
+      break;
+    }
+    case "updateView": {
+      const { id: viewID, ...args } = mutation.args;
+      await db
+        .update(viewTable)
+        .set({
+          ...args,
+          version: nextVersion,
+        })
+        .where(eq(viewTable.id, viewID));
+      break;
+    }
+    case "deleteView": {
+      const { id: viewID, deletedAt } = mutation.args;
+      await db
+        .update(viewTable)
+        .set({ deletedAt, version: nextVersion })
+        .where(eq(viewTable.id, viewID));
+      break;
+    }
     default:
       console.log("unknown mutation", mutation);
       mutation satisfies never;
