@@ -6,6 +6,13 @@ import { exampleSetup } from "prosemirror-example-setup";
 import { isHotkey } from "is-hotkey";
 import "./MarkdownEditor.css";
 
+function createState(content: string) {
+  return EditorState.create({
+    doc: defaultMarkdownParser.parse(content),
+    plugins: exampleSetup({ schema, menuBar: false, floatingMenu: false, menuContent: [] }),
+  });
+}
+
 interface MarkdownEditorProps {
   content: string;
   onChange: (content: string) => void;
@@ -37,10 +44,7 @@ export function MarkdownEditor({
 
     // Create the editor view
     const view = new EditorView(editorRef.current, {
-      state: EditorState.create({
-        doc: defaultMarkdownParser.parse(content),
-        plugins: exampleSetup({ schema }),
-      }),
+      state: createState(content),
       dispatchTransaction(transaction) {
         const newState = view.state.apply(transaction);
         view.updateState(newState);
@@ -94,10 +98,7 @@ export function MarkdownEditor({
 
     const currentContent = defaultMarkdownSerializer.serialize(view.state.doc);
     if (currentContent !== content) {
-      const state = EditorState.create({
-        doc: defaultMarkdownParser.parse(content),
-        plugins: exampleSetup({ schema }),
-      });
+      const state = createState(content);
       view.updateState(state);
     }
   }, [content]);
