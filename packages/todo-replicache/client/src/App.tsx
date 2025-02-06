@@ -129,8 +129,8 @@ function ItemApp() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 px-4">
-        <header className="py-4 flex items-center justify-between border-b border-[#30363d]">
+      <div className="flex-1 flex flex-col h-screen">
+        <header className="py-4 flex items-center justify-between border-b border-[#30363d] px-4">
           <button
             onClick={() => store.items.create({ content: "" })}
             className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md text-sm font-semibold"
@@ -148,7 +148,7 @@ function ItemApp() {
           </button>
         </header>
 
-        <div className="mt-4">
+        <div className="flex-1 overflow-hidden p-4">
           {allView ? (
             viewMode === "standard" ? (
               <ItemView view={allView} editingId={editingId} setEditingId={setEditingId} />
@@ -261,18 +261,18 @@ function ItemView({
     });
 
   return (
-    <div className="flex-1">
-      <div className="rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
-        <div className="p-4 border-b border-[#30363d]">
-          <input
-            type="text"
-            placeholder="Search items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
-          />
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+        />
+      </div>
 
+      <div className="flex-1 overflow-y-auto rounded-md border border-[#30363d] bg-[#161b22] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="divide-y divide-[#30363d]">
           {filteredItems.map((item, i) => (
             <ItemRow
@@ -432,17 +432,7 @@ function ChatlikeItemView({ view }: { view: View }) {
   };
 
   return (
-    <div className="flex flex-col h-[600px] rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
-      <div className="p-4 border-b border-[#30363d]">
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
-        />
-      </div>
-
+    <div className="flex flex-col h-full rounded-md border border-[#30363d] bg-[#161b22] overflow-hidden">
       <div className="flex-1 overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="divide-y divide-[#30363d]">
           {filteredItems.map((item) => (
