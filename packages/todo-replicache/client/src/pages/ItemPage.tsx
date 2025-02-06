@@ -5,10 +5,6 @@ import { Item } from "../../../shared/types";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { ulid } from "ulid";
 import { useStore } from "../hooks/store";
-import { generate } from "@rocicorp/rails";
-import { itemSchema } from "../../../shared/types";
-
-const items = generate("item", itemSchema.parse);
 
 function useItemView(itemId: string) {
   const store = useStore();
@@ -49,7 +45,7 @@ export function ItemPage() {
     store.rep,
     async (tx) => {
       if (!id) return null;
-      const item = await items.get(tx, id);
+      const item = await store.items.get(tx, id);
       return item ?? null;
     },
     { default: null }

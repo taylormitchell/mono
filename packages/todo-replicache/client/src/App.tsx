@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { createStore, Store } from "./store";
-import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
 import { StoreContext, useStore } from "./hooks/store";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { ItemPage } from "./pages/ItemPage";
-import { StandardView } from "./pages/StandardView";
-import { ChatView } from "./pages/ChatView";
 import { isHotkey } from "is-hotkey";
 import { ulid } from "ulid";
+import { StandardView } from "./pages/StandardView";
+import { ChatView } from "./pages/ChatView";
+import { cn } from "./lib/utils";
 
 declare global {
   interface Window {
@@ -39,19 +38,11 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
 
-function cn(...args: (string | undefined | null)[]) {
-  return args.filter(Boolean).join(" ");
-}
-
-type ViewMode = "standard" | "chat";
-const viewModeAtom = atomWithStorage<ViewMode>("viewMode", "standard");
-
-function ItemApp() {
+function Layout({ children }: { children: React.ReactNode }) {
   const store = useStore();
-  const [viewMode, setViewMode] = useAtom(viewModeAtom);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
-  // Move keyboard shortcut handler here
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
       if (isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
@@ -88,19 +79,19 @@ function ItemApp() {
       <div className="w-48 border-r border-[#30363d] p-4">
         <div className="space-y-1">
           <button
-            onClick={() => setViewMode("standard")}
+            onClick={() => navigate("/")}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
-              viewMode === "standard" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
+              location.pathname === "/" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
             )}
           >
             Standard View
           </button>
           <button
-            onClick={() => setViewMode("chat")}
+            onClick={() => navigate("/chat")}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
-              viewMode === "chat" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
+              location.pathname === "/chat" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
             )}
           >
             Chat View
@@ -127,8 +118,7 @@ function ItemApp() {
             Reset
           </button>
         </header>
-
-        <div className="flex-1 overflow-hidden p-4">{viewMode === "standard" ? <StandardView /> : <ChatView />}</div>
+        <main>{children}</main>
       </div>
     </div>
   );
@@ -138,10 +128,13 @@ function App() {
   return (
     <StoreProvider>
       <Router>
-        <Routes>
-          <Route path="/" element={<ItemApp />} />
-          <Route path="/items/:id" element={<ItemPage />} />
-        </Routes>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<StandardView />} />
+            <Route path="/chat" element={<ChatView />} />
+            <Route path="/items/:id" element={<ItemPage />} />
+          </Routes>
+        </Layout>
       </Router>
     </StoreProvider>
   );
