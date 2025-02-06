@@ -25,14 +25,14 @@ function useAllView() {
     },
     { default: null }
   );
-  useEffect(() => {
-    if (allView === null) {
-      store.views.create({
-        id: "all",
-        name: "All",
-      });
-    }
-  }, [allView, store]);
+  // useEffect(() => {
+  //   if (allView === null) {
+  //     store.views.create({
+  //       id: "all",
+  //       name: "All",
+  //     });
+  //   }
+  // }, [allView, store]);
   return allView;
 }
 
@@ -418,8 +418,9 @@ function ChatlikeItemView() {
       if (!view) return [];
       const allItems = await store.items.getAll(tx);
       if (!allItems) return [];
-      if (!view.filter?.status) return allItems;
-      return allItems.filter((item) => item.status === view.filter?.status);
+      return allItems;
+      // if (!view.filter?.status) return allItems;
+      // return allItems.filter((item) => item.status === view.filter?.status);
     },
     { default: [] as Item[], dependencies: [view] }
   );

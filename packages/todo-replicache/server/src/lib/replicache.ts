@@ -11,7 +11,7 @@ import type { Request, Response } from "express";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { z } from "zod";
-import { Mutation, mutationSchema, itemSchema } from "../../../shared/types";
+import { Mutation, mutationSchema, itemSchema, viewSchema } from "../../../shared/types";
 import { itemTable, viewTable } from "./db/schema";
 import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 
@@ -75,19 +75,30 @@ export async function handlePull(req: Request, res: Response) {
         clientVersion
       );
 
-      // Get changed domain objects since requested version
+      // Get changed items since requested version
       const changedItems = await tr
         .select()
         .from(itemTable)
         .where(gt(itemTable.version, clientVersion));
-
-      // Build patch operations
       const patch: PatchOperation[] = [];
       for (const item of changedItems) {
         patch.push({
           op: "put",
           key: `item/${item.id}`,
           value: itemSchema.parse(item),
+        });
+      }
+
+      // Get changed views since requested version
+      const changedViews = await tr
+        .select()
+        .from(viewTable)
+        .where(gt(viewTable.version, clientVersion));
+      for (const view of changedViews) {
+        patch.push({
+          op: "put",
+          key: `view/${view.id}`,
+          value: viewSchema.parse(view),
         });
       }
 
