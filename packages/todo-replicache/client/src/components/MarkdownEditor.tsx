@@ -105,5 +105,5 @@ export function MarkdownEditor({ item, content, onChange, placeholder, isEditing
     }
   }, [content]);
 
-  return <div ref={editorRef} className="flex-1 prose prose-invert max-w-none text-white" data-placeholder={placeholder} />;
+  return <div ref={editorRef} className="flex-1 prose prose-invert max-w-none" data-placeholder={placeholder} />;
 }

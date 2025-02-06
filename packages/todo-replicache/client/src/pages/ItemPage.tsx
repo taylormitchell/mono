@@ -149,10 +149,7 @@ export function ItemPage() {
       className="h-full overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
     >
       <div className="max-w-3xl mx-auto pb-32">
-        <button
-          onClick={() => navigate("/")}
-          className="mb-8 px-3 py-1 bg-[#30363d] hover:bg-[#444c56] text-white rounded-md text-sm"
-        >
+        <button onClick={() => navigate("/")} className="mb-8 px-3 py-1 bg-[#30363d] hover:bg-[#444c56] rounded-md text-sm">
           ← Back
         </button>
 
@@ -169,12 +166,12 @@ export function ItemPage() {
 
         <div className="border-t border-[#30363d] pt-8 mb-[1000px]">
           <div className="flex items-center gap-2 mb-4">
-            <button onClick={() => setShowSearch(!showSearch)} className="p-1.5 text-[#6e7681] hover:text-white rounded">
+            <button onClick={() => setShowSearch(!showSearch)} className="p-1.5 text-[#6e7681] rounded">
               <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
                 <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
               </svg>
             </button>
-            <button onClick={handleNewChild} className="p-1.5 text-[#6e7681] hover:text-white rounded">
+            <button onClick={handleNewChild} className="p-1.5 text-[#6e7681] rounded">
               <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
                 <path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"></path>
               </svg>
@@ -188,7 +185,7 @@ export function ItemPage() {
                 placeholder="Search children..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+                className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
               />
             </div>
           )}
@@ -208,10 +205,7 @@ export function ItemPage() {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => navigate(`/items/${child.id}`)}
-                      className="p-1.5 text-[#6e7681] hover:text-white rounded"
-                    >
+                    <button onClick={() => navigate(`/items/${child.id}`)} className="p-1.5 text-[#6e7681] rounded">
                       <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
                         <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" />
                       </svg>
@@ -231,7 +225,7 @@ export function ItemPage() {
                             }
                             store.views.update(v.id, { ...v, positions: newPositions });
                           }}
-                          className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                          className="p-1.5 text-[#6e7681] rounded"
                           disabled={index === 0}
                         >
                           <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
@@ -251,7 +245,7 @@ export function ItemPage() {
                             }
                             store.views.update(v.id, { ...v, positions: newPositions });
                           }}
-                          className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                          className="p-1.5 text-[#6e7681] rounded"
                           disabled={index === sortedChildren.length - 1}
                         >
                           <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
@@ -266,7 +260,7 @@ export function ItemPage() {
                           children: item.children.filter((cid: string) => cid !== child.id),
                         });
                       }}
-                      className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                      className="p-1.5 text-[#6e7681] rounded"
                       title="Remove from children"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
@@ -280,7 +274,7 @@ export function ItemPage() {
                         });
                         store.items.delete(child.id);
                       }}
-                      className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                      className="p-1.5 text-[#6e7681] rounded"
                       title="Delete item"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">

@@ -16,9 +16,7 @@ declare global {
 }
 
 function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [{ isLoading, store }, setStore] = useState<
-    { isLoading: true; store: null } | { isLoading: false; store: Store }
-  >({
+  const [{ isLoading, store }, setStore] = useState<{ isLoading: true; store: null } | { isLoading: false; store: Store }>({
     isLoading: true,
     store: null,
   });
@@ -74,7 +72,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   }, [store, editingId]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white flex">
+    <div className="min-h-screen bg-[#0d1117] flex">
       {/* Sidebar */}
       <div className="w-48 border-r border-[#30363d] p-4">
         <div className="space-y-1">
@@ -82,7 +80,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => navigate("/")}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
+              location.pathname === "/" ? "bg-[#1f6feb]" : "text-[#c9d1d9] hover:bg-[#21262d]"
             )}
           >
             Standard View
@@ -91,7 +89,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => navigate("/chat")}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/chat" ? "bg-[#1f6feb] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]"
+              location.pathname === "/chat" ? "bg-[#1f6feb]" : "text-[#c9d1d9] hover:bg-[#21262d]"
             )}
           >
             Chat View
@@ -104,7 +102,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <header className="py-4 flex items-center justify-between border-b border-[#30363d] px-4">
           <button
             onClick={() => store.items.create({ content: "" })}
-            className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md text-sm font-semibold"
+            className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] rounded-md text-sm font-semibold"
           >
             New Item
           </button>
@@ -113,7 +111,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               indexedDB.deleteDatabase(store.rep.idbName);
               window.location.reload();
             }}
-            className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md text-sm font-semibold"
+            className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] rounded-md text-sm font-semibold"
           >
             Reset
           </button>

@@ -123,7 +123,7 @@ export function ChatView() {
               value={draftContent}
               onChange={(e) => setDraftContent(e.target.value)}
               placeholder="Type a command..."
-              className="flex-1 bg-transparent border-none outline-none text-white placeholder-[#6e7681]"
+              className="flex-1 bg-transparent border-none outline-none placeholder-[#6e7681]"
             />
           </form>
         </div>

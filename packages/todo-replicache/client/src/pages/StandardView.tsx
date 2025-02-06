@@ -80,30 +80,26 @@ function ItemRow({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={() => navigate(`/items/${item.id}`)} className="p-1.5 text-[#6e7681] hover:text-white rounded">
+        <button onClick={() => navigate(`/items/${item.id}`)} className="p-1.5 text-[#6e7681] rounded">
           <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
             <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" />
           </svg>
         </button>
         {move && (
           <div className="flex items-center gap-1">
-            <button onClick={move.up} className="p-1.5 text-[#6e7681] hover:text-white rounded" aria-label="Move up">
+            <button onClick={move.up} className="p-1.5 text-[#6e7681] rounded" aria-label="Move up">
               <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
                 <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
               </svg>
             </button>
-            <button
-              onClick={move.down}
-              className="p-1.5 text-[#6e7681] hover:text-white rounded"
-              aria-label="Move down"
-            >
+            <button onClick={move.down} className="p-1.5 text-[#6e7681] rounded" aria-label="Move down">
               <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
                 <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
               </svg>
             </button>
           </div>
         )}
-        <button onClick={handleDelete} className="ml-2 p-1 text-[#6e7681] hover:text-white rounded">
+        <button onClick={handleDelete} className="ml-2 p-1 text-[#6e7681] rounded">
           <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
             <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
           </svg>
@@ -191,7 +187,7 @@ export function StandardView() {
           placeholder="Search items..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
         />
       </div>
 
