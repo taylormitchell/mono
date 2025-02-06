@@ -198,6 +198,29 @@ function ItemView({
     { default: [] as Item[] }
   );
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isHotkey("up", e) && !isHotkey("down", e)) return;
+      const itemEl = document.activeElement?.closest(".item");
+      if (!itemEl) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (isHotkey("up", e)) {
+        const prevProseMirror = itemEl.previousElementSibling?.querySelector(".ProseMirror");
+        if (!(prevProseMirror instanceof HTMLElement)) return;
+        prevProseMirror.focus();
+      } else {
+        const nextProseMirror = itemEl.nextElementSibling?.querySelector(".ProseMirror");
+        if (!(nextProseMirror instanceof HTMLElement)) return;
+        nextProseMirror.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const filteredItems = items
     .filter((item) => item.content.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
