@@ -123,6 +123,7 @@ export function createStore() {
               deletedAt: null,
               dueDate: null,
               version: 0,
+              children: [],
             }),
           undo: () => rep.mutate.updateItem({ id, deletedAt: new Date().toISOString() }),
         };
@@ -132,7 +133,7 @@ export function createStore() {
       update: async (id: string, props: Partial<Item>) => {
         const item = await rep.query((tx) => items.get(tx, id));
         const prevProps: Partial<Item> = item
-          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: item[key as keyof Item] }), {})
+          ? Object.entries(props).reduce((acc, [key]) => ({ ...acc, [key]: item[key as keyof Item] }), {})
           : {};
         const action: UndoableAction = {
           do: () => rep.mutate.updateItem({ id, ...props }),
@@ -178,7 +179,7 @@ export function createStore() {
         console.log("update view", id, props);
         const view = await rep.query((tx) => views.get(tx, id));
         const prevProps: Partial<View> = view
-          ? Object.entries(props).reduce((acc, [key, _]) => ({ ...acc, [key]: view[key as keyof View] }), {})
+          ? Object.entries(props).reduce((acc, [key]) => ({ ...acc, [key]: view[key as keyof View] }), {})
           : {};
         const action: UndoableAction = {
           do: () => rep.mutate.updateView({ id, ...props }),

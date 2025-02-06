@@ -8,6 +8,8 @@ import { useStore } from "../hooks/store";
 import { generate } from "@rocicorp/rails";
 import { itemSchema } from "../../../shared/types";
 
+const items = generate("item", itemSchema.parse);
+
 function useItemView(itemId: string) {
   const store = useStore();
   const view = useSubscribe(
@@ -41,7 +43,6 @@ export function ItemPage() {
   const navigate = useNavigate();
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const items = generate("item", itemSchema.parse);
 
   // Move hooks before any conditionals
   const item = useSubscribe(
