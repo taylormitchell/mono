@@ -25,14 +25,16 @@ function useAllView() {
     },
     { default: null }
   );
-  // useEffect(() => {
-  //   if (allView === null) {
-  //     store.views.create({
-  //       id: "all",
-  //       name: "All",
-  //     });
-  //   }
-  // }, [allView, store]);
+  // After pull, create the all view if it doesn't exist
+  useEffect(() => {
+    (async () => {
+      await store.rep.pull();
+      const view = await store.rep.query((tx) => store.views.get(tx, "all"));
+      if (view) return;
+      await store.views.create({ id: "all", name: "All" });
+    })();
+  }, [store.rep, store.views]);
+
   return allView;
 }
 
