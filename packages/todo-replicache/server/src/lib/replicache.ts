@@ -75,12 +75,13 @@ export async function handlePull(req: Request, res: Response) {
         clientVersion
       );
 
+      const patch: PatchOperation[] = [];
+
       // Get changed items since requested version
       const changedItems = await tr
         .select()
         .from(itemTable)
         .where(gt(itemTable.version, clientVersion));
-      const patch: PatchOperation[] = [];
       for (const item of changedItems) {
         patch.push({
           op: "put",
