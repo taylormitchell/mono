@@ -52,11 +52,14 @@ export function MarkdownEditor({ item, content, onChange, placeholder, isEditing
         },
         keydown: (view, event) => {
           if (isHotkey("escape", event)) {
-            //   setEditingId?.(null);
-            //   view.dom.blur();
             return true;
           }
-          return false;
+          if (isHotkey("up", event) || isHotkey("down", event)) {
+            //   event.preventDefault();
+            event.stopPropagation();
+            return false;
+          }
+          //   return false;
         },
       },
     });

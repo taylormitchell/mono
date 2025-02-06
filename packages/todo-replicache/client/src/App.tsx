@@ -207,13 +207,13 @@ function ItemView({
       e.stopPropagation();
 
       if (isHotkey("up", e)) {
-        const prevProseMirror = itemEl.previousElementSibling?.querySelector(".ProseMirror");
-        if (!(prevProseMirror instanceof HTMLElement)) return;
-        prevProseMirror.focus();
+        const prevId = itemEl.previousElementSibling?.id;
+        if (!prevId) return;
+        setEditingId(prevId);
       } else {
-        const nextProseMirror = itemEl.nextElementSibling?.querySelector(".ProseMirror");
-        if (!(nextProseMirror instanceof HTMLElement)) return;
-        nextProseMirror.focus();
+        const nextId = itemEl.nextElementSibling?.id;
+        if (!nextId) return;
+        setEditingId(nextId);
       }
     };
 
