@@ -13,6 +13,7 @@ export const itemSchema = z.object({
   dueDate: z.string().nullable().default(null),
   version: z.number().default(0),
   status: itemStatusSchema.nullable().default(null),
+  children: z.array(z.string()).default([]), // Array of item IDs
 });
 
 export type Item = z.infer<typeof itemSchema>;

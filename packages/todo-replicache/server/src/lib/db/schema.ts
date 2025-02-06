@@ -14,6 +14,7 @@ export const itemTable = pgTable("item", {
   deletedAt: text("deleted_at"),
   status: text("status"),
   version: integer("version").notNull().default(0),
+  children: text("children").notNull().default("[]"),
 });
 
 export const viewTable = pgTable("view", {

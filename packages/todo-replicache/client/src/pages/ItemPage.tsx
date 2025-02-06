@@ -1,0 +1,213 @@
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useSubscribe } from "replicache-react";
+import { Item } from "../../../shared/types";
+import { MarkdownEditor } from "../components/MarkdownEditor";
+import { ulid } from "ulid";
+import { useStore } from "../hooks/store";
+import { generate } from "@rocicorp/rails";
+import { itemSchema } from "../../../shared/types";
+
+function useItemView(itemId: string) {
+  const store = useStore();
+  const view = useSubscribe(
+    store.rep,
+    async (tx) => {
+      const view = await store.views.get(tx, `item-${itemId}`);
+      return view ?? null;
+    },
+    { default: null }
+  );
+
+  // Create view if it doesn't exist and we need to reorder
+  const createViewIfNeeded = async () => {
+    if (view) return view;
+    const newView = {
+      id: `item-${itemId}`,
+      name: `Item ${itemId}`,
+      filter: {},
+      sort: { field: "position" as const, direction: "asc" as const },
+      positions: {},
+    };
+    await store.views.create(newView);
+    return newView;
+  };
+
+  return { view, createViewIfNeeded };
+}
+
+export function ItemPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const store = useStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const items = generate("item", itemSchema.parse);
+
+  // Move hooks before any conditionals
+  const item = useSubscribe(
+    store.rep,
+    async (tx) => {
+      if (!id) return null;
+      const item = await items.get(tx, id);
+      return item ?? null;
+    },
+    { default: null }
+  );
+
+  const children = useSubscribe(
+    store.rep,
+    async (tx) => {
+      if (!item) return [];
+      const allItems = await store.items.getAll(tx);
+      return allItems.filter((i: Item) => item.children.includes(i.id));
+    },
+    { default: [], dependencies: [item] }
+  );
+
+  const { view, createViewIfNeeded } = useItemView(id ?? "");
+
+  if (!id) {
+    navigate("/");
+    return null;
+  }
+
+  if (!item) return <div>Item not found</div>;
+
+  const handleNewChild = async () => {
+    const childId = ulid();
+    await store.items.create({ id: childId, content: "" });
+    await store.items.update(id, {
+      children: [...item.children, childId],
+    });
+    setEditingId(childId);
+  };
+
+  const sortedChildren = children.sort((a: Item, b: Item) => {
+    if (!view || view.sort.field !== "position") {
+      return b.createdAt.localeCompare(a.createdAt);
+    }
+    const aPos = view.positions[a.id] ?? Infinity;
+    const bPos = view.positions[b.id] ?? Infinity;
+    return aPos - bPos;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#0d1117] text-white p-8">
+      <div className="max-w-3xl mx-auto">
+        <button
+          onClick={() => navigate("/")}
+          className="mb-8 px-3 py-1 bg-[#30363d] hover:bg-[#444c56] text-white rounded-md text-sm"
+        >
+          ← Back
+        </button>
+
+        <div className="mb-8">
+          <MarkdownEditor
+            item={item}
+            content={item.content}
+            onChange={(content) => store.items.update(id, { content })}
+            isEditing={editingId === id}
+            setEditingId={setEditingId}
+            placeholder="Untitled"
+          />
+        </div>
+
+        <div className="border-t border-[#30363d] pt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Children</h2>
+            <button
+              onClick={handleNewChild}
+              className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md text-sm font-semibold"
+            >
+              Add Child
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {sortedChildren.map((child: Item, index: number) => (
+              <div key={child.id} className="flex items-center gap-4 p-4 rounded-md bg-[#161b22] hover:bg-[#1c2128]">
+                <div className="flex-1">
+                  <MarkdownEditor
+                    item={child}
+                    content={child.content}
+                    onChange={(content) => store.items.update(child.id, { content })}
+                    isEditing={editingId === child.id}
+                    setEditingId={setEditingId}
+                    placeholder="Untitled"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigate(`/items/${child.id}`)}
+                    className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                      <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+                  {view && view.sort.field === "position" && (
+                    <>
+                      <button
+                        onClick={async () => {
+                          const v = await createViewIfNeeded();
+                          const newPositions = { ...v.positions };
+                          const currPos = newPositions[child.id] ?? index;
+                          const prevChild = sortedChildren[index - 1];
+                          if (prevChild) {
+                            const prevPos = newPositions[prevChild.id] ?? index - 1;
+                            newPositions[child.id] = prevPos;
+                            newPositions[prevChild.id] = currPos;
+                          }
+                          store.views.update(v.id, { ...v, positions: newPositions });
+                        }}
+                        className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                        disabled={index === 0}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                          <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const v = await createViewIfNeeded();
+                          const newPositions = { ...v.positions };
+                          const currPos = newPositions[child.id] ?? index;
+                          const nextChild = sortedChildren[index + 1];
+                          if (nextChild) {
+                            const nextPos = newPositions[nextChild.id] ?? index + 1;
+                            newPositions[child.id] = nextPos;
+                            newPositions[nextChild.id] = currPos;
+                          }
+                          store.views.update(v.id, { ...v, positions: newPositions });
+                        }}
+                        className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                        disabled={index === sortedChildren.length - 1}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                          <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      store.items.update(id, {
+                        children: item.children.filter((cid: string) => cid !== child.id),
+                      });
+                      store.items.delete(child.id);
+                    }}
+                    className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                      <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext, useContext, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSubscribe } from "replicache-react";
 import { createStore, Store } from "./store";
 import { Item, View } from "../../shared/types";
@@ -8,6 +8,9 @@ import { ulid } from "ulid";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { StoreContext, useStore } from "./hooks/store";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ItemPage } from "./pages/ItemPage";
 
 declare global {
   interface Window {
@@ -36,14 +39,6 @@ function useAllView() {
   }, [store.rep, store.views]);
 
   return allView;
-}
-
-const StoreContext = createContext<Store | null>(null);
-
-function useStore() {
-  const store = useContext(StoreContext);
-  if (!store) throw new Error("useStore must be used within StoreProvider");
-  return store;
 }
 
 function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -515,7 +510,12 @@ function ChatItemRow({
 function App() {
   return (
     <StoreProvider>
-      <ItemApp />
+      <Router>
+        <Routes>
+          <Route path="/" element={<ItemApp />} />
+          <Route path="/items/:id" element={<ItemPage />} />
+        </Routes>
+      </Router>
     </StoreProvider>
   );
 }
