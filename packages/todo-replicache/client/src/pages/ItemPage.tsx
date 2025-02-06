@@ -94,7 +94,7 @@ export function ItemPage() {
     return null;
   }
 
-  if (!item) return <div>Item not found</div>;
+  if (!item) return null;
 
   const handleNewChild = async () => {
     const childId = ulid();
@@ -119,8 +119,8 @@ export function ItemPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white p-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="h-full overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
+      <div className="max-w-3xl mx-auto pb-32">
         <button
           onClick={() => navigate("/")}
           className="mb-8 px-3 py-1 bg-[#30363d] hover:bg-[#444c56] text-white rounded-md text-sm"
@@ -139,7 +139,7 @@ export function ItemPage() {
           />
         </div>
 
-        <div className="border-t border-[#30363d] pt-8">
+        <div className="border-t border-[#30363d] pt-8 mb-[1000px]">
           <div className="flex items-center gap-2 mb-4">
             <button
               onClick={() => setShowSearch(!showSearch)}
