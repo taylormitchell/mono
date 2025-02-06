@@ -48,7 +48,7 @@ export function ItemPage() {
       const item = await store.items.get(tx, id);
       return item ?? null;
     },
-    { default: null }
+    { default: null, dependencies: [id] }
   );
 
   const children = useSubscribe(

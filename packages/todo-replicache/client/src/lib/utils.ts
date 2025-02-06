@@ -15,7 +15,7 @@ export function comparePositions(
       return b.createdAt.localeCompare(a.createdAt);
     }
   }
-  if (aPos === null) return 1;
-  if (bPos === null) return -1;
+  if (aPos === null) return -1;
+  if (bPos === null) return 1;
   return aPos < bPos ? -1 : 1;
 }

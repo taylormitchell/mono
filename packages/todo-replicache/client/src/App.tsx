@@ -118,7 +118,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             Reset
           </button>
         </header>
-        <main>{children}</main>
+        <main className="flex-1 overflow-hidden p-4">{children}</main>
       </div>
     </div>
   );
