@@ -16,8 +16,8 @@
     "zod": "^3.24.1"
   },
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "start": "bun --watch src/index.ts",
+    "dev": "NODE_ENV=development bun --watch src/index.ts",
+    "start": "NODE_ENV=production bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:up": "drizzle-kit generate && drizzle-kit migrate"
   },
@@ -27,6 +27,7 @@
     "@types/better-sqlite3": "^7.6.12",
     "@types/express": "^5.0.0",
     "drizzle-kit": "^0.30.4",
+    "pg-mem": "^3.0.4",
     "tsx": "^4.19.2"
   }
 }
