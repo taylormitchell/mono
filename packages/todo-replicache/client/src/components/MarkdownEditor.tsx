@@ -16,25 +16,23 @@ function createState(content: string) {
 interface MarkdownEditorProps {
   content: string;
   onChange: (content: string) => void;
-  onBlur?: () => void;
   autoFocus?: boolean;
   placeholder?: string;
-  onEscape?: () => void;
-  onDelete?: () => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
+  onDelete?: (e: KeyboardEvent) => void;
+  onMoveUp?: (e: KeyboardEvent) => void;
+  onMoveDown?: (e: KeyboardEvent) => void;
+  setEditingId?: (id: string | null) => void;
 }
 
 export function MarkdownEditor({
   content,
   onChange,
-  onBlur,
   autoFocus,
   placeholder,
-  onEscape,
   onDelete,
   onMoveUp,
   onMoveDown,
+  setEditingId,
 }: MarkdownEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -55,24 +53,13 @@ export function MarkdownEditor({
       },
       handleDOMEvents: {
         blur: () => {
-          onBlur?.();
+          setEditingId?.(null);
           return false;
         },
         keydown: (view, event) => {
           if (isHotkey("escape", event)) {
-            onEscape?.();
-            return true;
-          }
-          if (isHotkey("backspace", event) && !content) {
-            onDelete?.();
-            return true;
-          }
-          if (isHotkey("cmd+arrowup", event)) {
-            onMoveUp?.();
-            return true;
-          }
-          if (isHotkey("cmd+arrowdown", event)) {
-            onMoveDown?.();
+            setEditingId?.(null);
+            view.dom.blur();
             return true;
           }
           return false;

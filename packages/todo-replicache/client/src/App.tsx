@@ -314,7 +314,9 @@ function ItemRow({
               debouncedUpdate(item.id, newContent);
             }}
             onBlur={() => setEditingId(null)}
-            onEscape={() => setEditingId(null)}
+            onEscape={(e) => 
+              setEditingId(null);
+            }}
             onDelete={handleDelete}
             onMoveUp={move?.up}
             onMoveDown={move?.down}
