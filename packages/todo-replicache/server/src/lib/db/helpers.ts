@@ -14,9 +14,9 @@ export async function getDb() {
   if (!_db) {
     if (process.env.NODE_ENV === "development") {
       const pgmem = newDb();
-      const { Client } = pgmem.adapters.createPg();
-      const client = new Client({ connectionString: process.env.DATABASE_URL });
-      _db = drizzle(client);
+      const PoolPgmem = pgmem.adapters.createPg().Pool;
+      _pool = new PoolPgmem({ connectionString: process.env.DATABASE_URL }) as Pool;
+      _db = drizzle(_pool);
       await migrate(_db, { migrationsFolder: "drizzle" });
     } else {
       if (!process.env.DATABASE_URL) {
