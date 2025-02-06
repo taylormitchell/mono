@@ -22,6 +22,10 @@ body,
   background-color: light-gray;
 }
 
+ul li::marker {
+  color: white !important;
+}
+
 /* Add system-based dark mode detection */
 @media (prefers-color-scheme: dark) {
   body {
