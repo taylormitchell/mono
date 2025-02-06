@@ -39,6 +39,8 @@ export function ItemPage() {
   const navigate = useNavigate();
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   // Move hooks before any conditionals
   const item = useSubscribe(
@@ -88,6 +90,10 @@ export function ItemPage() {
     return aPos - bPos;
   });
 
+  const filteredChildren = sortedChildren.filter((child) =>
+    child.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-[#0d1117] text-white p-8">
       <div className="max-w-3xl mx-auto">
@@ -110,98 +116,118 @@ export function ItemPage() {
         </div>
 
         <div className="border-t border-[#30363d] pt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Children</h2>
+          <div className="flex items-center gap-2 mb-4">
             <button
-              onClick={handleNewChild}
-              className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md text-sm font-semibold"
+              onClick={() => setShowSearch(!showSearch)}
+              className="p-1.5 text-[#6e7681] hover:text-white rounded"
             >
-              Add Child
+              <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
+              </svg>
+            </button>
+            <button onClick={handleNewChild} className="p-1.5 text-[#6e7681] hover:text-white rounded">
+              <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                <path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"></path>
+              </svg>
             </button>
           </div>
 
-          <div className="space-y-2">
-            {sortedChildren.map((child: Item, index: number) => (
-              <div key={child.id} className="flex items-center gap-4 p-4 rounded-md bg-[#161b22] hover:bg-[#1c2128]">
-                <div className="flex-1">
-                  <MarkdownEditor
-                    item={child}
-                    content={child.content}
-                    onChange={(content) => store.items.update(child.id, { content })}
-                    isEditing={editingId === child.id}
-                    setEditingId={setEditingId}
-                    placeholder="Untitled"
-                  />
+          {showSearch && (
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search children..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md text-white placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+              />
+            </div>
+          )}
+
+          <div className="overflow-y-auto rounded-md border border-[#30363d] bg-[#161b22] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
+            <div className="divide-y divide-[#30363d]">
+              {filteredChildren.map((child: Item, index: number) => (
+                <div key={child.id} className="flex items-center gap-4 p-4 rounded-md bg-[#161b22] hover:bg-[#1c2128]">
+                  <div className="flex-1">
+                    <MarkdownEditor
+                      item={child}
+                      content={child.content}
+                      onChange={(content) => store.items.update(child.id, { content })}
+                      isEditing={editingId === child.id}
+                      setEditingId={setEditingId}
+                      placeholder="Untitled"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate(`/items/${child.id}`)}
+                      className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                        <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" />
+                      </svg>
+                    </button>
+                    {view && view.sort.field === "position" && (
+                      <>
+                        <button
+                          onClick={async () => {
+                            const v = await createViewIfNeeded();
+                            const newPositions = { ...v.positions };
+                            const currPos = newPositions[child.id] ?? index;
+                            const prevChild = sortedChildren[index - 1];
+                            if (prevChild) {
+                              const prevPos = newPositions[prevChild.id] ?? index - 1;
+                              newPositions[child.id] = prevPos;
+                              newPositions[prevChild.id] = currPos;
+                            }
+                            store.views.update(v.id, { ...v, positions: newPositions });
+                          }}
+                          className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                          disabled={index === 0}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                            <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const v = await createViewIfNeeded();
+                            const newPositions = { ...v.positions };
+                            const currPos = newPositions[child.id] ?? index;
+                            const nextChild = sortedChildren[index + 1];
+                            if (nextChild) {
+                              const nextPos = newPositions[nextChild.id] ?? index + 1;
+                              newPositions[child.id] = nextPos;
+                              newPositions[nextChild.id] = currPos;
+                            }
+                            store.views.update(v.id, { ...v, positions: newPositions });
+                          }}
+                          className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                          disabled={index === sortedChildren.length - 1}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                            <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => {
+                        store.items.update(id, {
+                          children: item.children.filter((cid: string) => cid !== child.id),
+                        });
+                        store.items.delete(child.id);
+                      }}
+                      className="p-1.5 text-[#6e7681] hover:text-white rounded"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
+                        <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => navigate(`/items/${child.id}`)}
-                    className="p-1.5 text-[#6e7681] hover:text-white rounded"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                      <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" />
-                    </svg>
-                  </button>
-                  {view && view.sort.field === "position" && (
-                    <>
-                      <button
-                        onClick={async () => {
-                          const v = await createViewIfNeeded();
-                          const newPositions = { ...v.positions };
-                          const currPos = newPositions[child.id] ?? index;
-                          const prevChild = sortedChildren[index - 1];
-                          if (prevChild) {
-                            const prevPos = newPositions[prevChild.id] ?? index - 1;
-                            newPositions[child.id] = prevPos;
-                            newPositions[prevChild.id] = currPos;
-                          }
-                          store.views.update(v.id, { ...v, positions: newPositions });
-                        }}
-                        className="p-1.5 text-[#6e7681] hover:text-white rounded"
-                        disabled={index === 0}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                          <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={async () => {
-                          const v = await createViewIfNeeded();
-                          const newPositions = { ...v.positions };
-                          const currPos = newPositions[child.id] ?? index;
-                          const nextChild = sortedChildren[index + 1];
-                          if (nextChild) {
-                            const nextPos = newPositions[nextChild.id] ?? index + 1;
-                            newPositions[child.id] = nextPos;
-                            newPositions[nextChild.id] = currPos;
-                          }
-                          store.views.update(v.id, { ...v, positions: newPositions });
-                        }}
-                        className="p-1.5 text-[#6e7681] hover:text-white rounded"
-                        disabled={index === sortedChildren.length - 1}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                          <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
-                        </svg>
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => {
-                      store.items.update(id, {
-                        children: item.children.filter((cid: string) => cid !== child.id),
-                      });
-                      store.items.delete(child.id);
-                    }}
-                    className="p-1.5 text-[#6e7681] hover:text-white rounded"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                      <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
