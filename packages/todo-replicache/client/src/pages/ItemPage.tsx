@@ -6,6 +6,7 @@ import { MarkdownEditor } from "../components/MarkdownEditor";
 import { ulid } from "ulid";
 import { useStore } from "../hooks/store";
 import { isHotkey } from "is-hotkey";
+import { useDebounce } from "../hooks/use-debounce";
 
 function useItemView(itemId: string) {
   const store = useStore();
@@ -44,30 +45,6 @@ export function ItemPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  // Save and restore scroll position
-  useEffect(() => {
-    if (!id) return;
-
-    const scrollKey = `scroll-position-${id}`;
-    const savedPosition = localStorage.getItem(scrollKey);
-
-    if (savedPosition && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = parseInt(savedPosition);
-    }
-
-    const handleScroll = () => {
-      if (scrollContainerRef.current) {
-        localStorage.setItem(scrollKey, scrollContainerRef.current.scrollTop.toString());
-      }
-    };
-
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
-      return () => container.removeEventListener("scroll", handleScroll);
-    }
-  }, [id]);
-
   // Move hooks before any conditionals
   const item = useSubscribe(
     store.rep,
@@ -90,6 +67,32 @@ export function ItemPage() {
   );
 
   const { view, createViewIfNeeded } = useItemView(id ?? "");
+
+  // Save and restore scroll position
+  useEffect(() => {
+    if (!id || !item) return;
+
+    const scrollKey = `scroll-position-${id}`;
+    const savedPosition = localStorage.getItem(scrollKey);
+
+    // Use a small delay to ensure the DOM is ready
+    const timer = setTimeout(() => {
+      if (savedPosition && scrollContainerRef.current) {
+        console.log("restoring scroll position", savedPosition);
+        scrollContainerRef.current.scrollTop = parseInt(savedPosition);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [id, item]);
+
+  const handleScroll = useDebounce(
+    (scrollTop: number) => {
+      localStorage.setItem(`scroll-position-${id}`, scrollTop.toString());
+    },
+    [id],
+    100
+  );
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
@@ -146,6 +149,7 @@ export function ItemPage() {
   return (
     <div
       ref={scrollContainerRef}
+      onScroll={handleScroll}
       className="h-full overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
     >
       <div className="max-w-3xl mx-auto pb-32">
