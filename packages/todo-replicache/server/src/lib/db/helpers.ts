@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { replicacheClientTable, replicacheServerTable } from "./schema";
 import { eq, gt, and } from "drizzle-orm";
@@ -12,40 +13,12 @@ export const serverID = 1;
 export async function getDb() {
   if (!_db) {
     if (process.env.NODE_ENV === "development") {
-      // Use pg-mem for development
       const pgmem = newDb();
-
-      // Create tables in memory
-      pgmem.public.none(`
-        CREATE TABLE replicache_server (
-          id SERIAL PRIMARY KEY,
-          version INTEGER NOT NULL
-        );
-        
-        CREATE TABLE item (
-          id TEXT PRIMARY KEY,
-          content TEXT NOT NULL,
-          due_date TEXT,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL,
-          deleted_at TEXT,
-          status TEXT,
-          version INTEGER NOT NULL DEFAULT 0
-        );
-        
-        CREATE TABLE replicache_client (
-          id TEXT PRIMARY KEY,
-          client_group_id TEXT NOT NULL,
-          last_mutation_id INTEGER NOT NULL,
-          version INTEGER NOT NULL
-        );
-      `);
-
-      const pool = pgmem.adapters.createPg();
-      _pool = pool;
-      _db = drizzle(pool);
+      const { Client } = pgmem.adapters.createPg();
+      const client = new Client({ connectionString: process.env.DATABASE_URL });
+      _db = drizzle(client);
+      await migrate(_db, { migrationsFolder: "drizzle" });
     } else {
-      // Use real postgres for production
       if (!process.env.DATABASE_URL) {
         throw new Error("DATABASE_URL is not set");
       }
