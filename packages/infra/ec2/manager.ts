@@ -118,12 +118,13 @@ http {
     console.log(`Moving ${tempFile} to ${NGINX_CONF_PATH} and testing`);
     await $`ssh ${config.sshHost} 'sudo mv ${TMP_CONF_PATH} ${NGINX_CONF_PATH} && sudo nginx -t && sudo systemctl reload nginx'`.quiet();
 
-    console.log("Updating ssl certificate");
-    await $`ssh ${config.sshHost} 'sudo certbot --nginx -d ${config.domain} -d ${Object.values(
-      config.apps
-    )
-      .map((app) => `${app.subdomain}.${config.domain}`)
-      .join(" -d ")} --expand --deploy-hook "nginx -s reload" --keep-until-expiring'`;
+    // TODO Only update ssl certificate if the domain is not already in the cert
+    // console.log("Updating ssl certificate");
+    // await $`ssh ${config.sshHost} 'sudo certbot --nginx -d ${config.domain} -d ${Object.values(
+    //   config.apps
+    // )
+    //   .map((app) => `${app.subdomain}.${config.domain}`)
+    //   .join(" -d ")} --expand --deploy-hook "nginx -s reload" --keep-until-expiring'`;
   } catch (error) {
     console.error("❌ Failed to update nginx configuration:", error);
   } finally {
