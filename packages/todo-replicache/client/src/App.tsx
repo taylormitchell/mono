@@ -15,6 +15,27 @@ declare global {
   }
 }
 
+function useAllView() {
+  const store = useStore();
+  const allView: View | null = useSubscribe(
+    store.rep,
+    async (tx) => {
+      const allView = await store.views.get(tx, "all");
+      return allView ?? null;
+    },
+    { default: null }
+  );
+  useEffect(() => {
+    if (allView === null) {
+      store.views.create({
+        id: "all",
+        name: "All",
+      });
+    }
+  }, [allView, store]);
+  return allView;
+}
+
 const StoreContext = createContext<Store | null>(null);
 
 function useStore() {
@@ -92,24 +113,6 @@ function ItemApp() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [store, editingId]);
 
-  // Get or create all view
-  const allView: View | null = useSubscribe(
-    store.rep,
-    async (tx) => {
-      const allView = await store.views.get(tx, "all");
-      return allView ?? null;
-    },
-    { default: null }
-  );
-  useEffect(() => {
-    if (allView === null) {
-      store.views.create({
-        id: "all",
-        name: "All",
-      });
-    }
-  }, [allView, store]);
-
   console.log("re-rendering ItemApp");
   return (
     <div className="min-h-screen bg-[#0d1117] text-white flex">
@@ -158,13 +161,11 @@ function ItemApp() {
         </header>
 
         <div className="flex-1 overflow-hidden p-4">
-          {allView ? (
-            viewMode === "standard" ? (
-              <ItemView view={allView} editingId={editingId} setEditingId={setEditingId} />
-            ) : (
-              <ChatlikeItemView view={allView} />
-            )
-          ) : null}
+          {viewMode === "standard" ? (
+            <ItemView editingId={editingId} setEditingId={setEditingId} />
+          ) : (
+            <ChatlikeItemView />
+          )}
         </div>
       </div>
     </div>
@@ -215,26 +216,26 @@ function moveTo(
 }
 
 function ItemView({
-  view,
   editingId,
   setEditingId,
 }: {
-  view: View;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
 }) {
   const store = useStore();
+  const view = useAllView();
   const [searchQuery, setSearchQuery] = useState("");
 
   const items = useSubscribe(
     store.rep,
     async (tx) => {
+      if (!view) return [];
       const allItems = await store.items.getAll(tx);
       if (!allItems) return [];
       if (!view.filter?.status) return allItems;
       return allItems.filter((item) => item.status === view.filter.status);
     },
-    { default: [] as Item[] }
+    { default: [] as Item[], dependencies: [view] }
   );
 
   useEffect(() => {
@@ -402,8 +403,9 @@ function ItemRow({
   );
 }
 
-function ChatlikeItemView({ view }: { view: View }) {
+function ChatlikeItemView() {
   const store = useStore();
+  const view = useAllView();
   const [draftContent, setDraftContent] = useAtom(draftContentAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -411,12 +413,13 @@ function ChatlikeItemView({ view }: { view: View }) {
   const items = useSubscribe(
     store.rep,
     async (tx) => {
+      if (!view) return [];
       const allItems = await store.items.getAll(tx);
       if (!allItems) return [];
       if (!view.filter?.status) return allItems;
       return allItems.filter((item) => item.status === view.filter?.status);
     },
-    { default: [] as Item[] }
+    { default: [] as Item[], dependencies: [view] }
   );
 
   useEffect(() => {
