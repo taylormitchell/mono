@@ -6,6 +6,8 @@ import { isHotkey } from "is-hotkey";
 import { useDebounce } from "./utils";
 import { ulid } from "ulid";
 import { MarkdownEditor } from "./components/MarkdownEditor";
+import { useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
 declare global {
   interface Window {
@@ -48,10 +50,13 @@ function cn(...args: (string | undefined | null)[]) {
   return args.filter(Boolean).join(" ");
 }
 
+type ViewMode = "standard" | "chat";
+const viewModeAtom = atomWithStorage<ViewMode>("viewMode", "standard");
+
 function ItemApp() {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"standard" | "chat">("standard");
+  const [viewMode, setViewMode] = useAtom(viewModeAtom);
 
   // Move keyboard shortcut handler here
   useEffect(() => {
@@ -396,8 +401,8 @@ function ItemRow({
 function ChatlikeItemView({ view }: { view: View }) {
   const store = useStore();
   const [draftContent, setDraftContent] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const items = useSubscribe(
     store.rep,
@@ -410,25 +415,18 @@ function ChatlikeItemView({ view }: { view: View }) {
     { default: [] as Item[] }
   );
 
-  const filteredItems = items
-    .filter((item) => item.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView();
+  }, [items]);
+
+  const filteredItems = items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draftContent.trim()) return;
 
-    const oldScrollHeight = messagesEndRef.current?.parentElement?.scrollHeight;
     await store.items.create({ content: draftContent });
     setDraftContent("");
-
-    // Only scroll if content height changed
-    setTimeout(() => {
-      const newScrollHeight = messagesEndRef.current?.parentElement?.scrollHeight;
-      if (oldScrollHeight !== newScrollHeight) {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 100);
   };
 
   return (
@@ -436,7 +434,7 @@ function ChatlikeItemView({ view }: { view: View }) {
       <div className="flex-1 overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="divide-y divide-[#30363d]">
           {filteredItems.map((item) => (
-            <ChatItemRow key={item.id} item={item} />
+            <ChatItemRow key={item.id} item={item} isEditing={editingId === item.id} setEditingId={setEditingId} />
           ))}
           <div ref={messagesEndRef} />
         </div>
@@ -455,13 +453,40 @@ function ChatlikeItemView({ view }: { view: View }) {
   );
 }
 
-function ChatItemRow({ item }: { item: Item }) {
+function ChatItemRow({
+  item,
+  isEditing,
+  setEditingId,
+}: {
+  item: Item;
+  isEditing: boolean;
+  setEditingId: (id: string | null) => void;
+}) {
   const store = useStore();
+  const [content, setContent] = useState(item.content);
+
+  const debouncedUpdate = useDebounce(
+    (id: string, content: string) => {
+      store.items.update(id, { content });
+    },
+    [store],
+    300
+  );
 
   return (
     <div className="group flex items-center px-4 py-2 hover:bg-[#1c2128]">
       <div className="flex-1">
-        <div className="whitespace-pre-wrap break-words">{item.content}</div>
+        <MarkdownEditor
+          item={item}
+          content={content}
+          onChange={(newContent) => {
+            setContent(newContent);
+            debouncedUpdate(item.id, newContent);
+          }}
+          isEditing={isEditing}
+          setEditingId={setEditingId}
+          placeholder="Type a message..."
+        />
       </div>
       <button
         onClick={() => store.items.delete(item.id)}
