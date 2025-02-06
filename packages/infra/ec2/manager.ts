@@ -123,7 +123,7 @@ http {
       config.apps
     )
       .map((app) => `${app.subdomain}.${config.domain}`)
-      .join(" -d ")} --expand'`;
+      .join(" -d ")} --expand --deploy-hook "nginx -s reload" --keep-until-expiring'`;
   } catch (error) {
     console.error("❌ Failed to update nginx configuration:", error);
   } finally {
