@@ -55,9 +55,23 @@ export function MarkdownEditor({ item, content, onChange, placeholder, isEditing
             return true;
           }
           if (isHotkey("up", event) || isHotkey("down", event)) {
-            //   event.preventDefault();
-            event.stopPropagation();
-            return false;
+            const state = view.state;
+            const doc = state.doc;
+            const selection = state.selection;
+            const $head = selection.$head;
+            const isStart = $head.pos === 1;
+            const isEnd = $head.pos === doc.content.size - 1;
+            console.log(isStart, isEnd, $head.pos, doc.content.size);
+            if (isStart && isHotkey("up", event)) {
+              event.preventDefault();
+              return true;
+            } else if (isEnd && isHotkey("down", event)) {
+              event.preventDefault();
+              return true;
+            } else {
+              event.stopPropagation();
+              return false;
+            }
           }
           //   return false;
         },
