@@ -1,31 +1,27 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
+import { PgliteDatabase } from "drizzle-orm/pglite";
 
 import { Pool } from "pg";
 import { replicacheClientTable, replicacheServerTable } from "./schema";
 import { eq, gt, and } from "drizzle-orm";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: NodePgDatabase | PgliteDatabase | null = null;
 let _pool: Pool | null = null;
 
 export const serverID = 1;
 export async function getDb() {
   if (!_db) {
     if (process.env.NODE_ENV === "development") {
-      import { drizzle } from "drizzle-orm/pglite";
-      const pgmem = newDb();
-      const PoolPgmem = pgmem.adapters.createPg().Pool;
-      _pool = new PoolPgmem({ connectionString: process.env.DATABASE_URL }) as Pool;
-      _db = drizzle(_pool);
+      const { drizzle } = await import("drizzle-orm/pglite");
+      const { migrate } = await import("drizzle-orm/pglite/migrator");
+      _db = drizzle();
       await migrate(_db, { migrationsFolder: "drizzle" });
     } else {
       if (!process.env.DATABASE_URL) {
         throw new Error("DATABASE_URL is not set");
       }
-
-      _pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-      });
+      _pool = new Pool({ connectionString: process.env.DATABASE_URL });
       _db = drizzle(_pool);
     }
 
@@ -46,7 +42,7 @@ export async function resetDb() {
   _db = null;
 }
 
-export async function getServerVersion(db: ReturnType<typeof drizzle>): Promise<number> {
+export async function getServerVersion(db: NodePgDatabase | PgliteDatabase): Promise<number> {
   const result = await db
     .select({ version: replicacheServerTable.version })
     .from(replicacheServerTable)
@@ -56,7 +52,7 @@ export async function getServerVersion(db: ReturnType<typeof drizzle>): Promise<
 }
 
 export async function getLastMutationID(
-  db: ReturnType<typeof drizzle>,
+  db: NodePgDatabase | PgliteDatabase,
   clientID: string
 ): Promise<number> {
   const result = await db
@@ -68,7 +64,7 @@ export async function getLastMutationID(
 }
 
 export async function getLastMutationIDChanges(
-  db: ReturnType<typeof drizzle>,
+  db: NodePgDatabase | PgliteDatabase,
   clientGroupID: string,
   fromVersion: number
 ): Promise<Record<string, number>> {
@@ -85,7 +81,7 @@ export async function getLastMutationIDChanges(
 }
 
 export async function setLastMutationID(
-  db: ReturnType<typeof drizzle>,
+  db: NodePgDatabase | PgliteDatabase,
   clientID: string,
   clientGroupID: string,
   mutationID: number,
@@ -100,7 +96,7 @@ export async function setLastMutationID(
     });
 }
 
-export async function setServerVersion(db: ReturnType<typeof drizzle>, version: number) {
+export async function setServerVersion(db: NodePgDatabase | PgliteDatabase, version: number) {
   return db
     .insert(replicacheServerTable)
     .values({ id: serverID, version })
