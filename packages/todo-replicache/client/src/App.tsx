@@ -261,6 +261,8 @@ function ItemView({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  if (!view) return null;
+
   const filteredItems = items
     .filter((item) => item.content.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
@@ -422,9 +424,13 @@ function ChatlikeItemView() {
     { default: [] as Item[], dependencies: [view] }
   );
 
+  console.log("re-rendering", { view, items, store });
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView();
   }, [items]);
+
+  if (!view) return null;
 
   const filteredItems = items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 

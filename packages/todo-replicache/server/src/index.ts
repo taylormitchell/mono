@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
-import { getDb, resetDb } from "./lib/db/helpers";
+import { resetDb } from "./lib/db/helpers";
 import { handlePush, handlePull } from "./lib/replicache";
-import { replicacheClientTable, replicacheServerTable, itemTable } from "./lib/db/schema";
 import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
@@ -24,15 +23,6 @@ app.get("/api/", (req: Request, res: Response) => {
 
 app.post("/api/push", handlePush);
 app.post("/api/pull", handlePull);
-
-app.get("/api/dump", async (req: Request, res: Response) => {
-  const db = await getDb();
-  res.status(200).json({
-    todos: db.select().from(itemTable).all(),
-    replicacheServer: db.select().from(replicacheServerTable).all(),
-    replicacheClient: db.select().from(replicacheClientTable).all(),
-  });
-});
 
 app.use("/api/reset", async (req: Request, res: Response) => {
   resetDb();
