@@ -2,53 +2,13 @@ import { useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Item } from "../../../shared/types";
 import { isHotkey } from "is-hotkey";
-import { useDebounce } from "../utils";
+import { cn, comparePositions } from "../lib/utils";
+import { useDebounce } from "../hooks/use-debounce";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useEffect } from "react";
-
-function cn(...args: (string | undefined | null)[]) {
-  return args.filter(Boolean).join(" ");
-}
-
-function comparePositions(
-  a: { id: string; createdAt: string },
-  b: { id: string; createdAt: string },
-  partialPositions: Record<string, number>
-) {
-  const aPos = partialPositions[a.id] ?? null;
-  const bPos = partialPositions[b.id] ?? null;
-  if (aPos === null && bPos === null) {
-    if (b.createdAt === a.createdAt) {
-      return b.id.localeCompare(a.id);
-    } else {
-      return b.createdAt.localeCompare(a.createdAt);
-    }
-  }
-  if (aPos === null) return 1;
-  if (bPos === null) return -1;
-  return aPos < bPos ? -1 : 1;
-}
-
-function moveTo(
-  items: { id: string; createdAt: string }[],
-  from: number,
-  to: number,
-  partialPositions: Record<string, number>
-) {
-  const sortedItems = [...items].sort((a, b) => comparePositions(a, b, partialPositions));
-  const toClamped = Math.max(0, Math.min(to, sortedItems.length - 1));
-  if (from !== toClamped) {
-    const item = sortedItems[from];
-    sortedItems.splice(from, 1);
-    sortedItems.splice(toClamped, 0, item);
-  }
-  return sortedItems.reduce((acc, item, i) => {
-    acc[item.id] = i;
-    return acc;
-  }, {} as Record<string, number>);
-}
+import { moveTo } from "../lib/positions";
 
 function ItemRow({
   item,

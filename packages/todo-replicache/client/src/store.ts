@@ -151,6 +151,9 @@ export function createStore() {
         await action.do();
         undoManager.add(action);
       },
+      get: async (tx: ReadTransaction, id: string) => {
+        return items.get(tx, id);
+      },
       getAll: async (tx: ReadTransaction) => {
         const res = await items.list(tx);
         return res.filter((item) => item.deletedAt === null);

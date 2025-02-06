@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Item } from "../../../shared/types";
-import { useDebounce } from "../utils";
+import { useDebounce } from "../hooks/use-debounce";
 import { useStore } from "../hooks/store";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useAtom } from "jotai";
