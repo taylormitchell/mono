@@ -1,10 +1,11 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { useSubscribe } from "replicache-react";
 import { createStore, Store } from "./store";
-import { Item, itemStatusList, View } from "../../shared/types";
+import { Item, View } from "../../shared/types";
 import { isHotkey } from "is-hotkey";
 import { useDebounce } from "./utils";
 import { ulid } from "ulid";
+import { MarkdownEditor } from "./components/MarkdownEditor";
 
 declare global {
   interface Window {
@@ -274,6 +275,17 @@ function ItemRow({
     300
   );
 
+  const handleDelete = () => {
+    const prevElement = document.getElementById(item.id)?.previousElementSibling;
+    store.items.delete(item.id);
+    if (prevElement) {
+      const editor = prevElement.querySelector(".ProseMirror");
+      if (editor) {
+        (editor as HTMLElement).focus();
+      }
+    }
+  };
+
   return (
     <div
       id={item.id}
@@ -295,69 +307,20 @@ function ItemRow({
       )}
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          <input
-            type="text"
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              debouncedUpdate(item.id, e.target.value);
+          <MarkdownEditor
+            content={content}
+            onChange={(newContent) => {
+              setContent(newContent);
+              debouncedUpdate(item.id, newContent);
             }}
-            placeholder="Untitled"
             onBlur={() => setEditingId(null)}
-            onKeyDown={(e) => {
-              if (isHotkey("escape", e)) {
-                document.getElementById(item.id)?.querySelector("input")?.blur();
-              }
-              if (isHotkey("backspace", e) && item.content === "") {
-                e.preventDefault();
-                document.getElementById(item.id)?.previousElementSibling?.querySelector("input")?.focus();
-                store.items.delete(item.id);
-              }
-              if (isHotkey("cmd+enter", e)) {
-                const i = itemStatusList.indexOf(item.status);
-                const newStatus = itemStatusList[i + 1] ?? itemStatusList[0];
-                store.items.update(item.id, { status: newStatus });
-              }
-              if (isHotkey("cmd+arrowup", e) && move?.up) {
-                e.preventDefault();
-                e.stopPropagation();
-                move.up();
-              }
-              if (isHotkey("cmd+arrowdown", e) && move?.down) {
-                e.preventDefault();
-                e.stopPropagation();
-                move.down();
-              }
-              if (isHotkey("arrowup", e)) {
-                e.preventDefault();
-                e.stopPropagation();
-                const el = document.getElementById(item.id)?.previousElementSibling?.querySelector("input");
-                if (el) {
-                  el.focus();
-                }
-              }
-              if (isHotkey("arrowdown", e)) {
-                e.preventDefault();
-                e.stopPropagation();
-                const el = document.getElementById(item.id)?.nextElementSibling?.querySelector("input");
-                if (el) {
-                  el.focus();
-                }
-              }
-            }}
-            className="flex-1 bg-transparent outline-none"
-            autoFocus
+            onEscape={() => setEditingId(null)}
+            onDelete={handleDelete}
+            onMoveUp={move?.up}
+            onMoveDown={move?.down}
+            autoFocus={isEditing}
+            placeholder="Untitled"
           />
-          {/* <input
-            type="date"
-            value={item.dueDate || ""}
-            onChange={(e) => {
-              store.items.update(item.id, { dueDate: e.target.value || null });
-            }}
-            onFocus={(e) => e.target.showPicker()}
-            onClick={(e) => e.currentTarget.showPicker()}
-            className="bg-[#0d1117] border border-[#30363d] rounded px-2 py-1 text-sm"
-          /> */}
         </div>
       </div>
       {move && (
@@ -374,7 +337,7 @@ function ItemRow({
           </button>
         </div>
       )}
-      <button onClick={() => store.items.delete(item.id)} className="ml-2 p-1 text-[#6e7681] hover:text-white rounded">
+      <button onClick={handleDelete} className="ml-2 p-1 text-[#6e7681] hover:text-white rounded">
         <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
           <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
         </svg>
