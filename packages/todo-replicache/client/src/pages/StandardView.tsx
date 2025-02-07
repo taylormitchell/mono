@@ -73,6 +73,7 @@ function ItemRow({
               setContent(newContent);
               debouncedUpdate(item.id, newContent);
             }}
+            onNameChange={(name) => store.items.update(item.id, { name })}
             isEditing={isEditing}
             setEditingId={setEditingId}
             placeholder="Untitled"

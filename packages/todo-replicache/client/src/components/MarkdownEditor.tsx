@@ -7,6 +7,11 @@ import "./MarkdownEditor.css";
 import isHotkey from "is-hotkey";
 import { Item } from "../../../shared/types";
 
+function extractH1Title(content: string): string | null {
+  const match = content.match(/^#\s+([^\n]+)/);
+  return match ? match[1].trim() : null;
+}
+
 function createState(content: string) {
   return EditorState.create({
     doc: defaultMarkdownParser.parse(content),
@@ -18,63 +23,41 @@ interface MarkdownEditorProps {
   item: Item;
   content: string;
   onChange: (content: string) => void;
+  onNameChange?: (name: string | null) => void;
   placeholder?: string;
   isEditing?: boolean;
   setEditingId?: (id: string | null) => void;
 }
 
-export function MarkdownEditor({ item, content, onChange, placeholder, isEditing, setEditingId }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  item,
+  content,
+  onChange,
+  onNameChange,
+  placeholder = "",
+  isEditing = false,
+  setEditingId,
+}: MarkdownEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Create the editor view
+    const state = createState(content);
     const view = new EditorView(editorRef.current, {
-      state: createState(content),
+      state,
       dispatchTransaction(transaction) {
         const newState = view.state.apply(transaction);
         view.updateState(newState);
         const newContent = defaultMarkdownSerializer.serialize(newState.doc);
-        if (newContent !== content) {
-          onChange(newContent);
+        onChange(newContent);
+        if (item.name === null && onNameChange) {
+          const title = extractH1Title(newContent);
+          if (title) {
+            onNameChange(title);
+          }
         }
-      },
-      handleDOMEvents: {
-        blur: () => {
-          setEditingId?.(null);
-          return false;
-        },
-        focus: () => {
-          setEditingId?.(item.id);
-          return false;
-        },
-        keydown: (view, event) => {
-          if (isHotkey("escape", event)) {
-            return true;
-          }
-          if (isHotkey("up", event) || isHotkey("down", event)) {
-            const state = view.state;
-            const doc = state.doc;
-            const selection = state.selection;
-            const $head = selection.$head;
-            const isStart = $head.pos === 1;
-            const isEnd = $head.pos === doc.content.size - 1;
-            console.log(isStart, isEnd, $head.pos, doc.content.size);
-            if (isStart && isHotkey("up", event)) {
-              event.preventDefault();
-              return true;
-            } else if (isEnd && isHotkey("down", event)) {
-              event.preventDefault();
-              return true;
-            } else {
-              event.stopPropagation();
-              return false;
-            }
-          }
-          //   return false;
-        },
       },
     });
 
@@ -83,27 +66,29 @@ export function MarkdownEditor({ item, content, onChange, placeholder, isEditing
     return () => {
       view.destroy();
     };
-  }, []);
-
-  useEffect(() => {
-    if (isEditing && !viewRef.current?.hasFocus()) {
-      viewRef.current?.focus();
-    } else if (!isEditing && viewRef.current?.hasFocus()) {
-      viewRef.current?.dom.blur();
-    }
   }, [isEditing]);
 
-  // Update content when it changes externally
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
 
-    const currentContent = defaultMarkdownSerializer.serialize(view.state.doc);
-    if (currentContent !== content) {
-      const state = createState(content);
-      view.updateState(state);
-    }
-  }, [content]);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isHotkey("escape", e)) {
+        e.preventDefault();
+        setEditingId?.(null);
+      }
+    };
 
-  return <div ref={editorRef} className="flex-1 prose prose-invert max-w-none" data-placeholder={placeholder} />;
+    view.dom.addEventListener("keydown", handleKeyDown);
+    return () => view.dom.removeEventListener("keydown", handleKeyDown);
+  }, [setEditingId]);
+
+  return (
+    <div
+      ref={editorRef}
+      className="prose prose-invert max-w-none"
+      onClick={() => !isEditing && setEditingId?.(item.id)}
+      data-placeholder={placeholder}
+    />
+  );
 }

@@ -6,6 +6,7 @@ export const itemStatusList = [null, ...itemStatusSchema.options] as const;
 
 export const itemSchema = z.object({
   id: z.string(),
+  name: z.string().nullable().default(null),
   content: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

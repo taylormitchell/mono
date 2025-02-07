@@ -154,6 +154,7 @@ export function ItemPage() {
             item={item}
             content={item.content}
             onChange={(content) => store.items.update(id, { content })}
+            onNameChange={(name) => store.items.update(id, { name })}
             isEditing={editingId === id}
             setEditingId={setEditingId}
             placeholder="Untitled"

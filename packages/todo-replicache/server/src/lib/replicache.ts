@@ -119,6 +119,27 @@ export async function handlePull(req: Request, res: Response) {
   }
 }
 
+async function makeNameUnique(db: NodePgDatabase, name: string | null): Promise<string | null> {
+  if (!name) return null;
+
+  let uniqueName = name;
+  let counter = 1;
+
+  while (true) {
+    const existing = await db
+      .select()
+      .from(itemTable)
+      .where(eq(itemTable.name, uniqueName))
+      .limit(1);
+
+    if (existing.length === 0) break;
+    uniqueName = `${name} (${counter})`;
+    counter++;
+  }
+
+  return uniqueName;
+}
+
 async function processMutation(db: NodePgDatabase, clientGroupID: string, mutation: Mutation) {
   const { clientID } = mutation;
 
@@ -141,27 +162,36 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
 
   switch (mutation.name) {
     case "createItem": {
+      const uniqueName = await makeNameUnique(db, mutation.args.name);
+      const { children, ...rest } = mutation.args;
       await db
         .insert(itemTable)
         .values({
-          ...mutation.args,
+          ...rest,
+          children: JSON.stringify(children),
+          name: uniqueName,
           version: nextVersion,
         })
         .onConflictDoUpdate({
           target: [itemTable.id],
           set: {
-            ...mutation.args,
+            ...rest,
+            children: JSON.stringify(children),
+            name: uniqueName,
             version: nextVersion,
           },
         });
       break;
     }
     case "updateItem": {
-      const { id, ...args } = mutation.args;
+      const { id, name, children, ...args } = mutation.args;
+      const uniqueName = name !== undefined ? await makeNameUnique(db, name) : undefined;
       await db
         .update(itemTable)
         .set({
           ...args,
+          ...(children && { children: JSON.stringify(children) }),
+          name: uniqueName,
           version: nextVersion,
         })
         .where(eq(itemTable.id, id));

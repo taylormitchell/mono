@@ -7,6 +7,7 @@ export const replicacheServerTable = pgTable("replicache_server", {
 
 export const itemTable = pgTable("item", {
   id: text("id").primaryKey(),
+  name: text("name").unique(),
   content: text("content").notNull(),
   dueDate: text("due_date"),
   createdAt: text("created_at").notNull(),
