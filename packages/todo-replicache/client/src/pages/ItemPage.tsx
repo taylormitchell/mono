@@ -66,6 +66,8 @@ export function ItemPage() {
     { default: [], dependencies: [item] }
   );
 
+  const [name, setName] = useState(item?.name ?? "");
+
   const { view, createViewIfNeeded } = useItemView(id ?? "");
 
   // Save and restore scroll position
@@ -150,6 +152,18 @@ export function ItemPage() {
     >
       <div className="max-w-3xl mx-auto pb-32">
         <div className="mb-8">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+            }}
+            onBlur={() => store.items.update(id, { name })}
+            className="mb-2 px-2 py-1 text-xs font-mono bg-[#0d1117] border border-[#30363d] rounded-md text-[#6e7681] w-auto"
+          />
           <MarkdownEditor
             item={item}
             content={item.content}
