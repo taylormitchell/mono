@@ -119,7 +119,11 @@ export async function handlePull(req: Request, res: Response) {
   }
 }
 
-async function makeNameUnique(db: NodePgDatabase, name: string | null): Promise<string | null> {
+async function makeNameUnique(
+  db: NodePgDatabase,
+  name: string | null,
+  id: string
+): Promise<string | null> {
   if (!name) return null;
 
   let uniqueName = name;
@@ -133,6 +137,7 @@ async function makeNameUnique(db: NodePgDatabase, name: string | null): Promise<
       .limit(1);
 
     if (existing.length === 0) break;
+    if (existing[0].id === id) break;
     uniqueName = `${name} (${counter})`;
     counter++;
   }
@@ -162,7 +167,7 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
 
   switch (mutation.name) {
     case "createItem": {
-      const uniqueName = await makeNameUnique(db, mutation.args.name);
+      const uniqueName = await makeNameUnique(db, mutation.args.name, mutation.args.id);
       await db
         .insert(itemTable)
         .values({
@@ -184,7 +189,7 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
     }
     case "updateItem": {
       const { id, name, children, ...args } = mutation.args;
-      const uniqueName = name !== undefined ? await makeNameUnique(db, name) : undefined;
+      const uniqueName = name !== undefined ? await makeNameUnique(db, name, id) : undefined;
       await db
         .update(itemTable)
         .set({
