@@ -86,7 +86,7 @@ export async function handlePull(req: Request, res: Response) {
         patch.push({
           op: "put",
           key: `item/${item.id}`,
-          value: itemSchema.parse(item),
+          value: itemSchema.parse({ ...item, children: JSON.parse(item.children) }),
         });
       }
 
@@ -163,20 +163,19 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
   switch (mutation.name) {
     case "createItem": {
       const uniqueName = await makeNameUnique(db, mutation.args.name);
-      const { children, ...rest } = mutation.args;
       await db
         .insert(itemTable)
         .values({
-          ...rest,
-          children: JSON.stringify(children),
+          ...mutation.args,
+          children: JSON.stringify(mutation.args.children),
           name: uniqueName,
           version: nextVersion,
         })
         .onConflictDoUpdate({
           target: [itemTable.id],
           set: {
-            ...rest,
-            children: JSON.stringify(children),
+            ...mutation.args,
+            children: JSON.stringify(mutation.args.children),
             name: uniqueName,
             version: nextVersion,
           },
