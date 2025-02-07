@@ -153,8 +153,13 @@ export function ItemPage() {
           <MarkdownEditor
             item={item}
             content={item.content}
-            onChange={(content) => store.items.update(id, { content })}
-            onNameChange={(name) => store.items.update(id, { name })}
+            onChange={(content) => {
+              let title: string | undefined = undefined;
+              if (item.name === null) {
+                title = content.match(/^#\s+([^\n]+)/)?.[1].trim();
+              }
+              store.items.update(id, { content, name: title });
+            }}
             isEditing={editingId === id}
             setEditingId={setEditingId}
             placeholder="Untitled"

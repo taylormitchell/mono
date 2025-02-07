@@ -7,11 +7,6 @@ import "./MarkdownEditor.css";
 import isHotkey from "is-hotkey";
 import { Item } from "../../../shared/types";
 
-function extractH1Title(content: string): string | null {
-  const match = content.match(/^#\s+([^\n]+)/);
-  return match ? match[1].trim() : null;
-}
-
 function createState(content: string) {
   return EditorState.create({
     doc: defaultMarkdownParser.parse(content),
@@ -23,7 +18,7 @@ interface MarkdownEditorProps {
   item: Item;
   content: string;
   onChange: (content: string) => void;
-  onNameChange?: (name: string | null) => void;
+  onAddTitle?: (name: string | null) => void;
   placeholder?: string;
   isEditing?: boolean;
   setEditingId?: (id: string | null) => void;
@@ -33,7 +28,7 @@ export function MarkdownEditor({
   item,
   content,
   onChange,
-  onNameChange,
+  onAddTitle,
   placeholder = "",
   isEditing = false,
   setEditingId,
@@ -52,12 +47,6 @@ export function MarkdownEditor({
         view.updateState(newState);
         const newContent = defaultMarkdownSerializer.serialize(newState.doc);
         onChange(newContent);
-        if (item.name === null && onNameChange) {
-          const title = extractH1Title(newContent);
-          if (title) {
-            onNameChange(title);
-          }
-        }
       },
     });
 
