@@ -149,10 +149,6 @@ export function ItemPage() {
       className="h-full overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
     >
       <div className="max-w-3xl mx-auto pb-32">
-        <button onClick={() => navigate("/")} className="mb-8 px-3 py-1 bg-[#30363d] hover:bg-[#444c56] rounded-md text-sm">
-          ← Back
-        </button>
-
         <div className="mb-8">
           <MarkdownEditor
             item={item}
