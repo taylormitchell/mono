@@ -154,10 +154,7 @@ export function ItemPage() {
             item={item}
             content={item.content}
             onChange={(content) => {
-              let title: string | undefined = undefined;
-              if (item.name === null) {
-                title = content.match(/^#\s+([^\n]+)/)?.[1].trim();
-              }
+              const title = item.name === null ? content.match(/^#\s+([^\n]+)\n/)?.[1].trim() : undefined;
               store.items.update(id, { content, name: title });
             }}
             isEditing={editingId === id}

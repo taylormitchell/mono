@@ -70,10 +70,13 @@ function ItemRow({
             item={item}
             content={content}
             onChange={(newContent) => {
+              const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1].trim() : undefined;
+              if (title) {
+                store.items.update(item.id, { name: title });
+              }
               setContent(newContent);
               debouncedUpdate(item.id, newContent);
             }}
-            onNameChange={(name) => store.items.update(item.id, { name })}
             isEditing={isEditing}
             setEditingId={setEditingId}
             placeholder="Untitled"

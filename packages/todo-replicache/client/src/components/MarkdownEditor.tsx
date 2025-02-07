@@ -18,7 +18,6 @@ interface MarkdownEditorProps {
   item: Item;
   content: string;
   onChange: (content: string) => void;
-  onAddTitle?: (name: string | null) => void;
   placeholder?: string;
   isEditing?: boolean;
   setEditingId?: (id: string | null) => void;
@@ -28,7 +27,6 @@ export function MarkdownEditor({
   item,
   content,
   onChange,
-  onAddTitle,
   placeholder = "",
   isEditing = false,
   setEditingId,
