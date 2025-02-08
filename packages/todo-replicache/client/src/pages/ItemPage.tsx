@@ -120,6 +120,12 @@ export function ItemPage() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [store, editingId, id, item]);
 
+  const [existingNames, setExistingNames] = useState<Set<string>>(new Set());
+  const debouncedGetNames = useDebounce(async () => {
+    const names = (await store.rep.query((tx) => store.items.getAll(tx))).map((i) => i.name).filter((i) => i !== null);
+    setExistingNames(new Set(names));
+  }, 200);
+
   if (!id) {
     navigate("/");
     return null;
@@ -135,12 +141,6 @@ export function ItemPage() {
     });
     setEditingId(childId);
   };
-
-  const [existingNames, setExistingNames] = useState<Set<string>>(new Set());
-  const debouncedGetNames = useDebounce(async () => {
-    const names = (await store.rep.query((tx) => store.items.getAll(tx))).filter((i) => i.name !== null).map((i) => i.name);
-    setExistingNames(new Set(names));
-  }, 200);
 
   const sortedChildren = children.sort((a: Item, b: Item) => {
     if (!view || view.sort.field !== "position") {
@@ -161,22 +161,26 @@ export function ItemPage() {
     >
       <div className="max-w-3xl mx-auto pb-32">
         <div className="mb-8">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.currentTarget.blur();
-              }
-            }}
-            onFocus={async () => {
-              const names = (await store.rep.query((tx) => store.items.getAll(tx))).map((i) => i.name).filter((i) => i !== null);
-              setExistingNames(new Set(names));
-            }}
-            onBlur={() => store.items.update(id, { name })}
-            className="mb-2 px-2 py-1 text-xs font-mono bg-[#0d1117] border border-[#30363d] rounded-md text-[#6e7681] w-auto"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                }
+              }}
+              onFocus={debouncedGetNames}
+              onBlur={() => {
+                debouncedGetNames.cancel();
+                if (!existingNames.has(name)) {
+                  store.items.update(id, { name });
+                }
+              }}
+              className="mb-2 px-2 py-1 text-xs font-mono bg-[#0d1117] border border-[#30363d] rounded-md text-[#6e7681] w-auto"
+            />
+          </div>
           <MarkdownEditor item={item} isEditing={editingId === id} setEditingId={setEditingId} placeholder="Untitled" />
         </div>
 
