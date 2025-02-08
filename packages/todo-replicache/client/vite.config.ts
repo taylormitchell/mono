@@ -13,9 +13,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
       manifest: {
-        name: "Todo App",
-        short_name: "Todo",
-        description: "A simple todo app with offline support",
+        name: "Items",
+        short_name: "Items",
         theme_color: "#0d1117",
         background_color: "#0d1117",
         display: "standalone",
