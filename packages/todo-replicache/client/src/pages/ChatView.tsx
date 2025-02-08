@@ -68,12 +68,12 @@ export function ChatView() {
   };
 
   return (
-    <div className="flex flex-col h-full rounded-md border border-[#30363d] bg-[#0d1117] overflow-hidden font-mono">
+    <div className="flex flex-col h-full rounded-md border border-[#30363d] bg-[var(--bg-primary)] overflow-hidden font-mono">
       <div className="flex-1 overflow-y-auto p-4 scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="space-y-2">
           {filteredItems.map((item) => (
             <div className="group flex items-start gap-2">
-              <span className="text-[#238636]">$</span>
+              <span className="text-[var(--accent-color)]">$</span>
               <div className="flex-1">
                 <MarkdownEditor
                   item={item}
@@ -86,13 +86,13 @@ export function ChatView() {
           ))}
           <div ref={messagesEndRef} />
           <form onSubmit={handleSubmit} className="flex items-center gap-2">
-            <span className="text-[#238636]">$</span>
+            <span className="text-[var(--accent-color)]">$</span>
             <input
               type="text"
               value={draftContent}
               onChange={(e) => setDraftContent(e.target.value)}
               placeholder="Type a command..."
-              className="flex-1 bg-transparent border-none outline-none placeholder-[#6e7681]"
+              className="flex-1 bg-transparent border-none outline-none placeholder-[var(--text-secondary)]"
             />
           </form>
         </div>

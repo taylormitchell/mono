@@ -75,12 +75,9 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
       {/* Sidebar Toggle Button for Mobile */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-[#1f6feb] rounded-md"
-      >
+      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md">
         <svg
-          className="w-6 h-6 text-white"
+          className="w-6 h-6 text-[var(--text-primary)]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -97,7 +94,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <div
         className={cn(
-          "w-48 border-r border-[#30363d] p-4 fixed md:static min-h-screen z-40 transition-transform duration-300 ease-in-out",
+          "w-48 bg-[var(--bg-primary)] border-r border-[#30363d] p-4 fixed md:static min-h-screen z-40 transition-transform duration-300 ease-in-out",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
@@ -144,9 +141,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Overlay for mobile when sidebar is open */}
-      {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />
-      )}
+      {isSidebarOpen && <div className="fixed inset-0 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col h-screen w-full">
