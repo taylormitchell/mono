@@ -8,7 +8,7 @@ import { atomWithStorage } from "jotai/utils";
 
 const draftContentAtom = atomWithStorage<string>("draftContent", "");
 
-export function ChatView() {
+export function ChatPage() {
   const store = useStore();
   const [draftContent, setDraftContent] = useAtom(draftContentAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -68,7 +68,7 @@ export function ChatView() {
   };
 
   return (
-    <div className="flex flex-col h-full rounded-md border border-[#30363d] bg-[var(--bg-primary)] overflow-hidden font-mono">
+    <div className="flex h-full w-full pt-12">
       <div className="flex-1 overflow-y-auto p-4 scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="space-y-2">
           {filteredItems.map((item) => (

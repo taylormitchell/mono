@@ -6,7 +6,7 @@ import { ItemPage } from "./pages/ItemPage";
 import { isHotkey } from "is-hotkey";
 import { ulid } from "ulid";
 import { StandardView } from "./pages/StandardView";
-import { ChatView } from "./pages/ChatView";
+import { ChatPage } from "./pages/chat";
 import { cn } from "./lib/utils";
 
 declare global {
@@ -144,9 +144,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       {isSidebarOpen && <div className="fixed inset-0 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col h-screen w-full">
-        <main className="flex-1 overflow-auto p-4">{children}</main>
-      </div>
+      <div className="h-full w-full">{children}</div>
     </div>
   );
 }
@@ -158,7 +156,7 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<StandardView />} />
-            <Route path="/chat" element={<ChatView />} />
+            <Route path="/chat" element={<ChatPage />} />
             <Route path="/items/:id" element={<ItemPage />} />
           </Routes>
         </Layout>

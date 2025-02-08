@@ -166,7 +166,7 @@ export function StandardView() {
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center gap-4">
-        <div className="w-8 md:w-0" /> {/* Spacer for mobile menu button */}
+        <div className="w-12 md:w-0" /> {/* Spacer for mobile menu button */}
         <input
           type="text"
           placeholder="Search items..."
