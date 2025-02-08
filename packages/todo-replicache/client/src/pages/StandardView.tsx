@@ -74,7 +74,8 @@ function ItemRow({
               if (title) {
                 store.items.update(item.id, { name: title });
               }
-              setContent(newContent);
+              // console.log("setting content", newContent);
+              // setContent(newContent);
               debouncedUpdate(item.id, newContent);
             }}
             isEditing={isEditing}
@@ -117,6 +118,8 @@ export function StandardView() {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  console.log("StandardView", { editingId, searchQuery });
 
   const view = useSubscribe(
     store.rep,

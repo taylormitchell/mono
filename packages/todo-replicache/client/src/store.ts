@@ -83,7 +83,6 @@ export function createStore() {
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
     pushURL: env.VITE_REPLICACHE_PUSH_URL,
     pullURL: env.VITE_REPLICACHE_PULL_URL,
-    logLevel: "debug",
     mutators: {
       async createItem(tx: WriteTransaction, props) {
         return items.set(tx, props);
@@ -122,6 +121,7 @@ export function createStore() {
               updatedAt: new Date().toISOString(),
               deletedAt: null,
               dueDate: null,
+              name: null,
               version: 0,
               children: [],
             }),
