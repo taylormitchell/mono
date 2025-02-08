@@ -97,7 +97,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <div
         className={cn(
-          "w-48 border-r border-[#30363d] bg-[#0d1117] p-4 fixed md:static h-full z-40 transition-transform duration-300 ease-in-out",
+          "w-48 border-r border-[#30363d] p-4 fixed md:static h-full z-40 transition-transform duration-300 ease-in-out",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
@@ -107,10 +107,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               navigate("/");
               setIsSidebarOpen(false);
             }}
-            className={cn(
-              "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/" ? "bg-[#1f6feb]" : "text-[#c9d1d9] hover:bg-[#21262d]"
-            )}
+            className={cn("w-full px-3 py-2 text-left rounded-md")}
           >
             Standard View
           </button>
@@ -145,7 +142,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col h-screen w-full bg-[#0d1117]">
+      <div className="flex-1 flex flex-col h-screen w-full">
         <main className="flex-1 overflow-auto p-4">{children}</main>
       </div>
     </div>

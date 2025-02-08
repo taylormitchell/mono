@@ -37,7 +37,10 @@ function ItemRow({
   return (
     <div
       id={item.id}
-      className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]", editingId === item.id ? "bg-[#1c2128]" : "")}
+      className={cn(
+        "item flex flex-grow items-center px-4 py-2 hover:bg-[var(--hover-color)]",
+        editingId === item.id ? "bg-[var(--hover-color)]" : ""
+      )}
     >
       {item.status !== null && (
         <div className="mr-3">
@@ -169,7 +172,7 @@ export function StandardView() {
           placeholder="Search items..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-[#0d1117] border border-[#30363d] rounded-md py-1.5 px-3 text-[#c9d1d9] placeholder-[#484f58] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+          className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
         />
         <button onClick={() => store.items.create({ content: "" })} title="New Item">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -177,7 +180,7 @@ export function StandardView() {
           </svg>
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto rounded-md border border-[#30363d] bg-[#161b22] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
+      <div className="flex-1 overflow-y-auto rounded-md border scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="divide-y divide-[#30363d]">
           {filteredItems.map((item, i) => (
             <ItemRow
