@@ -67,6 +67,9 @@ export function ItemPage() {
   );
 
   const [name, setName] = useState(item?.name ?? "");
+  useEffect(() => {
+    setName(item?.name ?? "");
+  }, [item]);
 
   const { view, createViewIfNeeded } = useItemView(id ?? "");
 
@@ -200,8 +203,6 @@ export function ItemPage() {
                   <div className="flex-1">
                     <MarkdownEditor
                       item={child}
-                      initialContent={child.content}
-                      onChange={(content) => store.items.update(child.id, { content })}
                       isEditing={editingId === child.id}
                       setEditingId={setEditingId}
                       placeholder="Untitled"
