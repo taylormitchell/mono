@@ -164,9 +164,9 @@ export function StandardView() {
     });
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="flex flex-col h-full gap-4 p-4">
       <div className="flex items-center gap-4">
-        <div className="w-12 md:w-0" /> {/* Spacer for mobile menu button */}
+        <div className="w-4 md:w-0" /> {/* Spacer for mobile menu button */}
         <input
           type="text"
           placeholder="Search items..."
@@ -180,7 +180,7 @@ export function StandardView() {
           </svg>
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto rounded-md border scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="divide-y divide-[#30363d]">
           {filteredItems.map((item, i) => (
             <ItemRow

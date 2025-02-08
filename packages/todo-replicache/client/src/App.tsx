@@ -75,7 +75,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
       {/* Sidebar Toggle Button for Mobile */}
-      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md">
+      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-0 left-0 z-50 p-2 rounded-md">
         <svg
           className="w-6 h-6 text-[var(--text-primary)]"
           fill="none"
