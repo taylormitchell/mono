@@ -80,16 +80,8 @@ function ItemRow({
         <div className="flex items-center gap-4">
           <MarkdownEditor
             item={item}
-            content={content}
-            onChange={(newContent) => {
-              const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1].trim() : undefined;
-              if (title) {
-                store.items.update(item.id, { name: title });
-              }
-              // console.log("setting content", newContent);
-              // setContent(newContent);
-              debouncedUpdate(item.id, newContent);
-            }}
+            initialContent={content}
+            onChange={handleContentChange}
             isEditing={isEditing}
             setEditingId={setEditingId}
             placeholder="Untitled"

@@ -16,7 +16,7 @@ function createState(content: string) {
 
 interface MarkdownEditorProps {
   item: Item;
-  content: string;
+  initialContent: string;
   onChange: (content: string) => void;
   placeholder?: string;
   isEditing?: boolean;
@@ -25,7 +25,7 @@ interface MarkdownEditorProps {
 
 export function MarkdownEditor({
   item,
-  content,
+  initialContent,
   onChange,
   placeholder = "",
   isEditing = false,
@@ -34,18 +34,20 @@ export function MarkdownEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
+  const initialContentRef = useRef(initialContent);
   useEffect(() => {
     if (!editorRef.current) return;
-    console.log("creating state", content);
 
-    const state = createState(content);
+    const state = createState(initialContentRef.current);
     const view = new EditorView(editorRef.current, {
       state,
       dispatchTransaction(transaction) {
         const newState = view.state.apply(transaction);
         view.updateState(newState);
         const newContent = defaultMarkdownSerializer.serialize(newState.doc);
-        onChange(newContent);
+        if (transaction.docChanged) {
+          onChange(newContent);
+        }
       },
       handleDOMEvents: {
         focus: () => {
@@ -59,7 +61,7 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [setEditingId]);
+  }, [setEditingId, item.id, onChange]);
 
   useEffect(() => {
     const view = viewRef.current;
@@ -79,7 +81,7 @@ export function MarkdownEditor({
   return (
     <div
       ref={editorRef}
-      className="prose prose-invert max-w-none"
+      className="w-full h-full"
       onClick={() => !isEditing && setEditingId?.(item.id)}
       data-placeholder={placeholder}
     />
