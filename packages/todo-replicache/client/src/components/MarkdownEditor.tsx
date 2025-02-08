@@ -36,6 +36,7 @@ export function MarkdownEditor({
 
   useEffect(() => {
     if (!editorRef.current) return;
+    console.log("creating state", content);
 
     const state = createState(content);
     const view = new EditorView(editorRef.current, {
@@ -46,6 +47,11 @@ export function MarkdownEditor({
         const newContent = defaultMarkdownSerializer.serialize(newState.doc);
         onChange(newContent);
       },
+      handleDOMEvents: {
+        focus: () => {
+          setEditingId?.(item.id);
+        },
+      },
     });
 
     viewRef.current = view;
@@ -53,7 +59,7 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [isEditing]);
+  }, [setEditingId]);
 
   useEffect(() => {
     const view = viewRef.current;

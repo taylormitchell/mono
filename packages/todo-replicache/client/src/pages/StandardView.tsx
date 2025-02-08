@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Item } from "../../../shared/types";
 import { isHotkey } from "is-hotkey";
@@ -44,6 +44,18 @@ function ItemRow({
       }
     }
   };
+
+  const handleContentChange = useCallback(
+    (newContent: string) => {
+      const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1].trim() : undefined;
+      if (title) {
+        store.items.update(item.id, { name: title });
+      }
+      setContent(newContent);
+      debouncedUpdate(item.id, newContent);
+    },
+    [item.id, item.name, store, debouncedUpdate]
+  );
 
   return (
     <div
