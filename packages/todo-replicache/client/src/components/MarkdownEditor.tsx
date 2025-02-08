@@ -35,6 +35,7 @@ export function MarkdownEditor({
   const viewRef = useRef<EditorView | null>(null);
 
   const initialContentRef = useRef(initialContent);
+  console.log("initialContentRef", initialContentRef.current);
   useEffect(() => {
     if (!editorRef.current) return;
 

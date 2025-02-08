@@ -166,7 +166,7 @@ export function ItemPage() {
           />
           <MarkdownEditor
             item={item}
-            content={item.content}
+            initialContent={item.content}
             onChange={(content) => {
               const title = item.name === null ? content.match(/^#\s+([^\n]+)\n/)?.[1].trim() : undefined;
               store.items.update(id, { content, name: title });
@@ -210,7 +210,7 @@ export function ItemPage() {
                   <div className="flex-1">
                     <MarkdownEditor
                       item={child}
-                      content={child.content}
+                      initialContent={child.content}
                       onChange={(content) => store.items.update(child.id, { content })}
                       isEditing={editingId === child.id}
                       setEditingId={setEditingId}

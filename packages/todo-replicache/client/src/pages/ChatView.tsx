@@ -35,7 +35,7 @@ function ChatItemRow({
       <div className="flex-1">
         <MarkdownEditor
           item={item}
-          content={content}
+          initialContent={content}
           onChange={(newContent) => {
             setContent(newContent);
             debouncedUpdate(item.id, newContent);
