@@ -146,27 +146,6 @@ function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col h-screen w-full bg-[#0d1117]">
-        <header className="py-4 flex items-center justify-between border-b border-[#30363d] px-4 md:px-4">
-          <div className="flex-1 flex items-center gap-4 max-w-2xl mx-auto w-full relative">
-            <div className="w-8 md:w-0" /> {/* Spacer for mobile menu button */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search items..."
-                className="w-full bg-[#0d1117] border border-[#30363d] rounded-md py-1.5 px-3 text-[#c9d1d9] placeholder-[#484f58] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
-              />
-              <button
-                onClick={() => store.items.create({ content: "" })}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#6e7681] hover:text-[#c9d1d9] focus:outline-none"
-                title="New Item"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </header>
         <main className="flex-1 overflow-auto p-4">{children}</main>
       </div>
     </div>

@@ -161,17 +161,22 @@ export function StandardView() {
     });
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="mb-4">
+    <div className="flex flex-col h-full gap-4">
+      <div className="flex items-center gap-4">
+        <div className="w-8 md:w-0" /> {/* Spacer for mobile menu button */}
         <input
           type="text"
           placeholder="Search items..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] rounded-md placeholder-[#6e7681] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+          className="w-full bg-[#0d1117] border border-[#30363d] rounded-md py-1.5 px-3 text-[#c9d1d9] placeholder-[#484f58] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
         />
+        <button onClick={() => store.items.create({ content: "" })} title="New Item">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
       </div>
-
       <div className="flex-1 overflow-y-auto rounded-md border border-[#30363d] bg-[#161b22] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="divide-y divide-[#30363d]">
           {filteredItems.map((item, i) => (
