@@ -1,9 +1,8 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Item } from "../../../shared/types";
 import { isHotkey } from "is-hotkey";
 import { cn, comparePositions } from "../lib/utils";
-import { useDebounce } from "../hooks/use-debounce";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
@@ -22,17 +21,7 @@ function ItemRow({
   move: null | { up: () => void; down: () => void };
 }) {
   const store = useStore();
-  const [content, setContent] = useState(item.content);
-  const isEditing = editingId === item.id;
   const navigate = useNavigate();
-
-  const debouncedUpdate = useDebounce(
-    (id: string, content: string) => {
-      store.items.update(id, { content });
-    },
-    300,
-    [store]
-  );
 
   const handleDelete = () => {
     const prevElement = document.getElementById(item.id)?.previousElementSibling;
@@ -45,22 +34,10 @@ function ItemRow({
     }
   };
 
-  const handleContentChange = useCallback(
-    (newContent: string) => {
-      const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1].trim() : undefined;
-      if (title) {
-        store.items.update(item.id, { name: title });
-      }
-      setContent(newContent);
-      debouncedUpdate(item.id, newContent);
-    },
-    [item.id, item.name, store, debouncedUpdate]
-  );
-
   return (
     <div
       id={item.id}
-      className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]", isEditing ? "bg-[#1c2128]" : "")}
+      className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[#1c2128]", editingId === item.id ? "bg-[#1c2128]" : "")}
     >
       {item.status !== null && (
         <div className="mr-3">
@@ -78,14 +55,7 @@ function ItemRow({
       )}
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          <MarkdownEditor
-            item={item}
-            initialContent={content}
-            onChange={handleContentChange}
-            isEditing={isEditing}
-            setEditingId={setEditingId}
-            placeholder="Untitled"
-          />
+          <MarkdownEditor item={item} isEditing={editingId === item.id} setEditingId={setEditingId} placeholder="Untitled" />
         </div>
       </div>
       <div className="flex items-center gap-2">

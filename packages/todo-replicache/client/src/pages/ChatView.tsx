@@ -1,53 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Item } from "../../../shared/types";
-import { useDebounce } from "../hooks/use-debounce";
 import { useStore } from "../hooks/store";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 const draftContentAtom = atomWithStorage<string>("draftContent", "");
-
-function ChatItemRow({
-  item,
-  isEditing,
-  setEditingId,
-}: {
-  item: Item;
-  isEditing: boolean;
-  setEditingId: (id: string | null) => void;
-}) {
-  const store = useStore();
-  const [content, setContent] = useState(item.content);
-
-  const debouncedUpdate = useDebounce(
-    (id: string, content: string) => {
-      store.items.update(id, { content });
-    },
-    300,
-    [store]
-  );
-
-  return (
-    <div className="group flex items-start gap-2">
-      <span className="text-[#238636]">$</span>
-      <div className="flex-1">
-        <MarkdownEditor
-          item={item}
-          initialContent={content}
-          onChange={(newContent) => {
-            setContent(newContent);
-            debouncedUpdate(item.id, newContent);
-          }}
-          isEditing={isEditing}
-          setEditingId={setEditingId}
-          placeholder="Type a message..."
-        />
-      </div>
-    </div>
-  );
-}
 
 export function ChatView() {
   const store = useStore();
@@ -113,7 +72,17 @@ export function ChatView() {
       <div className="flex-1 overflow-y-auto p-4 scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="space-y-2">
           {filteredItems.map((item) => (
-            <ChatItemRow key={item.id} item={item} isEditing={editingId === item.id} setEditingId={setEditingId} />
+            <div className="group flex items-start gap-2">
+              <span className="text-[#238636]">$</span>
+              <div className="flex-1">
+                <MarkdownEditor
+                  item={item}
+                  isEditing={editingId === item.id}
+                  setEditingId={setEditingId}
+                  placeholder="Type a message..."
+                />
+              </div>
+            </div>
           ))}
           <div ref={messagesEndRef} />
           <form onSubmit={handleSubmit} className="flex items-center gap-2">

@@ -164,17 +164,7 @@ export function ItemPage() {
             onBlur={() => store.items.update(id, { name })}
             className="mb-2 px-2 py-1 text-xs font-mono bg-[#0d1117] border border-[#30363d] rounded-md text-[#6e7681] w-auto"
           />
-          <MarkdownEditor
-            item={item}
-            initialContent={item.content}
-            onChange={(content) => {
-              const title = item.name === null ? content.match(/^#\s+([^\n]+)\n/)?.[1].trim() : undefined;
-              store.items.update(id, { content, name: title });
-            }}
-            isEditing={editingId === id}
-            setEditingId={setEditingId}
-            placeholder="Untitled"
-          />
+          <MarkdownEditor item={item} isEditing={editingId === id} setEditingId={setEditingId} placeholder="Untitled" />
         </div>
 
         <div className="border-t border-[#30363d] pt-8 mb-[1000px]">

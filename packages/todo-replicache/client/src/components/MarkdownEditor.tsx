@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
@@ -6,6 +6,8 @@ import { exampleSetup } from "prosemirror-example-setup";
 import "./MarkdownEditor.css";
 import isHotkey from "is-hotkey";
 import { Item } from "../../../shared/types";
+import { useStore } from "../hooks/store";
+import { useDebounce } from "../hooks/use-debounce";
 
 function createState(content: string) {
   return EditorState.create({
@@ -16,30 +18,41 @@ function createState(content: string) {
 
 interface MarkdownEditorProps {
   item: Item;
-  initialContent: string;
-  onChange: (content: string) => void;
-  placeholder?: string;
   isEditing?: boolean;
   setEditingId?: (id: string | null) => void;
+  placeholder?: string;
 }
 
-export function MarkdownEditor({
-  item,
-  initialContent,
-  onChange,
-  placeholder = "",
-  isEditing = false,
-  setEditingId,
-}: MarkdownEditorProps) {
+export function MarkdownEditor({ item, placeholder = "", isEditing = false, setEditingId }: MarkdownEditorProps) {
+  const store = useStore();
+  const [content, setContent] = useState(item.content);
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
-  const initialContentRef = useRef(initialContent);
-  console.log("initialContentRef", initialContentRef.current);
+  const debouncedUpdate = useDebounce(
+    (id: string, content: string) => {
+      store.items.update(id, { content });
+    },
+    300,
+    [store]
+  );
+
+  const handleContentChange = useCallback(
+    (newContent: string) => {
+      const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
+      if (title) {
+        store.items.update(item.id, { name: title });
+      }
+      setContent(newContent);
+      debouncedUpdate(item.id, newContent);
+    },
+    [item.id, item.name, store, debouncedUpdate]
+  );
+
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const state = createState(initialContentRef.current);
+    const state = createState(content);
     const view = new EditorView(editorRef.current, {
       state,
       dispatchTransaction(transaction) {
@@ -47,7 +60,7 @@ export function MarkdownEditor({
         view.updateState(newState);
         const newContent = defaultMarkdownSerializer.serialize(newState.doc);
         if (transaction.docChanged) {
-          onChange(newContent);
+          handleContentChange(newContent);
         }
       },
       handleDOMEvents: {
@@ -62,7 +75,7 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [setEditingId, item.id, onChange]);
+  }, [setEditingId, item.id, handleContentChange]);
 
   useEffect(() => {
     const view = viewRef.current;
