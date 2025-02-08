@@ -39,6 +39,7 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
 function Layout({ children }: { children: React.ReactNode }) {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -72,12 +73,40 @@ function Layout({ children }: { children: React.ReactNode }) {
   }, [store, editingId]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex">
+    <div className="min-h-screen bg-[#0d1117] flex relative w-full overflow-hidden">
+      {/* Sidebar Toggle Button for Mobile */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-[#1f6feb] rounded-md"
+      >
+        <svg
+          className="w-6 h-6 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {isSidebarOpen ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </button>
+
       {/* Sidebar */}
-      <div className="w-48 border-r border-[#30363d] p-4">
-        <div className="space-y-1">
+      <div
+        className={cn(
+          "w-48 border-r border-[#30363d] bg-[#0d1117] p-4 fixed md:static h-full z-40 transition-transform duration-300 ease-in-out",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
+        <div className="space-y-1 mt-12 md:mt-0">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              navigate("/");
+              setIsSidebarOpen(false);
+            }}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
               location.pathname === "/" ? "bg-[#1f6feb]" : "text-[#c9d1d9] hover:bg-[#21262d]"
@@ -86,7 +115,10 @@ function Layout({ children }: { children: React.ReactNode }) {
             Standard View
           </button>
           <button
-            onClick={() => navigate("/chat")}
+            onClick={() => {
+              navigate("/chat");
+              setIsSidebarOpen(false);
+            }}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
               location.pathname === "/chat" ? "bg-[#1f6feb]" : "text-[#c9d1d9] hover:bg-[#21262d]"
@@ -94,29 +126,48 @@ function Layout({ children }: { children: React.ReactNode }) {
           >
             Chat View
           </button>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col h-screen">
-        <header className="py-4 flex items-center justify-between border-b border-[#30363d] px-4">
-          <button
-            onClick={() => store.items.create({ content: "" })}
-            className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] rounded-md text-sm font-semibold"
-          >
-            New Item
-          </button>
+          <div className="border-t border-[#30363d] my-4" />
           <button
             onClick={() => {
               indexedDB.deleteDatabase(store.rep.idbName);
               window.location.reload();
             }}
-            className="px-3 py-1 bg-[#238636] hover:bg-[#2ea043] rounded-md text-sm font-semibold"
+            className="w-full px-3 py-2 text-left rounded-md text-[#c9d1d9] hover:bg-red-700 bg-red-600"
           >
-            Reset
+            Reset App
           </button>
+        </div>
+      </div>
+
+      {/* Overlay for mobile when sidebar is open */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col h-screen w-full bg-[#0d1117]">
+        <header className="py-4 flex items-center justify-between border-b border-[#30363d] px-4 md:px-4">
+          <div className="flex-1 flex items-center gap-4 max-w-2xl mx-auto w-full relative">
+            <div className="w-8 md:w-0" /> {/* Spacer for mobile menu button */}
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="Search items..."
+                className="w-full bg-[#0d1117] border border-[#30363d] rounded-md py-1.5 px-3 text-[#c9d1d9] placeholder-[#484f58] focus:outline-none focus:border-[#1f6feb] focus:ring-1 focus:ring-[#1f6feb]"
+              />
+              <button
+                onClick={() => store.items.create({ content: "" })}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#6e7681] hover:text-[#c9d1d9] focus:outline-none"
+                title="New Item"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </header>
-        <main className="flex-1 overflow-hidden p-4">{children}</main>
+        <main className="flex-1 overflow-auto p-4">{children}</main>
       </div>
     </div>
   );
