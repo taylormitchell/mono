@@ -119,11 +119,11 @@ http {
     await $`ssh ${config.sshHost} 'sudo mv ${TMP_CONF_PATH} ${NGINX_CONF_PATH} && sudo nginx -t && sudo systemctl reload nginx'`.quiet();
 
     console.log("Updating ssl certificate");
-    await $`ssh ${config.sshHost} 'sudo certbot --nginx -d ${config.domain} -d ${Object.values(
-      config.apps
-    )
+    await $`ssh ${config.sshHost} 'echo "1" | sudo certbot --nginx --expand -d ${
+      config.domain
+    } -d ${Object.values(config.apps)
       .map((app) => `${app.subdomain}.${config.domain}`)
-      .join(" -d ")}`;
+      .join(" -d ")}'`;
   } catch (error) {
     console.error("❌ Failed to update nginx configuration:", error);
   } finally {
