@@ -125,6 +125,7 @@ export function ItemPage() {
     const names = (await store.rep.query((tx) => store.items.getAll(tx))).map((i) => i.name).filter((i) => i !== null);
     setExistingNames(new Set(names));
   }, 200);
+  const conflictingName = item && existingNames.has(name) && name !== item.name;
 
   if (!id) {
     navigate("/");
@@ -174,12 +175,17 @@ export function ItemPage() {
               onFocus={debouncedGetNames}
               onBlur={() => {
                 debouncedGetNames.cancel();
-                if (!existingNames.has(name)) {
+                if (conflictingName) {
+                  setName(item.name ?? "");
+                } else {
                   store.items.update(id, { name });
                 }
               }}
-              className="mb-2 px-2 py-1 text-xs font-mono bg-[#0d1117] border border-[#30363d] rounded-md text-[#6e7681] w-auto"
+              className={`mb-2 px-2 py-1 text-xs font-mono bg-[#0d1117] border-none outline-none ${
+                conflictingName ? "border-red-500" : "border-[#30363d]"
+              } rounded-md text-[#6e7681] w-auto`}
             />
+            {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
           <MarkdownEditor item={item} isEditing={editingId === id} setEditingId={setEditingId} placeholder="Untitled" />
         </div>
