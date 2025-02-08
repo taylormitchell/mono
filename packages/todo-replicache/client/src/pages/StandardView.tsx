@@ -180,7 +180,7 @@ export function StandardView() {
           </svg>
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="divide-y divide-[#30363d]">
           {filteredItems.map((item, i) => (
             <ItemRow
