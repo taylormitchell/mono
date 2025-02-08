@@ -73,7 +73,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   }, [store, editingId]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex relative w-full overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex relative w-full overflow-hidden">
       {/* Sidebar Toggle Button for Mobile */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}

@@ -181,9 +181,9 @@ export function ItemPage() {
                   store.items.update(id, { name });
                 }
               }}
-              className={`mb-2 px-2 py-1 text-xs font-mono bg-[#0d1117] border-none outline-none ${
-                conflictingName ? "border-red-500" : "border-[#30363d]"
-              } rounded-md text-[#6e7681] w-auto`}
+              className={`mb-2 px-2 py-1 text-xs font-mono bg-[var(--bg-primary)] border-none outline-none ${
+                conflictingName ? "border-red-500" : "border-[var(--border-color)]"
+              } rounded-md text-[var(--text-secondary)] w-auto`}
             />
             {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
