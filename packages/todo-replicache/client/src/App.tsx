@@ -73,7 +73,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   }, [store, editingId]);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex relative w-full overflow-hidden">
+    <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
       {/* Sidebar Toggle Button for Mobile */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -97,7 +97,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <div
         className={cn(
-          "w-48 border-r border-[#30363d] p-4 fixed md:static h-full z-40 transition-transform duration-300 ease-in-out",
+          "w-48 border-r border-[#30363d] p-4 fixed md:static min-h-screen z-40 transition-transform duration-300 ease-in-out",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
@@ -107,7 +107,12 @@ function Layout({ children }: { children: React.ReactNode }) {
               navigate("/");
               setIsSidebarOpen(false);
             }}
-            className={cn("w-full px-3 py-2 text-left rounded-md")}
+            className={cn(
+              "w-full px-3 py-2 text-left rounded-md",
+              location.pathname === "/"
+                ? "bg-[var(--accent-color)]"
+                : "text-[var(--text-secondary)] hover:bg-[var(--hover-color)]"
+            )}
           >
             Standard View
           </button>
@@ -118,7 +123,9 @@ function Layout({ children }: { children: React.ReactNode }) {
             }}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/chat" ? "bg-[#1f6feb]" : "text-[#c9d1d9] hover:bg-[#21262d]"
+              location.pathname === "/chat"
+                ? "bg-[var(--accent-color)]"
+                : "text-[var(--text-secondary)] hover:bg-[var(--hover-color)]"
             )}
           >
             Chat View

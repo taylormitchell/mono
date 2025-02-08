@@ -7,7 +7,8 @@ body,
   width: 100%;
   margin: 0;
   padding: 0;
-  overflow-y: hidden;
+  overflow: hidden;
+  position: fixed;
   color: #24292f; /* GitHub light mode text color */
   background-color: #ffffff;
 }
