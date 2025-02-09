@@ -67,14 +67,10 @@ export function MarkdownEditor({ item, placeholder = "", onUpAtTop, onDownAtBott
               const prevItemId = document.getElementById(item.id)?.previousElementSibling?.id;
               if (prevItemId) {
                 setTimeout(() => {
-                  const prevElement = document.getElementById(prevItemId);
-                  if (prevElement) {
-                    const editor = prevElement.querySelector(".ProseMirror");
-                    if (editor) {
-                      (editor as HTMLElement).focus();
-                    }
-                  }
-                }, 0);
+                  const el = document.querySelector(`[id="${prevItemId}"] .ProseMirror`);
+                  console.log("el", el);
+                  if (el instanceof HTMLElement) el.focus();
+                });
               }
               store.items.delete(item.id);
             }

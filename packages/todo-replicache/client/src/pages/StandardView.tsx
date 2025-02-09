@@ -99,8 +99,7 @@ export function StandardView() {
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      const isInEditor = (e.target as HTMLElement).closest(".ProseMirror") !== null;
-      if (isHotkey("n", e) && !isInEditor) {
+      if (isHotkey("n", e) && !document.activeElement?.matches('input, textarea, [contenteditable="true"]')) {
         e.preventDefault();
         e.stopPropagation();
         const id = ulid();
