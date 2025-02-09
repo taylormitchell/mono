@@ -77,7 +77,13 @@ function ItemRow({
       )}
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          <MarkdownEditor item={item} onUpAtTop={onUpAtTop} onDownAtBottom={onDownAtBottom} />
+          <MarkdownEditor
+            itemId={item.id}
+            name={item.name}
+            content={item.content}
+            onUpAtTop={onUpAtTop}
+            onDownAtBottom={onDownAtBottom}
+          />
         </div>
       </div>
       <div className="flex items-center gap-2">
