@@ -149,29 +149,6 @@ export function StandardView() {
     { default: [] as Item[], dependencies: [view] }
   );
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isHotkey("up", e) && !isHotkey("down", e)) return;
-      const itemEl = document.activeElement?.closest(".item");
-      if (!itemEl) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (isHotkey("up", e)) {
-        const prevId = itemEl.previousElementSibling?.id;
-        if (!prevId) return;
-        setEditingId(prevId);
-      } else {
-        const nextId = itemEl.nextElementSibling?.id;
-        if (!nextId) return;
-        setEditingId(nextId);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
   if (!view) return null;
 
   const filteredItems = items
