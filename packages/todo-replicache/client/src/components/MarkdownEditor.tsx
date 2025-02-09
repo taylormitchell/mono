@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
@@ -23,9 +23,8 @@ interface MarkdownEditorProps {
   onDownAtBottom?: (e: KeyboardEvent) => void;
 }
 
-export function MarkdownEditor({ item, placeholder = "", onUpAtTop, onDownAtBottom }: MarkdownEditorProps) {
+export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEditorProps) {
   const store = useStore();
-  const [content, setContent] = useState(item.content);
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -40,7 +39,7 @@ export function MarkdownEditor({ item, placeholder = "", onUpAtTop, onDownAtBott
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const state = createState(content);
+    const state = createState(item.content);
     const view = new EditorView(editorRef.current, {
       state,
       dispatchTransaction(transaction) {
@@ -52,7 +51,6 @@ export function MarkdownEditor({ item, placeholder = "", onUpAtTop, onDownAtBott
           if (title) {
             store.items.update(item.id, { name: title });
           }
-          setContent(newContent);
           debouncedUpdate(item.id, newContent);
         }
       },
@@ -90,7 +88,8 @@ export function MarkdownEditor({ item, placeholder = "", onUpAtTop, onDownAtBott
     return () => {
       view.destroy();
     };
-  }, [item.id, debouncedUpdate, onUpAtTop, onDownAtBottom]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
 
-  return <div ref={editorRef} className="w-full h-full" data-placeholder={placeholder} />;
+  return <div ref={editorRef} className="w-full h-full" />;
 }
