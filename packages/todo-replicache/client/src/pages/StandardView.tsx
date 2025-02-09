@@ -9,17 +9,7 @@ import { MarkdownEditor } from "../components/MarkdownEditor";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
 
-function ItemRow({
-  item,
-  editingId,
-  setEditingId,
-  move,
-}: {
-  item: Item;
-  editingId: string | null;
-  setEditingId: (id: string | null) => void;
-  move: null | { up: () => void; down: () => void };
-}) {
+function ItemRow({ item, move }: { item: Item; move: null | { up: () => void; down: () => void } }) {
   const store = useStore();
   const navigate = useNavigate();
 
@@ -35,13 +25,7 @@ function ItemRow({
   };
 
   return (
-    <div
-      id={item.id}
-      className={cn(
-        "item flex flex-grow items-center px-4 py-2 hover:bg-[var(--hover-color)]",
-        editingId === item.id ? "bg-[var(--hover-color)]" : ""
-      )}
-    >
+    <div id={item.id} className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[var(--hover-color)]")}>
       {item.status !== null && (
         <div className="mr-3">
           <input
@@ -60,22 +44,20 @@ function ItemRow({
         <div className="flex items-center gap-4">
           <MarkdownEditor
             item={item}
-            isEditing={editingId === item.id}
-            setEditingId={setEditingId}
             placeholder="Untitled"
             onUpAtTop={(e) => {
               e.preventDefault();
               e.stopPropagation();
               const prevElement = document.getElementById(item.id)?.previousElementSibling;
               if (!prevElement?.id) return;
-              setEditingId(prevElement.id);
+              prevElement.querySelector(".ProseMirror")?.focus();
             }}
             onDownAtBottom={(e) => {
               e.preventDefault();
               e.stopPropagation();
               const nextElement = document.getElementById(item.id)?.nextElementSibling;
               if (!nextElement?.id) return;
-              setEditingId(nextElement.id);
+              nextElement.querySelector(".ProseMirror")?.focus();
             }}
           />
         </div>
@@ -112,27 +94,29 @@ function ItemRow({
 
 export function StandardView() {
   const store = useStore();
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
       const isInEditor = (e.target as HTMLElement).closest(".ProseMirror") !== null;
-      if (isHotkey("n", e) && !editingId && !isInEditor) {
+      if (isHotkey("n", e) && !isInEditor) {
         e.preventDefault();
         e.stopPropagation();
         const id = ulid();
         await store.items.create({ id, content: "" });
-        setEditingId(id);
+        setTimeout(() => {
+          const editor = document.getElementById(id)?.querySelector(".ProseMirror");
+          if (editor) {
+            (editor as HTMLElement).focus();
+          }
+        }, 0);
       }
       if (isHotkey("escape", e)) {
         e.preventDefault();
         e.stopPropagation();
-        if (editingId) {
-          setEditingId(null);
-        } else if (document.activeElement === searchInputRef.current) {
-          if (searchQuery) {
+        if (document.activeElement === searchInputRef.current) {
+          if (searchQuery !== "") {
             setSearchQuery("");
           } else {
             searchInputRef.current?.blur();
@@ -143,13 +127,12 @@ export function StandardView() {
         e.preventDefault();
         e.stopPropagation();
         searchInputRef.current?.focus();
-        setEditingId(null);
       }
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [store, editingId]);
+  }, [store, editingId, searchQuery]);
 
   const view = useSubscribe(
     store.rep,
@@ -217,8 +200,6 @@ export function StandardView() {
             <ItemRow
               key={item.id}
               item={item}
-              editingId={editingId}
-              setEditingId={setEditingId}
               move={
                 view.sort.field === "position"
                   ? {

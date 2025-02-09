@@ -18,21 +18,12 @@ function createState(content: string) {
 
 interface MarkdownEditorProps {
   item: Item;
-  isEditing?: boolean;
-  setEditingId?: (id: string | null) => void;
   placeholder?: string;
   onUpAtTop?: (e: KeyboardEvent) => void;
   onDownAtBottom?: (e: KeyboardEvent) => void;
 }
 
-export function MarkdownEditor({
-  item,
-  placeholder = "",
-  isEditing = false,
-  setEditingId,
-  onUpAtTop,
-  onDownAtBottom,
-}: MarkdownEditorProps) {
+export function MarkdownEditor({ item, placeholder = "", onUpAtTop, onDownAtBottom }: MarkdownEditorProps) {
   const store = useStore();
   const [content, setContent] = useState(item.content);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -66,9 +57,6 @@ export function MarkdownEditor({
         }
       },
       handleDOMEvents: {
-        focus: () => {
-          setEditingId?.(item.id);
-        },
         keydown: (view, e) => {
           if (isHotkey("escape", e)) {
             view.dom.blur();
@@ -101,21 +89,7 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [setEditingId, item.id, debouncedUpdate, onUpAtTop, onDownAtBottom]);
+  }, [item.id, debouncedUpdate, onUpAtTop, onDownAtBottom]);
 
-  // Focus the editor when it's being edited
-  useEffect(() => {
-    if (isEditing && viewRef.current && !viewRef.current.hasFocus()) {
-      viewRef.current.dom.focus();
-    }
-  }, [isEditing]);
-
-  return (
-    <div
-      ref={editorRef}
-      className="w-full h-full"
-      onClick={() => !isEditing && setEditingId?.(item.id)}
-      data-placeholder={placeholder}
-    />
-  );
+  return <div ref={editorRef} className="w-full h-full" data-placeholder={placeholder} />;
 }
