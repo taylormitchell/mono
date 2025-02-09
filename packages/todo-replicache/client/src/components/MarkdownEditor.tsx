@@ -29,17 +29,19 @@ export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEdit
   const viewRef = useRef<EditorView | null>(null);
 
   const debouncedUpdate = useDebounce(
-    (id: string, content: string) => {
-      store.items.update(id, { content });
+    (id: string, c: string) => {
+      store.items.update(id, { content: c });
     },
     300,
     [store]
   );
 
+  const itemRef = useRef<Item>(item);
+  itemRef.current = item;
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const state = createState(item.content);
+    const state = createState(itemRef.current.content);
     const view = new EditorView(editorRef.current, {
       state,
       dispatchTransaction(transaction) {
@@ -47,11 +49,11 @@ export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEdit
         view.updateState(newState);
         const newContent = defaultMarkdownSerializer.serialize(newState.doc);
         if (transaction.docChanged) {
-          const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
+          const title = itemRef.current.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
           if (title) {
-            store.items.update(item.id, { name: title });
+            store.items.update(itemRef.current.id, { name: title });
           }
-          debouncedUpdate(item.id, newContent);
+          debouncedUpdate(itemRef.current.id, newContent);
         }
       },
       handleDOMEvents: {
@@ -62,7 +64,7 @@ export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEdit
             const content = defaultMarkdownSerializer.serialize(view.state.doc);
             if (content === "") {
               e.preventDefault();
-              const prevItemId = document.getElementById(item.id)?.previousElementSibling?.id;
+              const prevItemId = document.getElementById(itemRef.current.id)?.previousElementSibling?.id;
               if (prevItemId) {
                 setTimeout(() => {
                   const el = document.querySelector(`[id="${prevItemId}"] .ProseMirror`);
@@ -70,7 +72,7 @@ export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEdit
                   if (el instanceof HTMLElement) el.focus();
                 });
               }
-              store.items.delete(item.id);
+              store.items.delete(itemRef.current.id);
             }
           } else if (isHotkey("up", e) && onUpAtTop && view.state.selection.from === 1) {
             e.preventDefault();
@@ -88,8 +90,7 @@ export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEdit
     return () => {
       view.destroy();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item.id]);
+  }, [debouncedUpdate, onUpAtTop, onDownAtBottom, store.items]);
 
   return <div ref={editorRef} className="w-full h-full" />;
 }
