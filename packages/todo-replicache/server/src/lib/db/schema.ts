@@ -34,3 +34,14 @@ export const replicacheClientTable = pgTable("replicache_client", {
   lastMutationID: integer("last_mutation_id").notNull(),
   version: integer("version").notNull(),
 });
+
+export const logsTable = pgTable("logs", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  startedAt: text("started_at"),
+  endedAt: text("ended_at"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  deletedAt: text("deleted_at"),
+  version: integer("version").notNull().default(0),
+});

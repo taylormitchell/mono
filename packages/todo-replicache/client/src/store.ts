@@ -154,6 +154,10 @@ export function createStore() {
       get: async (tx: ReadTransaction, id: string) => {
         return items.get(tx, id);
       },
+      getByName: async (tx: ReadTransaction, name: string) => {
+        const res = await items.list(tx);
+        return res.find((item) => item.name === name);
+      },
       getAll: async (tx: ReadTransaction) => {
         const res = await items.list(tx);
         return res.filter((item) => item.deletedAt === null);
