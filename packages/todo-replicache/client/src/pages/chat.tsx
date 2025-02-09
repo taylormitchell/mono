@@ -74,7 +74,7 @@ export function ChatPage() {
             <div className="group flex items-start gap-2">
               <span className="text-[var(--accent-color)]">$</span>
               <div className="flex-1">
-                <MarkdownEditor item={item} />
+                <MarkdownEditor itemId={item.id} name={item.name} content={item.content} />
               </div>
             </div>
           ))}
