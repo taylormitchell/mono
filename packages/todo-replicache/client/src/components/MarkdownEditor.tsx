@@ -64,14 +64,19 @@ export function MarkdownEditor({ item, placeholder = "", onUpAtTop, onDownAtBott
             const content = defaultMarkdownSerializer.serialize(view.state.doc);
             if (content === "") {
               e.preventDefault();
-              const prevElement = document.getElementById(item.id)?.previousElementSibling;
-              store.items.delete(item.id);
-              if (prevElement) {
-                const editor = prevElement.querySelector(".ProseMirror");
-                if (editor) {
-                  (editor as HTMLElement).focus();
-                }
+              const prevItemId = document.getElementById(item.id)?.previousElementSibling?.id;
+              if (prevItemId) {
+                setTimeout(() => {
+                  const prevElement = document.getElementById(prevItemId);
+                  if (prevElement) {
+                    const editor = prevElement.querySelector(".ProseMirror");
+                    if (editor) {
+                      (editor as HTMLElement).focus();
+                    }
+                  }
+                }, 0);
               }
+              store.items.delete(item.id);
             }
           } else if (isHotkey("up", e) && onUpAtTop && view.state.selection.from === 1) {
             e.preventDefault();

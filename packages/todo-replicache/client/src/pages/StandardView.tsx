@@ -115,6 +115,10 @@ export function StandardView() {
       if (isHotkey("escape", e)) {
         e.preventDefault();
         e.stopPropagation();
+        const editor = document.activeElement?.closest(".ProseMirror");
+        if (editor) {
+          (editor as HTMLElement).blur();
+        }
         if (document.activeElement === searchInputRef.current) {
           if (searchQuery !== "") {
             setSearchQuery("");
@@ -132,7 +136,7 @@ export function StandardView() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [store, editingId, searchQuery]);
+  }, [store, searchQuery]);
 
   const view = useSubscribe(
     store.rep,
