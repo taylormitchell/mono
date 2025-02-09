@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EditorState, TextSelection } from "prosemirror-state";
+import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
 import { exampleSetup } from "prosemirror-example-setup";
@@ -21,9 +21,18 @@ interface MarkdownEditorProps {
   isEditing?: boolean;
   setEditingId?: (id: string | null) => void;
   placeholder?: string;
+  onUpAtTop?: () => void;
+  onDownAtBottom?: () => void;
 }
 
-export function MarkdownEditor({ item, placeholder = "", isEditing = false, setEditingId }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  item,
+  placeholder = "",
+  isEditing = false,
+  setEditingId,
+  onUpAtTop,
+  onDownAtBottom,
+}: MarkdownEditorProps) {
   const store = useStore();
   const [content, setContent] = useState(item.content);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -81,28 +90,12 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
             const isAtStart = from === 0;
             const isAtEnd = from === view.state.doc.content.size;
 
-            if ((isHotkey("up", e) && isAtStart) || (isHotkey("down", e) && isAtEnd)) {
+            if (isHotkey("up", e) && isAtStart && onUpAtTop) {
               e.preventDefault();
-              const itemEl = view.dom.closest(".item");
-              if (!itemEl) return;
-
-              const targetEl = isHotkey("up", e) ? itemEl.previousElementSibling : itemEl.nextElementSibling;
-
-              if (!targetEl?.id) return;
-              setEditingId?.(targetEl.id);
-
-              // Schedule focus to next render cycle to ensure the new editor is mounted
-              setTimeout(() => {
-                const editor = targetEl.querySelector(".ProseMirror");
-                if (editor) {
-                  (editor as HTMLElement).focus();
-                  // Position cursor at end if moving down, start if moving up
-                  const editorView = (editor as Element & { pmViewDesc: { view: EditorView } }).pmViewDesc.view;
-                  const pos = isHotkey("up", e) ? 0 : editorView.state.doc.content.size;
-                  const selection = TextSelection.near(editorView.state.tr.doc.resolve(pos));
-                  editorView.dispatch(editorView.state.tr.setSelection(selection));
-                }
-              }, 0);
+              onUpAtTop();
+            } else if (isHotkey("down", e) && isAtEnd && onDownAtBottom) {
+              e.preventDefault();
+              onDownAtBottom();
             }
           }
         },
@@ -114,7 +107,7 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
     return () => {
       view.destroy();
     };
-  }, [setEditingId, item.id, debouncedUpdate]);
+  }, [setEditingId, item.id, debouncedUpdate, onUpAtTop, onDownAtBottom]);
 
   // Focus the editor when it's being edited
   useEffect(() => {

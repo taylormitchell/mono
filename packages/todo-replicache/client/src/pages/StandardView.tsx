@@ -9,6 +9,8 @@ import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useEffect } from "react";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
+import { TextSelection } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 
 function ItemRow({
   item,
@@ -59,7 +61,46 @@ function ItemRow({
       )}
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          <MarkdownEditor item={item} isEditing={editingId === item.id} setEditingId={setEditingId} placeholder="Untitled" />
+          <MarkdownEditor
+            item={item}
+            isEditing={editingId === item.id}
+            setEditingId={setEditingId}
+            placeholder="Untitled"
+            onUpAtTop={() => {
+              const prevElement = document.getElementById(item.id)?.previousElementSibling;
+              if (!prevElement?.id) return;
+              setEditingId(prevElement.id);
+              // Schedule focus to next render cycle to ensure the new editor is mounted
+              setTimeout(() => {
+                const editor = prevElement.querySelector(".ProseMirror");
+                if (editor) {
+                  (editor as HTMLElement).focus();
+                  // Position cursor at start when moving up
+                  const editorView = (editor as Element & { pmViewDesc: { view: EditorView } }).pmViewDesc.view;
+                  const pos = 0;
+                  const selection = TextSelection.near(editorView.state.tr.doc.resolve(pos));
+                  editorView.dispatch(editorView.state.tr.setSelection(selection));
+                }
+              }, 0);
+            }}
+            onDownAtBottom={() => {
+              const nextElement = document.getElementById(item.id)?.nextElementSibling;
+              if (!nextElement?.id) return;
+              setEditingId(nextElement.id);
+              // Schedule focus to next render cycle to ensure the new editor is mounted
+              setTimeout(() => {
+                const editor = nextElement.querySelector(".ProseMirror");
+                if (editor) {
+                  (editor as HTMLElement).focus();
+                  // Position cursor at end when moving down
+                  const editorView = (editor as Element & { pmViewDesc: { view: EditorView } }).pmViewDesc.view;
+                  const pos = editorView.state.doc.content.size;
+                  const selection = TextSelection.near(editorView.state.tr.doc.resolve(pos));
+                  editorView.dispatch(editorView.state.tr.setSelection(selection));
+                }
+              }, 0);
+            }}
+          />
         </div>
       </div>
       <div className="flex items-center gap-2">
