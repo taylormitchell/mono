@@ -30,6 +30,10 @@ export function LogsPage() {
     setNewLogData("");
   };
 
+  const handleDelete = async (id: string) => {
+    await store.logs.delete(id);
+  };
+
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Logs</h1>
@@ -52,8 +56,15 @@ export function LogsPage() {
       <div className="space-y-4">
         {logs.map((log) => (
           <div key={log.id} className="p-4 rounded border border-[#30363d] bg-[var(--bg-secondary)]">
-            <div className="text-sm text-[var(--text-secondary)] mb-2">{new Date(log.createdAt).toLocaleString()}</div>
-            <div>{JSON.stringify(log.data)}</div>
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="text-sm text-[var(--text-secondary)] mb-2">{new Date(log.createdAt).toLocaleString()}</div>
+                <div>{JSON.stringify(log.data)}</div>
+              </div>
+              <button onClick={() => handleDelete(log.id)} className="px-2 py-1 text-red-500 hover:bg-red-500/10 rounded">
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>

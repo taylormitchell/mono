@@ -252,7 +252,8 @@ export function createStore() {
         return logs.get(tx, id);
       },
       getAll: async (tx: ReadTransaction) => {
-        return logs.list(tx);
+        const res = await logs.list(tx);
+        return res.filter((log) => log.deletedAt === null);
       },
     },
     undo: undoManager.undo,

@@ -4,6 +4,7 @@ import { handlePush, handlePull } from "./lib/replicache";
 import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
+import { handleAI } from "./lib/ai";
 
 dotenv.config();
 
@@ -20,6 +21,8 @@ app.use(express.static(clientBuildPath));
 app.get("/api/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
 });
+
+app.post("/api/ai", handleAI);
 
 app.post("/api/push", handlePush);
 app.post("/api/pull", handlePull);
