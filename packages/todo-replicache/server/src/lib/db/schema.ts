@@ -37,9 +37,7 @@ export const replicacheClientTable = pgTable("replicache_client", {
 
 export const logsTable = pgTable("logs", {
   id: text("id").primaryKey(),
-  type: text("type").notNull(),
-  startedAt: text("started_at"),
-  endedAt: text("ended_at"),
+  data: jsonb("data"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
   deletedAt: text("deleted_at"),

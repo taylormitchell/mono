@@ -44,6 +44,16 @@ export const viewSchema = z.object({
 
 export type View = z.infer<typeof viewSchema>;
 
+export const logSchema = z.object({
+  id: z.string(),
+  data: z.any(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable().default(null),
+});
+
+export type Log = z.infer<typeof logSchema>;
+
 const createItemMutationSchema = z.object({
   id: z.number(),
   clientID: z.string(),
@@ -102,27 +112,45 @@ const deleteViewMutationSchema = z.object({
   }),
 });
 
-// const createProjectMutationSchema = z.object({
-//   name: z.literal("createProject"),
-//   args: projectSchema,
-// });
+const createLogMutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  timestamp: z.number(),
+  name: z.literal("createLog"),
+  args: logSchema,
+});
 
-// const updateProjectMutationSchema = z.object({
-//   name: z.literal("updateProject"),
-//   args: projectSchema.partial().extend({
-//     id: z.string(),
-//   }),
-// });
+const updateLogMutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  timestamp: z.number(),
+  name: z.literal("updateLog"),
+  args: logSchema.partial().extend({
+    id: z.string(),
+  }),
+});
+
+const deleteLogMutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  timestamp: z.number(),
+  name: z.literal("deleteLog"),
+  args: z.object({
+    id: z.string(),
+    deletedAt: z.string(),
+  }),
+});
 
 export const mutationSchema = z.union([
   createItemMutationSchema,
   updateItemMutationSchema,
   deleteItemMutationSchema,
-  //   createProjectMutationSchema,
-  //   updateProjectMutationSchema,
   createViewMutationSchema,
   updateViewMutationSchema,
   deleteViewMutationSchema,
+  createLogMutationSchema,
+  updateLogMutationSchema,
+  deleteLogMutationSchema,
 ]);
 
 export type Mutation = z.infer<typeof mutationSchema>;
