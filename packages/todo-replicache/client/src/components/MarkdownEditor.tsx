@@ -85,16 +85,12 @@ export function MarkdownEditor({
                 }
               }
             }
-          } else if (isHotkey("up", e) || isHotkey("down", e)) {
-            const isAtStart = view.state.selection.from === 1;
-            const isAtEnd = view.state.selection.from === view.state.doc.content.size - 1;
-            if (isHotkey("up", e) && isAtStart && onUpAtTop) {
-              e.preventDefault();
-              onUpAtTop(e);
-            } else if (isHotkey("down", e) && isAtEnd && onDownAtBottom) {
-              e.preventDefault();
-              onDownAtBottom(e);
-            }
+          } else if (isHotkey("up", e) && onUpAtTop && view.state.selection.from === 1) {
+            e.preventDefault();
+            onUpAtTop(e);
+          } else if (isHotkey("down", e) && onDownAtBottom && view.state.selection.from === view.state.doc.content.size - 1) {
+            e.preventDefault();
+            onDownAtBottom(e);
           }
         },
       },
