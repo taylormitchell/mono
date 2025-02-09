@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useEffect } from "react";
 import { moveTo } from "../lib/positions";
+import { ulid } from "ulid";
 
 function ItemRow({
   item,
@@ -96,7 +97,25 @@ export function StandardView() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  console.log("StandardView", { editingId, searchQuery });
+  useEffect(() => {
+    const handleKeyPress = async (e: KeyboardEvent) => {
+      if (isHotkey("n", e) && !editingId) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = ulid();
+        await store.items.create({ id, content: "" });
+        setEditingId(id);
+      }
+      if (isHotkey("escape", e) && editingId) {
+        e.preventDefault();
+        e.stopPropagation();
+        setEditingId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [store, editingId]);
 
   const view = useSubscribe(
     store.rep,
@@ -181,7 +200,7 @@ export function StandardView() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
-        <div className="divide-y divide-[#30363d]">
+        <div className="item-row divide-y divide-[#30363d]">
           {filteredItems.map((item, i) => (
             <ItemRow
               key={item.id}
