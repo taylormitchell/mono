@@ -12,7 +12,6 @@ export function ChatPage() {
   const store = useStore();
   const [draftContent, setDraftContent] = useAtom(draftContentAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [clearedAt, setClearedAt] = useState<string>(new Date().toISOString());
 
   const view = useSubscribe(
@@ -75,12 +74,7 @@ export function ChatPage() {
             <div className="group flex items-start gap-2">
               <span className="text-[var(--accent-color)]">$</span>
               <div className="flex-1">
-                <MarkdownEditor
-                  item={item}
-                  isEditing={editingId === item.id}
-                  setEditingId={setEditingId}
-                  placeholder="Type a message..."
-                />
+                <MarkdownEditor item={item} />
               </div>
             </div>
           ))}

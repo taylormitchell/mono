@@ -5,7 +5,6 @@ import { Item } from "../../../shared/types";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { ulid } from "ulid";
 import { useStore } from "../hooks/store";
-import { isHotkey } from "is-hotkey";
 import { useDebounce } from "../hooks/use-debounce";
 
 function useItemView(itemId: string) {
@@ -41,7 +40,6 @@ export function ItemPage() {
   const navigate = useNavigate();
   const store = useStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
@@ -97,29 +95,6 @@ export function ItemPage() {
     [id]
   );
 
-  useEffect(() => {
-    const handleKeyPress = async (e: KeyboardEvent) => {
-      if (isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
-        e.preventDefault();
-        e.stopPropagation();
-        const childId = ulid();
-        await store.items.create({ id: childId, content: "" });
-        await store.items.update(id!, {
-          children: [...(item?.children || []), childId],
-        });
-        setEditingId(childId);
-      }
-      if (isHotkey("escape", e) && editingId) {
-        e.preventDefault();
-        e.stopPropagation();
-        setEditingId(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [store, editingId, id, item]);
-
   const [existingNames, setExistingNames] = useState<Set<string>>(new Set());
   const debouncedGetNames = useDebounce(async () => {
     const names = (await store.rep.query((tx) => store.items.getAll(tx))).map((i) => i.name).filter((i) => i !== null);
@@ -140,7 +115,6 @@ export function ItemPage() {
     await store.items.update(id, {
       children: [...item.children, childId],
     });
-    setEditingId(childId);
   };
 
   const sortedChildren = children.sort((a: Item, b: Item) => {
@@ -187,7 +161,7 @@ export function ItemPage() {
             />
             {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
-          <MarkdownEditor item={item} isEditing={editingId === id} setEditingId={setEditingId} placeholder="Untitled" />
+          <MarkdownEditor item={item} />
         </div>
 
         <div className="border-t border-[#30363d] pt-8 mb-[1000px]">
@@ -221,12 +195,7 @@ export function ItemPage() {
               {filteredChildren.map((child: Item, index: number) => (
                 <div key={child.id} className="flex items-center gap-4 p-4 rounded-md bg-[#161b22] hover:bg-[#1c2128]">
                   <div className="flex-1">
-                    <MarkdownEditor
-                      item={child}
-                      isEditing={editingId === child.id}
-                      setEditingId={setEditingId}
-                      placeholder="Untitled"
-                    />
+                    <MarkdownEditor item={child} />
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => navigate(`/items/${child.id}`)} className="p-1.5 text-[#6e7681] rounded">
