@@ -9,7 +9,15 @@ import { MarkdownEditor } from "../components/MarkdownEditor";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
 
-function ItemRow({ item, move }: { item: Item; move: null | { up: () => void; down: () => void } }) {
+function ItemRow({
+  item,
+  move,
+  focusSearch,
+}: {
+  item: Item;
+  move: null | { up: () => void; down: () => void };
+  focusSearch: () => void;
+}) {
   const store = useStore();
   const navigate = useNavigate();
 
@@ -49,15 +57,20 @@ function ItemRow({ item, move }: { item: Item; move: null | { up: () => void; do
               e.preventDefault();
               e.stopPropagation();
               const prevElement = document.getElementById(item.id)?.previousElementSibling;
-              if (!prevElement?.id) return;
-              prevElement.querySelector(".ProseMirror")?.focus();
+              if (prevElement?.id) {
+                const el = prevElement.querySelector(".ProseMirror");
+                if (el instanceof HTMLElement) el.focus();
+              } else {
+                focusSearch();
+              }
             }}
             onDownAtBottom={(e) => {
               e.preventDefault();
               e.stopPropagation();
               const nextElement = document.getElementById(item.id)?.nextElementSibling;
               if (!nextElement?.id) return;
-              nextElement.querySelector(".ProseMirror")?.focus();
+              const el = nextElement.querySelector(".ProseMirror");
+              if (el instanceof HTMLElement) el.focus();
             }}
           />
         </div>
@@ -96,6 +109,7 @@ export function StandardView() {
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const itemsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
@@ -188,6 +202,14 @@ export function StandardView() {
           type="text"
           placeholder="Search items..."
           value={searchQuery}
+          onKeyDown={(e) => {
+            if (isHotkey("down", e)) {
+              e.preventDefault();
+              e.stopPropagation();
+              const el = itemsContainerRef.current?.querySelector(".ProseMirror");
+              if (el instanceof HTMLElement) el.focus();
+            }
+          }}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
         />
@@ -198,11 +220,14 @@ export function StandardView() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
-        <div className="item-row divide-y divide-[#30363d]">
+        <div ref={itemsContainerRef} className="item-row divide-y divide-[#30363d]">
           {filteredItems.map((item, i) => (
             <ItemRow
               key={item.id}
               item={item}
+              focusSearch={() => {
+                searchInputRef.current?.focus();
+              }}
               move={
                 view.sort.field === "position"
                   ? {
