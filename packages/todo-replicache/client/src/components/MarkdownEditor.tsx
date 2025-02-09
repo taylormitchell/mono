@@ -27,17 +27,10 @@ export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEdit
   const store = useStore();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-
-  const debouncedUpdate = useDebounce(
-    (id: string, c: string) => {
-      store.items.update(id, { content: c });
-    },
-    300,
-    [store]
-  );
-
+  const debouncedUpdate = useDebounce((id: string, c: string) => store.items.update(id, { content: c }), 300, [store]);
   const itemRef = useRef<Item>(item);
   itemRef.current = item;
+
   useEffect(() => {
     if (!editorRef.current) return;
 
@@ -68,7 +61,6 @@ export function MarkdownEditor({ item, onUpAtTop, onDownAtBottom }: MarkdownEdit
               if (prevItemId) {
                 setTimeout(() => {
                   const el = document.querySelector(`[id="${prevItemId}"] .ProseMirror`);
-                  console.log("el", el);
                   if (el instanceof HTMLElement) el.focus();
                 });
               }
