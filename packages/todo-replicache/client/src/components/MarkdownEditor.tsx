@@ -86,11 +86,8 @@ export function MarkdownEditor({
               }
             }
           } else if (isHotkey("up", e) || isHotkey("down", e)) {
-            const { from } = view.state.selection;
-            console.log(from);
-            const isAtStart = from === 1;
-            const isAtEnd = from === view.state.doc.content.size - 1;
-
+            const isAtStart = view.state.selection.from === 1;
+            const isAtEnd = view.state.selection.from === view.state.doc.content.size - 1;
             if (isHotkey("up", e) && isAtStart && onUpAtTop) {
               e.preventDefault();
               onUpAtTop(e);

@@ -71,7 +71,7 @@ function ItemRow({
               if (!prevElement?.id) return;
               setEditingId(prevElement.id);
             }}
-            onDownAtBottom={() => {
+            onDownAtBottom={(e) => {
               e.preventDefault();
               e.stopPropagation();
               const nextElement = document.getElementById(item.id)?.nextElementSibling;
