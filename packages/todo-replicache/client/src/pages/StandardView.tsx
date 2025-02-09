@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSubscribe } from "replicache-react";
 import { Item } from "../../../shared/types";
 import { isHotkey } from "is-hotkey";
@@ -6,7 +6,6 @@ import { cn, comparePositions } from "../lib/utils";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
-import { useEffect } from "react";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
 
@@ -115,6 +114,7 @@ export function StandardView() {
   const store = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
@@ -126,9 +126,23 @@ export function StandardView() {
         await store.items.create({ id, content: "" });
         setEditingId(id);
       }
-      if (isHotkey("escape", e) && editingId) {
+      if (isHotkey("escape", e)) {
         e.preventDefault();
         e.stopPropagation();
+        if (editingId) {
+          setEditingId(null);
+        } else if (document.activeElement === searchInputRef.current) {
+          if (searchQuery) {
+            setSearchQuery("");
+          } else {
+            searchInputRef.current?.blur();
+          }
+        }
+      }
+      if (isHotkey("mod+/", e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        searchInputRef.current?.focus();
         setEditingId(null);
       }
     };
@@ -184,6 +198,7 @@ export function StandardView() {
       <div className="flex items-center gap-4">
         <div className="w-4 md:w-0" /> {/* Spacer for mobile menu button */}
         <input
+          ref={searchInputRef}
           type="text"
           placeholder="Search items..."
           value={searchQuery}
