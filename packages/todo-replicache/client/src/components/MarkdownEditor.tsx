@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
@@ -37,18 +37,6 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
     [store]
   );
 
-  const handleContentChange = useCallback(
-    (newContent: string) => {
-      const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
-      if (title) {
-        store.items.update(item.id, { name: title });
-      }
-      setContent(newContent);
-      debouncedUpdate(item.id, newContent);
-    },
-    [item.id, item.name, store, debouncedUpdate]
-  );
-
   useEffect(() => {
     if (!editorRef.current) return;
 
@@ -60,7 +48,12 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
         view.updateState(newState);
         const newContent = defaultMarkdownSerializer.serialize(newState.doc);
         if (transaction.docChanged) {
-          handleContentChange(newContent);
+          const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
+          if (title) {
+            store.items.update(item.id, { name: title });
+          }
+          setContent(newContent);
+          debouncedUpdate(item.id, newContent);
         }
       },
       handleDOMEvents: {
@@ -70,6 +63,19 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
         keydown: (view, e) => {
           if (isHotkey("escape", e)) {
             view.dom.blur();
+          } else if (isHotkey("backspace", e)) {
+            const content = defaultMarkdownSerializer.serialize(view.state.doc);
+            if (content === "") {
+              e.preventDefault();
+              const prevElement = document.getElementById(item.id)?.previousElementSibling;
+              store.items.delete(item.id);
+              if (prevElement) {
+                const editor = prevElement.querySelector(".ProseMirror");
+                if (editor) {
+                  (editor as HTMLElement).focus();
+                }
+              }
+            }
           }
         },
       },
@@ -80,7 +86,7 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
     return () => {
       view.destroy();
     };
-  }, [setEditingId, item.id, handleContentChange]);
+  }, [setEditingId, item.id, debouncedUpdate]);
 
   // Focus the editor when it's being edited
   useEffect(() => {
