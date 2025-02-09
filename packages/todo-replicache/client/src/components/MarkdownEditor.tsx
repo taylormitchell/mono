@@ -21,8 +21,8 @@ interface MarkdownEditorProps {
   isEditing?: boolean;
   setEditingId?: (id: string | null) => void;
   placeholder?: string;
-  onUpAtTop?: () => void;
-  onDownAtBottom?: () => void;
+  onUpAtTop?: (e: KeyboardEvent) => void;
+  onDownAtBottom?: (e: KeyboardEvent) => void;
 }
 
 export function MarkdownEditor({
@@ -87,15 +87,16 @@ export function MarkdownEditor({
             }
           } else if (isHotkey("up", e) || isHotkey("down", e)) {
             const { from } = view.state.selection;
-            const isAtStart = from === 0;
-            const isAtEnd = from === view.state.doc.content.size;
+            console.log(from);
+            const isAtStart = from === 1;
+            const isAtEnd = from === view.state.doc.content.size - 1;
 
             if (isHotkey("up", e) && isAtStart && onUpAtTop) {
               e.preventDefault();
-              onUpAtTop();
+              onUpAtTop(e);
             } else if (isHotkey("down", e) && isAtEnd && onDownAtBottom) {
               e.preventDefault();
-              onDownAtBottom();
+              onDownAtBottom(e);
             }
           }
         },
