@@ -2,6 +2,12 @@ import * as ec2 from "../../infra/ec2/manager";
 import { $ } from "bun";
 
 async function main() {
+  try {
+    await $`cd client && npm run typecheck`;
+  } catch (e) {
+    console.error("Typecheck failed - aborting deploy");
+    process.exit(1);
+  }
   const config = await ec2.addApp("items", 3078);
   await ec2.pushNginxConf();
   await ec2.pullRepo();

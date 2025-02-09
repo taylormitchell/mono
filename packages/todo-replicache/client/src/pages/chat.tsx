@@ -13,6 +13,7 @@ export function ChatPage() {
   const [draftContent, setDraftContent] = useAtom(draftContentAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [clearedAt, setClearedAt] = useState<string>(new Date().toISOString());
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const view = useSubscribe(
     store.rep,
