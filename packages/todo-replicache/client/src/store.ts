@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Mutation, Item, itemSchema, View, viewSchema, logSchema } from "../../shared/types";
+import { Mutation, Item, itemSchema, View, viewSchema, logSchema, Log } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 import { ulid } from "ulid";
@@ -216,6 +216,43 @@ export function createStore() {
         };
         await action.do();
         undoManager.add(action);
+      },
+    },
+    logs: {
+      create: async (props: Log) => {
+        const action: UndoableAction = {
+          do: () => rep.mutate.createLog(props),
+          undo: () => rep.mutate.deleteLog({ id: props.id, deletedAt: new Date().toISOString() }),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      update: async (id: string, props: Partial<Log>) => {
+        const log = await rep.query((tx) => logs.get(tx, id));
+        const prevProps: Partial<Log> = log
+          ? Object.entries(props).reduce((acc, [key]) => ({ ...acc, [key]: log[key as keyof Log] }), {})
+          : {};
+        const action: UndoableAction = {
+          do: () => rep.mutate.updateLog({ id, ...props }),
+          undo: () => (log ? rep.mutate.updateLog({ id, ...prevProps }) : Promise.resolve()),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      delete: async (id: string) => {
+        const log = await rep.query((tx) => logs.get(tx, id));
+        const action: UndoableAction = {
+          do: () => rep.mutate.deleteLog({ id, deletedAt: new Date().toISOString() }),
+          undo: () => (log ? rep.mutate.createLog(log) : Promise.resolve()),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      get: async (tx: ReadTransaction, id: string) => {
+        return logs.get(tx, id);
+      },
+      getAll: async (tx: ReadTransaction) => {
+        return logs.list(tx);
       },
     },
     undo: undoManager.undo,
