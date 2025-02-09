@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSubscribe } from "replicache-react";
 import { Item } from "../../../shared/types";
 import { isHotkey } from "is-hotkey";
@@ -32,6 +32,33 @@ function ItemRow({
     }
   };
 
+  const onUpAtTop = useCallback(
+    (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const prevElement = document.getElementById(item.id)?.previousElementSibling;
+      if (prevElement?.id) {
+        const el = prevElement.querySelector(".ProseMirror");
+        if (el instanceof HTMLElement) el.focus();
+      } else {
+        focusSearch();
+      }
+    },
+    [item.id, focusSearch]
+  );
+
+  const onDownAtBottom = useCallback(
+    (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const nextElement = document.getElementById(item.id)?.nextElementSibling;
+      if (!nextElement?.id) return;
+      const el = nextElement.querySelector(".ProseMirror");
+      if (el instanceof HTMLElement) el.focus();
+    },
+    [item.id, focusSearch]
+  );
+
   return (
     <div id={item.id} className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[var(--hover-color)]")}>
       {item.status !== null && (
@@ -50,29 +77,7 @@ function ItemRow({
       )}
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          <MarkdownEditor
-            item={item}
-            placeholder="Untitled"
-            onUpAtTop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const prevElement = document.getElementById(item.id)?.previousElementSibling;
-              if (prevElement?.id) {
-                const el = prevElement.querySelector(".ProseMirror");
-                if (el instanceof HTMLElement) el.focus();
-              } else {
-                focusSearch();
-              }
-            }}
-            onDownAtBottom={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const nextElement = document.getElementById(item.id)?.nextElementSibling;
-              if (!nextElement?.id) return;
-              const el = nextElement.querySelector(".ProseMirror");
-              if (el instanceof HTMLElement) el.focus();
-            }}
-          />
+          <MarkdownEditor item={item} placeholder="Untitled" onUpAtTop={onUpAtTop} onDownAtBottom={onDownAtBottom} />
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -182,6 +187,10 @@ export function StandardView() {
     { default: [] as Item[], dependencies: [view] }
   );
 
+  const focusSearch = useCallback(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
   if (!view) return null;
 
   const filteredItems = items
@@ -225,9 +234,7 @@ export function StandardView() {
             <ItemRow
               key={item.id}
               item={item}
-              focusSearch={() => {
-                searchInputRef.current?.focus();
-              }}
+              focusSearch={focusSearch}
               move={
                 view.sort.field === "position"
                   ? {
