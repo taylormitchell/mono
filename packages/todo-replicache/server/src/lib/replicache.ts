@@ -248,6 +248,29 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
         .where(eq(viewTable.id, viewID));
       break;
     }
+    case "createLog": {
+      await db.insert(logsTable).values({
+        ...mutation.args,
+        version: nextVersion,
+      });
+      break;
+    }
+    case "updateLog": {
+      const { id: logID, ...args } = mutation.args;
+      await db
+        .update(logsTable)
+        .set({ ...args, version: nextVersion })
+        .where(eq(logsTable.id, logID));
+      break;
+    }
+    case "deleteLog": {
+      const { id: logID, deletedAt } = mutation.args;
+      await db
+        .update(logsTable)
+        .set({ deletedAt, version: nextVersion })
+        .where(eq(logsTable.id, logID));
+      break;
+    }
     default:
       console.log("unknown mutation", mutation);
       mutation satisfies never;
