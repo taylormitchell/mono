@@ -4,7 +4,6 @@ import { StoreContext, useStore } from "./hooks/store";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { ItemPage } from "./pages/ItemPage";
 import { isHotkey } from "is-hotkey";
-import { ulid } from "ulid";
 import { StandardView } from "./pages/StandardView";
 import { ChatPage } from "./pages/chat";
 import { cn } from "./lib/utils";
@@ -38,24 +37,11 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
 
 function Layout({ children }: { children: React.ReactNode }) {
   const store = useStore();
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      if (isHotkey("n", e) && !editingId && document.activeElement?.tagName !== "INPUT") {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = ulid();
-        await store.items.create({ id, content: "" });
-        setEditingId(id);
-      }
-      if (isHotkey("escape", e) && editingId) {
-        e.preventDefault();
-        e.stopPropagation();
-        setEditingId(null);
-      }
       if (isHotkey("cmd+z", e)) {
         e.preventDefault();
         e.stopPropagation();
@@ -70,7 +56,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [store, editingId]);
+  }, [store]);
 
   return (
     <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">

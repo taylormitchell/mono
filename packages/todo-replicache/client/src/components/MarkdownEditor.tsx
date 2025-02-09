@@ -67,6 +67,11 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
         focus: () => {
           setEditingId?.(item.id);
         },
+        keydown: (view, e) => {
+          if (isHotkey("escape", e)) {
+            view.dom.blur();
+          }
+        },
       },
     });
 
@@ -77,20 +82,12 @@ export function MarkdownEditor({ item, placeholder = "", isEditing = false, setE
     };
   }, [setEditingId, item.id, handleContentChange]);
 
+  // Focus the editor when it's being edited
   useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isHotkey("escape", e)) {
-        e.preventDefault();
-        setEditingId?.(null);
-      }
-    };
-
-    view.dom.addEventListener("keydown", handleKeyDown);
-    return () => view.dom.removeEventListener("keydown", handleKeyDown);
-  }, [setEditingId]);
+    if (isEditing && viewRef.current && !viewRef.current.hasFocus()) {
+      viewRef.current.dom.focus();
+    }
+  }, [isEditing]);
 
   return (
     <div

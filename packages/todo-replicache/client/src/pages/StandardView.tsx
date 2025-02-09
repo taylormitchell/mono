@@ -99,7 +99,8 @@ export function StandardView() {
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      if (isHotkey("n", e) && !editingId) {
+      const isInEditor = (e.target as HTMLElement).closest(".ProseMirror") !== null;
+      if (isHotkey("n", e) && !editingId && !isInEditor) {
         e.preventDefault();
         e.stopPropagation();
         const id = ulid();
