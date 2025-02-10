@@ -84,7 +84,7 @@ export function LogsPage() {
   );
 }
 
-function CodeMirrorEditor({ data, setData }: { data: object; setData: (data: object) => void }) {
+function CodeMirrorEditor({ data, onChange }: { data: object; onChange: (data: object) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -95,6 +95,10 @@ function CodeMirrorEditor({ data, setData }: { data: object; setData: (data: obj
       parent: editorRef.current,
       doc: JSON.stringify(data, null, 2),
       extensions: [basicSetup, json()],
+      dispatchTransactions: (transactions) => {
+        const newData = JSON.parse(view.state.doc.toString());
+        onChange(newData);
+      },
     });
 
     viewRef.current = view;
