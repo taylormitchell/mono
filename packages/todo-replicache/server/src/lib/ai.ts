@@ -11,27 +11,10 @@ const aiRequestSchema = z.object({
   prompt: z.string(),
 });
 
-const logSchema = z.union([
-  z.object({
-    type: z.literal("meditated"),
-    duration: z.number(),
-  }),
-  z.object({
-    type: z.literal("food"),
-    name: z.string(),
-    calories: z.number(),
-  }),
-  z.object({
-    type: z.literal("exercise"),
-    name: z.string(),
-    calories: z.number(),
-  }),
-]);
-
 const systemPrompt = `
 You are a helpful assistant that helps me track my health and fitness.
 
-You will be given a free-text description of an activity and you will need to return a structured log object 
+You will be given a free-text description of an activity and you will need to return a json object 
 that represents it.
 
 The following are example outputs. This list is not exhaustive. You should use your best judgement to determine 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ulid } from "ulid";
 
 type Log = {
   id: string;
@@ -25,9 +26,13 @@ export function LogsPage() {
               type: "create-log",
               prompt: newLogData,
             }),
+            headers: {
+              "Content-Type": "application/json",
+            },
           });
           const data = await response.json();
           console.log(data);
+          setLogs([...logs, { id: ulid(), data }]);
         }}
         className="mb-8"
       >

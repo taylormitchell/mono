@@ -24,6 +24,7 @@ app.get("/api/", (req: Request, res: Response) => {
 
 app.post("/api/ai", async (req: Request, res: Response) => {
   try {
+    console.log("Received AI request", req.body);
     await handleAI(req, res);
   } catch (e) {
     console.error(e);
