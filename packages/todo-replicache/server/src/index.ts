@@ -22,7 +22,14 @@ app.get("/api/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
 });
 
-app.post("/api/ai", handleAI);
+app.post("/api/ai", async (req: Request, res: Response) => {
+  try {
+    await handleAI(req, res);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 app.post("/api/push", handlePush);
 app.post("/api/pull", handlePull);
