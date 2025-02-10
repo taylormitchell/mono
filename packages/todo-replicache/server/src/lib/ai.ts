@@ -11,7 +11,7 @@ const aiRequestSchema = z.object({
   prompt: z.string(),
 });
 
-const systemPrompt = `
+const systemPromptTemplate = `
 You are a helpful assistant that helps me track my health and fitness.
 
 You will be given a free-text description of an activity and you will need to return a json object 
@@ -23,7 +23,8 @@ the best type of log object to return.
 \`\`\`
 {
   type: "meditated",
-  duration: "10 minutes",
+  startedAt: "2024-01-01T00:00:00Z",
+  endedAt: "2024-01-01T00:10:00Z",
   original: "meditated for 10m"
 }
 \`\`\`
@@ -52,13 +53,26 @@ the best type of log object to return.
 \`\`\`
 `;
 
+const userPromptTemplate = `
+Description of the activity:
+<description>
+
+Entry timestamp:
+<timestamp>
+`;
+
 export async function handleAI(req: Request, res: Response) {
   const parsed = aiRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     console.error("Invalid request", { body: req.body, error: parsed.error });
     return res.status(400).json({ error: "Invalid request" });
   }
-  const { type, prompt: userPrompt } = parsed.data;
+  const systemPrompt = systemPromptTemplate;
+  const { type, prompt: userDescription } = parsed.data;
+  const userPrompt = userPromptTemplate
+    .replace("<timestamp>", new Date().toISOString())
+    .replace("<description>", userDescription);
+
   switch (type) {
     case "create-log": {
       const response = await openai.chat.completions.create({
