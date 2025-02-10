@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ulid } from "ulid";
+import { EditorView, basicSetup } from "codemirror";
+import { json } from "@codemirror/lang-json";
 
 type Log = {
   id: string;
-  data: {
-    content: string;
-  };
+  data: any;
 };
 
 export function LogsPage() {
   const [newLogData, setNewLogData] = useState("");
 
-  const [logs, setLogs] = useState<Log[]>([]);
+  const [logs, setLogs] = useState<Log[]>([
+    {
+      id: ulid(),
+      data: {
+        type: "meditated",
+        startedAt: "2024-01-01T00:00:00Z",
+        endedAt: "2024-01-01T00:10:00Z",
+        original: "meditated for 10m",
+      },
+    },
+  ]);
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
@@ -55,7 +65,8 @@ export function LogsPage() {
           <div key={log.id} className="p-4 rounded border border-[#30363d] bg-[var(--bg-secondary)]">
             <div className="flex justify-between items-start">
               <div>
-                <JsonEditor data={log.data} />
+                {/* <JsonEditor data={log.data} /> */}
+                <CodeMirrorEditor data={log.data} setData={() => {}} />
               </div>
               <button
                 onClick={() => {
@@ -71,6 +82,29 @@ export function LogsPage() {
       </div>
     </div>
   );
+}
+
+function CodeMirrorEditor({ data, setData }: { data: object; setData: (data: object) => void }) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    const view = new EditorView({
+      parent: editorRef.current,
+      doc: JSON.stringify(data, null, 2),
+      extensions: [basicSetup, json()],
+    });
+
+    viewRef.current = view;
+
+    return () => {
+      view.destroy();
+    };
+  }, [data]);
+
+  return <div ref={editorRef} />;
 }
 
 function JsonEditor({ data, setData }: { data: object; setData: (data: object) => void }) {
