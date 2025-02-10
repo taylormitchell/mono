@@ -26,14 +26,16 @@ const logSchema = z.union([
 const prompt = `
 You are a helpful assistant that helps me track my health and fitness.
 
-You will be given a prompt and you will need to return a log object that matches the schema.
+You will be given a free-text description of an activity and you will need to return a structured log object 
+that represents it.
 
-Example log objects:
+The following are example outputs. This list is not exhaustive. You should use your best judgement to determine 
+the best type of log object to return.
+
 \`\`\`
 {
   type: "meditated",
-  startedAt: "2024-01-01T00:00:00Z",
-  endedAt: "2024-01-01T00:10:00Z",
+  duration: "10 minutes",
   original: "meditated for 10m"
 }
 \`\`\`
@@ -41,12 +43,14 @@ Example log objects:
 \`\`\`
 {
   type: "food/nutty-puddy",
+  original: "ate nutty puddy"
 }
 \`\`\`
 
 \`\`\`
 {
   type: "food/super-veggie",
+  original: "ate super veggie"
 }
 \`\`\`
 
@@ -54,7 +58,8 @@ Example log objects:
 {
   type: "exercise",
   name: "Running",
-  calories: 100,
+  distance: "5 kilometers",
+  original: "ran 5k"
 }
 \`\`\`
 `;
