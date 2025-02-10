@@ -1,44 +1,36 @@
 import { useState } from "react";
-import { useSubscribe } from "replicache-react";
-import { ulid } from "ulid";
 import { useStore } from "../hooks/store";
+
+type Log = {
+  id: string;
+  data: {
+    content: string;
+  };
+};
 
 export function LogsPage() {
   const store = useStore();
   const [newLogData, setNewLogData] = useState("");
 
-  const logs = useSubscribe(
-    store.rep,
-    async (tx) => {
-      return store.logs.getAll(tx);
-    },
-    { default: [] }
-  );
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newLogData.trim()) return;
-
-    await store.logs.create({
-      id: ulid(),
-      data: { content: newLogData },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      deletedAt: null,
-    });
-
-    setNewLogData("");
-  };
-
-  const handleDelete = async (id: string) => {
-    await store.logs.delete(id);
-  };
+  const [logs, setLogs] = useState<Log[]>([]);
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Logs</h1>
 
-      <form onSubmit={handleSubmit} className="mb-8">
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await fetch("http://localhost:3078/api/ai", {
+            method: "POST",
+            body: JSON.stringify({
+              type: "create-log",
+              prompt: newLogData,
+            }),
+          });
+        }}
+        className="mb-8"
+      >
         <div className="flex gap-2">
           <input
             type="text"
