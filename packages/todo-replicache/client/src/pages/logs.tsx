@@ -55,7 +55,7 @@ export function LogsPage() {
           <div key={log.id} className="p-4 rounded border border-[#30363d] bg-[var(--bg-secondary)]">
             <div className="flex justify-between items-start">
               <div>
-                <JsonViewer data={log.data} />
+                <JsonEditor data={log.data} />
               </div>
               <button
                 onClick={() => {
@@ -73,62 +73,93 @@ export function LogsPage() {
   );
 }
 
-type JsonViewerProps = {
-  data: any;
-  initialExpanded?: boolean;
-};
-
-export function JsonViewer({ data, initialExpanded = true }: JsonViewerProps) {
-  const [isExpanded, setIsExpanded] = useState(initialExpanded);
-
-  const formatValue = (value: any): JSX.Element | string => {
-    if (value === null) return <span className="text-red-500">null</span>;
-    if (typeof value === "boolean") return <span className="text-yellow-500">{value.toString()}</span>;
-    if (typeof value === "number") return <span className="text-blue-500">{value}</span>;
-    if (typeof value === "string") return <span className="text-green-500">"{value}"</span>;
-    if (Array.isArray(value)) {
-      if (value.length === 0) return "[]";
-      return (
-        <div className="ml-4">
-          [
-          {value.map((item, index) => (
-            <div key={index} className="ml-4">
-              {formatValue(item)}
-              {index < value.length - 1 && ","}
-            </div>
-          ))}
-          ]
-        </div>
-      );
-    }
-    if (typeof value === "object") {
-      const entries = Object.entries(value);
-      if (entries.length === 0) return "{}";
-      return (
-        <div className="ml-4">
-          {"{"}
-          {entries.map(([key, val], index) => (
-            <div key={key} className="ml-4">
-              <span className="text-purple-500">"{key}"</span>: {formatValue(val)}
-              {index < entries.length - 1 && ","}
-            </div>
-          ))}
-          {"}"}
-        </div>
-      );
-    }
-    return String(value);
-  };
+function JsonEditor({ data, setData }: { data: object; setData: (data: object) => void }) {
+  const [fields, setFields] = useState<{ key: string; value: string }[]>(() =>
+    Object.entries(data).map(([key, value]) => ({
+      key,
+      value: JSON.stringify(value),
+    }))
+  );
 
   return (
-    <div className="font-mono text-sm">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="mb-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-      >
-        {isExpanded ? "Collapse" : "Expand"}
-      </button>
-      {isExpanded && <div className="whitespace-pre-wrap">{formatValue(data)}</div>}
+    <div>
+      <form className="space-y-2">
+        {fields.map((field, index) => (
+          <div key={index} className="flex gap-2">
+            <input
+              type="text"
+              value={field.key}
+              onChange={(e) => {
+                const newFields = [...fields];
+                newFields[index].key = e.target.value;
+                setFields(newFields);
+              }}
+              className="flex-1 p-2 rounded border border-[#30363d] bg-[var(--bg-secondary)]"
+              placeholder="Key"
+            />
+            <input
+              type="text"
+              value={field.value}
+              onChange={(e) => {
+                const newFields = [...fields];
+                newFields[index].value = e.target.value;
+                setFields(newFields);
+              }}
+              className="flex-1 p-2 rounded border border-[#30363d] bg-[var(--bg-secondary)]"
+              placeholder="Value"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setFields(fields.filter((_, i) => i !== index));
+              }}
+              className="px-2 py-1 text-red-500 hover:bg-red-500/10 rounded"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </form>
+
+      <div className="flex gap-2 mt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setFields([...fields, { key: "", value: "" }]);
+          }}
+          className="px-2 py-1 text-blue-500 hover:bg-blue-500/10 rounded"
+        >
+          Add Field
+        </button>
+        <button
+          onClick={() => {
+            try {
+              const newData = Object.fromEntries(fields.map(({ key, value }) => [key, JSON.parse(value)]));
+              // Validate the entire object can be parsed as JSON
+              JSON.parse(JSON.stringify(newData));
+              setData(newData);
+            } catch (e) {
+              console.error(e);
+            }
+          }}
+          className="px-2 py-1 text-green-500 hover:bg-green-500/10 rounded"
+        >
+          Save
+        </button>
+        <button
+          onClick={() => {
+            setFields(
+              Object.entries(data).map(([key, value]) => ({
+                key,
+                value: JSON.stringify(value),
+              }))
+            );
+          }}
+          className="px-2 py-1 text-gray-500 hover:bg-gray-500/10 rounded"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
