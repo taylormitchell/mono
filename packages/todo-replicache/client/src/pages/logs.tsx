@@ -8,9 +8,17 @@ type Log = {
   data: any;
 };
 
-export function LogsPage() {
-  const [newLogData, setNewLogData] = useState("");
+type Message = {
+  id: string;
+  content: string;
+  type: "user" | "assistant";
+  suggestion?: any;
+  status: "complete" | "loading";
+};
 
+export function LogsPage() {
+  const [inputMessage, setInputMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [logs, setLogs] = useState<Log[]>([
     {
       id: ulid(),
@@ -23,63 +31,144 @@ export function LogsPage() {
     },
   ]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputMessage.trim()) return;
+
+    const messageId = ulid();
+    // Add user message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: messageId,
+        content: inputMessage,
+        type: "user",
+        status: "complete",
+      },
+    ]);
+
+    // Add assistant message in loading state
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: ulid(),
+        content: "",
+        type: "assistant",
+        status: "loading",
+      },
+    ]);
+
+    try {
+      const response = await fetch("http://localhost:3078/api/ai", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "create-log",
+          prompt: inputMessage,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+
+      // Update assistant message with suggestion
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.status === "loading"
+            ? {
+                id: msg.id,
+                content: "I suggest creating this log:",
+                type: "assistant",
+                status: "complete",
+                suggestion: data,
+              }
+            : msg
+        )
+      );
+    } catch (error) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.status === "loading"
+            ? {
+                id: msg.id,
+                content: "Sorry, there was an error processing your request.",
+                type: "assistant",
+                status: "complete",
+              }
+            : msg
+        )
+      );
+    }
+    setInputMessage("");
+  };
+
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="p-4 max-w-4xl mx-auto flex flex-col h-screen">
       <h1 className="text-2xl font-bold mb-6">Logs</h1>
 
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const response = await fetch("http://localhost:3078/api/ai", {
-            method: "POST",
-            body: JSON.stringify({
-              type: "create-log",
-              prompt: newLogData,
-            }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          const data = await response.json();
-          console.log(data);
-          setLogs([...logs, { id: ulid(), data }]);
-        }}
-        className="mb-8"
-      >
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newLogData}
-            onChange={(e) => setNewLogData(e.target.value)}
-            placeholder="Enter log content..."
-            className="flex-1 p-2 rounded border border-[#30363d] bg-[var(--bg-secondary)]"
-          />
-          <button type="submit" className="px-4 py-2 bg-[var(--accent-color)] rounded hover:opacity-90">
-            Add Log
-          </button>
-        </div>
-      </form>
-
-      <div className="space-y-4">
-        {logs.map((log) => (
-          <div key={log.id} className="p-4 rounded border border-[#30363d] bg-[var(--bg-secondary)]">
-            <div className="flex justify-between items-start">
-              <div>
-                {/* <JsonEditor data={log.data} /> */}
-                <CodeMirrorEditor data={log.data} onChange={() => {}} />
-              </div>
-              <button
-                onClick={() => {
-                  setLogs(logs.filter((l) => l.id !== log.id));
-                }}
-                className="px-2 py-1 text-red-500 hover:bg-red-500/10 rounded"
-              >
-                Delete
-              </button>
-            </div>
+      <div className="flex-1 overflow-auto space-y-4 mb-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`p-4 rounded ${
+              message.type === "user"
+                ? "bg-[var(--accent-color)] ml-12"
+                : "bg-[var(--bg-secondary)] border border-[#30363d] mr-12"
+            }`}
+          >
+            {message.status === "loading" ? (
+              <div className="animate-pulse">Loading...</div>
+            ) : (
+              <>
+                <div>{message.content}</div>
+                {message.suggestion && (
+                  <div className="mt-2">
+                    <CodeMirrorEditor data={message.suggestion} onChange={() => {}} />
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => {
+                          setLogs((prev) => [...prev, { id: ulid(), data: message.suggestion }]);
+                          setMessages((prev) =>
+                            prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Log created successfully!" } : msg))
+                          );
+                        }}
+                        className="px-3 py-1 bg-green-600 rounded hover:opacity-90"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMessages((prev) =>
+                            prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Suggestion rejected." } : msg))
+                          );
+                        }}
+                        className="px-3 py-1 bg-red-600 rounded hover:opacity-90"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         ))}
       </div>
+
+      <form onSubmit={handleSubmit} className="sticky bottom-0 bg-[var(--bg-primary)] pt-4">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 p-2 rounded border border-[#30363d] bg-[var(--bg-secondary)]"
+          />
+          <button type="submit" className="px-4 py-2 bg-[var(--accent-color)] rounded hover:opacity-90">
+            Send
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
