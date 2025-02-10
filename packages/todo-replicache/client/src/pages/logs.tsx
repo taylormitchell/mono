@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useStore } from "../hooks/store";
 
 type Log = {
   id: string;
@@ -9,7 +8,6 @@ type Log = {
 };
 
 export function LogsPage() {
-  const store = useStore();
   const [newLogData, setNewLogData] = useState("");
 
   const [logs, setLogs] = useState<Log[]>([]);

@@ -1,5 +1,10 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const aiRequestSchema = z.object({
   type: z.enum(["create-log"]),
@@ -23,7 +28,7 @@ const logSchema = z.union([
   }),
 ]);
 
-const prompt = `
+const systemPrompt = `
 You are a helpful assistant that helps me track my health and fitness.
 
 You will be given a free-text description of an activity and you will need to return a structured log object 
@@ -70,13 +75,28 @@ export async function handleAI(req: Request, res: Response) {
     console.error(parsed.error);
     return res.status(400).json({ error: "Invalid request" });
   }
-  const { type, prompt } = parsed.data;
+  const { type, prompt: userPrompt } = parsed.data;
   switch (type) {
     case "create-log": {
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
       });
+      try {
+        const log = JSON.parse(response.choices[0].message.content ?? "{}");
+        console.log(log);
+        return res.json(log);
+      } catch (e) {
+        console.error(e);
+        return res.status(500).json({
+          error: "Invalid response from AI",
+          response: response.choices[0].message.content,
+        });
+      }
       break;
     }
   }
