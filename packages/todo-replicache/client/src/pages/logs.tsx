@@ -55,8 +55,7 @@ export function LogsPage() {
           <div key={log.id} className="p-4 rounded border border-[#30363d] bg-[var(--bg-secondary)]">
             <div className="flex justify-between items-start">
               <div>
-                <div className="text-sm text-[var(--text-secondary)] mb-2">{new Date(log.createdAt).toLocaleString()}</div>
-                <div>{JSON.stringify(log.data)}</div>
+                <JsonViewer data={log.data} />
               </div>
               <button
                 onClick={() => {
@@ -70,6 +69,66 @@ export function LogsPage() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+type JsonViewerProps = {
+  data: any;
+  initialExpanded?: boolean;
+};
+
+export function JsonViewer({ data, initialExpanded = true }: JsonViewerProps) {
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
+
+  const formatValue = (value: any): JSX.Element | string => {
+    if (value === null) return <span className="text-red-500">null</span>;
+    if (typeof value === "boolean") return <span className="text-yellow-500">{value.toString()}</span>;
+    if (typeof value === "number") return <span className="text-blue-500">{value}</span>;
+    if (typeof value === "string") return <span className="text-green-500">"{value}"</span>;
+    if (Array.isArray(value)) {
+      if (value.length === 0) return "[]";
+      return (
+        <div className="ml-4">
+          [
+          {value.map((item, index) => (
+            <div key={index} className="ml-4">
+              {formatValue(item)}
+              {index < value.length - 1 && ","}
+            </div>
+          ))}
+          ]
+        </div>
+      );
+    }
+    if (typeof value === "object") {
+      const entries = Object.entries(value);
+      if (entries.length === 0) return "{}";
+      return (
+        <div className="ml-4">
+          {"{"}
+          {entries.map(([key, val], index) => (
+            <div key={key} className="ml-4">
+              <span className="text-purple-500">"{key}"</span>: {formatValue(val)}
+              {index < entries.length - 1 && ","}
+            </div>
+          ))}
+          {"}"}
+        </div>
+      );
+    }
+    return String(value);
+  };
+
+  return (
+    <div className="font-mono text-sm">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="mb-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+      >
+        {isExpanded ? "Collapse" : "Expand"}
+      </button>
+      {isExpanded && <div className="whitespace-pre-wrap">{formatValue(data)}</div>}
     </div>
   );
 }
