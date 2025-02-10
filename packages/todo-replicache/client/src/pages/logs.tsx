@@ -66,7 +66,7 @@ export function LogsPage() {
             <div className="flex justify-between items-start">
               <div>
                 {/* <JsonEditor data={log.data} /> */}
-                <CodeMirrorEditor data={log.data} setData={() => {}} />
+                <CodeMirrorEditor data={log.data} onChange={() => {}} />
               </div>
               <button
                 onClick={() => {
@@ -84,9 +84,10 @@ export function LogsPage() {
   );
 }
 
-function CodeMirrorEditor({ data, onChange }: { data: object; onChange: (data: object) => void }) {
+function CodeMirrorEditor({ data, onChange }: { data: object; onChange: (data: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -94,11 +95,22 @@ function CodeMirrorEditor({ data, onChange }: { data: object; onChange: (data: o
     const view = new EditorView({
       parent: editorRef.current,
       doc: JSON.stringify(data, null, 2),
-      extensions: [basicSetup, json()],
-      dispatchTransactions: (transactions) => {
-        const newData = JSON.parse(view.state.doc.toString());
-        onChange(newData);
-      },
+      extensions: [
+        basicSetup,
+        json(),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged) {
+            const newData = update.state.doc.toString();
+            onChange(newData);
+            try {
+              JSON.parse(newData);
+              setError(null);
+            } catch {
+              setError("Invalid JSON");
+            }
+          }
+        }),
+      ],
     });
 
     viewRef.current = view;
@@ -106,9 +118,14 @@ function CodeMirrorEditor({ data, onChange }: { data: object; onChange: (data: o
     return () => {
       view.destroy();
     };
-  }, [data]);
+  }, [data, onChange]);
 
-  return <div ref={editorRef} />;
+  return (
+    <div>
+      <div ref={editorRef} />
+      {error && <div className="text-red-500">{error}</div>}
+    </div>
+  );
 }
 
 function JsonEditor({ data, setData }: { data: object; setData: (data: object) => void }) {
