@@ -23,6 +23,42 @@ const logSchema = z.union([
   }),
 ]);
 
+const prompt = `
+You are a helpful assistant that helps me track my health and fitness.
+
+You will be given a prompt and you will need to return a log object that matches the schema.
+
+Example log objects:
+\`\`\`
+{
+  type: "meditated",
+  startedAt: "2024-01-01T00:00:00Z",
+  endedAt: "2024-01-01T00:10:00Z",
+  original: "meditated for 10m"
+}
+\`\`\`
+
+\`\`\`
+{
+  type: "food/nutty-puddy",
+}
+\`\`\`
+
+\`\`\`
+{
+  type: "food/super-veggie",
+}
+\`\`\`
+
+\`\`\`
+{
+  type: "exercise",
+  name: "Running",
+  calories: 100,
+}
+\`\`\`
+`;
+
 export async function handleAI(req: Request, res: Response) {
   const parsed = aiRequestSchema.safeParse(req.body);
   if (!parsed.success) {

@@ -21,13 +21,15 @@ export function LogsPage() {
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          await fetch("http://localhost:3078/api/ai", {
+          const response = await fetch("http://localhost:3078/api/ai", {
             method: "POST",
             body: JSON.stringify({
               type: "create-log",
               prompt: newLogData,
             }),
           });
+          const data = await response.json();
+          console.log(data);
         }}
         className="mb-8"
       >
@@ -53,7 +55,12 @@ export function LogsPage() {
                 <div className="text-sm text-[var(--text-secondary)] mb-2">{new Date(log.createdAt).toLocaleString()}</div>
                 <div>{JSON.stringify(log.data)}</div>
               </div>
-              <button onClick={() => handleDelete(log.id)} className="px-2 py-1 text-red-500 hover:bg-red-500/10 rounded">
+              <button
+                onClick={() => {
+                  setLogs(logs.filter((l) => l.id !== log.id));
+                }}
+                className="px-2 py-1 text-red-500 hover:bg-red-500/10 rounded"
+              >
                 Delete
               </button>
             </div>
