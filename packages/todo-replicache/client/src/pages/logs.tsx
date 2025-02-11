@@ -192,7 +192,17 @@ export function LogsPage() {
   );
 }
 
-function CodeMirrorEditor({ data, onChange }: { data: object; onChange: (data: string) => void }) {
+function CodeMirrorEditor({
+  data,
+  onChange,
+  onAccept,
+  onReject,
+}: {
+  data: object;
+  onChange: (data: string) => void;
+  onAccept?: () => void;
+  onReject?: () => void;
+}) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -232,6 +242,14 @@ function CodeMirrorEditor({ data, onChange }: { data: object; onChange: (data: s
     <div>
       <div ref={editorRef} />
       {error && <div className="text-red-500">{error}</div>}
+      <div className="mt-2 flex gap-2">
+        <button onClick={() => onAccept?.()} className="px-3 py-1 bg-green-600 rounded hover:opacity-90">
+          Accept
+        </button>
+        <button onClick={() => onReject?.()} className="px-3 py-1 bg-red-600 rounded hover:opacity-90">
+          Reject
+        </button>
+      </div>
     </div>
   );
 }
