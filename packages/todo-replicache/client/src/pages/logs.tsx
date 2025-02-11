@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { ulid } from "ulid";
-import { EditorView, basicSetup } from "codemirror";
+import { EditorView } from "codemirror";
 import { json } from "@codemirror/lang-json";
 import { Check, X } from "lucide-react";
+import { Extension } from "@codemirror/state";
+import { keymap, drawSelection, highlightActiveLine, dropCursor, rectangularSelection, crosshairCursor } from "@codemirror/view";
+import { indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import { lintKeymap } from "@codemirror/lint";
+
 // import { Check, X } from "lucide-react";
 
 type Log = {
@@ -18,6 +26,34 @@ type Message = {
   editedSuggestion?: string;
   state: "loading" | "pending" | "accepted" | "rejected";
 };
+
+const basicSetup: Extension = (() => [
+  // lineNumbers(),
+  // highlightActiveLineGutter(),
+  // highlightSpecialChars(),
+  history(),
+  // foldGutter(),
+  drawSelection(),
+  dropCursor(),
+  indentOnInput(),
+  // syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+  bracketMatching(),
+  closeBrackets(),
+  autocompletion(),
+  rectangularSelection(),
+  crosshairCursor(),
+  highlightActiveLine(),
+  highlightSelectionMatches(),
+  keymap.of([
+    ...closeBracketsKeymap,
+    ...defaultKeymap,
+    ...searchKeymap,
+    ...historyKeymap,
+    ...foldKeymap,
+    ...completionKeymap,
+    ...lintKeymap,
+  ]),
+])();
 
 export function LogsPage() {
   const [inputMessage, setInputMessage] = useState("");
