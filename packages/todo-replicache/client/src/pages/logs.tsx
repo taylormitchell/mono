@@ -12,7 +12,7 @@ type Message = {
   id: string;
   content: string;
   type: "user" | "assistant";
-  suggestion?: object;
+  suggestion?: string;
   editedSuggestion?: string;
   status: "complete" | "loading";
 };
@@ -81,7 +81,7 @@ export function LogsPage() {
                 content: "I suggest creating this log:",
                 type: "assistant",
                 status: "complete",
-                suggestion: data,
+                suggestion: JSON.stringify(data, null, 2),
               }
             : msg
         )
@@ -136,14 +136,14 @@ export function LogsPage() {
                       <button
                         onClick={() => {
                           try {
-                            const newLog = message.editedSuggestion ? JSON.parse(message.editedSuggestion) : message.suggestion;
+                            const newLog = JSON.parse(message.editedSuggestion || message.suggestion || "");
                             setLogs((prev) => [...prev, { id: ulid(), data: newLog }]);
                             setMessages((prev) =>
                               prev.map((msg) =>
                                 msg.id === message.id ? { ...msg, suggestion: newLog, content: "Log created successfully!" } : msg
                               )
                             );
-                          } catch (error) {
+                          } catch {
                             setMessages((prev) =>
                               prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Error: Invalid JSON" } : msg))
                             );
@@ -190,7 +190,7 @@ export function LogsPage() {
   );
 }
 
-function CodeMirrorEditor({ initialData, setDoc }: { initialData: any; setDoc: (doc: string) => void }) {
+function CodeMirrorEditor({ initialData, setDoc }: { initialData: string; setDoc: (doc: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -198,11 +198,10 @@ function CodeMirrorEditor({ initialData, setDoc }: { initialData: any; setDoc: (
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const doc = JSON.stringify(initialData, null, 2);
-    setDoc(doc);
+    setDoc(initialData);
     const view = new EditorView({
       parent: editorRef.current,
-      doc,
+      doc: initialData,
       extensions: [
         basicSetup,
         json(),
