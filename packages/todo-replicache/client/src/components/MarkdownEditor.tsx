@@ -27,9 +27,13 @@ export function MarkdownEditor({
   useEffect(() => {
     if (!editorRef.current) return;
 
+    const doc = defaultMarkdownParser.parse(content);
+    if (itemId === "01JKTM3Z65ZQH28H8S1YD1QE3B") {
+      console.log({ content, doc });
+    }
     const view = new EditorView(editorRef.current, {
       state: EditorState.create({
-        doc: defaultMarkdownParser.parse(content),
+        doc,
         plugins: exampleSetup({ schema, menuBar: false, floatingMenu: false, menuContent: [] }),
       }),
       handleDOMEvents: {
