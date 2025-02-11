@@ -36,10 +36,10 @@ export const replicacheClientTable = pgTable("replicache_client", {
 });
 
 export const logsTable = pgTable("logs", {
+  version: integer("version").notNull().default(0),
   id: text("id").primaryKey(),
-  data: jsonb("data"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
   deletedAt: text("deleted_at"),
-  version: integer("version").notNull().default(0),
+  data: jsonb("data").notNull().default("{}"),
 });

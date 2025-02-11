@@ -46,10 +46,10 @@ export type View = z.infer<typeof viewSchema>;
 
 export const logSchema = z.object({
   id: z.string(),
-  data: z.object({}),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),
+  data: z.record(z.any()),
 });
 
 export type Log = z.infer<typeof logSchema>;
