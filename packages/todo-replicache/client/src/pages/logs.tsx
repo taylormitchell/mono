@@ -12,8 +12,8 @@ type Message = {
   id: string;
   content: string;
   type: "user" | "assistant";
-  suggestion?: any;
-  editedSuggestion?: any;
+  suggestion?: object;
+  editedSuggestion?: string;
   status: "complete" | "loading";
 };
 
@@ -126,35 +126,44 @@ export function LogsPage() {
                   <div className="mt-2">
                     <CodeMirrorEditor
                       initialData={message.suggestion}
-                      onChange={(newData) => {
-                        try {
-                          const parsed = JSON.parse(newData);
-                          setMessages((prev) =>
-                            prev.map((msg) => (msg.id === message.id ? { ...msg, editedSuggestion: parsed } : msg))
-                          );
-                        } catch (e) {
-                          // Invalid JSON - do nothing
-                        }
-                      }}
-                      onAccept={(newData) => {
-                        const suggestion = JSON.parse(newData);
-                        setLogs((prev) => [
-                          ...prev,
-                          {
-                            id: ulid(),
-                            data: message.editedSuggestion || message.suggestion,
-                          },
-                        ]);
+                      setDoc={(doc) => {
                         setMessages((prev) =>
-                          prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Log created successfully!" } : msg))
-                        );
-                      }}
-                      onReject={() => {
-                        setMessages((prev) =>
-                          prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Suggestion rejected." } : msg))
+                          prev.map((msg) => (msg.id === message.id ? { ...msg, editedSuggestion: doc } : msg))
                         );
                       }}
                     />
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => {
+                          try {
+                            const newLog = message.editedSuggestion ? JSON.parse(message.editedSuggestion) : message.suggestion;
+                            setLogs((prev) => [...prev, { id: ulid(), data: newLog }]);
+                            setMessages((prev) =>
+                              prev.map((msg) =>
+                                msg.id === message.id ? { ...msg, suggestion: newLog, content: "Log created successfully!" } : msg
+                              )
+                            );
+                          } catch (error) {
+                            setMessages((prev) =>
+                              prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Error: Invalid JSON" } : msg))
+                            );
+                          }
+                        }}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMessages((prev) =>
+                            prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Log creation cancelled" } : msg))
+                          );
+                        }}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
                 )}
               </>
@@ -181,39 +190,16 @@ export function LogsPage() {
   );
 }
 
-type CodeMirrorEditorData =
-  | {
-      type: "invalid";
-      error: string;
-      data: string;
-    }
-  | {
-      type: "valid";
-      data: object;
-    };
-
-function CodeMirrorEditor({
-  initialData,
-  onChange,
-  onAccept,
-  onReject,
-}: {
-  initialData: any;
-  onChange: (data: CodeMirrorEditorData) => void;
-  onAccept?: (data: CodeMirrorEditorData) => void;
-  onReject?: (data: CodeMirrorEditorData) => void;
-}) {
+function CodeMirrorEditor({ initialData, setDoc }: { initialData: any; setDoc: (doc: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const [data, setData] = useState<CodeMirrorEditorData>({
-    type: "valid",
-    data: initialData,
-  });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
 
     const doc = JSON.stringify(initialData, null, 2);
+    setDoc(doc);
     const view = new EditorView({
       parent: editorRef.current,
       doc,
@@ -223,14 +209,13 @@ function CodeMirrorEditor({
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const doc = update.state.doc.toString();
-            let data: CodeMirrorEditorData;
+            setDoc(doc);
             try {
-              data = { type: "valid", data: JSON.parse(doc) };
+              JSON.parse(doc);
+              setError(null);
             } catch {
-              data = { type: "invalid", error: "Invalid JSON", data: doc };
+              setError("Invalid JSON");
             }
-            onChange(data);
-            setData(data);
           }
         }),
       ],
@@ -241,26 +226,12 @@ function CodeMirrorEditor({
     return () => {
       view.destroy();
     };
-  }, [initialData, onChange]);
+  }, [initialData, setDoc]);
 
   return (
     <div>
       <div ref={editorRef} />
-      {data.type === "invalid" && <div className="text-red-500">{data.error}</div>}
-      <div className="mt-2 flex gap-2">
-        <button
-          onClick={() => data.type === "valid" && onAccept?.(data.data)}
-          disabled={data.type === "invalid"}
-          className={`px-3 py-1 rounded hover:opacity-90 ${
-            data.type === "invalid" ? "bg-green-600/50 cursor-not-allowed" : "bg-green-600"
-          }`}
-        >
-          Accept
-        </button>
-        <button onClick={() => onReject?.(data)} className="px-3 py-1 bg-red-600 rounded hover:opacity-90">
-          Reject
-        </button>
-      </div>
+      {error && <div className="text-red-500">{error}</div>}
     </div>
   );
 }
