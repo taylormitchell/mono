@@ -241,18 +241,7 @@ export function StandardView() {
         <button onClick={() => store.items.create({ content: "" })} title="New Item">
           Create Item
         </button>
-        <button
-          onClick={() =>
-            store.logs.create({
-              id: ulid(),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              deletedAt: null,
-              data: {},
-            })
-          }
-          title="New Log"
-        >
+        <button onClick={() => store.logs.create()} title="New Log">
           Create Log
         </button>
       </div>

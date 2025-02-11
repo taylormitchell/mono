@@ -219,10 +219,16 @@ export function createStore() {
       },
     },
     logs: {
-      create: async (props: Log) => {
+      create: async ({
+        id = ulid(),
+        createdAt = new Date().toISOString(),
+        updatedAt = new Date().toISOString(),
+        deletedAt = null,
+        data = {},
+      }: Partial<Log>) => {
         const action: UndoableAction = {
-          do: () => rep.mutate.createLog(props),
-          undo: () => rep.mutate.deleteLog({ id: props.id, deletedAt: new Date().toISOString() }),
+          do: () => rep.mutate.createLog({ id, type: "log", createdAt, updatedAt, deletedAt, data }),
+          undo: () => rep.mutate.deleteLog({ id, deletedAt: new Date().toISOString() }),
         };
         await action.do();
         undoManager.add(action);
