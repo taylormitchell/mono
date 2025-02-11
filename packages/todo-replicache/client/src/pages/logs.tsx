@@ -222,11 +222,12 @@ function CodeMirrorEditor({
         json(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
+            const doc = update.state.doc.toString();
             let data: CodeMirrorEditorData;
             try {
-              data = { type: "valid", data: JSON.parse(update.state.doc.toString()) };
+              data = { type: "valid", data: JSON.parse(doc) };
             } catch {
-              data = { type: "invalid", error: "Invalid JSON", data: update.state.doc.toString() };
+              data = { type: "invalid", error: "Invalid JSON", data: doc };
             }
             onChange(data);
             setData(data);
@@ -247,10 +248,16 @@ function CodeMirrorEditor({
       <div ref={editorRef} />
       {data.type === "invalid" && <div className="text-red-500">{data.error}</div>}
       <div className="mt-2 flex gap-2">
-        <button onClick={() => onAccept?.(data.data)} className="px-3 py-1 bg-green-600 rounded hover:opacity-90">
+        <button
+          onClick={() => data.type === "valid" && onAccept?.(data.data)}
+          disabled={data.type === "invalid"}
+          className={`px-3 py-1 rounded hover:opacity-90 ${
+            data.type === "invalid" ? "bg-green-600/50 cursor-not-allowed" : "bg-green-600"
+          }`}
+        >
           Accept
         </button>
-        <button onClick={() => onReject?.(data.data)} className="px-3 py-1 bg-red-600 rounded hover:opacity-90">
+        <button onClick={() => onReject?.(data)} className="px-3 py-1 bg-red-600 rounded hover:opacity-90">
           Reject
         </button>
       </div>
