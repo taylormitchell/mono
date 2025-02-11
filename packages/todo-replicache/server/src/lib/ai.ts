@@ -37,6 +37,15 @@ the best type of log object to return.
 
 \`\`\`
 {
+  type: "log/pooped",
+  effort: "low",
+  poopType: 2,
+  original: "easy poop"
+}
+\`\`\`
+
+\`\`\`
+{
   type: "log/food/water",
   amount: "1 liter",
   original: "drank water"

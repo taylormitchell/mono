@@ -13,6 +13,7 @@ type Message = {
   content: string;
   type: "user" | "assistant";
   suggestion?: any;
+  editedSuggestion?: any;
   status: "complete" | "loading";
 };
 
@@ -123,11 +124,29 @@ export function LogsPage() {
                 <div>{message.content}</div>
                 {message.suggestion && (
                   <div className="mt-2">
-                    <CodeMirrorEditor data={message.suggestion} onChange={() => {}} />
+                    <CodeMirrorEditor
+                      data={message.suggestion}
+                      onChange={(newData) => {
+                        try {
+                          const parsed = JSON.parse(newData);
+                          setMessages((prev) =>
+                            prev.map((msg) => (msg.id === message.id ? { ...msg, editedSuggestion: parsed } : msg))
+                          );
+                        } catch (e) {
+                          // Invalid JSON - do nothing
+                        }
+                      }}
+                    />
                     <div className="mt-2 flex gap-2">
                       <button
                         onClick={() => {
-                          setLogs((prev) => [...prev, { id: ulid(), data: message.suggestion }]);
+                          setLogs((prev) => [
+                            ...prev,
+                            {
+                              id: ulid(),
+                              data: message.editedSuggestion || message.suggestion,
+                            },
+                          ]);
                           setMessages((prev) =>
                             prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Log created successfully!" } : msg))
                           );
