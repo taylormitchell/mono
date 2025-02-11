@@ -5,6 +5,7 @@ const itemStatusSchema = z.enum(["active", "completed"]);
 export const itemStatusList = [null, ...itemStatusSchema.options] as const;
 
 export const itemSchema = z.object({
+  type: z.literal("item"),
   id: z.string(),
   name: z.string().nullable().default(null),
   content: z.string(),
@@ -45,6 +46,7 @@ export const viewSchema = z.object({
 export type View = z.infer<typeof viewSchema>;
 
 export const logSchema = z.object({
+  type: z.literal("log"),
   id: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSubscribe } from "replicache-react";
-import { Item } from "../../../shared/types";
+import { Item, Log } from "../../../shared/types";
 import { isHotkey } from "is-hotkey";
-import { cn, comparePositions } from "../lib/utils";
+import { cn } from "../lib/utils";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
@@ -14,7 +14,7 @@ function ItemRow({
   move,
   focusSearch,
 }: {
-  item: Item;
+  item: Item | Log;
   move: null | { up: () => void; down: () => void };
   focusSearch: () => void;
 }) {
@@ -56,12 +56,12 @@ function ItemRow({
       const el = nextElement.querySelector(".ProseMirror");
       if (el instanceof HTMLElement) el.focus();
     },
-    [item.id, focusSearch]
+    [item.id]
   );
 
   return (
     <div id={item.id} className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[var(--hover-color)]")}>
-      {item.status !== null && (
+      {/* {item.status !== null && (
         <div className="mr-3">
           <input
             type="checkbox"
@@ -74,16 +74,20 @@ function ItemRow({
             className="rounded-full border-[#30363d]"
           />
         </div>
-      )}
+      )} */}
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          <MarkdownEditor
-            itemId={item.id}
-            name={item.name}
-            content={item.content}
-            onUpAtTop={onUpAtTop}
-            onDownAtBottom={onDownAtBottom}
-          />
+          {item.type === "item" ? (
+            <MarkdownEditor
+              itemId={item.id}
+              name={item.name}
+              content={item.content}
+              onUpAtTop={onUpAtTop}
+              onDownAtBottom={onDownAtBottom}
+            />
+          ) : (
+            <div>{JSON.stringify(item.data)}</div>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -185,12 +189,15 @@ export function StandardView() {
     store.rep,
     async (tx) => {
       if (!view) return [];
-      const allItems = await store.items.getAll(tx);
-      if (!allItems) return [];
-      if (!view.filter?.status) return allItems;
-      return allItems.filter((item) => item.status === view.filter.status);
+      // TOOD: need to rename everything to match this convention later
+      const allMarkdown = await store.items.getAll(tx);
+      const allJson = await store.logs.getAll(tx);
+      const allItems = [...allMarkdown, ...allJson];
+      return allItems;
+      // if (!view.filter?.status) return allItems;
+      // return allItems.filter((item) => item.status === view.filter.status);
     },
-    { default: [] as Item[], dependencies: [view] }
+    { default: [] as (Item | Log)[], dependencies: [view] }
   );
 
   const focusSearch = useCallback(() => {
@@ -200,11 +207,14 @@ export function StandardView() {
   if (!view) return null;
 
   const filteredItems = items
-    .filter((item) => item.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((item) => {
+      const content = item.type === "item" ? item.content : JSON.stringify(item.data);
+      return content.toLowerCase().includes(searchQuery.toLowerCase());
+    })
     .sort((a, b) => {
-      if (view.sort.field === "position") {
-        return comparePositions(a, b, view.positions);
-      }
+      // if (view.sort.field === "position") {
+      //   return comparePositions(a, b, view.positions);
+      // }
       return b.createdAt.localeCompare(a.createdAt);
     });
 
@@ -229,9 +239,21 @@ export function StandardView() {
           className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
         />
         <button onClick={() => store.items.create({ content: "" })} title="New Item">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          Create Item
+        </button>
+        <button
+          onClick={() =>
+            store.logs.create({
+              id: ulid(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              deletedAt: null,
+              data: {},
+            })
+          }
+          title="New Log"
+        >
+          Create Log
         </button>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
