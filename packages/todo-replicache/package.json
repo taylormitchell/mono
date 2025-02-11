@@ -2,5 +2,8 @@
   "name": "items",
   "scripts": {
     "deploy": "bun run scripts/deploy.ts"
+  },
+  "dependencies": {
+    "lucide-react": "^0.475.0"
   }
 }

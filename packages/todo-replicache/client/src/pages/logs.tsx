@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { ulid } from "ulid";
 import { EditorView, basicSetup } from "codemirror";
 import { json } from "@codemirror/lang-json";
+import { Check, X } from "lucide-react";
+// import { Check, X } from "lucide-react";
 
 type Log = {
   id: string;
@@ -14,7 +16,7 @@ type Message = {
   type: "user" | "assistant";
   suggestion?: string;
   editedSuggestion?: string;
-  status: "complete" | "loading";
+  state: "loading" | "pending" | "accepted" | "rejected";
 };
 
 export function LogsPage() {
@@ -44,7 +46,7 @@ export function LogsPage() {
         id: messageId,
         content: inputMessage,
         type: "user",
-        status: "complete",
+        state: "pending",
       },
     ]);
 
@@ -55,7 +57,7 @@ export function LogsPage() {
         id: ulid(),
         content: "",
         type: "assistant",
-        status: "loading",
+        state: "loading",
       },
     ]);
 
@@ -75,12 +77,12 @@ export function LogsPage() {
       // Update assistant message with suggestion
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.status === "loading"
+          msg.state === "loading"
             ? {
                 id: msg.id,
                 content: "I suggest creating this log:",
                 type: "assistant",
-                status: "complete",
+                state: "pending",
                 suggestion: JSON.stringify(data, null, 2),
               }
             : msg
@@ -89,12 +91,12 @@ export function LogsPage() {
     } catch (error) {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.status === "loading"
+          msg.state === "loading"
             ? {
                 id: msg.id,
                 content: "Sorry, there was an error processing your request.",
                 type: "assistant",
-                status: "complete",
+                state: "pending",
               }
             : msg
         )
@@ -117,11 +119,64 @@ export function LogsPage() {
                 : "bg-[var(--bg-secondary)] border border-[#30363d] mr-12"
             }`}
           >
-            {message.status === "loading" ? (
+            {message.state === "loading" ? (
               <div className="animate-pulse">Loading...</div>
             ) : (
               <>
-                <div>{message.content}</div>
+                <div className="flex justify-between items-start">
+                  <div>{message.content}</div>
+                  <div className="flex items-center gap-2">
+                    {message.suggestion && message.state === "pending" && (
+                      <>
+                        <button
+                          onClick={() => {
+                            try {
+                              const acceptedSuggestion = message.editedSuggestion || message.suggestion || "";
+                              const newLog = JSON.parse(acceptedSuggestion);
+                              setLogs((prev) => [...prev, { id: ulid(), data: newLog }]);
+                              setMessages((prev) =>
+                                prev.map((msg) =>
+                                  msg.id === message.id
+                                    ? {
+                                        ...msg,
+                                        suggestion: acceptedSuggestion,
+                                        content: "Log created successfully!",
+                                        state: "accepted",
+                                      }
+                                    : msg
+                                )
+                              );
+                            } catch {
+                              setMessages((prev) =>
+                                prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Error: Invalid JSON" } : msg))
+                              );
+                            }
+                          }}
+                          className="p-1 bg-green-600 text-white rounded hover:bg-green-700"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMessages((prev) =>
+                              prev.map((msg) =>
+                                msg.id === message.id ? { ...msg, content: "Log creation cancelled", state: "rejected" } : msg
+                              )
+                            );
+                          }}
+                          className="p-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          <X size={16} />
+                        </button>
+                      </>
+                    )}
+                    {message.suggestion && (message.state === "accepted" || message.state === "rejected") && (
+                      <div className="ml-2">
+                        {message.state === "accepted" ? <Check className="text-green-500" /> : <X className="text-red-500" />}
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {message.suggestion && (
                   <div className="mt-2">
                     <CodeMirrorEditor
@@ -132,41 +187,6 @@ export function LogsPage() {
                         );
                       }}
                     />
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={() => {
-                          try {
-                            const acceptedSuggestion = message.editedSuggestion || message.suggestion || "";
-                            const newLog = JSON.parse(acceptedSuggestion);
-                            setLogs((prev) => [...prev, { id: ulid(), data: newLog }]);
-                            setMessages((prev) =>
-                              prev.map((msg) =>
-                                msg.id === message.id
-                                  ? { ...msg, suggestion: acceptedSuggestion, content: "Log created successfully!" }
-                                  : msg
-                              )
-                            );
-                          } catch {
-                            setMessages((prev) =>
-                              prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Error: Invalid JSON" } : msg))
-                            );
-                          }
-                        }}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMessages((prev) =>
-                            prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Log creation cancelled" } : msg))
-                          );
-                        }}
-                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                      >
-                        Reject
-                      </button>
-                    </div>
                   </div>
                 )}
               </>
