@@ -3,8 +3,16 @@ import { ulid } from "ulid";
 import { EditorView } from "codemirror";
 import { json } from "@codemirror/lang-json";
 import { Check, X } from "lucide-react";
-import { Extension } from "@codemirror/state";
-import { keymap, drawSelection, highlightActiveLine, dropCursor, rectangularSelection, crosshairCursor } from "@codemirror/view";
+import { Extension, EditorState } from "@codemirror/state";
+import {
+  keymap,
+  drawSelection,
+  dropCursor,
+  rectangularSelection,
+  crosshairCursor,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+} from "@codemirror/view";
 import { indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
@@ -28,15 +36,11 @@ type Message = {
 };
 
 const basicSetup: Extension = (() => [
-  // lineNumbers(),
-  // highlightActiveLineGutter(),
-  // highlightSpecialChars(),
+  highlightActiveLineGutter(),
   history(),
-  // foldGutter(),
   drawSelection(),
   dropCursor(),
   indentOnInput(),
-  // syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
   bracketMatching(),
   closeBrackets(),
   autocompletion(),
@@ -222,6 +226,7 @@ export function LogsPage() {
                           prev.map((msg) => (msg.id === message.id ? { ...msg, editedSuggestion: doc } : msg))
                         );
                       }}
+                      readOnly={message.state === "accepted" || message.state === "rejected"}
                     />
                   </div>
                 )}
@@ -249,7 +254,15 @@ export function LogsPage() {
   );
 }
 
-function CodeMirrorEditor({ initialData, setDoc }: { initialData: string; setDoc: (doc: string) => void }) {
+function CodeMirrorEditor({
+  initialData,
+  setDoc,
+  readOnly = false,
+}: {
+  initialData: string;
+  setDoc: (doc: string) => void;
+  readOnly?: boolean;
+}) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -266,6 +279,7 @@ function CodeMirrorEditor({ initialData, setDoc }: { initialData: string; setDoc
       extensions: [
         basicSetup,
         json(),
+        EditorState.readOnly.of(readOnly),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const doc = update.state.doc.toString();
@@ -286,7 +300,7 @@ function CodeMirrorEditor({ initialData, setDoc }: { initialData: string; setDoc
     return () => {
       view.destroy();
     };
-  }, [initialData]);
+  }, [initialData, readOnly]);
 
   return (
     <div>
