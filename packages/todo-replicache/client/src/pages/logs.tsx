@@ -125,7 +125,7 @@ export function LogsPage() {
                 {message.suggestion && (
                   <div className="mt-2">
                     <CodeMirrorEditor
-                      data={message.suggestion}
+                      initialData={message.suggestion}
                       onChange={(newData) => {
                         try {
                           const parsed = JSON.parse(newData);
@@ -136,36 +136,25 @@ export function LogsPage() {
                           // Invalid JSON - do nothing
                         }
                       }}
+                      onAccept={(newData) => {
+                        const suggestion = JSON.parse(newData);
+                        setLogs((prev) => [
+                          ...prev,
+                          {
+                            id: ulid(),
+                            data: message.editedSuggestion || message.suggestion,
+                          },
+                        ]);
+                        setMessages((prev) =>
+                          prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Log created successfully!" } : msg))
+                        );
+                      }}
+                      onReject={() => {
+                        setMessages((prev) =>
+                          prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Suggestion rejected." } : msg))
+                        );
+                      }}
                     />
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={() => {
-                          setLogs((prev) => [
-                            ...prev,
-                            {
-                              id: ulid(),
-                              data: message.editedSuggestion || message.suggestion,
-                            },
-                          ]);
-                          setMessages((prev) =>
-                            prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Log created successfully!" } : msg))
-                          );
-                        }}
-                        className="px-3 py-1 bg-green-600 rounded hover:opacity-90"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMessages((prev) =>
-                            prev.map((msg) => (msg.id === message.id ? { ...msg, content: "Suggestion rejected." } : msg))
-                          );
-                        }}
-                        className="px-3 py-1 bg-red-600 rounded hover:opacity-90"
-                      >
-                        Reject
-                      </button>
-                    </div>
                   </div>
                 )}
               </>
@@ -193,32 +182,36 @@ export function LogsPage() {
 }
 
 function CodeMirrorEditor({
-  data,
+  initialData,
   onChange,
   onAccept,
   onReject,
 }: {
-  data: object;
+  initialData: any;
   onChange: (data: string) => void;
-  onAccept?: () => void;
-  onReject?: () => void;
+  onAccept?: (data: string) => void;
+  onReject?: (data: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const docRef = useRef("");
 
   useEffect(() => {
     if (!editorRef.current) return;
 
+    const doc = JSON.stringify(initialData, null, 2);
+    docRef.current = doc;
     const view = new EditorView({
       parent: editorRef.current,
-      doc: JSON.stringify(data, null, 2),
+      doc,
       extensions: [
         basicSetup,
         json(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const newData = update.state.doc.toString();
+            docRef.current = newData;
             onChange(newData);
             try {
               JSON.parse(newData);
@@ -236,17 +229,23 @@ function CodeMirrorEditor({
     return () => {
       view.destroy();
     };
-  }, [data, onChange]);
+  }, [initialData, onChange]);
 
   return (
     <div>
       <div ref={editorRef} />
       {error && <div className="text-red-500">{error}</div>}
       <div className="mt-2 flex gap-2">
-        <button onClick={() => onAccept?.()} className="px-3 py-1 bg-green-600 rounded hover:opacity-90">
+        <button
+          onClick={() => onAccept?.(viewRef.current?.state.doc.toString() ?? "")}
+          className="px-3 py-1 bg-green-600 rounded hover:opacity-90"
+        >
           Accept
         </button>
-        <button onClick={() => onReject?.()} className="px-3 py-1 bg-red-600 rounded hover:opacity-90">
+        <button
+          onClick={() => onReject?.(viewRef.current?.state.doc.toString() ?? "")}
+          className="px-3 py-1 bg-red-600 rounded hover:opacity-90"
+        >
           Reject
         </button>
       </div>
