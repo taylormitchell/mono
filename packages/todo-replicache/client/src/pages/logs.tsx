@@ -136,11 +136,14 @@ export function LogsPage() {
                       <button
                         onClick={() => {
                           try {
-                            const newLog = JSON.parse(message.editedSuggestion || message.suggestion || "");
+                            const acceptedSuggestion = message.editedSuggestion || message.suggestion || "";
+                            const newLog = JSON.parse(acceptedSuggestion);
                             setLogs((prev) => [...prev, { id: ulid(), data: newLog }]);
                             setMessages((prev) =>
                               prev.map((msg) =>
-                                msg.id === message.id ? { ...msg, suggestion: newLog, content: "Log created successfully!" } : msg
+                                msg.id === message.id
+                                  ? { ...msg, suggestion: acceptedSuggestion, content: "Log created successfully!" }
+                                  : msg
                               )
                             );
                           } catch {
@@ -195,10 +198,12 @@ function CodeMirrorEditor({ initialData, setDoc }: { initialData: string; setDoc
   const viewRef = useRef<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const setDocRef = useRef(setDoc);
+  setDocRef.current = setDoc;
   useEffect(() => {
     if (!editorRef.current) return;
 
-    setDoc(initialData);
+    setDocRef.current(initialData);
     const view = new EditorView({
       parent: editorRef.current,
       doc: initialData,
@@ -208,7 +213,7 @@ function CodeMirrorEditor({ initialData, setDoc }: { initialData: string; setDoc
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const doc = update.state.doc.toString();
-            setDoc(doc);
+            setDocRef.current(doc);
             try {
               JSON.parse(doc);
               setError(null);
@@ -225,7 +230,7 @@ function CodeMirrorEditor({ initialData, setDoc }: { initialData: string; setDoc
     return () => {
       view.destroy();
     };
-  }, [initialData, setDoc]);
+  }, [initialData]);
 
   return (
     <div>
