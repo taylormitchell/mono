@@ -181,6 +181,17 @@ export function LogsPage() {
   );
 }
 
+type CodeMirrorEditorData =
+  | {
+      type: "invalid";
+      error: string;
+      data: string;
+    }
+  | {
+      type: "valid";
+      data: object;
+    };
+
 function CodeMirrorEditor({
   initialData,
   onChange,
@@ -188,20 +199,21 @@ function CodeMirrorEditor({
   onReject,
 }: {
   initialData: any;
-  onChange: (data: string) => void;
-  onAccept?: (data: string) => void;
-  onReject?: (data: string) => void;
+  onChange: (data: CodeMirrorEditorData) => void;
+  onAccept?: (data: CodeMirrorEditorData) => void;
+  onReject?: (data: CodeMirrorEditorData) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const docRef = useRef("");
+  const [data, setData] = useState<CodeMirrorEditorData>({
+    type: "valid",
+    data: initialData,
+  });
 
   useEffect(() => {
     if (!editorRef.current) return;
 
     const doc = JSON.stringify(initialData, null, 2);
-    docRef.current = doc;
     const view = new EditorView({
       parent: editorRef.current,
       doc,
@@ -210,15 +222,14 @@ function CodeMirrorEditor({
         json(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            const newData = update.state.doc.toString();
-            docRef.current = newData;
-            onChange(newData);
+            let data: CodeMirrorEditorData;
             try {
-              JSON.parse(newData);
-              setError(null);
+              data = { type: "valid", data: JSON.parse(update.state.doc.toString()) };
             } catch {
-              setError("Invalid JSON");
+              data = { type: "invalid", error: "Invalid JSON", data: update.state.doc.toString() };
             }
+            onChange(data);
+            setData(data);
           }
         }),
       ],
@@ -234,18 +245,12 @@ function CodeMirrorEditor({
   return (
     <div>
       <div ref={editorRef} />
-      {error && <div className="text-red-500">{error}</div>}
+      {data.type === "invalid" && <div className="text-red-500">{data.error}</div>}
       <div className="mt-2 flex gap-2">
-        <button
-          onClick={() => onAccept?.(viewRef.current?.state.doc.toString() ?? "")}
-          className="px-3 py-1 bg-green-600 rounded hover:opacity-90"
-        >
+        <button onClick={() => onAccept?.(data.data)} className="px-3 py-1 bg-green-600 rounded hover:opacity-90">
           Accept
         </button>
-        <button
-          onClick={() => onReject?.(viewRef.current?.state.doc.toString() ?? "")}
-          className="px-3 py-1 bg-red-600 rounded hover:opacity-90"
-        >
+        <button onClick={() => onReject?.(data.data)} className="px-3 py-1 bg-red-600 rounded hover:opacity-90">
           Reject
         </button>
       </div>
