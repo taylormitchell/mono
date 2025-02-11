@@ -22,31 +22,30 @@ the best type of log object to return.
 
 \`\`\`
 {
-  type: "meditated",
-  startedAt: "2024-01-01T00:00:00Z",
-  endedAt: "2024-01-01T00:10:00Z",
+  type: "log/meditated",
+  duration: "10m",
   original: "meditated for 10m"
 }
 \`\`\`
 
 \`\`\`
 {
-  type: "food/nutty-puddy",
+  type: "log/food/nutty-puddy",
   original: "ate nutty puddy"
 }
 \`\`\`
 
 \`\`\`
 {
-  type: "food/super-veggie",
-  original: "ate super veggie"
+  type: "log/food/water",
+  amount: "1 liter",
+  original: "drank water"
 }
 \`\`\`
 
 \`\`\`
 {
-  type: "exercise",
-  name: "Running",
+  type: "log/exercise/running",
   distance: "5 kilometers",
   original: "ran 5k"
 }
