@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { schema, defaultMarkdownParser } from "prosemirror-markdown";
+import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
 import { exampleSetup } from "prosemirror-example-setup";
 import "./MarkdownEditor.css";
 
@@ -15,7 +15,7 @@ export function MarkdownEditor({
   itemId: string;
   name: string | null;
   content: string;
-  onBlur?: (view: EditorView, itemId: string) => void;
+  onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
   onKeyDown?: (view: EditorView, e: KeyboardEvent, itemId: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -30,8 +30,9 @@ export function MarkdownEditor({
         plugins: exampleSetup({ schema, menuBar: false, floatingMenu: false, menuContent: [] }),
       }),
       handleDOMEvents: {
-        blur: (view) => {
-          onBlur?.(view, itemId);
+        blur: (view, e) => {
+          const doc = defaultMarkdownSerializer.serialize(view.state.doc);
+          onBlur?.(e, { itemId, content: doc, contentType: "markdown" });
         },
         keydown: (view, e) => {
           onKeyDown?.(view, e, itemId);

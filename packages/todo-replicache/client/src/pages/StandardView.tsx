@@ -26,12 +26,15 @@ function ItemRow({
   const navigate = useNavigate();
 
   const handleBlur = useCallback(
-    async (view: EditorView, itemId: string) => {
-      const item = await store.items.get(itemId);
+    async (_: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => {
+      const item = await store.items.get(props.itemId);
       if (!item) return;
-      const newContent = defaultMarkdownSerializer.serialize(view.state.doc);
-      const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
-      store.items.update(item.id, { content: newContent, name: title });
+      if (props.contentType === "markdown") {
+        const title = item.name === null ? props.content.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
+        store.items.update(item.id, { content: props.content, name: title });
+      } else {
+        store.items.update(item.id, { content: props.content });
+      }
     },
     [store.items]
   );
