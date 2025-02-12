@@ -63,40 +63,51 @@ function ItemRow({
   );
 
   const handleBlur = useCallback(
-    (view: EditorView) => {
+    async (view: EditorView, itemId: string) => {
+      const item = await store.items.get(itemId);
+      if (!item) return;
       const newContent = defaultMarkdownSerializer.serialize(view.state.doc);
       const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
       store.items.update(item.id, { content: newContent, name: title });
     },
-    [item.id, item.name]
+    [store.items]
   );
 
   const handleKeyDown = useCallback(
-    (view: EditorView, e: KeyboardEvent) => {
+    (view: EditorView, e: KeyboardEvent, itemId: string) => {
       if (isHotkey("escape", e)) {
         view.dom.blur();
       } else if (isHotkey("backspace", e)) {
         const content = defaultMarkdownSerializer.serialize(view.state.doc);
         if (content === "") {
           e.preventDefault();
-          const prevItemId = document.getElementById(item.id)?.previousElementSibling?.id;
+          const prevItemId = document.getElementById(itemId)?.previousElementSibling?.id;
           if (prevItemId) {
             setTimeout(() => {
               const el = document.querySelector(`[id="${prevItemId}"] .ProseMirror`);
               if (el instanceof HTMLElement) el.focus();
             });
           }
-          store.items.delete(item.id);
+          store.items.delete(itemId);
         }
       } else if (isHotkey("up", e) && onUpAtTop && view.state.selection.from === 1) {
         e.preventDefault();
-        onUpAtTop(e);
+        const prevElement = document.getElementById(item.id)?.previousElementSibling;
+        if (prevElement?.id) {
+          const el = prevElement.querySelector(".ProseMirror");
+          if (el instanceof HTMLElement) el.focus();
+        } else {
+          focusSearch();
+        }
       } else if (isHotkey("down", e) && onDownAtBottom && view.state.selection.from === view.state.doc.content.size - 1) {
         e.preventDefault();
-        onDownAtBottom(e);
+        const nextElement = document.getElementById(item.id)?.nextElementSibling;
+        if (!nextElement?.id) return;
+        const el = nextElement.querySelector(".ProseMirror");
+        if (el instanceof HTMLElement) el.focus();
       }
     },
-    [item.id, onUpAtTop, onDownAtBottom]
+    [onUpAtTop, onDownAtBottom]
   );
 
   return (

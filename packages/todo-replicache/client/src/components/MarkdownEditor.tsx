@@ -15,8 +15,8 @@ export function MarkdownEditor({
   itemId: string;
   name: string | null;
   content: string;
-  onBlur?: (view: EditorView) => void;
-  onKeyDown?: (view: EditorView, e: KeyboardEvent) => void;
+  onBlur?: (view: EditorView, itemId: string) => void;
+  onKeyDown?: (view: EditorView, e: KeyboardEvent, itemId: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -31,10 +31,10 @@ export function MarkdownEditor({
       }),
       handleDOMEvents: {
         blur: (view) => {
-          onBlur?.(view);
+          onBlur?.(view, itemId);
         },
         keydown: (view, e) => {
-          onKeyDown?.(view, e);
+          onKeyDown?.(view, e, itemId);
         },
       },
     });

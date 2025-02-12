@@ -161,15 +161,15 @@ export function createStore() {
         await action.do();
         undoManager.add(action);
       },
-      get: async (tx: ReadTransaction, id: string) => {
-        return items.get(tx, id);
+      get: async (id: string, tx?: ReadTransaction) => {
+        return tx ? items.get(tx, id) : rep.query((tx) => items.get(tx, id));
       },
-      getByName: async (tx: ReadTransaction, name: string) => {
-        const res = await items.list(tx);
+      getByName: async (name: string, tx?: ReadTransaction) => {
+        const res = await (tx ? items.list(tx) : rep.query((tx) => items.list(tx)));
         return res.find((item) => item.name === name);
       },
-      getAll: async (tx: ReadTransaction) => {
-        const res = await items.list(tx);
+      getAll: async (tx?: ReadTransaction) => {
+        const res = await (tx ? items.list(tx) : rep.query((tx) => items.list(tx)));
         return res.filter((item) => item.deletedAt === null);
       },
     },

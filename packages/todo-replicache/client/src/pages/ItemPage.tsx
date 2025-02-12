@@ -48,7 +48,7 @@ export function ItemPage() {
     store.rep,
     async (tx) => {
       if (!id) return null;
-      const item = (await store.items.get(tx, id)) ?? (await store.items.getByName(tx, id));
+      const item = (await store.items.get(id, tx)) ?? (await store.items.getByName(id, tx));
       return item ?? null;
     },
     { default: null, dependencies: [id] }
