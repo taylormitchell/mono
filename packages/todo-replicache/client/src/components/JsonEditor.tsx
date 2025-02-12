@@ -58,7 +58,7 @@ export function JsonEditor({
       itemId: string;
       content: string;
       contentType: "markdown" | "json";
-      selection: { from: number; to: number; docSize: number };
+      selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
     }
   ) => void;
 }) {
@@ -97,9 +97,18 @@ export function JsonEditor({
               content: view.state.doc.toString(),
               contentType: "json",
               selection: {
-                from: view.state.selection.main.from,
-                to: view.state.selection.main.to,
-                docSize: view.state.doc.length,
+                fromAt:
+                  view.state.selection.main.from === 0
+                    ? "start"
+                    : view.state.selection.main.from === view.state.doc.length
+                    ? "end"
+                    : "middle",
+                toAt:
+                  view.state.selection.main.to === 0
+                    ? "start"
+                    : view.state.selection.main.to === view.state.doc.length
+                    ? "end"
+                    : "middle",
               },
             });
           },

@@ -40,7 +40,12 @@ function ItemRow({
   const handleKeyDown = useCallback(
     (
       e: KeyboardEvent,
-      props: { itemId: string; content: string; contentType: "markdown" | "json"; fromPos: number; toPos: number }
+      props: {
+        itemId: string;
+        content: string;
+        contentType: "markdown" | "json";
+        selection: { from: number; to: number; docSize: number };
+      }
     ) => {
       if (isHotkey("escape", e)) {
         if (e.currentTarget instanceof HTMLElement) e.currentTarget.blur();
@@ -56,7 +61,7 @@ function ItemRow({
           }
           store.items.delete(props.itemId);
         }
-      } else if (isHotkey("up", e) && props.fromPos === 1) {
+      } else if (isHotkey("up", e) && props.selection.from === 1) {
         e.preventDefault();
         const prevElement = document.getElementById(props.itemId)?.previousElementSibling;
         if (prevElement?.id) {
@@ -65,7 +70,7 @@ function ItemRow({
         } else {
           focusSearch();
         }
-      } else if (isHotkey("down", e) && props.fromPos === props.toPos) {
+      } else if (isHotkey("down", e) && props.selection.from === props.selection.docSize - 1) {
         e.preventDefault();
         const nextElement = document.getElementById(props.itemId)?.nextElementSibling;
         if (!nextElement?.id) return;

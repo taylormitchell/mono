@@ -43,6 +43,11 @@ export function MarkdownEditor({
           onBlur?.(e, { itemId, content: doc, contentType: "markdown" });
         },
         keydown: (_, e) => {
+          console.log({
+            from: view.state.selection.from,
+            to: view.state.selection.to,
+            docSize: view.state.doc.content.size,
+          });
           onKeyDown?.(e, {
             itemId,
             content,
