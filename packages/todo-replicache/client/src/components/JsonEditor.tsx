@@ -42,14 +42,14 @@ const basicSetup: Extension = (() => [
 ])();
 
 export function JsonEditor({
+  itemId,
   initialData,
-  setDoc,
   readOnly = false,
   onBlur,
   onKeyDown,
 }: {
+  itemId: string;
   initialData: string;
-  setDoc: (doc: string) => void;
   readOnly?: boolean;
   onBlur?: () => void;
   onKeyDown?: (e: KeyboardEvent) => void;
@@ -58,12 +58,9 @@ export function JsonEditor({
   const viewRef = useRef<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const setDocRef = useRef(setDoc);
-  setDocRef.current = setDoc;
   useEffect(() => {
     if (!editorRef.current) return;
 
-    setDocRef.current(initialData);
     const view = new EditorView({
       parent: editorRef.current,
       doc: initialData,
@@ -74,7 +71,6 @@ export function JsonEditor({
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const doc = update.state.doc.toString();
-            setDocRef.current(doc);
             try {
               JSON.parse(doc);
               setError(null);
@@ -103,7 +99,7 @@ export function JsonEditor({
     return () => {
       view.destroy();
     };
-  }, [initialData, readOnly, onBlur, onKeyDown]);
+  }, [initialData, itemId, readOnly, onBlur, onKeyDown]);
 
   return (
     <div>

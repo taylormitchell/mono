@@ -11,6 +11,7 @@ import { ulid } from "ulid";
 import { LucideExpand, Plus } from "lucide-react";
 import { defaultMarkdownSerializer } from "prosemirror-markdown";
 import { EditorView } from "prosemirror-view";
+import { JsonEditor } from "../components/JsonEditor";
 
 function ItemRow({
   item,
@@ -23,44 +24,6 @@ function ItemRow({
 }) {
   const store = useStore();
   const navigate = useNavigate();
-
-  const handleDelete = () => {
-    const prevElement = document.getElementById(item.id)?.previousElementSibling;
-    store.items.delete(item.id);
-    if (prevElement) {
-      const editor = prevElement.querySelector(".ProseMirror");
-      if (editor) {
-        (editor as HTMLElement).focus();
-      }
-    }
-  };
-
-  const onUpAtTop = useCallback(
-    (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const prevElement = document.getElementById(item.id)?.previousElementSibling;
-      if (prevElement?.id) {
-        const el = prevElement.querySelector(".ProseMirror");
-        if (el instanceof HTMLElement) el.focus();
-      } else {
-        focusSearch();
-      }
-    },
-    [item.id, focusSearch]
-  );
-
-  const onDownAtBottom = useCallback(
-    (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const nextElement = document.getElementById(item.id)?.nextElementSibling;
-      if (!nextElement?.id) return;
-      const el = nextElement.querySelector(".ProseMirror");
-      if (el instanceof HTMLElement) el.focus();
-    },
-    [item.id]
-  );
 
   const handleBlur = useCallback(
     async (view: EditorView, itemId: string) => {
@@ -90,24 +53,24 @@ function ItemRow({
           }
           store.items.delete(itemId);
         }
-      } else if (isHotkey("up", e) && onUpAtTop && view.state.selection.from === 1) {
+      } else if (isHotkey("up", e) && view.state.selection.from === 1) {
         e.preventDefault();
-        const prevElement = document.getElementById(item.id)?.previousElementSibling;
+        const prevElement = document.getElementById(itemId)?.previousElementSibling;
         if (prevElement?.id) {
           const el = prevElement.querySelector(".ProseMirror");
           if (el instanceof HTMLElement) el.focus();
         } else {
           focusSearch();
         }
-      } else if (isHotkey("down", e) && onDownAtBottom && view.state.selection.from === view.state.doc.content.size - 1) {
+      } else if (isHotkey("down", e) && view.state.selection.from === view.state.doc.content.size - 1) {
         e.preventDefault();
-        const nextElement = document.getElementById(item.id)?.nextElementSibling;
+        const nextElement = document.getElementById(itemId)?.nextElementSibling;
         if (!nextElement?.id) return;
         const el = nextElement.querySelector(".ProseMirror");
         if (el instanceof HTMLElement) el.focus();
       }
     },
-    [onUpAtTop, onDownAtBottom]
+    [store.items, focusSearch]
   );
 
   return (
@@ -123,7 +86,7 @@ function ItemRow({
               onKeyDown={handleKeyDown}
             />
           ) : (
-            <div>{JSON.stringify(item.content)}</div>
+            <JsonEditor itemId={item.id} initialData={item.content} onBlur={handleBlur} onKeyDown={handleKeyDown} />
           )}
         </div>
       </div>
