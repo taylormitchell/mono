@@ -11,8 +11,8 @@ import type { Request, Response } from "express";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { z } from "zod";
-import { Mutation, mutationSchema, itemSchema, viewSchema, logSchema } from "../../../shared/types";
-import { itemTable, logsTable, viewTable } from "./db/schema";
+import { Mutation, mutationSchema, itemSchema, viewSchema } from "../../../shared/types";
+import { itemTable, viewTable } from "./db/schema";
 import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 
 const pushSchema = z.object({
@@ -100,19 +100,6 @@ export async function handlePull(req: Request, res: Response) {
           op: "put",
           key: `view/${view.id}`,
           value: viewSchema.parse(view),
-        });
-      }
-
-      // Get changed logs since requested version
-      const changedLogs = await tr
-        .select()
-        .from(logsTable)
-        .where(gt(logsTable.version, clientVersion));
-      for (const log of changedLogs) {
-        patch.push({
-          op: "put",
-          key: `log/${log.id}`,
-          value: logSchema.parse(log),
         });
       }
 
@@ -246,29 +233,6 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
         .update(viewTable)
         .set({ deletedAt, version: nextVersion })
         .where(eq(viewTable.id, viewID));
-      break;
-    }
-    case "createLog": {
-      await db.insert(logsTable).values({
-        ...mutation.args,
-        version: nextVersion,
-      });
-      break;
-    }
-    case "updateLog": {
-      const { id: logID, ...args } = mutation.args;
-      await db
-        .update(logsTable)
-        .set({ ...args, version: nextVersion })
-        .where(eq(logsTable.id, logID));
-      break;
-    }
-    case "deleteLog": {
-      const { id: logID, deletedAt } = mutation.args;
-      await db
-        .update(logsTable)
-        .set({ deletedAt, version: nextVersion })
-        .where(eq(logsTable.id, logID));
       break;
     }
     default:

@@ -45,17 +45,6 @@ export const viewSchema = z.object({
 
 export type View = z.infer<typeof viewSchema>;
 
-export const logSchema = z.object({
-  type: z.literal("log"),
-  id: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  deletedAt: z.string().nullable().default(null),
-  data: z.record(z.any()),
-});
-
-export type Log = z.infer<typeof logSchema>;
-
 const createItemMutationSchema = z.object({
   id: z.number(),
   clientID: z.string(),
@@ -114,35 +103,6 @@ const deleteViewMutationSchema = z.object({
   }),
 });
 
-const createLogMutationSchema = z.object({
-  id: z.number(),
-  clientID: z.string(),
-  timestamp: z.number(),
-  name: z.literal("createLog"),
-  args: logSchema,
-});
-
-const updateLogMutationSchema = z.object({
-  id: z.number(),
-  clientID: z.string(),
-  timestamp: z.number(),
-  name: z.literal("updateLog"),
-  args: logSchema.partial().extend({
-    id: z.string(),
-  }),
-});
-
-const deleteLogMutationSchema = z.object({
-  id: z.number(),
-  clientID: z.string(),
-  timestamp: z.number(),
-  name: z.literal("deleteLog"),
-  args: z.object({
-    id: z.string(),
-    deletedAt: z.string(),
-  }),
-});
-
 export const mutationSchema = z.union([
   createItemMutationSchema,
   updateItemMutationSchema,
@@ -150,9 +110,6 @@ export const mutationSchema = z.union([
   createViewMutationSchema,
   updateViewMutationSchema,
   deleteViewMutationSchema,
-  createLogMutationSchema,
-  updateLogMutationSchema,
-  deleteLogMutationSchema,
 ]);
 
 export type Mutation = z.infer<typeof mutationSchema>;

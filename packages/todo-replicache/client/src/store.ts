@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Mutation, Item, itemSchema, View, viewSchema, logSchema } from "../../shared/types";
+import { Mutation, Item, itemSchema, View, viewSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 import { ulid } from "ulid";
@@ -78,7 +78,6 @@ export function createUndoManager() {
 export function createStore() {
   const items = generate("item", itemSchema.parse);
   const views = generate("view", viewSchema.parse);
-  const logs = generate("log", logSchema.parse);
   const rep = new Replicache({
     name: "item-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
@@ -103,15 +102,6 @@ export function createStore() {
       },
       async deleteView(tx: WriteTransaction, props) {
         return views.delete(tx, props.id);
-      },
-      async createLog(tx: WriteTransaction, props) {
-        return logs.set(tx, props);
-      },
-      async updateLog(tx: WriteTransaction, props) {
-        return logs.update(tx, props);
-      },
-      async deleteLog(tx: WriteTransaction, props) {
-        return logs.delete(tx, props.id);
       },
     } satisfies Mutators,
   });

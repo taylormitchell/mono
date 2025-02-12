@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSubscribe } from "replicache-react";
-import { Item, Log } from "../../../shared/types";
+import { Item } from "../../../shared/types";
 import { isHotkey } from "is-hotkey";
 import { cn } from "../lib/utils";
 import { useStore } from "../hooks/store";
@@ -8,13 +8,14 @@ import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
+import { Plus } from "lucide-react";
 
 function ItemRow({
   item,
   move,
   focusSearch,
 }: {
-  item: Item | Log;
+  item: Item;
   move: null | { up: () => void; down: () => void };
   focusSearch: () => void;
 }) {
@@ -77,7 +78,7 @@ function ItemRow({
       )} */}
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          {item.type === "item" ? (
+          {item.contentType === "markdown" ? (
             <MarkdownEditor
               itemId={item.id}
               name={item.name}
@@ -86,7 +87,7 @@ function ItemRow({
               onDownAtBottom={onDownAtBottom}
             />
           ) : (
-            <div>{JSON.stringify(item.data)}</div>
+            <div>{JSON.stringify(item.content)}</div>
           )}
         </div>
       </div>
@@ -96,7 +97,7 @@ function ItemRow({
             <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" />
           </svg>
         </button>
-        {move && (
+        {/* {move && (
           <div className="flex items-center gap-1">
             <button onClick={move.up} className="p-1.5 text-[#6e7681] rounded" aria-label="Move up">
               <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
@@ -109,7 +110,7 @@ function ItemRow({
               </svg>
             </button>
           </div>
-        )}
+        )} */}
         <button onClick={handleDelete} className="ml-2 p-1 text-[#6e7681] rounded">
           <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
             <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
@@ -190,14 +191,12 @@ export function StandardView() {
     async (tx) => {
       if (!view) return [];
       // TOOD: need to rename everything to match this convention later
-      const allMarkdown = await store.items.getAll(tx);
-      const allJson = await store.logs.getAll(tx);
-      const allItems = [...allMarkdown, ...allJson];
+      const allItems = await store.items.getAll(tx);
       return allItems;
       // if (!view.filter?.status) return allItems;
       // return allItems.filter((item) => item.status === view.filter.status);
     },
-    { default: [] as (Item | Log)[], dependencies: [view] }
+    { default: [] as Item[], dependencies: [view] }
   );
 
   const focusSearch = useCallback(() => {
@@ -208,8 +207,7 @@ export function StandardView() {
 
   const filteredItems = items
     .filter((item) => {
-      const content = item.type === "item" ? item.content : JSON.stringify(item.data);
-      return content.toLowerCase().includes(searchQuery.toLowerCase());
+      return item.content.toLowerCase().includes(searchQuery.toLowerCase());
     })
     .sort((a, b) => {
       // if (view.sort.field === "position") {
@@ -239,10 +237,7 @@ export function StandardView() {
           className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
         />
         <button onClick={() => store.items.create({ content: "" })} title="New Item">
-          Create Item
-        </button>
-        <button onClick={() => store.logs.create()} title="New Log">
-          Create Log
+          <Plus size={16} />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
