@@ -7,13 +7,11 @@ import "./MarkdownEditor.css";
 
 export function MarkdownEditor({
   itemId,
-  name,
   content,
   onBlur,
   onKeyDown,
 }: {
   itemId: string;
-  name: string | null;
   content: string;
   onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
   onKeyDown?: (
@@ -72,7 +70,7 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [itemId, name, content, onBlur, onKeyDown]);
+  }, [itemId, content, onBlur, onKeyDown]);
 
   return <div ref={editorRef} className="w-full h-full" />;
 }

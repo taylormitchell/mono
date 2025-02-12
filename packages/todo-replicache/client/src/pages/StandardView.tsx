@@ -96,15 +96,9 @@ function ItemRow({
       <div className="flex-1">
         <div className="flex items-center gap-4">
           {item.contentType === "markdown" ? (
-            <MarkdownEditor
-              itemId={item.id}
-              name={item.name}
-              content={item.content}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-            />
+            <MarkdownEditor itemId={item.id} content={item.content} onBlur={handleBlur} onKeyDown={handleKeyDown} />
           ) : (
-            <JsonEditor itemId={item.id} initialData={item.content} onBlur={handleBlur} onKeyDown={handleKeyDown} />
+            <JsonEditor itemId={item.id} content={item.content} onBlur={handleBlur} onKeyDown={handleKeyDown} />
           )}
         </div>
       </div>

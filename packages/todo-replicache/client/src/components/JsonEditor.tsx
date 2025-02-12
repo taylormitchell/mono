@@ -2,14 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { EditorView } from "codemirror";
 import { json } from "@codemirror/lang-json";
 import { EditorState } from "@codemirror/state";
-import {
-  keymap,
-  dropCursor,
-  rectangularSelection,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-  crosshairCursor,
-} from "@codemirror/view";
+import { keymap, dropCursor, rectangularSelection, highlightActiveLineGutter, crosshairCursor } from "@codemirror/view";
 import { indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
@@ -18,13 +11,13 @@ import { lintKeymap } from "@codemirror/lint";
 
 export function JsonEditor({
   itemId,
-  initialData,
+  content,
   readOnly = false,
   onBlur,
   onKeyDown,
 }: {
   itemId: string;
-  initialData: string;
+  content: string;
   readOnly?: boolean;
   onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
   onKeyDown?: (
@@ -46,7 +39,7 @@ export function JsonEditor({
 
     const view = new EditorView({
       parent: editorRef.current,
-      doc: initialData,
+      doc: content,
       extensions: [
         EditorState.readOnly.of(readOnly),
         EditorView.updateListener.of((update) => {
@@ -60,14 +53,11 @@ export function JsonEditor({
             }
           }
         }),
-        EditorView.theme(
-          {
-            ".cm-content": {
-              caretColor: "var(--text-primary)",
-            },
+        EditorView.theme({
+          ".cm-content": {
+            caretColor: "var(--text-primary)",
           },
-          { dark: true }
-        ),
+        }),
         highlightActiveLineGutter(),
         history(),
         // drawSelection(),
@@ -78,7 +68,7 @@ export function JsonEditor({
         autocompletion(),
         rectangularSelection(),
         crosshairCursor(),
-        highlightActiveLine(),
+        // highlightActiveLine(),
         highlightSelectionMatches(),
         keymap.of([
           //   {
@@ -123,7 +113,7 @@ export function JsonEditor({
     return () => {
       view.destroy();
     };
-  }, [initialData, itemId, readOnly, onBlur, onKeyDown]);
+  }, [content, itemId, readOnly, onBlur, onKeyDown]);
 
   return (
     <div>
