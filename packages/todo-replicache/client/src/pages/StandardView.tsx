@@ -10,7 +10,6 @@ import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
 import { LucideExpand, Plus } from "lucide-react";
 import { defaultMarkdownSerializer } from "prosemirror-markdown";
-import { EditorView } from "prosemirror-view";
 import { JsonEditor } from "../components/JsonEditor";
 
 function ItemRow({
@@ -40,9 +39,9 @@ function ItemRow({
   );
 
   const handleKeyDown = useCallback(
-    (view: EditorView, e: KeyboardEvent, itemId: string) => {
+    (e: KeyboardEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => {
       if (isHotkey("escape", e)) {
-        view.dom.blur();
+        if (e.currentTarget instanceof HTMLElement) e.currentTarget.blur();
       } else if (isHotkey("backspace", e)) {
         const content = defaultMarkdownSerializer.serialize(view.state.doc);
         if (content === "") {
