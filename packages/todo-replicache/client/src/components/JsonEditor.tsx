@@ -54,7 +54,12 @@ export function JsonEditor({
   onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
   onKeyDown?: (
     e: KeyboardEvent,
-    props: { itemId: string; content: string; contentType: "markdown" | "json"; fromPos: number; toPos: number }
+    props: {
+      itemId: string;
+      content: string;
+      contentType: "markdown" | "json";
+      selection: { from: number; to: number; docSize: number };
+    }
   ) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -91,8 +96,11 @@ export function JsonEditor({
               itemId,
               content: view.state.doc.toString(),
               contentType: "json",
-              fromPos: view.state.selection.main.from,
-              toPos: view.state.selection.main.to,
+              selection: {
+                from: view.state.selection.main.from,
+                to: view.state.selection.main.to,
+                docSize: view.state.doc.length,
+              },
             });
           },
         }),

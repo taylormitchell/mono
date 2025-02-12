@@ -18,7 +18,12 @@ export function MarkdownEditor({
   onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
   onKeyDown?: (
     e: KeyboardEvent,
-    props: { itemId: string; content: string; contentType: "markdown" | "json"; fromPos: number; toPos: number }
+    props: {
+      itemId: string;
+      content: string;
+      contentType: "markdown" | "json";
+      selection: { from: number; to: number; docSize: number };
+    }
   ) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -42,8 +47,7 @@ export function MarkdownEditor({
             itemId,
             content,
             contentType: "markdown",
-            fromPos: view.state.selection.from,
-            toPos: view.state.selection.to,
+            selection: { from: view.state.selection.from, to: view.state.selection.to, docSize: view.state.doc.content.size },
           });
         },
       },
