@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorView } from "codemirror";
 import { json } from "@codemirror/lang-json";
-import { Extension, EditorState } from "@codemirror/state";
+import { EditorState } from "@codemirror/state";
 import {
   keymap,
   drawSelection,
@@ -16,30 +16,6 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
-
-const basicSetup: Extension = (() => [
-  highlightActiveLineGutter(),
-  history(),
-  drawSelection(),
-  dropCursor(),
-  indentOnInput(),
-  bracketMatching(),
-  closeBrackets(),
-  autocompletion(),
-  rectangularSelection(),
-  crosshairCursor(),
-  highlightActiveLine(),
-  highlightSelectionMatches(),
-  keymap.of([
-    ...closeBracketsKeymap,
-    ...defaultKeymap,
-    ...searchKeymap,
-    ...historyKeymap,
-    ...foldKeymap,
-    ...completionKeymap,
-    ...lintKeymap,
-  ]),
-])();
 
 export function JsonEditor({
   itemId,
@@ -73,8 +49,6 @@ export function JsonEditor({
       parent: editorRef.current,
       doc: initialData,
       extensions: [
-        basicSetup,
-        json(),
         EditorState.readOnly.of(readOnly),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -87,6 +61,42 @@ export function JsonEditor({
             }
           }
         }),
+        highlightActiveLineGutter(),
+        history(),
+        drawSelection(),
+        dropCursor(),
+        indentOnInput(),
+        bracketMatching(),
+        closeBrackets(),
+        autocompletion(),
+        rectangularSelection(),
+        crosshairCursor(),
+        highlightActiveLine(),
+        highlightSelectionMatches(),
+        keymap.of([
+          {
+            key: "ArrowUp",
+            run: () => {
+              console.log("arrow up");
+              return true;
+            },
+          },
+          {
+            key: "ArrowDown",
+            run: () => {
+              console.log("arrow down");
+              return true;
+            },
+          },
+          ...closeBracketsKeymap,
+          ...defaultKeymap,
+          ...searchKeymap,
+          ...historyKeymap,
+          ...foldKeymap,
+          ...completionKeymap,
+          ...lintKeymap,
+        ]),
+        json(),
       ],
     });
 
@@ -106,29 +116,29 @@ export function JsonEditor({
           if (!view) return;
           onBlur?.(e.nativeEvent, { itemId, content: view.state.doc.toString(), contentType: "json" });
         }}
-        onKeyDown={(e) => {
-          const view = viewRef.current;
-          if (!view) return;
-          onKeyDown?.(e.nativeEvent, {
-            itemId,
-            content: view.state.doc.toString(),
-            contentType: "json",
-            selection: {
-              fromAt:
-                view.state.selection.main.from === 0
-                  ? "start"
-                  : view.state.selection.main.from === view.state.doc.length
-                  ? "end"
-                  : "middle",
-              toAt:
-                view.state.selection.main.to === 0
-                  ? "start"
-                  : view.state.selection.main.to === view.state.doc.length
-                  ? "end"
-                  : "middle",
-            },
-          });
-        }}
+        // onKeyDown={(e) => {
+        //   const view = viewRef.current;
+        //   if (!view) return;
+        //   onKeyDown?.(e.nativeEvent, {
+        //     itemId,
+        //     content: view.state.doc.toString(),
+        //     contentType: "json",
+        //     selection: {
+        //       fromAt:
+        //         view.state.selection.main.from === 0
+        //           ? "start"
+        //           : view.state.selection.main.from === view.state.doc.length
+        //           ? "end"
+        //           : "middle",
+        //       toAt:
+        //         view.state.selection.main.to === 0
+        //           ? "start"
+        //           : view.state.selection.main.to === view.state.doc.length
+        //           ? "end"
+        //           : "middle",
+        //     },
+        //   });
+        // }}
       />
       {error && <div className="text-red-500">{error}</div>}
     </div>
