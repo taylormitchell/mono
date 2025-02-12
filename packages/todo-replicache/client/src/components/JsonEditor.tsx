@@ -45,10 +45,14 @@ export function JsonEditor({
   initialData,
   setDoc,
   readOnly = false,
+  onBlur,
+  onKeyDown,
 }: {
   initialData: string;
   setDoc: (doc: string) => void;
   readOnly?: boolean;
+  onBlur?: () => void;
+  onKeyDown?: (e: KeyboardEvent) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -79,7 +83,19 @@ export function JsonEditor({
             }
           }
         }),
+        EditorView.domEventHandlers({
+          blur: () => {
+            onBlur?.();
+          },
+          keydown: (e) => {
+            onKeyDown?.(e);
+          },
+        }),
       ],
+    });
+
+    view.dom.addEventListener("blur", () => {
+      onBlur?.();
     });
 
     viewRef.current = view;
@@ -87,7 +103,7 @@ export function JsonEditor({
     return () => {
       view.destroy();
     };
-  }, [initialData, readOnly]);
+  }, [initialData, readOnly, onBlur, onKeyDown]);
 
   return (
     <div>
