@@ -24,7 +24,7 @@ export function MarkdownEditor({
       contentType: "markdown" | "json";
       selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
     }
-  ) => void;
+  ) => boolean;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);

@@ -36,7 +36,7 @@ export function JsonEditor({
       contentType: "markdown" | "json";
       selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
     }
-  ) => void;
+  ) => boolean;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -76,9 +76,27 @@ export function JsonEditor({
         keymap.of([
           {
             key: "ArrowUp",
-            run: () => {
-              console.log("arrow up");
-              return true;
+            run: (view) => {
+              if (!onKeyDown) return false;
+              return onKeyDown(e, {
+                itemId,
+                content: view.state.doc.toString(),
+                contentType: "json",
+                selection: {
+                  fromAt:
+                    view.state.selection.main.from === 0
+                      ? "start"
+                      : view.state.selection.main.from === view.state.doc.length
+                      ? "end"
+                      : "middle",
+                  toAt:
+                    view.state.selection.main.to === 0
+                      ? "start"
+                      : view.state.selection.main.to === view.state.doc.length
+                      ? "end"
+                      : "middle",
+                },
+              });
             },
           },
           {
@@ -116,29 +134,29 @@ export function JsonEditor({
           if (!view) return;
           onBlur?.(e.nativeEvent, { itemId, content: view.state.doc.toString(), contentType: "json" });
         }}
-        // onKeyDown={(e) => {
-        //   const view = viewRef.current;
-        //   if (!view) return;
-        //   onKeyDown?.(e.nativeEvent, {
-        //     itemId,
-        //     content: view.state.doc.toString(),
-        //     contentType: "json",
-        //     selection: {
-        //       fromAt:
-        //         view.state.selection.main.from === 0
-        //           ? "start"
-        //           : view.state.selection.main.from === view.state.doc.length
-        //           ? "end"
-        //           : "middle",
-        //       toAt:
-        //         view.state.selection.main.to === 0
-        //           ? "start"
-        //           : view.state.selection.main.to === view.state.doc.length
-        //           ? "end"
-        //           : "middle",
-        //     },
-        //   });
-        // }}
+        onKeyDown={(e) => {
+          const view = viewRef.current;
+          if (!view) return;
+          onKeyDown?.(e.nativeEvent, {
+            itemId,
+            content: view.state.doc.toString(),
+            contentType: "json",
+            selection: {
+              fromAt:
+                view.state.selection.main.from === 0
+                  ? "start"
+                  : view.state.selection.main.from === view.state.doc.length
+                  ? "end"
+                  : "middle",
+              toAt:
+                view.state.selection.main.to === 0
+                  ? "start"
+                  : view.state.selection.main.to === view.state.doc.length
+                  ? "end"
+                  : "middle",
+            },
+          });
+        }}
       />
       {error && <div className="text-red-500">{error}</div>}
     </div>

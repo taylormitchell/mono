@@ -46,10 +46,13 @@ function ItemRow({
         contentType: "markdown" | "json";
         selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
       }
-    ) => {
+    ): boolean => {
       console.log("keydown in standard view", props);
       if (isHotkey("escape", e)) {
-        if (e.currentTarget instanceof HTMLElement) e.currentTarget.blur();
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.blur();
+          return true;
+        }
       } else if (isHotkey("backspace", e)) {
         if (props.content === "") {
           e.preventDefault();
@@ -61,6 +64,7 @@ function ItemRow({
             });
           }
           store.items.delete(props.itemId);
+          return true;
         }
       } else if (isHotkey("up", e) && props.selection.fromAt === "start") {
         e.preventDefault();
@@ -71,13 +75,18 @@ function ItemRow({
         } else {
           focusSearch();
         }
+        return true;
       } else if (isHotkey("down", e) && props.selection.fromAt === "end") {
         e.preventDefault();
         const nextElement = document.getElementById(props.itemId)?.nextElementSibling;
-        if (!nextElement?.id) return;
+        if (!nextElement?.id) return false;
         const el = nextElement.querySelector("[contenteditable='true']");
-        if (el instanceof HTMLElement) el.focus();
+        if (el instanceof HTMLElement) {
+          el.focus();
+          return true;
+        }
       }
+      return false;
     },
     [store.items, focusSearch]
   );
