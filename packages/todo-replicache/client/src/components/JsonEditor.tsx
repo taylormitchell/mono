@@ -4,12 +4,12 @@ import { json } from "@codemirror/lang-json";
 import { EditorState } from "@codemirror/state";
 import {
   keymap,
-  drawSelection,
   dropCursor,
   rectangularSelection,
-  crosshairCursor,
   highlightActiveLine,
   highlightActiveLineGutter,
+  drawSelection,
+  crosshairCursor,
 } from "@codemirror/view";
 import { indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
@@ -74,38 +74,31 @@ export function JsonEditor({
         highlightActiveLine(),
         highlightSelectionMatches(),
         keymap.of([
-          {
-            key: "ArrowUp",
-            run: (view) => {
-              if (!onKeyDown) return false;
-              return onKeyDown(e, {
-                itemId,
-                content: view.state.doc.toString(),
-                contentType: "json",
-                selection: {
-                  fromAt:
-                    view.state.selection.main.from === 0
-                      ? "start"
-                      : view.state.selection.main.from === view.state.doc.length
-                      ? "end"
-                      : "middle",
-                  toAt:
-                    view.state.selection.main.to === 0
-                      ? "start"
-                      : view.state.selection.main.to === view.state.doc.length
-                      ? "end"
-                      : "middle",
-                },
-              });
-            },
-          },
-          {
-            key: "ArrowDown",
-            run: () => {
-              console.log("arrow down");
-              return true;
-            },
-          },
+          //   {
+          //     key: "ArrowUp",
+          //     run: (view) => {
+          //       if (!onKeyDown) return false;
+          //       return onKeyDown(e, {
+          //         itemId,
+          //         content: view.state.doc.toString(),
+          //         contentType: "json",
+          //         selection: {
+          //           fromAt:
+          //             view.state.selection.main.from === 0
+          //               ? "start"
+          //               : view.state.selection.main.from === view.state.doc.length
+          //               ? "end"
+          //               : "middle",
+          //           toAt:
+          //             view.state.selection.main.to === 0
+          //               ? "start"
+          //               : view.state.selection.main.to === view.state.doc.length
+          //               ? "end"
+          //               : "middle",
+          //         },
+          //       });
+          //     },
+          //   },
           ...closeBracketsKeymap,
           ...defaultKeymap,
           ...searchKeymap,
@@ -128,34 +121,12 @@ export function JsonEditor({
   return (
     <div>
       <div
+        className="[&_.cm-content]:caret-[var(--text-primary)]"
         ref={editorRef}
         onBlur={(e) => {
           const view = viewRef.current;
           if (!view) return;
           onBlur?.(e.nativeEvent, { itemId, content: view.state.doc.toString(), contentType: "json" });
-        }}
-        onKeyDown={(e) => {
-          const view = viewRef.current;
-          if (!view) return;
-          onKeyDown?.(e.nativeEvent, {
-            itemId,
-            content: view.state.doc.toString(),
-            contentType: "json",
-            selection: {
-              fromAt:
-                view.state.selection.main.from === 0
-                  ? "start"
-                  : view.state.selection.main.from === view.state.doc.length
-                  ? "end"
-                  : "middle",
-              toAt:
-                view.state.selection.main.to === 0
-                  ? "start"
-                  : view.state.selection.main.to === view.state.doc.length
-                  ? "end"
-                  : "middle",
-            },
-          });
         }}
       />
       {error && <div className="text-red-500">{error}</div>}

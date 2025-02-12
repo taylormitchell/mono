@@ -43,7 +43,8 @@ export function MarkdownEditor({
           onBlur?.(e, { itemId, content: doc, contentType: "markdown" });
         },
         keydown: (_, e) => {
-          onKeyDown?.(e, {
+          if (!onKeyDown) return false;
+          onKeyDown(e, {
             itemId,
             content,
             contentType: "markdown",
