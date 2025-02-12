@@ -9,7 +9,6 @@ import { MarkdownEditor } from "../components/MarkdownEditor";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
 import { LucideExpand, Plus } from "lucide-react";
-import { defaultMarkdownSerializer } from "prosemirror-markdown";
 import { JsonEditor } from "../components/JsonEditor";
 
 function ItemRow({
@@ -39,36 +38,38 @@ function ItemRow({
   );
 
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => {
+    (
+      e: KeyboardEvent,
+      props: { itemId: string; content: string; contentType: "markdown" | "json"; fromPos: number; toPos: number }
+    ) => {
       if (isHotkey("escape", e)) {
         if (e.currentTarget instanceof HTMLElement) e.currentTarget.blur();
       } else if (isHotkey("backspace", e)) {
-        const content = defaultMarkdownSerializer.serialize(view.state.doc);
-        if (content === "") {
+        if (props.content === "") {
           e.preventDefault();
-          const prevItemId = document.getElementById(itemId)?.previousElementSibling?.id;
+          const prevItemId = document.getElementById(props.itemId)?.previousElementSibling?.id;
           if (prevItemId) {
             setTimeout(() => {
-              const el = document.querySelector(`[id="${prevItemId}"] .ProseMirror`);
+              const el = document.querySelector(`[id="${prevItemId}"] [contenteditable="true"]`);
               if (el instanceof HTMLElement) el.focus();
             });
           }
-          store.items.delete(itemId);
+          store.items.delete(props.itemId);
         }
-      } else if (isHotkey("up", e) && view.state.selection.from === 1) {
+      } else if (isHotkey("up", e) && props.fromPos === 1) {
         e.preventDefault();
-        const prevElement = document.getElementById(itemId)?.previousElementSibling;
+        const prevElement = document.getElementById(props.itemId)?.previousElementSibling;
         if (prevElement?.id) {
-          const el = prevElement.querySelector(".ProseMirror");
+          const el = prevElement.querySelector("[contenteditable='true']");
           if (el instanceof HTMLElement) el.focus();
         } else {
           focusSearch();
         }
-      } else if (isHotkey("down", e) && view.state.selection.from === view.state.doc.content.size - 1) {
+      } else if (isHotkey("down", e) && props.fromPos === props.toPos) {
         e.preventDefault();
-        const nextElement = document.getElementById(itemId)?.nextElementSibling;
+        const nextElement = document.getElementById(props.itemId)?.nextElementSibling;
         if (!nextElement?.id) return;
-        const el = nextElement.querySelector(".ProseMirror");
+        const el = nextElement.querySelector("[contenteditable='true']");
         if (el instanceof HTMLElement) el.focus();
       }
     },

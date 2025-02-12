@@ -52,7 +52,10 @@ export function JsonEditor({
   initialData: string;
   readOnly?: boolean;
   onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
-  onKeyDown?: (e: KeyboardEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
+  onKeyDown?: (
+    e: KeyboardEvent,
+    props: { itemId: string; content: string; contentType: "markdown" | "json"; fromPos: number; toPos: number }
+  ) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -80,18 +83,20 @@ export function JsonEditor({
           }
         }),
         EditorView.domEventHandlers({
-          blur: (e) => {
-            onBlur?.(e, { itemId, content: initialData, contentType: "json" });
+          blur: (e, view) => {
+            onBlur?.(e, { itemId, content: view.state.doc.toString(), contentType: "json" });
           },
-          keydown: (e) => {
-            onKeyDown?.(e, { itemId, content: initialData, contentType: "json" });
+          keydown: (e, view) => {
+            onKeyDown?.(e, {
+              itemId,
+              content: view.state.doc.toString(),
+              contentType: "json",
+              fromPos: view.state.selection.main.from,
+              toPos: view.state.selection.main.to,
+            });
           },
         }),
       ],
-    });
-
-    view.dom.addEventListener("blur", () => {
-      onBlur?.();
     });
 
     viewRef.current = view;
