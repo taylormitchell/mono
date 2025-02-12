@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
-import { Plus } from "lucide-react";
+import { LucideExpand, Plus } from "lucide-react";
 
 function ItemRow({
   item,
@@ -61,21 +61,7 @@ function ItemRow({
   );
 
   return (
-    <div id={item.id} className={cn("item flex flex-grow items-center px-4 py-2 hover:bg-[var(--hover-color)]")}>
-      {/* {item.status !== null && (
-        <div className="mr-3">
-          <input
-            type="checkbox"
-            checked={item.status === "completed"}
-            onChange={(e) => {
-              store.items.update(item.id, {
-                status: e.target.checked ? "completed" : "active",
-              });
-            }}
-            className="rounded-full border-[#30363d]"
-          />
-        </div>
-      )} */}
+    <div id={item.id} className={cn("item flex flex-grow items-start px-4 py-2 hover:bg-[var(--hover-color)] relative")}>
       <div className="flex-1">
         <div className="flex items-center gap-4">
           {item.contentType === "markdown" ? (
@@ -91,31 +77,18 @@ function ItemRow({
           )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="absolute top-0 right-0 flex items-center gap-2">
         <button onClick={() => navigate(`/items/${item.id}`)} className="p-1.5 text-[#6e7681] rounded">
-          <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-            <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" />
-          </svg>
+          <LucideExpand size={16} />
         </button>
-        {/* {move && (
-          <div className="flex items-center gap-1">
-            <button onClick={move.up} className="p-1.5 text-[#6e7681] rounded" aria-label="Move up">
-              <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z" />
-              </svg>
-            </button>
-            <button onClick={move.down} className="p-1.5 text-[#6e7681] rounded" aria-label="Move down">
-              <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-                <path d="M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L7 11.19V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z" />
-              </svg>
-            </button>
-          </div>
-        )} */}
-        <button onClick={handleDelete} className="ml-2 p-1 text-[#6e7681] rounded">
-          <svg width="16" height="16" viewBox="0 0 16 16" className="fill-current">
-            <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-          </svg>
-        </button>
+        <select
+          value={item.contentType}
+          onChange={(e) => store.items.update(item.id, { contentType: e.target.value as "markdown" | "json" })}
+          className="bg-transparent text-sm text-[var(--text-secondary)]"
+        >
+          <option value="markdown">md</option>
+          <option value="json">json</option>
+        </select>
       </div>
     </div>
   );
