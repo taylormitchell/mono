@@ -1,26 +1,23 @@
 import { useEffect, useRef } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
+import { schema, defaultMarkdownParser } from "prosemirror-markdown";
 import { exampleSetup } from "prosemirror-example-setup";
 import "./MarkdownEditor.css";
-import isHotkey from "is-hotkey";
-import { useStore } from "../hooks/store";
 
 export function MarkdownEditor({
   itemId,
   name,
   content,
-  onUpAtTop,
-  onDownAtBottom,
+  onBlur,
+  onKeyDown,
 }: {
   itemId: string;
   name: string | null;
   content: string;
-  onUpAtTop?: (e: KeyboardEvent) => void;
-  onDownAtBottom?: (e: KeyboardEvent) => void;
+  onBlur?: (view: EditorView) => void;
+  onKeyDown?: (view: EditorView, e: KeyboardEvent) => void;
 }) {
-  const store = useStore();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -34,33 +31,10 @@ export function MarkdownEditor({
       }),
       handleDOMEvents: {
         blur: (view) => {
-          const newContent = defaultMarkdownSerializer.serialize(view.state.doc);
-          const title = name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
-          store.items.update(itemId, { content: newContent, name: title });
+          onBlur?.(view);
         },
         keydown: (view, e) => {
-          if (isHotkey("escape", e)) {
-            view.dom.blur();
-          } else if (isHotkey("backspace", e)) {
-            const content = defaultMarkdownSerializer.serialize(view.state.doc);
-            if (content === "") {
-              e.preventDefault();
-              const prevItemId = document.getElementById(itemId)?.previousElementSibling?.id;
-              if (prevItemId) {
-                setTimeout(() => {
-                  const el = document.querySelector(`[id="${prevItemId}"] .ProseMirror`);
-                  if (el instanceof HTMLElement) el.focus();
-                });
-              }
-              store.items.delete(itemId);
-            }
-          } else if (isHotkey("up", e) && onUpAtTop && view.state.selection.from === 1) {
-            e.preventDefault();
-            onUpAtTop(e);
-          } else if (isHotkey("down", e) && onDownAtBottom && view.state.selection.from === view.state.doc.content.size - 1) {
-            e.preventDefault();
-            onDownAtBottom(e);
-          }
+          onKeyDown?.(view, e);
         },
       },
     });
@@ -70,7 +44,7 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [itemId, name, content, onUpAtTop, onDownAtBottom, store.items]);
+  }, [itemId, name, content, onBlur, onKeyDown]);
 
   return <div ref={editorRef} className="w-full h-full" />;
 }

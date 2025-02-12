@@ -9,6 +9,8 @@ import { MarkdownEditor } from "../components/MarkdownEditor";
 import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
 import { LucideExpand, Plus } from "lucide-react";
+import { defaultMarkdownSerializer } from "prosemirror-markdown";
+import { EditorView } from "prosemirror-view";
 
 function ItemRow({
   item,
@@ -60,6 +62,43 @@ function ItemRow({
     [item.id]
   );
 
+  const handleBlur = useCallback(
+    (view: EditorView) => {
+      const newContent = defaultMarkdownSerializer.serialize(view.state.doc);
+      const title = item.name === null ? newContent.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
+      store.items.update(item.id, { content: newContent, name: title });
+    },
+    [item.id, item.name]
+  );
+
+  const handleKeyDown = useCallback(
+    (view: EditorView, e: KeyboardEvent) => {
+      if (isHotkey("escape", e)) {
+        view.dom.blur();
+      } else if (isHotkey("backspace", e)) {
+        const content = defaultMarkdownSerializer.serialize(view.state.doc);
+        if (content === "") {
+          e.preventDefault();
+          const prevItemId = document.getElementById(item.id)?.previousElementSibling?.id;
+          if (prevItemId) {
+            setTimeout(() => {
+              const el = document.querySelector(`[id="${prevItemId}"] .ProseMirror`);
+              if (el instanceof HTMLElement) el.focus();
+            });
+          }
+          store.items.delete(item.id);
+        }
+      } else if (isHotkey("up", e) && onUpAtTop && view.state.selection.from === 1) {
+        e.preventDefault();
+        onUpAtTop(e);
+      } else if (isHotkey("down", e) && onDownAtBottom && view.state.selection.from === view.state.doc.content.size - 1) {
+        e.preventDefault();
+        onDownAtBottom(e);
+      }
+    },
+    [item.id, onUpAtTop, onDownAtBottom]
+  );
+
   return (
     <div id={item.id} className={cn("item flex flex-grow items-start px-4 py-2 hover:bg-[var(--hover-color)] relative")}>
       <div className="flex-1">
@@ -69,8 +108,8 @@ function ItemRow({
               itemId={item.id}
               name={item.name}
               content={item.content}
-              onUpAtTop={onUpAtTop}
-              onDownAtBottom={onDownAtBottom}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
             />
           ) : (
             <div>{JSON.stringify(item.content)}</div>
