@@ -43,7 +43,6 @@ export function MarkdownEditor({
           onBlur?.(e, { itemId, content: doc, contentType: "markdown" });
         },
         keydown: (_, e) => {
-          console.log("keydown in markdown editor");
           onKeyDown?.(e, {
             itemId,
             content,

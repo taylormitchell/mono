@@ -47,6 +47,7 @@ function ItemRow({
         selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
       }
     ) => {
+      console.log("keydown in standard view", props);
       if (isHotkey("escape", e)) {
         if (e.currentTarget instanceof HTMLElement) e.currentTarget.blur();
       } else if (isHotkey("backspace", e)) {

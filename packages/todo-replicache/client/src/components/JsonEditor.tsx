@@ -87,33 +87,6 @@ export function JsonEditor({
             }
           }
         }),
-        EditorView.domEventHandlers({
-          blur: (e, view) => {
-            onBlur?.(e, { itemId, content: view.state.doc.toString(), contentType: "json" });
-          },
-          keydown: (e, view) => {
-            console.log("keydown in json editor");
-            onKeyDown?.(e, {
-              itemId,
-              content: view.state.doc.toString(),
-              contentType: "json",
-              selection: {
-                fromAt:
-                  view.state.selection.main.from === 0
-                    ? "start"
-                    : view.state.selection.main.from === view.state.doc.length
-                    ? "end"
-                    : "middle",
-                toAt:
-                  view.state.selection.main.to === 0
-                    ? "start"
-                    : view.state.selection.main.to === view.state.doc.length
-                    ? "end"
-                    : "middle",
-              },
-            });
-          },
-        }),
       ],
     });
 
@@ -126,7 +99,37 @@ export function JsonEditor({
 
   return (
     <div>
-      <div ref={editorRef} />
+      <div
+        ref={editorRef}
+        onBlur={(e) => {
+          const view = viewRef.current;
+          if (!view) return;
+          onBlur?.(e.nativeEvent, { itemId, content: view.state.doc.toString(), contentType: "json" });
+        }}
+        onKeyDown={(e) => {
+          const view = viewRef.current;
+          if (!view) return;
+          onKeyDown?.(e.nativeEvent, {
+            itemId,
+            content: view.state.doc.toString(),
+            contentType: "json",
+            selection: {
+              fromAt:
+                view.state.selection.main.from === 0
+                  ? "start"
+                  : view.state.selection.main.from === view.state.doc.length
+                  ? "end"
+                  : "middle",
+              toAt:
+                view.state.selection.main.to === 0
+                  ? "start"
+                  : view.state.selection.main.to === view.state.doc.length
+                  ? "end"
+                  : "middle",
+            },
+          });
+        }}
+      />
       {error && <div className="text-red-500">{error}</div>}
     </div>
   );
