@@ -9,6 +9,7 @@ export const itemTable = pgTable("item", {
   id: text("id").primaryKey(),
   name: text("name").unique(),
   content: text("content").notNull(),
+  contentType: text("content_type").notNull().default("markdown"),
   dueDate: text("due_date"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),

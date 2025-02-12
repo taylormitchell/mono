@@ -5,10 +5,10 @@ const itemStatusSchema = z.enum(["active", "completed"]);
 export const itemStatusList = [null, ...itemStatusSchema.options] as const;
 
 export const itemSchema = z.object({
-  type: z.literal("item"),
   id: z.string(),
   name: z.string().nullable().default(null),
   content: z.string(),
+  contentType: z.enum(["markdown", "json"]).default("markdown"),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),
