@@ -44,7 +44,7 @@ function ItemRow({
         itemId: string;
         content: string;
         contentType: "markdown" | "json";
-        selection: { from: number; to: number; docSize: number };
+        selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
       }
     ) => {
       if (isHotkey("escape", e)) {
@@ -61,7 +61,7 @@ function ItemRow({
           }
           store.items.delete(props.itemId);
         }
-      } else if (isHotkey("up", e) && props.selection.from === 1) {
+      } else if (isHotkey("up", e) && props.selection.fromAt === "start") {
         e.preventDefault();
         const prevElement = document.getElementById(props.itemId)?.previousElementSibling;
         if (prevElement?.id) {
@@ -70,7 +70,7 @@ function ItemRow({
         } else {
           focusSearch();
         }
-      } else if (isHotkey("down", e) && props.selection.from === props.selection.docSize - 1) {
+      } else if (isHotkey("down", e) && props.selection.fromAt === "end") {
         e.preventDefault();
         const nextElement = document.getElementById(props.itemId)?.nextElementSibling;
         if (!nextElement?.id) return;

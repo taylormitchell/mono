@@ -92,6 +92,7 @@ export function JsonEditor({
             onBlur?.(e, { itemId, content: view.state.doc.toString(), contentType: "json" });
           },
           keydown: (e, view) => {
+            console.log("keydown in json editor");
             onKeyDown?.(e, {
               itemId,
               content: view.state.doc.toString(),

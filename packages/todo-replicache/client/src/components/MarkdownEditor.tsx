@@ -22,7 +22,7 @@ export function MarkdownEditor({
       itemId: string;
       content: string;
       contentType: "markdown" | "json";
-      selection: { from: number; to: number; docSize: number };
+      selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
     }
   ) => void;
 }) {
@@ -43,16 +43,25 @@ export function MarkdownEditor({
           onBlur?.(e, { itemId, content: doc, contentType: "markdown" });
         },
         keydown: (_, e) => {
-          console.log({
-            from: view.state.selection.from,
-            to: view.state.selection.to,
-            docSize: view.state.doc.content.size,
-          });
+          console.log("keydown in markdown editor");
           onKeyDown?.(e, {
             itemId,
             content,
             contentType: "markdown",
-            selection: { from: view.state.selection.from, to: view.state.selection.to, docSize: view.state.doc.content.size },
+            selection: {
+              fromAt:
+                view.state.selection.from === 1
+                  ? "start"
+                  : view.state.selection.from === view.state.doc.content.size - 1
+                  ? "end"
+                  : "middle",
+              toAt:
+                view.state.selection.to === 1
+                  ? "start"
+                  : view.state.selection.to === view.state.doc.content.size - 1
+                  ? "end"
+                  : "middle",
+            },
           });
         },
       },
