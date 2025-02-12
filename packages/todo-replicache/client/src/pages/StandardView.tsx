@@ -77,14 +77,14 @@ function ItemRow({
           )}
         </div>
       </div>
-      <div className="absolute top-0 right-0 flex items-center gap-2">
+      <div className="absolute top-0 right-0 flex items-center gap-0">
         <button onClick={() => navigate(`/items/${item.id}`)} className="p-1.5 text-[#6e7681] rounded">
-          <LucideExpand size={16} />
+          <LucideExpand size={12} />
         </button>
         <select
           value={item.contentType}
           onChange={(e) => store.items.update(item.id, { contentType: e.target.value as "markdown" | "json" })}
-          className="bg-transparent text-sm text-[var(--text-secondary)]"
+          className="bg-transparent text-xs text-[var(--text-secondary)]"
         >
           <option value="markdown">md</option>
           <option value="json">json</option>
