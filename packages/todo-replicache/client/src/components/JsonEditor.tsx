@@ -8,7 +8,6 @@ import {
   rectangularSelection,
   highlightActiveLine,
   highlightActiveLineGutter,
-  drawSelection,
   crosshairCursor,
 } from "@codemirror/view";
 import { indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language";
@@ -61,9 +60,17 @@ export function JsonEditor({
             }
           }
         }),
+        EditorView.theme(
+          {
+            ".cm-content": {
+              caretColor: "var(--text-primary)",
+            },
+          },
+          { dark: true }
+        ),
         highlightActiveLineGutter(),
         history(),
-        drawSelection(),
+        // drawSelection(),
         dropCursor(),
         indentOnInput(),
         bracketMatching(),
