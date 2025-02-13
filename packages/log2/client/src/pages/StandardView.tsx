@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
@@ -33,27 +33,48 @@ export function StandardView() {
                 value={log.text}
                 onChange={(e) => store.log.update(log.id, { text: e.target.value })}
               />
-              <button
-                className="text-sm px-2 py-1 bg-[#30363d] rounded hover:bg-[#3c444d]"
-                onClick={async () => {
-                  const response = await fetch("/api/ai", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text: log.text }),
-                  });
-                  const structuredData = await response.json();
-                  await store.log.update(log.id, { data: structuredData });
-                }}
-              >
-                Process with AI
-              </button>
-              {log.data && Object.keys(log.data).length > 0 && (
-                <div className="text-sm text-gray-400 mt-1">{JSON.stringify(log.data, null, 2)}</div>
-              )}
+              <LogData log={log} />
             </div>
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function LogData({ log }: { log: Log }) {
+  const store = useStore();
+  const [isLoading, setIsLoading] = useState(false);
+
+  return (
+    <div className="text-sm text-gray-400 mt-1">
+      {isLoading ? (
+        "Loading..."
+      ) : log.data && Object.keys(log.data).length > 0 ? (
+        <div className="text-sm text-gray-400 mt-1">{JSON.stringify(log.data, null, 2)}</div>
+      ) : (
+        <button
+          className="text-sm px-2 py-1 bg-[#30363d] rounded hover:bg-[#3c444d]"
+          onClick={async () => {
+            setIsLoading(true);
+            try {
+              const response = await fetch("/api/ai", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: log.text }),
+              });
+              const structuredData = await response.json();
+              await store.log.update(log.id, { data: structuredData });
+            } catch (error) {
+              console.error(error);
+            } finally {
+              setIsLoading(false);
+            }
+          }}
+        >
+          Process with AI
+        </button>
+      )}
     </div>
   );
 }
