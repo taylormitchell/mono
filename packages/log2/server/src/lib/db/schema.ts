@@ -1,32 +1,18 @@
 import { pgTable, serial, text, integer, jsonb } from "drizzle-orm/pg-core";
 
-export const replicacheServerTable = pgTable("replicache_server", {
-  id: serial("id").primaryKey(),
-  version: integer("version").notNull(),
-});
-
-export const itemTable = pgTable("item", {
+export const logTable = pgTable("log", {
   id: text("id").primaryKey(),
-  name: text("name").unique(),
-  content: text("content").notNull(),
-  contentType: text("content_type").notNull().default("markdown"),
-  dueDate: text("due_date"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
   deletedAt: text("deleted_at"),
-  status: text("status"),
+  text: text("text").notNull().default(""),
+  data: jsonb("data"),
   version: integer("version").notNull().default(0),
-  children: text("children").notNull().default("[]"),
 });
 
-export const viewTable = pgTable("view", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  filter: jsonb("filter"),
-  sort: jsonb("sort"),
-  positions: jsonb("positions"),
-  version: integer("version").notNull().default(0),
-  deletedAt: text("deleted_at"),
+export const replicacheServerTable = pgTable("replicache_server", {
+  id: serial("id").primaryKey(),
+  version: integer("version").notNull(),
 });
 
 export const replicacheClientTable = pgTable("replicache_client", {
