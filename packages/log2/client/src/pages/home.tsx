@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCcw } from "lucide-react";
 import { JsonEditor } from "../components/JsonEditor";
 
 export function Home() {
@@ -22,6 +22,9 @@ export function Home() {
       <div className="flex flex-col h-full w-full gap-4 p-4">
         <div className="flex items-center gap-4">
           <div className="w-4 md:w-0" />
+          <button onClick={() => store.hardReset()} className="p-2 hover:bg-[#30363d] rounded-full">
+            <RefreshCcw size={20} />
+          </button>
           <button onClick={() => setShowEditor(true)} className="p-2 hover:bg-[#30363d] rounded-full" title="New Item">
             <Plus size={20} />
           </button>

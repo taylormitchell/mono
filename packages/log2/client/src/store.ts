@@ -151,6 +151,10 @@ export function createStore() {
       undoManager.destroy();
       rep.close();
     },
+    hardReset: () => {
+      indexedDB.deleteDatabase(rep.idbName);
+      window.location.reload();
+    },
   };
 }
 
