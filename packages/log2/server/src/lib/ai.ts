@@ -15,7 +15,7 @@ const initialExamples = [
     },
   },
   {
-    message: "I drank 1 liter of water",
+    message: "I drank 1l of water",
     response: {
       schema: "consumed",
       action: "drank",
@@ -36,7 +36,7 @@ const initialExamples = [
     response: {
       schema: "exercise",
       action: "ran",
-      distance: "5k",
+      distance: "5 kilometers",
     },
   },
 ];
@@ -93,7 +93,7 @@ export async function datatify(message: string) {
     response_format: { type: "json_object" },
   });
   try {
-    const log = JSON.parse(response.choices[0].message.content ?? "{}");
+    const log = JSON.parse(response.choices[0].message.content ?? "{}") as Record<string, any>;
     return log;
   } catch (e) {
     console.error(e);

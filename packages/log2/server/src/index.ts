@@ -4,7 +4,8 @@ import { handlePush, handlePull } from "./lib/replicache";
 import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
-import { handleAI } from "./lib/ai";
+import { datatify } from "./lib/ai";
+import { z } from "zod";
 
 dotenv.config();
 
@@ -22,13 +23,23 @@ app.get("/api/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
 });
 
+const aiRequestSchema = z.object({ message: z.string() });
 app.post("/api/ai", async (req: Request, res: Response) => {
   try {
     console.log("Received AI request", req.body);
-    await handleAI(req, res);
+    const parsed = aiRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      console.error("Invalid request", { body: req.body, error: parsed.error });
+      return res.status(400).json({ error: "Invalid request" });
+    }
+    const log = await datatify(parsed.data.message);
+    if (!log) {
+      return res.status(500).json({ success: false, error: "Failed to generate log" });
+    }
+    res.status(200).json({ success: true, data: log });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 

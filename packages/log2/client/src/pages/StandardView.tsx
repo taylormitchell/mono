@@ -61,10 +61,14 @@ function LogData({ log }: { log: Log }) {
               const response = await fetch(import.meta.env.VITE_API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: log.text }),
+                body: JSON.stringify({ message: log.text }),
               });
-              const structuredData = await response.json();
-              await store.log.update(log.id, { data: structuredData });
+              const result = await response.json();
+              if (result.success) {
+                await store.log.update(log.id, { data: result.data });
+              } else {
+                console.error(result.error);
+              }
             } catch (error) {
               console.error(error);
             } finally {
