@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
@@ -48,11 +47,11 @@ export function ChatPage() {
     <div className="flex h-full w-full pt-12">
       <div className="flex-1 overflow-y-auto p-4 scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="space-y-2">
-          {filteredLogs.map((item) => (
-            <div className="group flex items-start gap-2">
+          {filteredLogs.map((log) => (
+            <div key={log.id} className="group flex items-start gap-2">
               <span className="text-[var(--accent-color)]">$</span>
               <div className="flex-1">
-                <MarkdownEditor itemId={item.id} content={item.text} />
+                <input type="text" value={log.text} onChange={(e) => store.log.update(log.id, { text: e.target.value })} />
               </div>
             </div>
           ))}
