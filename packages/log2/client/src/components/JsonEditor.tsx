@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorView } from "codemirror";
 import { json } from "@codemirror/lang-json";
-import { EditorState } from "@codemirror/state";
 import { keymap, dropCursor, rectangularSelection, highlightActiveLineGutter, crosshairCursor } from "@codemirror/view";
 import { indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
@@ -9,27 +8,7 @@ import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
 
-export function JsonEditor({
-  itemId,
-  content,
-  readOnly = false,
-  onBlur,
-  onKeyDown,
-}: {
-  itemId: string;
-  content: string;
-  readOnly?: boolean;
-  onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
-  onKeyDown?: (
-    e: KeyboardEvent,
-    props: {
-      itemId: string;
-      content: string;
-      contentType: "markdown" | "json";
-      selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
-    }
-  ) => boolean;
-}) {
+export function JsonEditor({ content: initialContent, onChange }: { content: string; onChange: (content: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,14 +18,14 @@ export function JsonEditor({
 
     const view = new EditorView({
       parent: editorRef.current,
-      doc: content,
+      doc: initialContent,
       extensions: [
-        EditorState.readOnly.of(readOnly),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const doc = update.state.doc.toString();
             try {
               JSON.parse(doc);
+              onChange(doc);
               setError(null);
             } catch {
               setError("Invalid JSON");
@@ -113,19 +92,11 @@ export function JsonEditor({
     return () => {
       view.destroy();
     };
-  }, [content, itemId, readOnly, onBlur, onKeyDown]);
+  }, [initialContent, onChange]);
 
   return (
     <div>
-      <div
-        className="[&_.cm-content]:caret-[var(--text-primary)]"
-        ref={editorRef}
-        onBlur={(e) => {
-          const view = viewRef.current;
-          if (!view) return;
-          onBlur?.(e.nativeEvent, { itemId, content: view.state.doc.toString(), contentType: "json" });
-        }}
-      />
+      <div className="[&_.cm-content]:caret-[var(--text-primary)]" ref={editorRef} />
       {error && <div className="text-red-500">{error}</div>}
     </div>
   );
