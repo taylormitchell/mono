@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  color: #24292f; /* GitHub light mode text color */
+  background-color: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --border-color: #d0d7de;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --accent-color: #0969da;
+  --hover-color: #f3f4f6;
+}
+
+.bg {
+  background-color: white;
+}
+
+.bg-highlight {
+  background-color: light-gray;
+}
+
+/* Add system-based dark mode detection */
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  #root {
+    color: #c9d1d9;
+    background-color: #0d1117;
+  }
+
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --border-color: #30363d;
+    --text-primary: #c9d1d9;
+    --text-secondary: #6e7681;
+    --accent-color: #1f6feb;
+    --hover-color: #1c2128;
+  }
+
+  .bg {
+    @apply bg-gray-900;
+  }
+
+  .bg-highlight {
+    @apply bg-gray-800;
+  }
+}
