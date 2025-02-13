@@ -3,7 +3,7 @@ import { z } from "zod";
 export const logSchema = z.object({
   id: z.string(),
   text: z.string(),
-  data: z.record(z.any()),
+  data: z.array(z.record(z.string(), z.any())),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),

@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import { z } from "zod";
-import { zodResponseFormat } from "openai/helpers/zod";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -89,8 +88,7 @@ the best schema and fields to return.
 {{EXAMPLES}}
 `;
 
-const logSchema = z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]));
-const responseSchema = z.object({ logs: z.array(logSchema) });
+const responseSchema = z.object({ logs: z.array(z.record(z.string(), z.any())) });
 
 export async function datatify(message: string) {
   const systemPrompt = systemPromptTemplate.replace(
@@ -110,19 +108,19 @@ export async function datatify(message: string) {
       { role: "system", content: systemPrompt },
       { role: "user", content: message },
     ],
-    response_format: zodResponseFormat(responseSchema, "logs"),
+    response_format: { type: "json_object" },
   });
   console.log(response.choices[0].message.content);
-  // const result = responseSchema.safeParse(response.choices[0].message.content);
-  // if (!result.success) {
-  //   console.error(result.error);
-  //   return null;
-  // }
-  // if ("error" in result.data) {
-  //   console.error("AI returned an error", result.data.error);
-  //   return null;
-  // }
-  // return result.data.logs;
+  const result = responseSchema.safeParse(JSON.parse(response.choices[0].message.content ?? "{}"));
+  if (!result.success) {
+    console.error(result.error);
+    return null;
+  }
+  if ("error" in result.data) {
+    console.error("AI returned an error", result.data.error);
+    return null;
+  }
+  return result.data.logs;
 }
 
 if (require.main === module) {
