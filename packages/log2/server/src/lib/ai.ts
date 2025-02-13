@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { z } from "zod";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,37 +8,51 @@ const openai = new OpenAI({
 const initialExamples = [
   {
     message: "I ate a big mac",
-    response: {
-      schema: "consumed",
-      action: "ate",
-      item: "big mac",
-      amount: "1",
-    },
+    response: [
+      {
+        schema: "consumed",
+        action: "ate",
+        item: "big mac",
+        amount: "1",
+      },
+    ],
   },
   {
-    message: "I drank 1l of water",
-    response: {
-      schema: "consumed",
-      action: "drank",
-      item: "water",
-      amount: "1 liter",
-    },
+    message: "ate nutty-puddy and drank 1l water",
+    response: [
+      {
+        schema: "consumed",
+        action: "ate",
+        item: "nutty-puddy",
+        amount: "1",
+      },
+      {
+        schema: "consumed",
+        action: "drank",
+        item: "water",
+        amount: "1 liter",
+      },
+    ],
   },
   {
     message: "easy soft pooped",
-    response: {
-      schema: "pooped",
-      effort: "low",
-      poopType: 5,
-    },
+    response: [
+      {
+        schema: "pooped",
+        effort: "low",
+        poopType: 5,
+      },
+    ],
   },
   {
     message: "I ran 5k",
-    response: {
-      schema: "exercise",
-      action: "ran",
-      distance: "5 kilometers",
-    },
+    response: [
+      {
+        schema: "exercise",
+        action: "ran",
+        distance: "5 kilometers",
+      },
+    ],
   },
 ];
 
@@ -74,6 +89,8 @@ the best schema and fields to return.
 {{EXAMPLES}}
 `;
 
+const responseSchema = z.array(z.record(z.string(), z.any()));
+
 export async function datatify(message: string) {
   const systemPrompt = systemPromptTemplate.replace(
     "{{EXAMPLES}}",
@@ -90,7 +107,7 @@ export async function datatify(message: string) {
       { role: "system", content: systemPrompt },
       { role: "user", content: message },
     ],
-    response_format: { type: "json_object" },
+    response_format: { type: "json_schema", json_schema: responseSchema },
   });
   try {
     const log = JSON.parse(response.choices[0].message.content ?? "{}") as Record<string, any>;

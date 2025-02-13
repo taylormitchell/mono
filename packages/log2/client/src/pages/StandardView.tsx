@@ -3,6 +3,7 @@ import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
 import { Plus } from "lucide-react";
+import { JsonEditor } from "../components/JsonEditor";
 
 export function StandardView() {
   const store = useStore();
@@ -48,7 +49,8 @@ function LogEditor({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<Record<string, unknown> | null>(null);
+  const [editedData, setEditedData] = useState<string | null>(null);
 
   const processWithAI = async () => {
     setIsLoading(true);
@@ -60,7 +62,11 @@ function LogEditor({ onClose }: { onClose: () => void }) {
       });
       const result = await response.json();
       if (result.success) {
-        setData(result.data);
+        if (typeof result.data === "object" && result.data !== null) {
+          setData(result.data);
+        } else {
+          throw new Error("Unexpected type of result.data");
+        }
       } else {
         console.error(result.error);
       }
@@ -104,7 +110,7 @@ function LogEditor({ onClose }: { onClose: () => void }) {
         {data && (
           <div className="mt-4">
             <h3 className="text-sm font-semibold mb-2">Result:</h3>
-            <pre className="p-3 bg-[#1c2128] rounded border border-[#30363d] text-sm">{JSON.stringify(data, null, 2)}</pre>
+            <JsonEditor content={editedData || JSON.stringify(data, null, 2)} onChange={(content) => setEditedData(content)} />
           </div>
         )}
       </div>
