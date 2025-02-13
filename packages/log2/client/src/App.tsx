@@ -52,7 +52,6 @@ function App() {
     <StoreProvider>
       <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
         <Router>
-          v
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/entry" element={<LogEntry />} />

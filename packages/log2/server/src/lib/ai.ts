@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { z } from "zod";
+import { logDataSchema } from "../../../shared/types";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -88,7 +89,7 @@ the best schema and fields to return.
 {{EXAMPLES}}
 `;
 
-const responseSchema = z.object({ logs: z.array(z.record(z.string(), z.any())) });
+const responseSchema = z.object({ logs: logDataSchema });
 
 export async function datatify(message: string) {
   const systemPrompt = systemPromptTemplate.replace(

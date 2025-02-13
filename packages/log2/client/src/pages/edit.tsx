@@ -3,13 +3,14 @@ import { JsonEditor } from "../components/JsonEditor";
 import { useStore } from "../hooks/store";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSubscribe } from "replicache-react";
+import { logDataSchema } from "../../../shared/types";
 
 export function LogEdit() {
   const id = useParams().id || "";
   const store = useStore();
   const navigate = useNavigate();
-  const [text, setText] = useState("");
-  const [editedData, setEditedData] = useState<{ text: string; data: Record<string, unknown> | null } | null>(null);
+  const [editedData, setEditedData] = useState<{ text: string; data: Record<string, unknown>[] | null } | null>(null);
+  const [editedText, setEditedText] = useState<string | null>(null);
 
   const log = useSubscribe(
     store.rep,
@@ -35,8 +36,8 @@ export function LogEdit() {
       <div className="flex-1 p-4 overflow-y-auto">
         <textarea
           className="w-full h-32 p-3 bg-secondary rounded border border-base resize-none"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          value={editedText || log.text}
+          onChange={(e) => setEditedText(e.target.value)}
           placeholder="Enter your log text..."
         />
 
@@ -47,9 +48,10 @@ export function LogEdit() {
               content={editedData ? editedData.text : JSON.stringify(log.data, null, 2)}
               onChange={(content) => {
                 try {
-                  const contentData = JSON.parse(content);
+                  const contentData = logDataSchema.parse(JSON.parse(content));
                   setEditedData({ text: content, data: contentData });
-                } catch {
+                } catch (e) {
+                  console.error(e);
                   setEditedData({ text: content, data: null });
                 }
               }}
@@ -63,7 +65,7 @@ export function LogEdit() {
           className="w-full py-2 bg-[var(--accent-color)] rounded hover:brightness-110 disabled:opacity-50"
           onClick={() => {
             if (!editedData || editedData.data === null) return;
-            store.log.update(id, { text: editedData.text, data: [editedData.data] });
+            store.log.update(id, { text: editedText || log.text, data: editedData.data });
           }}
           disabled={!editedData || editedData.data === null}
         >

@@ -1,9 +1,12 @@
 import { z } from "zod";
 
+export const logDataSchema = z.array(z.record(z.string(), z.any()));
+export type LogData = z.infer<typeof logDataSchema>;
+
 export const logSchema = z.object({
   id: z.string(),
   text: z.string(),
-  data: z.array(z.record(z.string(), z.any())),
+  data: logDataSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable().default(null),
