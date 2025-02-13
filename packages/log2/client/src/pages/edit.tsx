@@ -50,8 +50,7 @@ export function LogEdit() {
                 try {
                   const contentData = logDataSchema.parse(JSON.parse(content));
                   setEditedData({ text: content, data: contentData });
-                } catch (e) {
-                  console.error(e);
+                } catch {
                   setEditedData({ text: content, data: null });
                 }
               }}
