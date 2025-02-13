@@ -11,9 +11,9 @@ import type { Request, Response } from "express";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { z } from "zod";
-import { Mutation, mutationSchema, itemSchema, viewSchema } from "../../../shared/types";
-import { itemTable, viewTable } from "./db/schema";
+import { logSchema, Mutation, mutationSchema } from "../../../shared/types";
 import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
+import { logTable } from "./db/schema";
 
 const pushSchema = z.object({
   pushVersion: z.literal(1),
@@ -78,28 +78,15 @@ export async function handlePull(req: Request, res: Response) {
       const patch: PatchOperation[] = [];
 
       // Get changed items since requested version
-      const changedItems = await tr
+      const changedLogs = await tr
         .select()
-        .from(itemTable)
-        .where(gt(itemTable.version, clientVersion));
-      for (const item of changedItems) {
+        .from(logTable)
+        .where(gt(logTable.version, clientVersion));
+      for (const log of changedLogs) {
         patch.push({
           op: "put",
-          key: `item/${item.id}`,
-          value: itemSchema.parse({ ...item, children: JSON.parse(item.children) }),
-        });
-      }
-
-      // Get changed views since requested version
-      const changedViews = await tr
-        .select()
-        .from(viewTable)
-        .where(gt(viewTable.version, clientVersion));
-      for (const view of changedViews) {
-        patch.push({
-          op: "put",
-          key: `view/${view.id}`,
-          value: viewSchema.parse(view),
+          key: `log/${log.id}`,
+          value: logSchema.parse(log),
         });
       }
 
@@ -117,32 +104,6 @@ export async function handlePull(req: Request, res: Response) {
     console.error(e);
     res.status(500).json({ error: e.message });
   }
-}
-
-async function makeNameUnique(
-  db: NodePgDatabase,
-  name: string | null,
-  id: string
-): Promise<string | null> {
-  if (!name) return null;
-
-  let uniqueName = name;
-  let counter = 1;
-
-  while (true) {
-    const existing = await db
-      .select()
-      .from(itemTable)
-      .where(eq(itemTable.name, uniqueName))
-      .limit(1);
-
-    if (existing.length === 0) break;
-    if (existing[0].id === id) break;
-    uniqueName = `${name} (${counter})`;
-    counter++;
-  }
-
-  return uniqueName;
 }
 
 async function processMutation(db: NodePgDatabase, clientGroupID: string, mutation: Mutation) {
@@ -166,73 +127,39 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
   console.log(`Mutation ${mutation.id} is new - processing`);
 
   switch (mutation.name) {
-    case "createItem": {
-      const uniqueName = await makeNameUnique(db, mutation.args.name, mutation.args.id);
+    case "createLog": {
       await db
-        .insert(itemTable)
+        .insert(logTable)
         .values({
           ...mutation.args,
-          children: JSON.stringify(mutation.args.children),
-          name: uniqueName,
           version: nextVersion,
         })
         .onConflictDoUpdate({
-          target: [itemTable.id],
+          target: [logTable.id],
           set: {
             ...mutation.args,
-            children: JSON.stringify(mutation.args.children),
-            name: uniqueName,
             version: nextVersion,
           },
         });
       break;
     }
-    case "updateItem": {
-      const { id, name, children, ...args } = mutation.args;
-      const uniqueName = name !== undefined ? await makeNameUnique(db, name, id) : undefined;
+    case "updateLog": {
+      const { id, ...args } = mutation.args;
       await db
-        .update(itemTable)
-        .set({
-          ...args,
-          ...(children && { children: JSON.stringify(children) }),
-          name: uniqueName,
-          version: nextVersion,
-        })
-        .where(eq(itemTable.id, id));
-      break;
-    }
-    case "deleteItem": {
-      const { id: itemID, deletedAt } = mutation.args;
-      await db
-        .update(itemTable)
-        .set({ deletedAt, version: nextVersion })
-        .where(eq(itemTable.id, itemID));
-      break;
-    }
-    case "createView": {
-      await db.insert(viewTable).values({
-        ...mutation.args,
-        version: nextVersion,
-      });
-      break;
-    }
-    case "updateView": {
-      const { id: viewID, ...args } = mutation.args;
-      await db
-        .update(viewTable)
+        .update(logTable)
         .set({
           ...args,
           version: nextVersion,
         })
-        .where(eq(viewTable.id, viewID));
+        .where(eq(logTable.id, id));
       break;
     }
-    case "deleteView": {
-      const { id: viewID, deletedAt } = mutation.args;
+    case "deleteLog": {
+      const { id: logID, deletedAt } = mutation.args;
       await db
-        .update(viewTable)
+        .update(logTable)
         .set({ deletedAt, version: nextVersion })
-        .where(eq(viewTable.id, viewID));
+        .where(eq(logTable.id, logID));
       break;
     }
     default:
