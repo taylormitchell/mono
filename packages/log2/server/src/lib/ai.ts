@@ -90,9 +90,11 @@ the best schema and fields to return.
 {{EXAMPLES}}
 `;
 
-const responseSchema = z.object({
-  logs: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))),
-});
+const logSchema = z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]));
+const responseSchema = z.union([
+  z.object({ logs: z.array(logSchema) }),
+  z.object({ error: z.string() }),
+]);
 
 export async function datatify(message: string) {
   const systemPrompt = systemPromptTemplate.replace(
@@ -110,11 +112,15 @@ export async function datatify(message: string) {
       { role: "system", content: systemPrompt },
       { role: "user", content: message },
     ],
-    response_format: zodResponseFormat(responseSchema, "log"),
+    response_format: zodResponseFormat(responseSchema, "logs"),
   });
   const result = responseSchema.safeParse(JSON.parse(response.choices[0].message.content ?? "{}"));
   if (!result.success) {
     console.error(result.error);
+    return null;
+  }
+  if ("error" in result.data) {
+    console.error("AI returned an error", result.data.error);
     return null;
   }
   return result.data.logs;
