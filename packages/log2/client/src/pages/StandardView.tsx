@@ -25,16 +25,16 @@ function ItemRow({
 
   const handleBlur = useCallback(
     async (_: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => {
-      const item = await store.items.get(props.itemId);
+      const item = await store.log.get(props.itemId);
       if (!item) return;
       if (props.contentType === "markdown") {
         const title = item.name === null ? props.content.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
-        store.items.update(item.id, { content: props.content, name: title });
+        store.log.update(item.id, { content: props.content, name: title });
       } else {
-        store.items.update(item.id, { content: props.content });
+        store.log.update(item.id, { content: props.content });
       }
     },
-    [store.items]
+    [store.log]
   );
 
   const handleKeyDown = useCallback(
@@ -63,7 +63,7 @@ function ItemRow({
               if (el instanceof HTMLElement) el.focus();
             });
           }
-          store.items.delete(props.itemId);
+          store.log.delete(props.itemId);
           return true;
         }
       } else if (isHotkey("up", e) && props.selection.fromAt === "start") {
@@ -88,7 +88,7 @@ function ItemRow({
       }
       return false;
     },
-    [store.items, focusSearch]
+    [store.log, focusSearch]
   );
 
   return (
@@ -108,7 +108,7 @@ function ItemRow({
         </button>
         <select
           value={item.contentType}
-          onChange={(e) => store.items.update(item.id, { contentType: e.target.value as "markdown" | "json" })}
+          onChange={(e) => store.log.update(item.id, { contentType: e.target.value as "markdown" | "json" })}
           className="bg-transparent text-xs text-[var(--text-secondary)]"
         >
           <option value="markdown">md</option>
@@ -131,7 +131,7 @@ export function StandardView() {
         e.preventDefault();
         e.stopPropagation();
         const id = ulid();
-        await store.items.create({ id, content: "" });
+        await store.log.create({ id, content: "" });
         setTimeout(() => {
           const editor = document.getElementById(id)?.querySelector(".ProseMirror");
           if (editor) {
@@ -189,7 +189,7 @@ export function StandardView() {
     async (tx) => {
       if (!view) return [];
       // TOOD: need to rename everything to match this convention later
-      const allItems = await store.items.getAll(tx);
+      const allItems = await store.log.getAll(tx);
       return allItems;
       // if (!view.filter?.status) return allItems;
       // return allItems.filter((item) => item.status === view.filter.status);
@@ -234,7 +234,7 @@ export function StandardView() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
         />
-        <button onClick={() => store.items.create({ content: "" })} title="New Item">
+        <button onClick={() => store.log.create({ content: "" })} title="New Item">
           <Plus size={16} />
         </button>
       </div>

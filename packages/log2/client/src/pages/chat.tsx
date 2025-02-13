@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
-import { Item } from "../../../shared/types";
+import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useAtom } from "jotai";
@@ -14,44 +14,22 @@ export function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [clearedAt, setClearedAt] = useState<string>(new Date().toISOString());
 
-  const view = useSubscribe(
-    store.rep,
-    async (tx) => {
-      const allView = await store.views.get(tx, "all");
-      return allView ?? null;
-    },
-    { default: null }
-  );
-
-  // After pull, create the all view if it doesn't exist
-  useEffect(() => {
-    (async () => {
-      await store.rep.pull();
-      const view = await store.rep.query((tx) => store.views.get(tx, "all"));
-      if (view) return;
-      await store.views.create({ id: "all", name: "All" });
-    })();
-  }, [store.rep, store.views]);
-
   const items = useSubscribe(
     store.rep,
     async (tx) => {
-      if (!view) return [];
-      const allItems = await store.items.getAll(tx);
-      if (!allItems) return [];
+      const allLogs = await store.log.getAll(tx);
+      if (!allLogs) return [];
       // Only show items created after the last clear
-      return allItems.filter((item) => item.createdAt > clearedAt);
+      return allLogs.filter((log) => log.createdAt > clearedAt);
     },
-    { default: [] as Item[], dependencies: [view, clearedAt] }
+    { default: [] as Log[], dependencies: [clearedAt] }
   );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView();
   }, [items]);
 
-  if (!view) return null;
-
-  const filteredItems = items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const filteredLogs = items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +39,7 @@ export function ChatPage() {
     if (trimmedContent === "/clear") {
       setClearedAt(new Date().toISOString());
     } else {
-      await store.items.create({ content: trimmedContent });
+      await store.log.create({ text: trimmedContent, data: {} });
     }
     setDraftContent("");
   };
@@ -70,11 +48,11 @@ export function ChatPage() {
     <div className="flex h-full w-full pt-12">
       <div className="flex-1 overflow-y-auto p-4 scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="space-y-2">
-          {filteredItems.map((item) => (
+          {filteredLogs.map((item) => (
             <div className="group flex items-start gap-2">
               <span className="text-[var(--accent-color)]">$</span>
               <div className="flex-1">
-                <MarkdownEditor itemId={item.id} name={item.name} content={item.content} />
+                <MarkdownEditor itemId={item.id} content={item.text} />
               </div>
             </div>
           ))}

@@ -48,7 +48,7 @@ export function ItemPage() {
     store.rep,
     async (tx) => {
       if (!id) return null;
-      const item = (await store.items.get(id, tx)) ?? (await store.items.getByName(id, tx));
+      const item = (await store.log.get(id, tx)) ?? (await store.log.getByName(id, tx));
       return item ?? null;
     },
     { default: null, dependencies: [id] }
@@ -58,7 +58,7 @@ export function ItemPage() {
     store.rep,
     async (tx) => {
       if (!item) return [];
-      const allItems = await store.items.getAll(tx);
+      const allItems = await store.log.getAll(tx);
       return allItems.filter((i: Item) => item.children.includes(i.id));
     },
     { default: [], dependencies: [item] }
@@ -97,7 +97,7 @@ export function ItemPage() {
 
   const [existingNames, setExistingNames] = useState<Set<string>>(new Set());
   const debouncedGetNames = useDebounce(async () => {
-    const names = (await store.rep.query((tx) => store.items.getAll(tx))).map((i) => i.name).filter((i) => i !== null);
+    const names = (await store.rep.query((tx) => store.log.getAll(tx))).map((i) => i.name).filter((i) => i !== null);
     setExistingNames(new Set(names));
   }, 200);
   const conflictingName = item && existingNames.has(name) && name !== item.name;
@@ -111,8 +111,8 @@ export function ItemPage() {
 
   const handleNewChild = async () => {
     const childId = ulid();
-    await store.items.create({ id: childId, content: "" });
-    await store.items.update(id, {
+    await store.log.create({ id: childId, content: "" });
+    await store.log.update(id, {
       children: [...item.children, childId],
     });
   };
@@ -152,7 +152,7 @@ export function ItemPage() {
                 if (conflictingName) {
                   setName(item.name ?? "");
                 } else {
-                  store.items.update(id, { name });
+                  store.log.update(id, { name });
                 }
               }}
               className={`mb-2 px-2 py-1 text-xs font-mono bg-[var(--bg-primary)] border-none outline-none ${
@@ -249,7 +249,7 @@ export function ItemPage() {
                     )}
                     <button
                       onClick={() => {
-                        store.items.update(id, {
+                        store.log.update(id, {
                           children: item.children.filter((cid: string) => cid !== child.id),
                         });
                       }}
@@ -262,10 +262,10 @@ export function ItemPage() {
                     </button>
                     <button
                       onClick={() => {
-                        store.items.update(id, {
+                        store.log.update(id, {
                           children: item.children.filter((cid: string) => cid !== child.id),
                         });
-                        store.items.delete(child.id);
+                        store.log.delete(child.id);
                       }}
                       className="p-1.5 text-[#6e7681] rounded"
                       title="Delete item"
