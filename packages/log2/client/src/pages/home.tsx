@@ -5,7 +5,7 @@ import { useStore } from "../hooks/store";
 import { Plus } from "lucide-react";
 import { JsonEditor } from "../components/JsonEditor";
 
-export function StandardView() {
+export function Home() {
   const store = useStore();
   const [showEditor, setShowEditor] = useState(false);
 
