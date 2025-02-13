@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { isHotkey } from "is-hotkey";
 import { Home } from "./pages/home";
 import { LogEntry } from "./pages/entry";
+import { LogEdit } from "./pages/edit";
 
 declare global {
   interface Window {
@@ -51,9 +52,11 @@ function App() {
     <StoreProvider>
       <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
         <Router>
+          v
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/entry" element={<LogEntry />} />
+            <Route path="/edit/:id" element={<LogEdit />} />
           </Routes>
         </Router>
       </div>
