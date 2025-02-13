@@ -36,7 +36,7 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("keydown", handleKeyPress);
     return () => {
-      s.destroy();
+      // s.destroy();
       window.removeEventListener("keydown", handleKeyPress);
     };
   }, []);
