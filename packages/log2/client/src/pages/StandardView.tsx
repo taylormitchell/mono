@@ -45,13 +45,44 @@ export function StandardView() {
 function LogData({ log }: { log: Log }) {
   const store = useStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [editingData, setEditingData] = useState<{ error: false; data: string } | { error: true; message: string }>({
+    error: false,
+    data: JSON.stringify(log.data, null, 2),
+  });
 
   return (
     <div className="text-sm text-gray-400 mt-1">
       {isLoading ? (
         "Loading..."
       ) : log.data && Object.keys(log.data).length > 0 ? (
-        <div className="text-sm text-gray-400 mt-1">{JSON.stringify(log.data, null, 2)}</div>
+        <div className="flex flex-col gap-2">
+          <textarea
+            className="text-sm text-gray-400 mt-1 w-full bg-transparent border-none resize-none"
+            value={editingData.data}
+            onChange={(e) => {
+              try {
+                JSON.parse(e.target.value);
+                setEditingData({
+                  error: false,
+                  data: e.target.value,
+                });
+              } catch (err) {
+                setEditingData({
+                  error: true,
+                  message: err instanceof Error ? err.message : "Unknown error",
+                });
+              }
+            }}
+            onBlur={() => {
+              if (editingData.error) {
+                return;
+              }
+              const newData = JSON.parse(editingData.data);
+              store.log.update(log.id, { data: newData });
+            }}
+          />
+          {editingData.error && <div className="text-red-500">{editingData.message}</div>}
+        </div>
       ) : (
         <button
           className="text-sm px-2 py-1 bg-[#30363d] rounded hover:bg-[#3c444d]"
