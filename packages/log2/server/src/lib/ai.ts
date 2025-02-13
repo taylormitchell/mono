@@ -6,51 +6,41 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const aiRequestSchema = z.object({
-  type: z.enum(["create-log"]),
-  prompt: z.string(),
-});
-
-const poopScale = `
-Bristol Stool Scale
-- Type 1: Separate hard lumps, like nuts. Very hard to pass. Dark, pellet-like pieces. Indicates constipation.
-- Type 2: Sausage-shaped but lumpy. Hard and compact. Multiple lumps stuck together. Still constipated.
-- Type 3: Sausage with surface cracks. Well-formed but firm. Normal stool.
-- Type 4: Smooth, soft sausage/snake. Medium to light brown. Ideal stool type.
-- Type 5: Soft blobs with clear-cut edges. Easy to pass. Trending loose but still normal.
-- Type 6: Fluffy, mushy pieces with ragged edges. Soft with no clear shape. Mild diarrhea.
-- Type 7: Entirely liquid, watery with no solid pieces. Classic diarrhea.
-
-Key Terms
-- Hard → Types 1-2
-- Well-formed → Types 3-4
-- Soft/Loose → Types 5-6
-- Liquid → Type 7
-
-`;
+const aiRequestSchema = z.object({ text: z.string() });
 
 const initialExamples = [
   {
     text: "I ate a big mac",
     data: {
-      type: "ate",
-      name: "big mac",
+      schema: "consumed",
+      action: "ate",
+      item: "big mac",
       amount: "1",
     },
   },
   {
     text: "I drank 1 liter of water",
     data: {
-      type: "drank",
-      name: "water",
+      schema: "consumed",
+      action: "drank",
+      item: "water",
       amount: "1 liter",
     },
   },
   {
-    text: "I pooped",
+    text: "easy soft pooped",
     data: {
-      type: "pooped",
-      poopType: 2,
+      schema: "pooped",
+      effort: "low",
+      poopType: 5,
+    },
+  },
+  {
+    text: "I ran 5k",
+    data: {
+      schema: "exercise",
+      action: "ran",
+      distance: "5k",
     },
   },
 ];
@@ -61,56 +51,35 @@ You are a helpful assistant that helps me track my health and fitness.
 You will be given a free-text description of an activity and you will need to return a json object 
 that represents it.
 
+## Relevant Information 
+
+### Bristol Stool Scale
+
+### Types 
+- Type 1: Separate hard lumps, like nuts. Very hard to pass. Dark, pellet-like pieces. Indicates constipation.
+- Type 2: Sausage-shaped but lumpy. Hard and compact. Multiple lumps stuck together. Still constipated.
+- Type 3: Sausage with surface cracks. Well-formed but firm. Normal stool.
+- Type 4: Smooth, soft sausage/snake. Medium to light brown. Ideal stool type.
+- Type 5: Soft blobs with clear-cut edges. Easy to pass. Trending loose but still normal.
+- Type 6: Fluffy, mushy pieces with ragged edges. Soft with no clear shape. Mild diarrhea.
+- Type 7: Entirely liquid, watery with no solid pieces. Classic diarrhea.
+
+### Key Terms
+- Hard → Types 1-2
+- Well-formed → Types 3-4
+- Soft/Loose → Types 5-6
+- Liquid → Type 7
+
+## Example Outputs
+
 The following are example outputs. This list is not exhaustive. You should use your best judgement to determine 
 the best type of log object to return.
 
-\`\`\`
-{
-  type: "log/meditated",
-  duration: "10m",
-  original: "meditated for 10m"
-}
-\`\`\`
-
-\`\`\`
-{
-  type: "log/food/nutty-puddy",
-  original: "ate nutty puddy"
-}
-\`\`\`
-
-\`\`\`
-{
-  type: "log/pooped",
-  effort: "low",
-  poopType: 2,
-  original: "easy poop"
-}
-\`\`\`
-
-\`\`\`
-{
-  type: "log/food/water",
-  amount: "1 liter",
-  original: "drank water"
-}
-\`\`\`
-
-\`\`\`
-{
-  type: "log/exercise/running",
-  distance: "5 kilometers",
-  original: "ran 5k"
-}
-\`\`\`
+{{EXAMPLES}}
 `;
 
 const userPromptTemplate = `
-Description of the activity:
-<description>
-
-Entry timestamp:
-<timestamp>
+TEXT: {{TEXT}}
 `;
 
 export async function handleAI(req: Request, res: Response) {
