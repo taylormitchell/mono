@@ -11,6 +11,50 @@ const aiRequestSchema = z.object({
   prompt: z.string(),
 });
 
+const poopScale = `
+Bristol Stool Scale
+- Type 1: Separate hard lumps, like nuts. Very hard to pass. Dark, pellet-like pieces. Indicates constipation.
+- Type 2: Sausage-shaped but lumpy. Hard and compact. Multiple lumps stuck together. Still constipated.
+- Type 3: Sausage with surface cracks. Well-formed but firm. Normal stool.
+- Type 4: Smooth, soft sausage/snake. Medium to light brown. Ideal stool type.
+- Type 5: Soft blobs with clear-cut edges. Easy to pass. Trending loose but still normal.
+- Type 6: Fluffy, mushy pieces with ragged edges. Soft with no clear shape. Mild diarrhea.
+- Type 7: Entirely liquid, watery with no solid pieces. Classic diarrhea.
+
+Key Terms
+- Hard → Types 1-2
+- Well-formed → Types 3-4
+- Soft/Loose → Types 5-6
+- Liquid → Type 7
+
+`;
+
+const initialExamples = [
+  {
+    text: "I ate a big mac",
+    data: {
+      type: "ate",
+      name: "big mac",
+      amount: "1",
+    },
+  },
+  {
+    text: "I drank 1 liter of water",
+    data: {
+      type: "drank",
+      name: "water",
+      amount: "1 liter",
+    },
+  },
+  {
+    text: "I pooped",
+    data: {
+      type: "pooped",
+      poopType: 2,
+    },
+  },
+];
+
 const systemPromptTemplate = `
 You are a helpful assistant that helps me track my health and fitness.
 
