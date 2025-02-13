@@ -21,21 +21,20 @@ export function Home() {
     <>
       <div className="flex flex-col h-full w-full gap-4 p-4">
         <div className="flex items-center gap-4">
-          <div className="w-4 md:w-0" />
-          <button onClick={() => store.hardReset()} className="p-2 hover:bg-[#30363d] rounded-full">
+          <button onClick={() => store.hardReset()} className="p-2 hover-bg rounded-full">
             <RefreshCcw size={20} />
           </button>
-          <button onClick={() => setShowEditor(true)} className="p-2 hover:bg-[#30363d] rounded-full" title="New Item">
+          <button onClick={() => setShowEditor(true)} className="p-2 ml-auto hover-bg rounded-full" title="New Item">
             <Plus size={20} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default">
-          <div className="divide-y divide-[#30363d]">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-base scrollbar-hide hover:scrollbar-default">
+          <div className="divide-y divide-[var(--border-color)]">
             {logs.map((log) => (
               <div className="p-4 flex flex-col gap-2" key={log.id}>
                 <div className="text-sm">{log.text}</div>
                 {log.data && Object.keys(log.data).length > 0 && (
-                  <pre className="text-xs text-gray-400 bg-[#1c2128] p-2 rounded">{JSON.stringify(log.data, null, 2)}</pre>
+                  <pre className="text-xs text-secondary bg-secondary p-2 rounded">{JSON.stringify(log.data, null, 2)}</pre>
                 )}
               </div>
             ))}
@@ -86,24 +85,24 @@ function LogEditor({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-[#30363d]">
+    <div className="fixed inset-0 bg-primary/90 z-50 flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b border-base">
         <h2 className="text-lg font-semibold">New Log</h2>
-        <button onClick={onClose} className="p-2 hover:bg-[#30363d] rounded">
+        <button onClick={onClose} className="p-2 hover-bg rounded">
           Close
         </button>
       </div>
 
       <div className="flex-1 p-4 overflow-y-auto">
         <textarea
-          className="w-full h-32 p-3 bg-[#1c2128] rounded border border-[#30363d] resize-none"
+          className="w-full h-32 p-3 bg-secondary rounded border border-base resize-none"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Enter your log text..."
         />
 
         <button
-          className="mt-4 px-4 py-2 bg-[#30363d] rounded hover:bg-[#3c444d] disabled:opacity-50"
+          className="mt-4 px-4 py-2 bg-tertiary rounded hover-bg disabled:opacity-50"
           onClick={processWithAI}
           disabled={!text || isLoading}
         >
@@ -118,9 +117,9 @@ function LogEditor({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      <div className="p-4 border-t border-[#30363d]">
+      <div className="p-4 border-t border-base">
         <button
-          className="w-full py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="w-full py-2 bg-[var(--accent-color)] rounded hover:brightness-110 disabled:opacity-50"
           onClick={handleSubmit}
           disabled={!text}
         >

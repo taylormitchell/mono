@@ -64,3 +64,37 @@ body,
     @apply bg-gray-800;
   }
 }
+
+/* Utility classes for backgrounds */
+.bg-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.bg-tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+/* Utility classes for borders */
+.border-base {
+  border-color: var(--border-color);
+}
+
+/* Utility classes for text */
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+/* Hover utilities */
+.hover-bg {
+  @apply hover:bg-[var(--hover-color)];
+}
+
+/* Custom scrollbar utilities remain the same */
