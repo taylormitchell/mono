@@ -45,10 +45,12 @@ export function StandardView() {
 function LogData({ log }: { log: Log }) {
   const store = useStore();
   const [isLoading, setIsLoading] = useState(false);
-  const [editingData, setEditingData] = useState<{ error: false; data: string } | { error: true; message: string }>({
-    error: false,
-    data: JSON.stringify(log.data, null, 2),
-  });
+  const [editingData, setEditingData] = useState<{ error: false; data: string } | { error: true; data: string; message: string }>(
+    {
+      error: false,
+      data: JSON.stringify(log.data, null, 2),
+    }
+  );
 
   return (
     <div className="text-sm text-gray-400 mt-1">
@@ -56,7 +58,7 @@ function LogData({ log }: { log: Log }) {
         "Loading..."
       ) : log.data && Object.keys(log.data).length > 0 ? (
         <div className="flex flex-col gap-2">
-          <textarea
+          <input
             className="text-sm text-gray-400 mt-1 w-full bg-transparent border-none resize-none"
             value={editingData.data}
             onChange={(e) => {
@@ -69,6 +71,7 @@ function LogData({ log }: { log: Log }) {
               } catch (err) {
                 setEditingData({
                   error: true,
+                  data: e.target.value,
                   message: err instanceof Error ? err.message : "Unknown error",
                 });
               }
