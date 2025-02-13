@@ -3,7 +3,7 @@ import { createStore, Store } from "./store";
 import { StoreContext } from "./hooks/store";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { isHotkey } from "is-hotkey";
-import { Home } from "./pages/StandardView";
+import { Home } from "./pages/home";
 
 declare global {
   interface Window {
@@ -48,13 +48,13 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <StoreProvider>
-      <Router>
-        <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
+      <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
+        <Router>
           <Routes>
             <Route path="/" element={<Home />} />
           </Routes>
-        </div>
-      </Router>
+        </Router>
+      </div>
     </StoreProvider>
   );
 }
