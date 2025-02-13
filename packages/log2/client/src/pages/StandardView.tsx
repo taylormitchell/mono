@@ -62,7 +62,7 @@ function LogEditor({ onClose }: { onClose: () => void }) {
       });
       const result = await response.json();
       if (result.success) {
-        if (typeof result.data === "object" && result.data !== null) {
+        if (Array.isArray(result.data)) {
           setData(result.data);
         } else {
           throw new Error("Unexpected type of result.data");

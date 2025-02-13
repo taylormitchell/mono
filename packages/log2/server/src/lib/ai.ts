@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 const openai = new OpenAI({
@@ -89,7 +90,9 @@ the best schema and fields to return.
 {{EXAMPLES}}
 `;
 
-const responseSchema = z.array(z.record(z.string(), z.any()));
+const responseSchema = z.object({
+  logs: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))),
+});
 
 export async function datatify(message: string) {
   const systemPrompt = systemPromptTemplate.replace(
@@ -107,15 +110,14 @@ export async function datatify(message: string) {
       { role: "system", content: systemPrompt },
       { role: "user", content: message },
     ],
-    response_format: { type: "json_schema", json_schema: responseSchema },
+    response_format: zodResponseFormat(responseSchema, "log"),
   });
-  try {
-    const log = JSON.parse(response.choices[0].message.content ?? "{}") as Record<string, any>;
-    return log;
-  } catch (e) {
-    console.error(e);
+  const result = responseSchema.safeParse(JSON.parse(response.choices[0].message.content ?? "{}"));
+  if (!result.success) {
+    console.error(result.error);
     return null;
   }
+  return result.data.logs;
 }
 
 if (require.main === module) {
