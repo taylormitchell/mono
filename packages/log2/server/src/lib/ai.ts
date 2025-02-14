@@ -6,10 +6,10 @@ const openai = new OpenAI({
   apiKey: process.env["OPENAI_API_KEY"],
 });
 
-const initialExamples = [
+const initialExamples: { eventDescription: string; eventSubmittedAt: string; response: any[] }[] = [
   {
-    message: "I ate a big mac",
-    timestamp: "2025-02-12T23:04:31-05:00",
+    eventSubmittedAt: "2025-02-12T23:04:31-05:00",
+    eventDescription: "I ate a big mac",
     response: [
       {
         schema: "consumed",
@@ -21,8 +21,8 @@ const initialExamples = [
     ],
   },
   {
-    timestamp: "2025-02-14T01:32:28-05:00",
-    message: "ate nutty-puddy and drank 1l water at noon",
+    eventSubmittedAt: "2025-02-14T01:32:28-05:00",
+    eventDescription: "ate nutty-puddy and drank 1l water at noon",
     response: [
       {
         schema: "consumed",
@@ -41,8 +41,8 @@ const initialExamples = [
     ],
   },
   {
-    timestamp: "2025-01-09T12:57:00-05:00",
-    message: "easy soft pooped",
+    eventSubmittedAt: "2025-01-09T12:57:00-05:00",
+    eventDescription: "easy soft pooped",
     response: [
       {
         schema: "pooped",
@@ -53,8 +53,8 @@ const initialExamples = [
     ],
   },
   {
-    timestamp: "2025-01-07T17:19:20-05:00",
-    message: "I ran 5k in 30 minutes",
+    eventSubmittedAt: "2025-01-07T17:19:20-05:00",
+    eventDescription: "I ran 5k in 30 minutes",
     response: [
       {
         schema: "exercise",
@@ -102,14 +102,16 @@ the best schema and fields to return.
 
 const responseSchema = z.object({ logs: logDataSchema });
 
-export async function datatify(message: string) {
+export async function datatify({ message, timestamp }: { message: string; timestamp: string }) {
   const systemPrompt = systemPromptTemplate.replace(
     "{{EXAMPLES}}",
     initialExamples
       .map((e) => {
         return [
-          `Timestamp: ${e.timestamp}`,
-          `Message: ${e.message}`,
+          `Message: ${JSON.stringify({
+            eventSubmittedAt: e.eventSubmittedAt,
+            eventDescription: e.eventDescription,
+          })}`,
           `Response: ${JSON.stringify({ logs: e.response })}`,
         ].join("\n");
       })
@@ -120,7 +122,10 @@ export async function datatify(message: string) {
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: message },
+      {
+        role: "user",
+        content: JSON.stringify({ eventSubmittedAt: timestamp, eventDescription: message }),
+      },
     ],
     response_format: { type: "json_object" },
   });
