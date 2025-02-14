@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Log, Mutation, logSchema } from "../../shared/types";
+import { Log, LogData, Mutation, logSchema } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 import { ulid } from "ulid";
@@ -99,7 +99,7 @@ export function createStore() {
     rep,
     undoManager,
     log: {
-      create: async ({ id = ulid(), text = "", data = {} }: { id?: string; text: string; data: Record<string, any> }) => {
+      create: async ({ id = ulid(), text = "", data = [] }: { id?: string; text: string; data: LogData[] }) => {
         const action: UndoableAction = {
           do: () =>
             rep.mutate.createLog({
