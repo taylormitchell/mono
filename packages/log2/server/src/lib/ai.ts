@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { logDataSchema, type LogData } from "../../../shared/types";
 import { getDb } from "./db/helpers";
-import { desc, isNotNull } from "drizzle-orm";
+import { desc, isNull } from "drizzle-orm";
 import { logTable } from "./db/schema";
 
 async function getRecentLogs(): Promise<
@@ -12,7 +12,7 @@ async function getRecentLogs(): Promise<
   const logs = await db
     .select()
     .from(logTable)
-    .where(isNotNull(logTable.deletedAt))
+    .where(isNull(logTable.deletedAt))
     .orderBy(desc(logTable.createdAt))
     .limit(10);
 
@@ -131,8 +131,8 @@ export async function datatify({
   timestamp: string;
 }): Promise<LogData | null> {
   const recentLogs = await getRecentLogs();
+  console.log("recentLogs", recentLogs);
   const examples = [...initialExamples, ...recentLogs].slice(0, 10);
-  console.log(examples);
 
   const systemPrompt = systemPromptTemplate.replace(
     "{{EXAMPLES}}",

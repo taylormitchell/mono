@@ -24,21 +24,22 @@ export function LogEntry() {
   const navigate = useNavigate();
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<LogData | null>(null);
+  const [logs, setLogs] = useState<{ data: LogData; timestamp: string } | null>(null);
   const [editedData, setEditedData] = useState<string | null>(null);
 
   const processWithAI = async () => {
     setIsLoading(true);
     try {
+      const timestamp = getTimestampWithTimezone();
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, timestamp: getTimestampWithTimezone() }),
+        body: JSON.stringify({ message: text, timestamp }),
       });
       const result = await response.json();
       if (result.success) {
         if (Array.isArray(result.data)) {
-          setData(result.data);
+          setLogs({ data: result.data, timestamp });
         } else {
           throw new Error("Unexpected type of result.data");
         }
@@ -53,7 +54,8 @@ export function LogEntry() {
   };
 
   const handleSubmit = async () => {
-    await store.log.create({ text, data: data || [] });
+    if (!logs) return;
+    await store.log.create({ text, data: logs.data, createdAt: logs.timestamp });
     navigate("/");
   };
 
@@ -82,10 +84,13 @@ export function LogEntry() {
           {isLoading ? "Processing..." : "Process with AI"}
         </button>
 
-        {data && (
+        {logs && (
           <div className="mt-4">
             <h3 className="text-sm font-semibold mb-2">Result:</h3>
-            <JsonEditor content={editedData || JSON.stringify(data, null, 2)} onChange={(content) => setEditedData(content)} />
+            <JsonEditor
+              content={editedData || JSON.stringify(logs.data, null, 2)}
+              onChange={(content) => setEditedData(content)}
+            />
           </div>
         )}
       </div>
