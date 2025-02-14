@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { resetDb } from "./lib/db/helpers";
 import { handlePush, handlePull } from "./lib/replicache";
 import cors from "cors";
@@ -10,7 +10,7 @@ import { z } from "zod";
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3078;
+const port = process.env["PORT"] || 3078;
 app.use(express.json());
 app.use(cors());
 
@@ -19,11 +19,11 @@ app.use(cors());
 const clientBuildPath = path.join(__dirname, "../../client/dist");
 app.use(express.static(clientBuildPath));
 
-app.get("/api/", (req: Request, res: Response) => {
+app.get("/api/", (_: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
 });
 
-const aiRequestSchema = z.object({ message: z.string() });
+const aiRequestSchema = z.object({ message: z.string(), timestamp: z.string() });
 app.post("/api/ai", async (req: Request, res: Response) => {
   try {
     console.log("Received AI request", req.body);
@@ -32,7 +32,7 @@ app.post("/api/ai", async (req: Request, res: Response) => {
       console.error("Invalid request", { body: req.body, error: parsed.error });
       return res.status(400).json({ error: "Invalid request" });
     }
-    const log = await datatify(parsed.data.message);
+    const log = await datatify(parsed.data);
     if (!log) {
       return res.status(500).json({ success: false, error: "Failed to generate log" });
     }
@@ -46,18 +46,18 @@ app.post("/api/ai", async (req: Request, res: Response) => {
 app.post("/api/push", handlePush);
 app.post("/api/pull", handlePull);
 
-app.use("/api/reset", async (req: Request, res: Response) => {
+app.use("/api/reset", async (_: Request, res: Response) => {
   resetDb();
   res.status(200).json({ message: "Database reset" });
 });
 
 // Catch-all route to serve the frontend for any non-API routes
-app.get("*", (req: Request, res: Response) => {
+app.get("*", (_: Request, res: Response) => {
   res.sendFile(path.join(clientBuildPath, "index.html"));
 });
 
 // Error handling
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, _: Request, res: Response, __: NextFunction) => {
   res.status(500).json({
     error: "Internal server error",
     message: err.message + (err.stack ? "\n" + err.stack : ""),
