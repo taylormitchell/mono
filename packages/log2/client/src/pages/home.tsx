@@ -36,6 +36,7 @@ export function Home() {
       const result = await response.json();
       if (result.success && Array.isArray(result.data)) {
         await store.log.update(logId, { data: result.data });
+        shouldScrollRef.current = true;
       } else {
         throw new Error(result.error || "Unexpected response format");
       }
@@ -125,8 +126,8 @@ export function Home() {
           name="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 px-3 py-2 rounded bg-transparent outline-none"
-          placeholder="Type a message and press Enter..."
+          className="flex-1 px-3 py-2 rounded bg-secondary outline-none"
+          placeholder="Type a message..."
         />
       </form>
     </div>
