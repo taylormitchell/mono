@@ -3,6 +3,16 @@ import { JsonEditor } from "../components/JsonEditor";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 
+const getTimestampWithTimezone = (): string => {
+  const now = new Date();
+  const timezoneOffset = -now.getTimezoneOffset();
+  const sign = timezoneOffset >= 0 ? "+" : "-";
+  const pad = (num: number) => String(Math.floor(Math.abs(num))).padStart(2, "0");
+  const hours = pad(timezoneOffset / 60);
+  const minutes = pad(timezoneOffset % 60);
+  return `${now.toISOString().split(".")[0]}${sign}${hours}:${minutes}`;
+};
+
 export function LogEntry() {
   const store = useStore();
   const navigate = useNavigate();
@@ -17,7 +27,7 @@ export function LogEntry() {
       const response = await fetch(import.meta.env.VITE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, timestamp: getTimestampWithTimezone() }),
       });
       const result = await response.json();
       if (result.success) {

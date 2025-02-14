@@ -19,7 +19,7 @@ const initialExamples = [
     ],
   },
   {
-    timestamp: "2024-02-13T14:20:00Z",
+    timestamp: "2025-02-14T01:32:28-05:00",
     message: "ate nutty-puddy and drank 1l water at noon",
     response: [
       {
