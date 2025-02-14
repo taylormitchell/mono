@@ -2,6 +2,7 @@ import { useState } from "react";
 import { JsonEditor } from "../components/JsonEditor";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
+import { LogData } from "../../../shared/types";
 
 let apiUrl = import.meta.env.VITE_API_URL;
 if (!apiUrl.startsWith("http")) {
@@ -23,7 +24,7 @@ export function LogEntry() {
   const navigate = useNavigate();
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<Record<string, unknown> | null>(null);
+  const [data, setData] = useState<LogData | null>(null);
   const [editedData, setEditedData] = useState<string | null>(null);
 
   const processWithAI = async () => {
@@ -42,7 +43,7 @@ export function LogEntry() {
           throw new Error("Unexpected type of result.data");
         }
       } else {
-        console.error(result.error);
+        throw new Error(result.error);
       }
     } catch (error) {
       console.error(error);
@@ -52,7 +53,7 @@ export function LogEntry() {
   };
 
   const handleSubmit = async () => {
-    await store.log.create({ text, data: data ? [data] : [] });
+    await store.log.create({ text, data: data || [] });
     navigate("/");
   };
 

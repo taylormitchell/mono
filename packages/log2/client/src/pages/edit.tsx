@@ -65,6 +65,7 @@ export function LogEdit() {
           onClick={() => {
             if (!editedData || editedData.data === null) return;
             store.log.update(id, { text: editedText || log.text, data: editedData.data });
+            navigate("/");
           }}
           disabled={!editedData || editedData.data === null}
         >
