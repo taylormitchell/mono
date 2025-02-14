@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { JsonEditor } from "../components/JsonEditor";
 import { useStore } from "../hooks/store";
 import { useNavigate, useParams } from "react-router-dom";
@@ -19,6 +19,15 @@ export function LogEdit() {
     },
     { default: null }
   );
+
+  const handleChange = useCallback((content: string) => {
+    try {
+      const contentData = logDataSchema.parse(JSON.parse(content));
+      setEditedData({ text: content, data: contentData });
+    } catch {
+      setEditedData({ text: content, data: null });
+    }
+  }, []);
 
   if (!log) {
     return <div>Log not found</div>;
@@ -44,17 +53,7 @@ export function LogEdit() {
         {log.data && (
           <div className="mt-4">
             <h3 className="text-sm font-semibold mb-2">Result:</h3>
-            <JsonEditor
-              content={editedData ? editedData.text : JSON.stringify(log.data, null, 2)}
-              onChange={(content) => {
-                try {
-                  const contentData = logDataSchema.parse(JSON.parse(content));
-                  setEditedData({ text: content, data: contentData });
-                } catch {
-                  setEditedData({ text: content, data: null });
-                }
-              }}
-            />
+            <JsonEditor content={JSON.stringify(log.data, null, 2)} onChange={handleChange} />
           </div>
         )}
       </div>

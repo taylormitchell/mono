@@ -1,7 +1,7 @@
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { Plus, RefreshCcw } from "lucide-react";
+import { Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export function Home() {
@@ -30,7 +30,16 @@ export function Home() {
         <div className="divide-y divide-[var(--border-color)]">
           {logs.map((log) => (
             <div className="p-4 flex flex-col gap-2" key={log.id}>
-              <div className="text-sm">{log.text}</div>
+              <div className="flex justify-between items-start">
+                <div className="text-sm">{log.text}</div>
+                <button
+                  onClick={() => store.log.delete(log.id)}
+                  className="p-1 hover-bg rounded-full text-secondary hover:text-error"
+                  title="Delete"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
               {log.data && Object.keys(log.data).length > 0 && (
                 <pre onClick={() => navigate(`/edit/${log.id}`)} className="text-xs text-secondary bg-secondary p-2 rounded">
                   {JSON.stringify(log.data, null, 2)}
