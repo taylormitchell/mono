@@ -36,7 +36,7 @@ export function Home() {
       const result = await response.json();
       if (result.success && Array.isArray(result.data)) {
         await store.log.update(logId, { data: result.data });
-        // shouldScrollRef.current = true;
+        shouldScrollRef.current = true;
       } else {
         throw new Error(result.error || "Unexpected response format");
       }
@@ -59,52 +59,21 @@ export function Home() {
       const log = await store.log.create({ text: inputText.trim(), data: [], createdAt: timestamp });
       setInputText("");
       if (log) {
-        // shouldScrollRef.current = true;
+        shouldScrollRef.current = true;
         processWithAI(log.id, log.text, timestamp);
-        scrollToBottomNextRender();
       }
     }
   };
 
-  useEffect(() => {
-    scrollToBottomNextRender();
-  }, [logs]);
-
-  const [scrollToBottomTask, setScrollToBottomTask] = useState<{
-    currentScrollTop: number;
-  } | null>(null);
-  function scrollToBottomNextRender() {
-    console.log("creating scroll task", {
-      scrollContainerScrollTop: scrollContainerRef.current?.scrollTop,
-    });
-    setScrollToBottomTask({
-      currentScrollTop: scrollContainerRef.current?.scrollTop ?? 0,
-    });
-  }
-  useEffect(() => {
-    if (
-      scrollToBottomTask &&
-      scrollContainerRef.current &&
-      scrollToBottomTask.currentScrollTop === scrollContainerRef.current.scrollTop
-    ) {
-      console.log("scrolling", {
-        scrollToBottomTask,
-        scrollContainerScrollTop: scrollContainerRef.current.scrollTop,
-      });
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-      setScrollToBottomTask(null);
-    }
-  }, [scrollToBottomTask]);
-
   // Scroll to the bottom of the list when the logs change (including initial load)
   // and whenever we just kicked off a new AI processing task
-  // const shouldScrollRef = useRef(true);
-  // useEffect(() => {
-  //   if (logs.length > 0 && scrollContainerRef.current && shouldScrollRef.current) {
-  //     scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-  //     shouldScrollRef.current = false;
-  //   }
-  // }, [logs, processingLogs]);
+  const shouldScrollRef = useRef(true);
+  useEffect(() => {
+    if (logs.length > 0 && scrollContainerRef.current && shouldScrollRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      shouldScrollRef.current = false;
+    }
+  }, [logs, processingLogs]);
 
   return (
     <div className="flex flex-col h-full w-full gap-4 p-4">
