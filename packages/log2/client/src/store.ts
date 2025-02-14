@@ -110,17 +110,17 @@ export function createStore() {
         data: LogData;
         createdAt?: string;
       }) => {
+        const log: Log = {
+          id,
+          text,
+          data,
+          createdAt,
+          updatedAt: createdAt,
+          deletedAt: null,
+          version: 0,
+        };
         const action: UndoableAction = {
-          do: () =>
-            rep.mutate.createLog({
-              id,
-              text,
-              data,
-              createdAt,
-              updatedAt: createdAt,
-              deletedAt: null,
-              version: 0,
-            }),
+          do: () => rep.mutate.createLog(log),
           undo: () => rep.mutate.updateLog({ id, deletedAt: new Date().toISOString() }),
         };
         await action.do();

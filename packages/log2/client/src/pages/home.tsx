@@ -1,15 +1,22 @@
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { Plus, RefreshCcw, Trash2 } from "lucide-react";
+import { Plus, RefreshCcw, Trash2, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
+import { ulid } from "ulid";
+
+let apiUrl = import.meta.env.VITE_API_URL;
+if (!apiUrl.startsWith("http")) {
+  apiUrl = window.location.origin + apiUrl;
+}
 
 export function Home() {
   const store = useStore();
   const navigate = useNavigate();
   const [inputText, setInputText] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [processingLogs, setProcessingLogs] = useState<Set<string>>(new Set());
 
   const logs = useSubscribe(
     store.rep,
@@ -19,15 +26,42 @@ export function Home() {
     { default: [] as Log[] }
   );
 
+  const processWithAI = async (logId: string, text: string, timestamp: string) => {
+    setProcessingLogs((prev) => new Set(prev).add(logId));
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, timestamp }),
+      });
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        await store.log.update(logId, { data: result.data });
+      } else {
+        throw new Error(result.error || "Unexpected response format");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setProcessingLogs((prev) => {
+        const next = new Set(prev);
+        next.delete(logId);
+        return next;
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputText.trim()) {
-      await store.log.create({
-        text: inputText.trim(),
-        data: [],
-        createdAt: new Date().toISOString(),
-      });
+      const timestamp = new Date().toISOString();
+      const logId = ulid();
+      await store.log.create({ id: logId, text: inputText.trim(), data: [], createdAt: timestamp });
+      const log = await store.log.get(logId);
       setInputText("");
+      if (log) {
+        processWithAI(log.id, log.text, timestamp);
+      }
     }
   };
 
@@ -64,8 +98,17 @@ export function Home() {
                   <Trash2 size={16} />
                 </button>
               </div>
+              {processingLogs.has(log.id) && (
+                <div className="flex items-center gap-2 text-xs text-secondary">
+                  <Loader className="animate-spin" size={12} />
+                  Processing with AI...
+                </div>
+              )}
               {log.data && Object.keys(log.data).length > 0 && (
-                <pre onClick={() => navigate(`/edit/${log.id}`)} className="text-xs text-secondary bg-secondary p-2 rounded">
+                <pre
+                  onClick={() => navigate(`/edit/${log.id}`)}
+                  className="text-xs text-secondary bg-secondary p-2 rounded cursor-pointer"
+                >
                   {JSON.stringify(log.data, null, 2)}
                 </pre>
               )}
