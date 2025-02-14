@@ -1,4 +1,5 @@
 import { pgTable, serial, text, integer, jsonb } from "drizzle-orm/pg-core";
+import type { LogData } from "../../../../shared/types";
 
 export const logTable = pgTable("log", {
   id: text("id").primaryKey(),
@@ -6,7 +7,7 @@ export const logTable = pgTable("log", {
   updatedAt: text("updated_at").notNull(),
   deletedAt: text("deleted_at"),
   text: text("text").notNull().default(""),
-  data: jsonb("data"),
+  data: jsonb("data").$type<LogData>(),
   version: integer("version").notNull().default(0),
 });
 

@@ -1,6 +1,27 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import { logDataSchema, type LogData } from "../../../shared/types";
+import { getDb } from "./db/helpers";
+import { desc, isNotNull } from "drizzle-orm";
+import { logTable } from "./db/schema";
+
+async function getRecentLogs(): Promise<
+  { eventDescription: string; eventSubmittedAt: string; response: any[] }[]
+> {
+  const db = await getDb();
+  const logs = await db
+    .select()
+    .from(logTable)
+    .where(isNotNull(logTable.deletedAt))
+    .orderBy(desc(logTable.createdAt))
+    .limit(10);
+
+  return logs.map((log) => ({
+    eventDescription: log.text,
+    eventSubmittedAt: log.createdAt,
+    response: log.data || [],
+  }));
+}
 
 const openai = new OpenAI({
   apiKey: process.env["OPENAI_API_KEY"],
@@ -109,9 +130,13 @@ export async function datatify({
   message: string;
   timestamp: string;
 }): Promise<LogData | null> {
+  const recentLogs = await getRecentLogs();
+  const examples = [...initialExamples, ...recentLogs].slice(0, 10);
+  console.log(examples);
+
   const systemPrompt = systemPromptTemplate.replace(
     "{{EXAMPLES}}",
-    initialExamples
+    examples
       .map((e) => {
         return [
           `Message: ${JSON.stringify({
