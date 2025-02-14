@@ -6,6 +6,10 @@
     "items": {
       "subdomain": "items",
       "port": 3078
+    },
+    "log": {
+      "subdomain": "log",
+      "port": 3079
     }
   }
 }
