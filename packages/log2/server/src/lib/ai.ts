@@ -9,12 +9,14 @@ const openai = new OpenAI({
 const initialExamples = [
   {
     message: "I ate a big mac",
+    timestamp: "2025-02-12T23:04:31-05:00",
     response: [
       {
         schema: "consumed",
         action: "ate",
         item: "big mac",
         amount: "1",
+        startedAt: "2025-02-12T23:04:31-05:00",
       },
     ],
   },
@@ -27,34 +29,39 @@ const initialExamples = [
         action: "ate",
         item: "nutty-puddy",
         amount: "1",
-        startedAt: "2024-02-13T14:20:00Z",
+        startedAt: "2025-02-13T17:00:00-05:00",
       },
       {
         schema: "consumed",
         action: "drank",
         item: "water",
         amount: "1 liter",
-        startedAt: "2024-02-13T14:20:00Z",
+        startedAt: "2025-02-13T17:00:00-05:00",
       },
     ],
   },
   {
+    timestamp: "2025-01-09T12:57:00-05:00",
     message: "easy soft pooped",
     response: [
       {
         schema: "pooped",
         effort: "low",
         poopType: 5,
+        startedAt: "2025-01-09T12:57:00-05:00",
       },
     ],
   },
   {
-    message: "I ran 5k",
+    timestamp: "2025-01-07T17:19:20-05:00",
+    message: "I ran 5k in 30 minutes",
     response: [
       {
         schema: "exercise",
         action: "ran",
         distance: "5 kilometers",
+        startedAt: "2025-01-07T17:19:20-05:00",
+        duration: "30 minutes",
       },
     ],
   },
@@ -100,9 +107,11 @@ export async function datatify(message: string) {
     "{{EXAMPLES}}",
     initialExamples
       .map((e) => {
-        return [`Message: ${e.message}`, `Response: ${JSON.stringify({ logs: e.response })}`].join(
-          "\n"
-        );
+        return [
+          `Timestamp: ${e.timestamp}`,
+          `Message: ${e.message}`,
+          `Response: ${JSON.stringify({ logs: e.response })}`,
+        ].join("\n");
       })
       .join("\n")
   );
