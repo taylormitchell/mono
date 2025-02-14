@@ -3,18 +3,39 @@ import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
 import { Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 
 export function Home() {
   const store = useStore();
   const navigate = useNavigate();
+  const [inputText, setInputText] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const logs = useSubscribe(
     store.rep,
     async (tx) => {
-      return (await store.log.getAll(tx)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return (await store.log.getAll(tx)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     },
     { default: [] as Log[] }
   );
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (inputText.trim()) {
+      await store.log.create({
+        text: inputText.trim(),
+        data: [],
+        createdAt: new Date().toISOString(),
+      });
+      setInputText("");
+    }
+  };
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   return (
     <div className="flex flex-col h-full w-full gap-4 p-4">
@@ -26,7 +47,10 @@ export function Home() {
           <Plus size={20} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-base scrollbar-hide hover:scrollbar-default">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-base scrollbar-hide hover:scrollbar-default"
+      >
         <div className="divide-y divide-[var(--border-color)]">
           {logs.map((log) => (
             <div className="p-4 flex flex-col gap-2" key={log.id}>
@@ -49,6 +73,16 @@ export function Home() {
           ))}
         </div>
       </div>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="text"
+          name="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          className="flex-1 px-3 py-2 rounded border border-base bg-transparent"
+          placeholder="Type a message and press Enter..."
+        />
+      </form>
     </div>
   );
 }
