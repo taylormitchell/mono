@@ -125,6 +125,7 @@ export function createStore() {
         };
         await action.do();
         undoManager.add(action);
+        return log;
       },
       update: async (id: string, props: Partial<Log>) => {
         const item = await rep.query((tx) => log.get(tx, id));

@@ -4,7 +4,6 @@ import { useStore } from "../hooks/store";
 import { Plus, RefreshCcw, Trash2, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { ulid } from "ulid";
 
 let apiUrl = import.meta.env.VITE_API_URL;
 if (!apiUrl.startsWith("http")) {
@@ -55,9 +54,7 @@ export function Home() {
     e.preventDefault();
     if (inputText.trim()) {
       const timestamp = new Date().toISOString();
-      const logId = ulid();
-      await store.log.create({ id: logId, text: inputText.trim(), data: [], createdAt: timestamp });
-      const log = await store.log.get(logId);
+      const log = await store.log.create({ text: inputText.trim(), data: [], createdAt: timestamp });
       setInputText("");
       if (log) {
         processWithAI(log.id, log.text, timestamp);
