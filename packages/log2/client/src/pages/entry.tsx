@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { JsonEditor } from "../components/JsonEditor";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
@@ -59,6 +59,10 @@ export function LogEntry() {
     navigate("/");
   };
 
+  const handleChange = useCallback((content: string) => {
+    setEditedData(content);
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-primary/90 z-50 flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-base">
@@ -87,10 +91,7 @@ export function LogEntry() {
         {logs && (
           <div className="mt-4">
             <h3 className="text-sm font-semibold mb-2">Result:</h3>
-            <JsonEditor
-              content={editedData || JSON.stringify(logs.data, null, 2)}
-              onChange={(content) => setEditedData(content)}
-            />
+            <JsonEditor content={JSON.stringify(logs.data, null, 2)} onChange={handleChange} />
           </div>
         )}
       </div>
