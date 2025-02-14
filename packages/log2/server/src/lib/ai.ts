@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import { logDataSchema } from "../../../shared/types";
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -122,10 +123,4 @@ export async function datatify(message: string) {
     return null;
   }
   return result.data.logs;
-}
-
-if (require.main === module) {
-  const message = process.argv[2];
-  const log = await datatify(message);
-  console.log(log);
 }
