@@ -3,7 +3,7 @@ import { z } from "zod";
 import { logDataSchema } from "../../../shared/types";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env["OPENAI_API_KEY"],
 });
 
 const initialExamples = [
@@ -19,19 +19,22 @@ const initialExamples = [
     ],
   },
   {
-    message: "ate nutty-puddy and drank 1l water",
+    timestamp: "2024-02-13T14:20:00Z",
+    message: "ate nutty-puddy and drank 1l water at noon",
     response: [
       {
         schema: "consumed",
         action: "ate",
         item: "nutty-puddy",
         amount: "1",
+        startedAt: "2024-02-13T14:20:00Z",
       },
       {
         schema: "consumed",
         action: "drank",
         item: "water",
         amount: "1 liter",
+        startedAt: "2024-02-13T14:20:00Z",
       },
     ],
   },
