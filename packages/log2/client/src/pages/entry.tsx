@@ -47,7 +47,7 @@ export function LogEntry() {
   };
 
   const handleSubmit = async () => {
-    await store.log.create({ text, data: data || {} });
+    await store.log.create({ text, data: data ? [data] : [] });
     navigate("/");
   };
 

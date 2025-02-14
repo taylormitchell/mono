@@ -99,7 +99,7 @@ export function createStore() {
     rep,
     undoManager,
     log: {
-      create: async ({ id = ulid(), text = "", data = [] }: { id?: string; text: string; data: LogData[] }) => {
+      create: async ({ id = ulid(), text = "", data = [] }: { id?: string; text: string; data: LogData }) => {
         const action: UndoableAction = {
           do: () =>
             rep.mutate.createLog({
