@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
       manifest: {
-        name: "Items",
-        short_name: "Items",
+        name: "Log",
+        short_name: "Log",
         theme_color: "#0d1117",
         background_color: "#0d1117",
         display: "standalone",
