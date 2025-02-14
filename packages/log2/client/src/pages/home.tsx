@@ -74,6 +74,9 @@ export function Home() {
     currentScrollTop: number;
   } | null>(null);
   function scrollToBottomNextRender() {
+    console.log("creating scroll task", {
+      scrollContainerScrollTop: scrollContainerRef.current?.scrollTop,
+    });
     setScrollToBottomTask({
       currentScrollTop: scrollContainerRef.current?.scrollTop ?? 0,
     });
@@ -86,7 +89,7 @@ export function Home() {
     ) {
       console.log("scrolling", {
         scrollToBottomTask,
-        scrollContainerRef: scrollContainerRef.current,
+        scrollContainerScrollTop: scrollContainerRef.current.scrollTop,
       });
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
       setScrollToBottomTask(null);
