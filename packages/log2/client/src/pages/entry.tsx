@@ -25,7 +25,7 @@ export function LogEntry() {
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<{ data: LogData; timestamp: string } | null>(null);
-  const [editedData, setEditedData] = useState<string | null>(null);
+  const [editedLogs, setEditedLogs] = useState<{ parsed: null; text: string } | { parsed: LogData; text: string } | null>(null);
 
   const processWithAI = async () => {
     setIsLoading(true);
@@ -55,12 +55,17 @@ export function LogEntry() {
 
   const handleSubmit = async () => {
     if (!logs) return;
-    await store.log.create({ text, data: logs.data, createdAt: logs.timestamp });
+    await store.log.create({ text, data: editedLogs?.parsed || logs.data, createdAt: logs.timestamp });
     navigate("/");
   };
 
   const handleChange = useCallback((content: string) => {
-    setEditedData(content);
+    try {
+      const parsed = JSON.parse(content);
+      setEditedLogs({ parsed, text: content });
+    } catch {
+      setEditedLogs({ parsed: null, text: content });
+    }
   }, []);
 
   return (
