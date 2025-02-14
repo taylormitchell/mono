@@ -124,7 +124,7 @@ export function Home() {
           name="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 px-3 py-2 rounded border border-base bg-transparent"
+          className="flex-1 px-3 py-2 rounded bg-transparent outline-none"
           placeholder="Type a message and press Enter..."
         />
       </form>
