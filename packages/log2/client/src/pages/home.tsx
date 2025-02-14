@@ -50,6 +50,7 @@ export function Home() {
     }
   };
 
+  // Create a new log
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputText.trim()) {
@@ -57,16 +58,20 @@ export function Home() {
       const log = await store.log.create({ text: inputText.trim(), data: [], createdAt: timestamp });
       setInputText("");
       if (log) {
+        shouldScrollRef.current = true;
         processWithAI(log.id, log.text, timestamp);
       }
     }
   };
 
+  // Scroll to the bottom of the list when a new log is created
+  const shouldScrollRef = useRef(false);
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && shouldScrollRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      shouldScrollRef.current = false;
     }
-  }, [logs]);
+  }, [logs, processingLogs]);
 
   return (
     <div className="flex flex-col h-full w-full gap-4 p-4">
