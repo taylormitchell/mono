@@ -64,12 +64,11 @@ export function Home() {
     }
   };
 
-  // Scroll to the bottom of the list when a new log is created
+  // Scroll to the bottom of the list when the logs change (including initial load)
+  // and whenever we just kicked off a new AI processing task
   const shouldScrollRef = useRef(true);
   useEffect(() => {
-    console.log("running effect", { logs, processingLogs, shouldScrollRefValue: shouldScrollRef.current });
-    if (scrollContainerRef.current && shouldScrollRef.current) {
-      console.log("scrolling");
+    if (logs.length > 0 && scrollContainerRef.current && shouldScrollRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
       shouldScrollRef.current = false;
     }
