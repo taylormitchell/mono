@@ -3,6 +3,11 @@ import { JsonEditor } from "../components/JsonEditor";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 
+let apiUrl = import.meta.env.VITE_API_URL;
+if (!apiUrl.startsWith("http")) {
+  apiUrl = window.location.origin + apiUrl;
+}
+
 const getTimestampWithTimezone = (): string => {
   const now = new Date();
   const timezoneOffset = -now.getTimezoneOffset();
@@ -24,7 +29,7 @@ export function LogEntry() {
   const processWithAI = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(import.meta.env.VITE_API_URL, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, timestamp: getTimestampWithTimezone() }),
