@@ -65,9 +65,11 @@ export function Home() {
   };
 
   // Scroll to the bottom of the list when a new log is created
-  const shouldScrollRef = useRef(false);
+  const shouldScrollRef = useRef(true);
   useEffect(() => {
+    console.log("running effect", { logs, processingLogs, shouldScrollRefValue: shouldScrollRef.current });
     if (scrollContainerRef.current && shouldScrollRef.current) {
+      console.log("scrolling");
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
       shouldScrollRef.current = false;
     }
