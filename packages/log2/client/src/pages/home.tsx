@@ -1,7 +1,7 @@
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { Plus, RefreshCcw, Trash2, Loader, ArrowUp } from "lucide-react";
+import { RefreshCcw, Trash2, Loader, ArrowUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { getTimestampWithTimezone } from "../lib/utils";
@@ -76,13 +76,10 @@ export function Home() {
   }, [logs, processingLogs]);
 
   return (
-    <div className="flex flex-col h-full w-full gap-4 p-4 mb-16">
+    <div className="flex flex-col h-full w-full gap-4 p-4">
       <div className="flex items-center gap-4">
         <button onClick={() => store.hardReset()} className="p-2 hover-bg rounded-full">
           <RefreshCcw size={20} />
-        </button>
-        <button onClick={() => navigate("/entry")} className="p-2 ml-auto hover-bg rounded-full" title="New Item">
-          <Plus size={20} />
         </button>
       </div>
       <div
