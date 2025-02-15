@@ -22,6 +22,7 @@
     "codemirror": "^6.0.1",
     "is-hotkey": "^0.2.0",
     "jotai": "^2.11.3",
+    "lucide-react": "^0.475.0",
     "prosemirror-example-setup": "^1.2.3",
     "prosemirror-markdown": "^1.13.1",
     "prosemirror-state": "^1.4.3",
