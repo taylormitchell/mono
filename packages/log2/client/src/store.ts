@@ -82,6 +82,7 @@ export function createStore() {
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
     pushURL: env.VITE_REPLICACHE_PUSH_URL,
     pullURL: env.VITE_REPLICACHE_PULL_URL,
+    pullInterval: 5000,
     mutators: {
       async createLog(tx: WriteTransaction, props) {
         return log.set(tx, props);
