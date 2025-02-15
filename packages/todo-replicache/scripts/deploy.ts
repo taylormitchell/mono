@@ -19,7 +19,7 @@ async function main() {
         cd client && npm install && npm run build &&
         cd ../server && npm install &&
         bun run db:up &&
-        echo PORT=${config.apps.items.port} >> .env &&
+        echo .env && echo PORT=${config.apps.items.port} >> .env &&
         pm2 delete items || true && pm2 start "bun start" --name items
       '`;
 }
