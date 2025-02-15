@@ -1,7 +1,7 @@
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { Plus, RefreshCcw, Trash2, Loader } from "lucide-react";
+import { Plus, RefreshCcw, Trash2, Loader, ArrowUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { getTimestampWithTimezone } from "../lib/utils";
@@ -56,7 +56,7 @@ export function Home() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputText.trim()) {
-      const log = await store.log.create({ text: inputText.trim(), data: [], createdAt: new Date().toISOString() });
+      const log = await store.log.create({ text: inputText.trim(), data: [] });
       setInputText("");
       if (log) {
         shouldScrollRef.current = true;
@@ -76,7 +76,7 @@ export function Home() {
   }, [logs, processingLogs]);
 
   return (
-    <div className="flex flex-col h-full w-full gap-4 p-4">
+    <div className="flex flex-col h-full w-full gap-4 p-4 mb-16">
       <div className="flex items-center gap-4">
         <button onClick={() => store.hardReset()} className="p-2 hover-bg rounded-full">
           <RefreshCcw size={20} />
@@ -121,14 +121,19 @@ export function Home() {
         </div>
       </div>
       <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
-          name="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 px-3 py-2 rounded bg-secondary outline-none"
-          placeholder="Type a message..."
-        />
+        <div className="flex-1 flex gap-2 bg-secondary rounded-md p-2">
+          <input
+            type="text"
+            name="text"
+            value={inputText}
+            className="flex-1 outline-none"
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="Type a message..."
+          />
+          <button type="submit" className="px-3 py-2 rounded bg-secondary hover-bg">
+            <ArrowUp size={20} />
+          </button>
+        </div>
       </form>
     </div>
   );
