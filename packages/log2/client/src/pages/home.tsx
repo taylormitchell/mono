@@ -4,21 +4,12 @@ import { useStore } from "../hooks/store";
 import { Plus, RefreshCcw, Trash2, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
+import { getTimestampWithTimezone } from "../lib/utils";
 
 let apiUrl = import.meta.env.VITE_API_URL;
 if (!apiUrl.startsWith("http")) {
   apiUrl = window.location.origin + apiUrl;
 }
-
-const getTimestampWithTimezone = (): string => {
-  const now = new Date();
-  const timezoneOffset = -now.getTimezoneOffset();
-  const sign = timezoneOffset >= 0 ? "+" : "-";
-  const pad = (num: number) => String(Math.floor(Math.abs(num))).padStart(2, "0");
-  const hours = pad(timezoneOffset / 60);
-  const minutes = pad(timezoneOffset % 60);
-  return `${now.toISOString().split(".")[0]}${sign}${hours}:${minutes}`;
-};
 
 export function Home() {
   const store = useStore();
@@ -65,12 +56,11 @@ export function Home() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputText.trim()) {
-      const timestamp = new Date().toISOString();
-      const log = await store.log.create({ text: inputText.trim(), data: [], createdAt: timestamp });
+      const log = await store.log.create({ text: inputText.trim(), data: [], createdAt: new Date().toISOString() });
       setInputText("");
       if (log) {
         shouldScrollRef.current = true;
-        processWithAI(log.id, log.text, timestamp);
+        processWithAI(log.id, log.text, getTimestampWithTimezone());
       }
     }
   };
