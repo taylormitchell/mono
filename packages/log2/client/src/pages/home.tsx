@@ -10,6 +10,16 @@ if (!apiUrl.startsWith("http")) {
   apiUrl = window.location.origin + apiUrl;
 }
 
+const getTimestampWithTimezone = (): string => {
+  const now = new Date();
+  const timezoneOffset = -now.getTimezoneOffset();
+  const sign = timezoneOffset >= 0 ? "+" : "-";
+  const pad = (num: number) => String(Math.floor(Math.abs(num))).padStart(2, "0");
+  const hours = pad(timezoneOffset / 60);
+  const minutes = pad(timezoneOffset % 60);
+  return `${now.toISOString().split(".")[0]}${sign}${hours}:${minutes}`;
+};
+
 export function Home() {
   const store = useStore();
   const navigate = useNavigate();
