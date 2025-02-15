@@ -5,9 +5,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-route
 import { ItemPage } from "./pages/ItemPage";
 import { isHotkey } from "is-hotkey";
 import { StandardView } from "./pages/StandardView";
-import { ChatPage } from "./pages/chat";
 import { cn } from "./lib/utils";
-import { LogsPage } from "./pages/logs";
 
 declare global {
   interface Window {
@@ -102,20 +100,6 @@ function Layout({ children }: { children: React.ReactNode }) {
           </button>
           <button
             onClick={() => {
-              navigate("/chat");
-              setIsSidebarOpen(false);
-            }}
-            className={cn(
-              "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/chat"
-                ? "bg-[var(--accent-color)]"
-                : "text-[var(--text-secondary)] hover:bg-[var(--hover-color)]"
-            )}
-          >
-            Chat View
-          </button>
-          <button
-            onClick={() => {
               navigate("/logs");
               setIsSidebarOpen(false);
             }}
@@ -157,8 +141,6 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<StandardView />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/logs" element={<LogsPage />} />
             <Route path="/items/:id" element={<ItemPage />} />
           </Routes>
         </Layout>

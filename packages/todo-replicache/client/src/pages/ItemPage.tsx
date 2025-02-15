@@ -161,7 +161,7 @@ export function ItemPage() {
             />
             {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
-          <MarkdownEditor itemId={item.id} name={item.name} content={item.content} />
+          <MarkdownEditor itemId={item.id} content={item.content} />
         </div>
 
         <div className="border-t border-[#30363d] pt-8 mb-[1000px]">
@@ -195,7 +195,7 @@ export function ItemPage() {
               {filteredChildren.map((child: Item, index: number) => (
                 <div key={child.id} className="flex items-center gap-4 p-4 rounded-md bg-[#161b22] hover:bg-[#1c2128]">
                   <div className="flex-1">
-                    <MarkdownEditor itemId={child.id} name={child.name} content={child.content} />
+                    <MarkdownEditor itemId={child.id} content={child.content} />
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => navigate(`/items/${child.id}`)} className="p-1.5 text-[#6e7681] rounded">

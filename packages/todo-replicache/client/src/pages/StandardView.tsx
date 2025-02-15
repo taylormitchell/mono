@@ -6,20 +6,11 @@ import { cn } from "../lib/utils";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
-import { moveTo } from "../lib/positions";
 import { ulid } from "ulid";
 import { LucideExpand, Plus } from "lucide-react";
 import { JsonEditor } from "../components/JsonEditor";
 
-function ItemRow({
-  item,
-  move,
-  focusSearch,
-}: {
-  item: Item;
-  move: null | { up: () => void; down: () => void };
-  focusSearch: () => void;
-}) {
+function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void }) {
   const store = useStore();
   const navigate = useNavigate();
 
@@ -240,26 +231,8 @@ export function StandardView() {
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
         <div ref={itemsContainerRef} className="item-row divide-y divide-[#30363d]">
-          {filteredItems.map((item, i) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              focusSearch={focusSearch}
-              move={
-                view.sort.field === "position"
-                  ? {
-                      up: () => {
-                        const newPositions = moveTo(filteredItems, i, i - 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      },
-                      down: () => {
-                        const newPositions = moveTo(filteredItems, i, i + 1, view.positions);
-                        store.views.update(view.id, { ...view, positions: newPositions });
-                      },
-                    }
-                  : null
-              }
-            />
+          {filteredItems.map((item) => (
+            <ItemRow key={item.id} item={item} focusSearch={focusSearch} />
           ))}
         </div>
       </div>
