@@ -2,16 +2,23 @@ import { useEffect, useState } from "react";
 import { createStore, Store } from "./store";
 import { StoreContext, useStore } from "./hooks/store";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
-import { ItemPage } from "./pages/ItemPage";
+import { ItemPage } from "./pages/item-page";
+import { StandardView } from "./pages/standard-view";
 import { isHotkey } from "is-hotkey";
-import { StandardView } from "./pages/StandardView";
+
 import { cn } from "./lib/utils";
+import { Sidebar, SidebarClose } from "lucide-react";
+import { SyncIndicator } from "./components/sync-indicator";
+import { useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
 declare global {
   interface Window {
     store: Store | null;
   }
 }
+
+const sidebarAtom = atomWithStorage("sidebar-open", true);
 
 function StoreProvider({ children }: { children: React.ReactNode }) {
   const [{ isLoading, store }, setStore] = useState<{ isLoading: true; store: null } | { isLoading: false; store: Store }>({
@@ -36,7 +43,7 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
 
 function Layout({ children }: { children: React.ReactNode }) {
   const store = useStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useAtom(sidebarAtom);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,21 +67,12 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full w-full bg-primary flex relative overflow-hidden">
       {/* Sidebar Toggle Button */}
-      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="fixed top-0 left-0 z-50 p-2 rounded-md">
-        <svg
-          className="w-6 h-6 text-primary"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {isSidebarOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
+      <div className="fixed top-0 left-0 z-50 p-2 rounded-md flex items-center gap-2">
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          {isSidebarOpen ? <SidebarClose size={24} /> : <Sidebar size={24} />}
+        </button>
+        <SyncIndicator />
+      </div>
 
       <div
         className={cn(
@@ -88,24 +86,9 @@ function Layout({ children }: { children: React.ReactNode }) {
               navigate("/");
               setIsSidebarOpen(false);
             }}
-            className={cn(
-              "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/" ? "bg-accent text-white" : "text-secondary hover-bg"
-            )}
+            className={"w-full px-3 py-2 text-left rounded-md text-secondary"}
           >
-            Standard View
-          </button>
-          <button
-            onClick={() => {
-              navigate("/logs");
-              setIsSidebarOpen(false);
-            }}
-            className={cn(
-              "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/logs" ? "bg-accent text-white" : "text-secondary hover-bg"
-            )}
-          >
-            Logs
+            Home
           </button>
           <div className="border-t border-primary my-4" />
           <button
@@ -113,7 +96,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               indexedDB.deleteDatabase(store.rep.idbName);
               window.location.reload();
             }}
-            className="w-full px-3 py-2 text-left rounded-md text-white bg-red-600 hover:bg-red-700"
+            className={"w-full px-3 py-2 text-left rounded-md text-secondary"}
           >
             Reset App
           </button>

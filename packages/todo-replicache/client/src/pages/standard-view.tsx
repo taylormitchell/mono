@@ -115,20 +115,28 @@ export function StandardView() {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const itemsContainerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleKeyPress = async (e: KeyboardEvent) => {
-      if (isHotkey("n", e) && !document.activeElement?.matches('input, textarea, [contenteditable="true"]')) {
+      if (
+        (isHotkey("n", e) || isHotkey("shift+n", e)) &&
+        !document.activeElement?.matches('input, textarea, [contenteditable="true"]')
+      ) {
         e.preventDefault();
         e.stopPropagation();
         const id = ulid();
         await store.items.create({ id, content: "" });
-        setTimeout(() => {
-          const editor = document.getElementById(id)?.querySelector(".ProseMirror");
-          if (editor) {
-            (editor as HTMLElement).focus();
-          }
-        }, 0);
+        if (e.shiftKey) {
+          navigate(`/items/${id}`);
+        } else {
+          setTimeout(() => {
+            const editor = document.getElementById(id)?.querySelector(".ProseMirror");
+            if (editor) {
+              (editor as HTMLElement).focus();
+            }
+          }, 0);
+        }
       }
       if (isHotkey("escape", e)) {
         e.preventDefault();
@@ -154,7 +162,7 @@ export function StandardView() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [store, searchQuery]);
+  }, [store, searchQuery, navigate]);
 
   const view = useSubscribe(
     store.rep,
