@@ -33,6 +33,10 @@ export function ItemPage() {
   }, 200);
   const conflictingName = item && existingNames.has(name) && name !== item.name;
 
+  const handleUpdate = useDebounce(({ itemId, content }: { itemId: string; content: string }) => {
+    store.items.update(itemId, { content });
+  }, 1000);
+
   if (!id) {
     navigate("/");
     return null;
@@ -72,7 +76,7 @@ export function ItemPage() {
             />
             {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
-          <MarkdownEditor itemId={item.id} content={item.content} />
+          <MarkdownEditor itemId={item.id} content={item.content} onUpdate={handleUpdate} />
         </div>
       </div>
     </div>

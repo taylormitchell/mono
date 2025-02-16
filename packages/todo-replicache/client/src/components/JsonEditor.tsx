@@ -19,12 +19,12 @@ export function JsonEditor({
   itemId: string;
   content: string;
   readOnly?: boolean;
-  onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
+  onBlur?: (e: FocusEvent, props: { itemId: string; getContent: () => string; contentType: "markdown" | "json" }) => void;
   onKeyDown?: (
     e: KeyboardEvent,
     props: {
       itemId: string;
-      content: string;
+      getContent: () => string;
       contentType: "markdown" | "json";
       selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
     }
@@ -123,7 +123,11 @@ export function JsonEditor({
         onBlur={(e) => {
           const view = viewRef.current;
           if (!view) return;
-          onBlur?.(e.nativeEvent, { itemId, content: view.state.doc.toString(), contentType: "json" });
+          onBlur?.(e.nativeEvent, {
+            itemId,
+            getContent: () => view.state.doc.toString(),
+            contentType: "json",
+          });
         }}
       />
       {error && <div className="text-red-500">{error}</div>}

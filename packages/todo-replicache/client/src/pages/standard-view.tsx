@@ -15,14 +15,20 @@ function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void })
   const navigate = useNavigate();
 
   const handleBlur = useCallback(
-    async (_: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => {
+    async (_: FocusEvent, props: { itemId: string; getContent: () => string; contentType: "markdown" | "json" }) => {
       const item = await store.items.get(props.itemId);
       if (!item) return;
       if (props.contentType === "markdown") {
-        const title = item.name === null ? props.content.match(/^#\s+([^\n]+)\n/)?.[1]?.trim() : undefined;
-        store.items.update(item.id, { content: props.content, name: title });
+        const title =
+          item.name === null
+            ? props
+                .getContent()
+                .match(/^#\s+([^\n]+)\n/)?.[1]
+                ?.trim()
+            : undefined;
+        store.items.update(item.id, { content: props.getContent(), name: title });
       } else {
-        store.items.update(item.id, { content: props.content });
+        store.items.update(item.id, { content: props.getContent() });
       }
     },
     [store.items]
@@ -33,19 +39,18 @@ function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void })
       e: KeyboardEvent,
       props: {
         itemId: string;
-        content: string;
+        getContent: () => string;
         contentType: "markdown" | "json";
         selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
       }
     ): boolean => {
-      console.log("keydown in standard view", props);
       if (isHotkey("escape", e)) {
         if (e.currentTarget instanceof HTMLElement) {
           e.currentTarget.blur();
           return true;
         }
       } else if (isHotkey("backspace", e)) {
-        if (props.content === "") {
+        if (props.getContent() === "") {
           e.preventDefault();
           const prevItemId = document.getElementById(props.itemId)?.previousElementSibling?.id;
           if (prevItemId) {
