@@ -83,6 +83,15 @@ function Layout({ children }: { children: React.ReactNode }) {
           <SyncIndicator />
           <button
             onClick={() => {
+              store.items.create({ content: "" });
+              setIsSidebarOpen(false);
+            }}
+            className={"w-full px-3 py-2 text-left rounded-md text-secondary"}
+          >
+            New Item
+          </button>
+          <button
+            onClick={() => {
               navigate("/");
               setIsSidebarOpen(false);
             }}

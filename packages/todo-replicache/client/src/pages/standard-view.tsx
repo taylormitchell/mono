@@ -7,7 +7,7 @@ import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { ulid } from "ulid";
-import { LucideExpand, Plus } from "lucide-react";
+import { LucideExpand } from "lucide-react";
 import { JsonEditor } from "../components/JsonEditor";
 
 function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void }) {
@@ -88,7 +88,7 @@ function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void })
   );
 
   return (
-    <div id={item.id} className={cn("item flex flex-grow items-start px-4 py-2 hover:bg-[var(--hover-color)] relative")}>
+    <div id={item.id} className={cn("item flex flex-grow items-start px-4 py-2 hover:bg-[var(--hover-color)] relative group")}>
       <div className="flex-1">
         <div className="flex items-center gap-4">
           {item.contentType === "markdown" ? (
@@ -98,7 +98,7 @@ function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void })
           )}
         </div>
       </div>
-      <div className="absolute top-0 right-0 flex items-center gap-0">
+      <div className="absolute top-0 right-0 flex items-center gap-0 group-hover:opacity-100 opacity-0">
         <button onClick={() => navigate(`/items/${item.id}`)} className="p-1.5 text-[#6e7681] rounded">
           <LucideExpand size={12} />
         </button>
@@ -218,36 +218,37 @@ export function StandardView() {
     });
 
   return (
-    <div className="h-full w-full flex justify-center">
-      <div className="h-full w-[1000px] min-w-0 flex flex-col shrink">
-        <div className="flex items-center w-full gap-4 ml-4">
-          <div className="w-4 md:w-0" /> {/* Spacer for mobile menu button */}
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search items..."
-            value={searchQuery}
-            onKeyDown={(e) => {
-              if (isHotkey("down", e)) {
-                e.preventDefault();
-                e.stopPropagation();
-                const el = itemsContainerRef.current?.querySelector(".ProseMirror");
-                if (el instanceof HTMLElement) el.focus();
-              }
-            }}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
-          />
-          <button onClick={() => store.items.create({ content: "" })} title="New Item">
-            <Plus size={16} />
-          </button>
-        </div>
-        <div
-          ref={itemsContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
-        >
+    <div className="h-full w-full flex flex-col items-center">
+      <div className="w-full h-10 pl-12 flex items-center gap-4 ml-4">
+        <input
+          ref={searchInputRef}
+          type="text"
+          placeholder="Search..."
+          value={searchQuery}
+          onKeyDown={(e) => {
+            if (isHotkey("down", e)) {
+              e.preventDefault();
+              e.stopPropagation();
+              const el = itemsContainerRef.current?.querySelector(".ProseMirror");
+              if (el instanceof HTMLElement) el.focus();
+            }
+          }}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={cn("outline-none")}
+        />
+      </div>
+      <div
+        ref={itemsContainerRef}
+        className={cn(
+          "w-full flex-1 pt-4",
+          "flex justify-center",
+          "overflow-y-auto overflow-x-hidden",
+          "scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
+        )}
+      >
+        <div className="w-[1000px] min-w-0 flex flex-col shrink">
           {filteredItems.map((item) => (
-            <div key={item.id} className="item-row border border-primary">
+            <div key={item.id} className="item-row">
               <ItemRow item={item} focusSearch={focusSearch} />
             </div>
           ))}
