@@ -35,7 +35,7 @@ function useItemView(itemId: string) {
   return { view, createViewIfNeeded };
 }
 
-export function ItemPage() {
+export function ItemPageWithChildren() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const store = useStore();
