@@ -192,7 +192,6 @@ export function StandardView() {
     store.rep,
     async (tx) => {
       if (!view) return [];
-      // TOOD: need to rename everything to match this convention later
       const allItems = await store.items.getAll(tx);
       return allItems;
       // if (!view.filter?.status) return allItems;
@@ -220,7 +219,7 @@ export function StandardView() {
 
   return (
     <div className="h-full w-full flex justify-center">
-      <div className="h-full max-w-[1000px] min-w-0 flex flex-col shrink">
+      <div className="h-full w-[1000px] min-w-0 flex flex-col shrink">
         <div className="flex items-center w-full gap-4 ml-4">
           <div className="w-4 md:w-0" /> {/* Spacer for mobile menu button */}
           <input

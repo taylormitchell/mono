@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-const sidebarAtom = atomWithStorage("sidebar-open", true);
+const sidebarAtom = atomWithStorage("sidebar-open", false);
 
 function StoreProvider({ children }: { children: React.ReactNode }) {
   const [{ isLoading, store }, setStore] = useState<{ isLoading: true; store: null } | { isLoading: false; store: Store }>({
@@ -71,7 +71,6 @@ function Layout({ children }: { children: React.ReactNode }) {
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
           {isSidebarOpen ? <SidebarClose size={24} /> : <Sidebar size={24} />}
         </button>
-        <SyncIndicator />
       </div>
 
       <div
@@ -81,6 +80,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         )}
       >
         <div className="space-y-1 mt-12">
+          <SyncIndicator />
           <button
             onClick={() => {
               navigate("/");

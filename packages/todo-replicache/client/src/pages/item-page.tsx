@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSubscribe } from "replicache-react";
-import { MarkdownEditor } from "../components/MarkdownEditor";
 import { useStore } from "../hooks/store";
 import { useDebounce } from "../hooks/use-debounce";
 import isHotkey from "is-hotkey";
+import { MarkdownEditor } from "../components/MarkdownEditor";
 
 export function ItemPage() {
   const { id } = useParams<{ id: string }>();
