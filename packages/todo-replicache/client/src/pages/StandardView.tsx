@@ -206,33 +206,38 @@ export function StandardView() {
     });
 
   return (
-    <div className="flex flex-col h-full gap-4 p-4">
-      <div className="flex items-center gap-4">
-        <div className="w-4 md:w-0" /> {/* Spacer for mobile menu button */}
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder="Search items..."
-          value={searchQuery}
-          onKeyDown={(e) => {
-            if (isHotkey("down", e)) {
-              e.preventDefault();
-              e.stopPropagation();
-              const el = itemsContainerRef.current?.querySelector(".ProseMirror");
-              if (el instanceof HTMLElement) el.focus();
-            }
-          }}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
-        />
-        <button onClick={() => store.items.create({ content: "" })} title="New Item">
-          <Plus size={16} />
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent">
-        <div ref={itemsContainerRef} className="item-row divide-y divide-[#30363d]">
+    <div className="h-full w-full flex justify-center">
+      <div className="h-full max-w-[1000px] min-w-0 flex flex-col shrink">
+        <div className="flex items-center w-full gap-4 ml-4">
+          <div className="w-4 md:w-0" /> {/* Spacer for mobile menu button */}
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search items..."
+            value={searchQuery}
+            onKeyDown={(e) => {
+              if (isHotkey("down", e)) {
+                e.preventDefault();
+                e.stopPropagation();
+                const el = itemsContainerRef.current?.querySelector(".ProseMirror");
+                if (el instanceof HTMLElement) el.focus();
+              }
+            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md py-1.5 px-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-1 focus:ring-[var(--accent-color)]"
+          />
+          <button onClick={() => store.items.create({ content: "" })} title="New Item">
+            <Plus size={16} />
+          </button>
+        </div>
+        <div
+          ref={itemsContainerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-[var(--border-color)] scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
+        >
           {filteredItems.map((item) => (
-            <ItemRow key={item.id} item={item} focusSearch={focusSearch} />
+            <div key={item.id} className="item-row border border-primary">
+              <ItemRow item={item} focusSearch={focusSearch} />
+            </div>
           ))}
         </div>
       </div>

@@ -36,7 +36,7 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
 
 function Layout({ children }: { children: React.ReactNode }) {
   const store = useStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,11 +58,11 @@ function Layout({ children }: { children: React.ReactNode }) {
   }, [store]);
 
   return (
-    <div className="h-full w-full bg-[var(--bg-primary)] flex relative overflow-hidden">
-      {/* Sidebar Toggle Button for Mobile */}
-      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-0 left-0 z-50 p-2 rounded-md">
+    <div className="h-full w-full bg-primary flex relative overflow-hidden">
+      {/* Sidebar Toggle Button */}
+      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="fixed top-0 left-0 z-50 p-2 rounded-md">
         <svg
-          className="w-6 h-6 text-[var(--text-primary)]"
+          className="w-6 h-6 text-primary"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -76,14 +76,13 @@ function Layout({ children }: { children: React.ReactNode }) {
         </svg>
       </button>
 
-      {/* Sidebar */}
       <div
         className={cn(
-          "w-48 bg-[var(--bg-primary)] border-r border-[#30363d] p-4 fixed md:static min-h-screen z-40 transition-transform duration-300 ease-in-out",
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          "w-48 bg-primary border-primary border-r p-4 fixed min-h-screen z-40 transition-transform duration-300 ease-in-out",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="space-y-1 mt-12 md:mt-0">
+        <div className="space-y-1 mt-12">
           <button
             onClick={() => {
               navigate("/");
@@ -91,9 +90,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             }}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/"
-                ? "bg-[var(--accent-color)]"
-                : "text-[var(--text-secondary)] hover:bg-[var(--hover-color)]"
+              location.pathname === "/" ? "bg-accent text-white" : "text-secondary hover-bg"
             )}
           >
             Standard View
@@ -105,31 +102,29 @@ function Layout({ children }: { children: React.ReactNode }) {
             }}
             className={cn(
               "w-full px-3 py-2 text-left rounded-md",
-              location.pathname === "/logs"
-                ? "bg-[var(--accent-color)]"
-                : "text-[var(--text-secondary)] hover:bg-[var(--hover-color)]"
+              location.pathname === "/logs" ? "bg-accent text-white" : "text-secondary hover-bg"
             )}
           >
             Logs
           </button>
-          <div className="border-t border-[#30363d] my-4" />
+          <div className="border-t border-primary my-4" />
           <button
             onClick={() => {
               indexedDB.deleteDatabase(store.rep.idbName);
               window.location.reload();
             }}
-            className="w-full px-3 py-2 text-left rounded-md text-[#c9d1d9] hover:bg-red-700 bg-red-600"
+            className="w-full px-3 py-2 text-left rounded-md text-white bg-red-600 hover:bg-red-700"
           >
             Reset App
           </button>
         </div>
       </div>
 
-      {/* Overlay for mobile when sidebar is open */}
-      {isSidebarOpen && <div className="fixed inset-0 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
+      {/* Overlay */}
+      {isSidebarOpen && <div className="fixed inset-0 z-30" onClick={() => setIsSidebarOpen(false)} />}
 
       {/* Main content */}
-      <div className="h-full w-full">{children}</div>
+      <div className={cn("h-full w-full transition-all duration-300", isSidebarOpen ? "pl-48" : "pl-0")}>{children}</div>
     </div>
   );
 }
