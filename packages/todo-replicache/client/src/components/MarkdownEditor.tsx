@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { EditorView } from "prosemirror-view";
 import { exampleSetup } from "prosemirror-example-setup";
-import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
+import { schema, defaultMarkdownSerializer } from "prosemirror-markdown";
+import { markdownParser } from "./markdown-parser";
 import { DOMSerializer } from "prosemirror-model";
 import "./MarkdownEditor.css";
 import { EditorState } from "prosemirror-state";
@@ -44,7 +45,7 @@ export function MarkdownEditor({
 
     const view = new EditorView(editorRef.current, {
       state: EditorState.create({
-        doc: defaultMarkdownParser.parse(contentRef.current),
+        doc: markdownParser.parse(contentRef.current),
         plugins: exampleSetup({ schema, menuBar: false, floatingMenu: false, menuContent: [] }),
       }),
       dispatchTransaction: (tr) => {
@@ -100,7 +101,7 @@ export function MarkdownEditor({
       // I'm a bit surprised we don't need to do `editorRef.current.innerHTML = ""` here. I expected this
       // to trigger a re-render, and that would re-create the static content. Seems like it doesn't though.
       viewRef.current.dispatch(
-        viewRef.current.state.tr.replaceWith(0, viewRef.current.state.doc.content.size, defaultMarkdownParser.parse(content))
+        viewRef.current.state.tr.replaceWith(0, viewRef.current.state.doc.content.size, markdownParser.parse(content))
       );
     }
   }, [content]);
@@ -129,7 +130,7 @@ export function MarkdownEditor({
 function StaticMarkdown({ content, editorIsMounted }: { content: string; editorIsMounted: boolean }) {
   let html = "";
   if (!editorIsMounted) {
-    const doc = defaultMarkdownParser.parse(content);
+    const doc = markdownParser.parse(content);
     const el = DOMSerializer.fromSchema(schema).serializeFragment(doc.content);
     const tempContainer = document.createElement("div");
     tempContainer.appendChild(el);
