@@ -1,10 +1,8 @@
 {
   "name": "my-micro-server",
-  "ip": "54.167.37.106",
   "username": "ec2-user",
   "domain": "taylors.tech",
   "email": "taylor.j.mitchell@gmail.com",
-  "sshHost": "ec2-user@ec2-54-167-37-106.compute-1.amazonaws.com",
   "region": "us-east-1",
   "repoDir": "/home/ec2-user/code/home",
   "apps": {

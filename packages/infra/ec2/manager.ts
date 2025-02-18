@@ -1,46 +1,73 @@
 #!/usr/bin/env bun
 import { $ } from "bun";
 import { resolve } from "path";
+import { setDomainIp } from "../dns";
 
-import { z } from "zod";
+export const config = {
+  name: "my-micro-server",
+  username: "ec2-user",
+  imageId: "ami-0c518311db5640eff",
+  sshKeyFile: resolve(process.env.HOME!, ".ssh/id_ed25519"),
+  instanceType: "t4g.micro",
+  domain: "taylors.tech",
+  email: "taylor.j.mitchell@gmail.com",
+  region: "us-east-1",
+  repoDir: "/home/ec2-user/code/home",
+} as const;
 
-const ConfigSchema = z.object({
-  domain: z.string(),
-  email: z.string(),
-  hostname: z.string().optional(),
-  sshHost: z.string(),
-  repoDir: z.string(),
-  apps: z.record(
-    z.string(),
-    z.object({
-      subdomain: z.string(),
-      port: z.number().int().positive(),
-    })
-  ),
-});
-
-type Config = z.infer<typeof ConfigSchema>;
-
-const CONFIG_PATH = resolve(__dirname, "./config.json");
+const REMOTE_CONFIG_PATH = "/home/ec2-user/nginx-apps.json";
 const TMP_CONF_PATH = "/tmp/nginx.conf";
 const NGINX_CONF_PATH = "/etc/nginx/nginx.conf";
 
-async function loadConfig(): Promise<Config> {
-  const configFile = Bun.file(CONFIG_PATH);
-  if (!(await configFile.exists())) {
-    throw new Error(`Config file not found at ${CONFIG_PATH}`);
+type AppConfig = Record<string, { subdomain: string; port: number }>;
+
+let _ip: string | null = null;
+async function getIp() {
+  if (_ip) return _ip;
+  const res = await $`aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=${config.name}" "Name=instance-state-name,Values=running,pending,stopped,stopping" \
+    --region ${config.region} \
+    --query "Reservations[*].Instances[*].PublicIpAddress" \
+    --output text`.quiet();
+  _ip = res.text().trim();
+  return _ip;
+}
+
+export async function getRemoteHost() {
+  const ip = _ip ?? (await getIp());
+  return `${config.username}@${ip}`;
+}
+
+async function loadAppConfig(): Promise<AppConfig> {
+  const ip = await getIp();
+  const remoteHost = `${config.username}@${ip}`;
+
+  try {
+    const appsConfig = await $`ssh ${remoteHost} "cat ${REMOTE_CONFIG_PATH}"`.quiet();
+    return JSON.parse(appsConfig.text());
+  } catch (error) {
+    // If file doesn't exist, return empty apps object
+    return {};
   }
-  const file = await configFile.text();
-  const config = JSON.parse(file);
-  return ConfigSchema.parse(config);
 }
 
-async function saveConfig(config: Config): Promise<void> {
-  await Bun.write(CONFIG_PATH, JSON.stringify(config, null, 2));
+async function saveAppConfig(apps: AppConfig): Promise<void> {
+  const ip = await getIp();
+  const remoteHost = `${config.username}@${ip}`;
+  const appsConfig = JSON.stringify(apps, null, 2);
+
+  // Write apps config to temporary file and copy to server
+  const tempFile = `/tmp/nginx-apps-${Date.now()}.json`;
+  await Bun.write(tempFile, appsConfig);
+  try {
+    await $`scp ${tempFile} ${remoteHost}:${REMOTE_CONFIG_PATH}`.quiet();
+  } finally {
+    await $`rm ${tempFile}`;
+  }
 }
 
-async function pushNginxConf() {
-  const config = await loadConfig();
+export async function pushNginxConf() {
+  const apps = await loadAppConfig();
   const fullConfig = `
 user nginx;
 worker_processes auto;
@@ -87,7 +114,7 @@ http {
         }
     }
 
-    ${Object.values(config.apps)
+    ${Object.values(apps)
       .map(
         ({ subdomain, port }) => `
     server {
@@ -114,16 +141,18 @@ http {
   await Bun.write(tempFile, fullConfig);
 
   try {
-    console.log(`Copying ${tempFile} to ${config.sshHost}:${TMP_CONF_PATH}`);
-    await $`scp ${tempFile} ${config.sshHost}:${TMP_CONF_PATH}`;
+    const ip = await getIp();
+    const remoteHost = `${config.username}@${ip}`;
+    console.log(`Copying ${tempFile} to ${remoteHost}:${TMP_CONF_PATH}`);
+    await $`scp ${tempFile} ${remoteHost}:${TMP_CONF_PATH}`;
 
     console.log(`Moving ${tempFile} to ${NGINX_CONF_PATH} and testing`);
-    await $`ssh ${config.sshHost} 'sudo mv ${TMP_CONF_PATH} ${NGINX_CONF_PATH} && sudo nginx -t && sudo systemctl reload nginx'`.quiet();
+    await $`ssh ${remoteHost} 'sudo mv ${TMP_CONF_PATH} ${NGINX_CONF_PATH} && sudo nginx -t && sudo systemctl reload nginx'`.quiet();
 
     console.log("Updating ssl certificate");
-    await $`ssh ${config.sshHost} 'echo "1" | sudo certbot --nginx --expand --email ${
+    await $`ssh ${remoteHost} 'echo "1" | sudo certbot --nginx --expand --email ${
       config.email
-    } -d ${config.domain} -d ${Object.values(config.apps)
+    } -d ${config.domain} -d ${Object.values(apps)
       .map((app) => `${app.subdomain}.${config.domain}`)
       .join(" -d ")}'`;
   } catch (error) {
@@ -133,98 +162,157 @@ http {
   }
 }
 
-async function pullRepo() {
-  const config = await loadConfig();
-  await $`ssh ${config.sshHost} 'cd ${config.repoDir} && git pull'`;
+export async function exec(cmd: string) {
+  const ip = await getIp();
+  const remoteHost = `${config.username}@${ip}`;
+  await $`ssh ${remoteHost} '${cmd}'`;
 }
 
-async function listApps() {
-  const config = await loadConfig();
+export async function listApps() {
+  const apps = await loadAppConfig();
 
-  if (Object.keys(config.apps).length === 0) {
+  if (Object.keys(apps).length === 0) {
     console.log("\nNo apps configured");
     console.log(`Domain: ${config.domain}`);
-    console.log(`SSH Host: ${config.sshHost}`);
     return;
   }
 
   console.log("\nCurrent configuration:");
   console.log(`Domain: ${config.domain}`);
-  console.log(`SSH Host: ${config.sshHost}`);
   console.log("\nConfigured apps:");
   console.log("---------------");
-  for (const [name, app] of Object.entries(config.apps)) {
+  for (const [name, app] of Object.entries(apps)) {
     console.log(`${app.subdomain}.${config.domain} -> port ${app.port}`);
   }
   console.log();
 }
 
-async function addApp(name: string, port: number, subdomain?: string) {
-  const config = await loadConfig();
+export async function addApp(name: string, port: number, subdomain?: string) {
+  const apps = await loadAppConfig();
   subdomain = subdomain ?? name;
-  config.apps[name] = { subdomain, port };
-  await saveConfig(config);
+  if (Object.entries(apps).some(([n, app]) => n !== name && app.port === port)) {
+    throw new Error(`App '${name}' (${subdomain}.${config.domain} -> port ${port}) already exists`);
+  }
+  apps[name] = { subdomain, port };
+  await saveAppConfig(apps);
   console.log(`Added app '${name}' (${subdomain}.${config.domain} -> port ${port})`);
-  return config;
+  return apps;
 }
 
 async function removeApp(name: string) {
-  const config = await loadConfig();
-  if (!(name in config.apps)) {
+  const apps = await loadAppConfig();
+  if (!(name in apps)) {
     console.error(`App '${name}' not found`);
     return;
   }
-  delete config.apps[name];
-  await saveConfig(config);
+  delete apps[name];
+  await saveAppConfig(apps);
   console.log(`Removed app '${name}'`);
 }
 
-async function provision() {
-  const config = await loadConfig();
-
-  // Create security group
+async function create({ sshPubkey }: { sshPubkey: string }) {
   const securityGroupName = `${config.name}-security-group`;
-  await $`
-    aws ec2 create-security-group \
-    --group-name ${securityGroupName} \
-    --description "Security group for ${config.name}" \
-    --region ${config.region}
-  `;
 
-  // Create instance
+  // Check if security group exists
+  try {
+    await $`aws ec2 describe-security-groups --group-names ${securityGroupName} --region ${config.region}`.quiet();
+    console.log(`Security group '${securityGroupName}' already exists`);
+  } catch (error) {
+    // If security group doesn't exist, create it
+    console.log(`Creating security group '${securityGroupName}'...`);
+    const createSgResult = await $`
+      aws ec2 create-security-group \
+      --group-name ${securityGroupName} \
+      --description "Security group for ${config.name}" \
+      --region ${config.region}
+    `;
+
+    // Add inbound rules for SSH, HTTP, and HTTPS
+    const sgId = JSON.parse(createSgResult.text()).GroupId;
+    await $`
+          aws ec2 authorize-security-group-ingress \
+          --group-id ${sgId} \
+          --protocol tcp \
+          --port 22 \
+          --cidr 0.0.0.0/0 \
+          --region ${config.region}
+        `.quiet();
+
+    await $`
+          aws ec2 authorize-security-group-ingress \
+          --group-id ${sgId} \
+          --protocol tcp \
+          --port 80 \
+          --cidr 0.0.0.0/0 \
+          --region ${config.region}
+        `.quiet();
+
+    await $`
+          aws ec2 authorize-security-group-ingress \
+          --group-id ${sgId} \
+          --protocol tcp \
+          --port 443 \
+          --cidr 0.0.0.0/0 \
+          --region ${config.region}
+        `.quiet();
+  }
+
+  // Check if instance exists
+  const instanceExists = await $`aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=${config.name}" "Name=instance-state-name,Values=running,pending,stopped,stopping" \
+    --region ${config.region} \
+    --query "Reservations[*].Instances[*]" \
+    --output json`.quiet();
+
+  if (JSON.parse(instanceExists.text()).flat().length > 0) {
+    console.log(`Instance '${config.name}' already exists`);
+    return;
+  }
+
+  // Create instance if it doesn't exist
+  console.log(`Creating instance '${config.name}'...`);
   await $`
     aws ec2 run-instances \
-    --image-id ami-0c518311db5640eff \
-    --instance-type t4g.micro \
-    --key-name ${config.name} \
+    --image-id ${config.imageId} \
+    --instance-type ${config.instanceType} \
     --security-groups ${securityGroupName} \
     --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=${config.name}}]' \
     --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":8,"VolumeType":"gp3"}}]' \
-    --region ${config.region}
+    --region ${config.region} \
+    --user-data "#!/bin/bash
+      mkdir -p /home/ec2-user/.ssh
+      echo \"${sshPubkey}\" > /home/ec2-user/.ssh/authorized_keys
+      chmod 600 /home/ec2-user/.ssh/authorized_keys
+      chown -R ec2-user:ec2-user /home/ec2-user/.ssh
+    "
   `;
 }
 
-async function initialize({
-  initialPemFile,
-  sshPubkeyFile,
-}: {
-  initialPemFile: string;
-  sshPubkeyFile: string;
-}) {
-  const config = await loadConfig();
-  const sshPubkey = await Bun.file(sshPubkeyFile).text();
-  await $`ssh -i ${initialPemFile} ${config.sshHost} '
-    # Set hostname
-    ${config.hostname ? `sudo hostnamectl set-hostname ${config.hostname}` : ""}
+async function setup() {
+  const ip = await getIp();
+  const remoteHost = `${config.username}@${ip}`;
+  console.log(`Setting up server at ${remoteHost}`);
 
-    # Add ssh pub key to ~/.ssh/authorized_keys
-    echo "${sshPubkey}" >> ~/.ssh/authorized_keys
+  // Update DNS record
+  await setDomainIp({ domain: config.domain, ip });
+
+  // Copy ssh key to server. This gives it access to my github repos
+  await $`scp ~/.ssh/my-micro-server ${remoteHost}:~/.ssh/`.quiet();
+  await $`ssh ${remoteHost} '
+    chmod 600 ~/.ssh/my-micro-server
+    echo "eval $(ssh-agent -s) > /dev/null" >> ~/.bashrc
+    echo "ssh-add ~/.ssh/my-micro-server > /dev/null" >> ~/.bashrc
+  '`;
+
+  await $`ssh ${remoteHost} '
+    # Set hostname
+    sudo hostnamectl set-hostname ${config.name}
 
     # Add alias to clear the terminal
     echo "alias x='clear'" >> ~/.bashrc
 
     # Install git
-    sudo yum update -y git
+    sudo yum install -y git
 
     # Install bun
     curl -fsSL https://bun.sh/install | bash
@@ -242,23 +330,17 @@ async function initialize({
     sudo systemctl start nginx
     sudo systemctl enable nginx
 
-    # Install certbot
-    sudo yum install certbot -y
-    sudo yum install certbot-nginx -y
-    sudo certbot --nginx --email ${config.email} -d ${config.domain}
-
-    # Create ssh key and prompt user to add to github
-    ssh-keygen -t ed25519 -C "${config.email}" -f ~/.ssh/id_ed25519 -N ""
-    echo "Add this to github: "
-    cat ~/.ssh/id_ed25519.pub
-
-    # TODO: Tell user to add to github and then wait for them to confirm they have
-
     # Clone the repo
     mkdir ~/code
     cd ~/code
     git clone git@github.com:taylormitchell/home.git
-  `;
+
+    # Install certbot
+    sudo yum install certbot -y
+    sudo yum install certbot-nginx -y
+  '`;
+
+  // TODO set IP on taylor.tech A record. not sure if to do here or elsewhere
 }
 
 async function main() {
@@ -266,6 +348,20 @@ async function main() {
   const args = process.argv.slice(3);
 
   switch (command) {
+    case "create":
+      const sshPubkey = await Bun.file(resolve(process.env.HOME!, ".ssh/id_ed25519.pub")).text();
+      await create({ sshPubkey });
+      break;
+
+    case "setup":
+      await setup();
+      break;
+
+    case "get-ip":
+      const ip = await getIp();
+      console.log(ip);
+      break;
+
     case "list":
       await listApps();
       break;
@@ -303,8 +399,6 @@ Commands:
       process.exit(1);
   }
 }
-
-export { loadConfig, saveConfig, pushNginxConf, listApps, addApp, removeApp, pullRepo };
 
 // Only run main if this is being executed as a script
 if (import.meta.main) {
