@@ -6,6 +6,8 @@ import { z } from "zod";
 
 const ConfigSchema = z.object({
   domain: z.string(),
+  email: z.string(),
+  hostname: z.string().optional(),
   sshHost: z.string(),
   repoDir: z.string(),
   apps: z.record(
@@ -119,9 +121,9 @@ http {
     await $`ssh ${config.sshHost} 'sudo mv ${TMP_CONF_PATH} ${NGINX_CONF_PATH} && sudo nginx -t && sudo systemctl reload nginx'`.quiet();
 
     console.log("Updating ssl certificate");
-    await $`ssh ${config.sshHost} 'echo "1" | sudo certbot --nginx --expand -d ${
-      config.domain
-    } -d ${Object.values(config.apps)
+    await $`ssh ${config.sshHost} 'echo "1" | sudo certbot --nginx --expand --email ${
+      config.email
+    } -d ${config.domain} -d ${Object.values(config.apps)
       .map((app) => `${app.subdomain}.${config.domain}`)
       .join(" -d ")}'`;
   } catch (error) {
@@ -175,6 +177,88 @@ async function removeApp(name: string) {
   delete config.apps[name];
   await saveConfig(config);
   console.log(`Removed app '${name}'`);
+}
+
+async function provision() {
+  const config = await loadConfig();
+
+  // Create security group
+  const securityGroupName = `${config.name}-security-group`;
+  await $`
+    aws ec2 create-security-group \
+    --group-name ${securityGroupName} \
+    --description "Security group for ${config.name}" \
+    --region ${config.region}
+  `;
+
+  // Create instance
+  await $`
+    aws ec2 run-instances \
+    --image-id ami-0c518311db5640eff \
+    --instance-type t4g.micro \
+    --key-name ${config.name} \
+    --security-groups ${securityGroupName} \
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=${config.name}}]' \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":8,"VolumeType":"gp3"}}]' \
+    --region ${config.region}
+  `;
+}
+
+async function initialize({
+  initialPemFile,
+  sshPubkeyFile,
+}: {
+  initialPemFile: string;
+  sshPubkeyFile: string;
+}) {
+  const config = await loadConfig();
+  const sshPubkey = await Bun.file(sshPubkeyFile).text();
+  await $`ssh -i ${initialPemFile} ${config.sshHost} '
+    # Set hostname
+    ${config.hostname ? `sudo hostnamectl set-hostname ${config.hostname}` : ""}
+
+    # Add ssh pub key to ~/.ssh/authorized_keys
+    echo "${sshPubkey}" >> ~/.ssh/authorized_keys
+
+    # Add alias to clear the terminal
+    echo "alias x='clear'" >> ~/.bashrc
+
+    # Install git
+    sudo yum update -y git
+
+    # Install bun
+    curl -fsSL https://bun.sh/install | bash
+    source ~/.bashrc
+
+    # Install node
+    curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+    sudo yum install -y nodejs
+
+    # Install pm2
+    sudo npm install -g pm2
+
+    # Install nginx
+    sudo yum install -y nginx
+    sudo systemctl start nginx
+    sudo systemctl enable nginx
+
+    # Install certbot
+    sudo yum install certbot -y
+    sudo yum install certbot-nginx -y
+    sudo certbot --nginx --email ${config.email} -d ${config.domain}
+
+    # Create ssh key and prompt user to add to github
+    ssh-keygen -t ed25519 -C "${config.email}" -f ~/.ssh/id_ed25519 -N ""
+    echo "Add this to github: "
+    cat ~/.ssh/id_ed25519.pub
+
+    # TODO: Tell user to add to github and then wait for them to confirm they have
+
+    # Clone the repo
+    mkdir ~/code
+    cd ~/code
+    git clone git@github.com:taylormitchell/home.git
+  `;
 }
 
 async function main() {

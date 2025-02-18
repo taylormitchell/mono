@@ -5,97 +5,45 @@ import { isHotkey } from "is-hotkey";
 import { cn } from "../lib/utils";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
-import { MarkdownEditor } from "../components/MarkdownEditor";
 import { ulid } from "ulid";
 import { LucideExpand } from "lucide-react";
-import { JsonEditor } from "../components/JsonEditor";
+import { CodeMirrorEditor } from "../components/code-mirror-editor";
+import { useDebounce } from "../hooks/use-debounce";
 
 function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void }) {
   const store = useStore();
   const navigate = useNavigate();
 
-  const handleBlur = useCallback(
-    async (_: FocusEvent, props: { itemId: string; getContent: () => string; contentType: "markdown" | "json" }) => {
-      const item = await store.items.get(props.itemId);
-      if (!item) return;
-      if (props.contentType === "markdown") {
-        const title =
-          item.name === null
-            ? props
-                .getContent()
-                .match(/^#\s+([^\n]+)\n/)?.[1]
-                ?.trim()
-            : undefined;
-        store.items.update(item.id, { content: props.getContent(), name: title });
-      } else {
-        store.items.update(item.id, { content: props.getContent() });
-      }
-    },
-    [store.items]
-  );
+  const setSelectionAbove = useCallback(() => {
+    const el = document.getElementById(item.id)?.previousElementSibling?.querySelector("[contenteditable='true']");
+    if (el instanceof HTMLElement) {
+      el.focus();
+    } else {
+      focusSearch();
+    }
+  }, [item.id, focusSearch]);
 
-  const handleKeyDown = useCallback(
-    (
-      e: KeyboardEvent,
-      props: {
-        itemId: string;
-        getContent: () => string;
-        contentType: "markdown" | "json";
-        selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
-      }
-    ): boolean => {
-      if (isHotkey("escape", e)) {
-        if (e.currentTarget instanceof HTMLElement) {
-          e.currentTarget.blur();
-          return true;
-        }
-      } else if (isHotkey("backspace", e)) {
-        if (props.getContent() === "") {
-          e.preventDefault();
-          const prevItemId = document.getElementById(props.itemId)?.previousElementSibling?.id;
-          if (prevItemId) {
-            setTimeout(() => {
-              const el = document.querySelector(`[id="${prevItemId}"] [contenteditable="true"]`);
-              if (el instanceof HTMLElement) el.focus();
-            });
-          }
-          store.items.delete(props.itemId);
-          return true;
-        }
-      } else if (isHotkey("up", e) && props.selection.fromAt === "start") {
-        e.preventDefault();
-        const prevElement = document.getElementById(props.itemId)?.previousElementSibling;
-        if (prevElement?.id) {
-          const el = prevElement.querySelector("[contenteditable='true']");
-          if (el instanceof HTMLElement) el.focus();
-        } else {
-          focusSearch();
-        }
-        return true;
-      } else if (isHotkey("down", e) && props.selection.fromAt === "end") {
-        e.preventDefault();
-        const nextElement = document.getElementById(props.itemId)?.nextElementSibling;
-        if (!nextElement?.id) return false;
-        const el = nextElement.querySelector("[contenteditable='true']");
-        if (el instanceof HTMLElement) {
-          el.focus();
-          return true;
-        }
-      }
-      return false;
-    },
-    [store.items, focusSearch]
-  );
+  const setSelectionBelow = useCallback(() => {
+    const el = document.getElementById(item.id)?.nextElementSibling?.querySelector("[contenteditable='true']");
+    if (el instanceof HTMLElement) el.focus();
+  }, [item.id]);
+
+  const handleUpdate = useDebounce(({ itemId, getContent }: { itemId: string; getContent: () => string }) => {
+    store.items.update(itemId, { content: getContent() });
+  }, 1000);
 
   return (
-    <div id={item.id} className={cn("item flex flex-grow items-start px-4 py-2 hover:bg-[var(--hover-color)] relative group")}>
+    <div id={item.id} className={cn("item flex items-start px-4 py-2 hover:bg-[var(--hover-color)] relative group")}>
       <div className="flex-1">
         <div className="flex items-center gap-4">
-          {item.contentType === "markdown" ? (
-            <MarkdownEditor itemId={item.id} content={item.content} onBlur={handleBlur} onKeyDown={handleKeyDown} />
-          ) : (
-            <JsonEditor itemId={item.id} content={item.content} onBlur={handleBlur} onKeyDown={handleKeyDown} />
-          )}
+          <CodeMirrorEditor
+            itemId={item.id}
+            content={item.content}
+            setSelectionAbove={setSelectionAbove}
+            setSelectionBelow={setSelectionBelow}
+            deleteOnBackspace={true}
+            onUpdate={handleUpdate}
+          />
         </div>
       </div>
       <div className="absolute top-0 right-0 flex items-center gap-0 group-hover:opacity-100 opacity-0">
@@ -248,9 +196,7 @@ export function StandardView() {
       >
         <div className="w-[1000px] min-w-0 flex flex-col shrink">
           {filteredItems.map((item) => (
-            <div key={item.id} className="item-row">
-              <ItemRow item={item} focusSearch={focusSearch} />
-            </div>
+            <ItemRow key={item.id} item={item} focusSearch={focusSearch} />
           ))}
         </div>
       </div>
