@@ -165,81 +165,85 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
 
   console.log(`Mutation ${mutation.id} is new - processing`);
 
-  switch (mutation.name) {
-    case "createItem": {
-      const uniqueName = await makeNameUnique(db, mutation.args.name, mutation.args.id);
-      await db
-        .insert(itemTable)
-        .values({
-          ...mutation.args,
-          children: JSON.stringify(mutation.args.children),
-          name: uniqueName,
-          version: nextVersion,
-        })
-        .onConflictDoUpdate({
-          target: [itemTable.id],
-          set: {
+  try {
+    switch (mutation.name) {
+      case "createItem": {
+        const uniqueName = await makeNameUnique(db, mutation.args.name, mutation.args.id);
+        await db
+          .insert(itemTable)
+          .values({
             ...mutation.args,
             children: JSON.stringify(mutation.args.children),
             name: uniqueName,
             version: nextVersion,
-          },
+          })
+          .onConflictDoUpdate({
+            target: [itemTable.id],
+            set: {
+              ...mutation.args,
+              children: JSON.stringify(mutation.args.children),
+              name: uniqueName,
+              version: nextVersion,
+            },
+          });
+        break;
+      }
+      case "updateItem": {
+        const { id, name, children, ...args } = mutation.args;
+        const uniqueName = name !== undefined ? await makeNameUnique(db, name, id) : undefined;
+        await db
+          .update(itemTable)
+          .set({
+            ...args,
+            ...(children && { children: JSON.stringify(children) }),
+            name: uniqueName,
+            version: nextVersion,
+          })
+          .where(eq(itemTable.id, id));
+        break;
+      }
+      case "deleteItem": {
+        const { id: itemID, deletedAt } = mutation.args;
+        await db
+          .update(itemTable)
+          .set({ deletedAt, version: nextVersion })
+          .where(eq(itemTable.id, itemID));
+        break;
+      }
+      case "createView": {
+        await db.insert(viewTable).values({
+          ...mutation.args,
+          version: nextVersion,
         });
-      break;
+        break;
+      }
+      case "updateView": {
+        const { id: viewID, ...args } = mutation.args;
+        await db
+          .update(viewTable)
+          .set({
+            ...args,
+            version: nextVersion,
+          })
+          .where(eq(viewTable.id, viewID));
+        break;
+      }
+      case "deleteView": {
+        const { id: viewID, deletedAt } = mutation.args;
+        await db
+          .update(viewTable)
+          .set({ deletedAt, version: nextVersion })
+          .where(eq(viewTable.id, viewID));
+        break;
+      }
+      default:
+        console.log("unknown mutation", mutation);
+        mutation satisfies never;
     }
-    case "updateItem": {
-      const { id, name, children, ...args } = mutation.args;
-      const uniqueName = name !== undefined ? await makeNameUnique(db, name, id) : undefined;
-      await db
-        .update(itemTable)
-        .set({
-          ...args,
-          ...(children && { children: JSON.stringify(children) }),
-          name: uniqueName,
-          version: nextVersion,
-        })
-        .where(eq(itemTable.id, id));
-      break;
-    }
-    case "deleteItem": {
-      const { id: itemID, deletedAt } = mutation.args;
-      await db
-        .update(itemTable)
-        .set({ deletedAt, version: nextVersion })
-        .where(eq(itemTable.id, itemID));
-      break;
-    }
-    case "createView": {
-      await db.insert(viewTable).values({
-        ...mutation.args,
-        version: nextVersion,
-      });
-      break;
-    }
-    case "updateView": {
-      const { id: viewID, ...args } = mutation.args;
-      await db
-        .update(viewTable)
-        .set({
-          ...args,
-          version: nextVersion,
-        })
-        .where(eq(viewTable.id, viewID));
-      break;
-    }
-    case "deleteView": {
-      const { id: viewID, deletedAt } = mutation.args;
-      await db
-        .update(viewTable)
-        .set({ deletedAt, version: nextVersion })
-        .where(eq(viewTable.id, viewID));
-      break;
-    }
-    default:
-      console.log("unknown mutation", mutation);
-      mutation satisfies never;
+  } catch (e) {
+    console.log("Error processing mutation", mutation);
+    console.error(e);
   }
-
   await setLastMutationID(db, clientID, clientGroupID, nextMutationID, nextVersion);
   await setServerVersion(db, nextVersion);
 }
