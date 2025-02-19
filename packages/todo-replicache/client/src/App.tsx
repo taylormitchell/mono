@@ -103,6 +103,15 @@ function Layout({ children }: { children: React.ReactNode }) {
           <div className="border-t border-primary my-4" />
           <button
             onClick={() => {
+              store.rep.pull();
+              setIsSidebarOpen(false);
+            }}
+            className={"w-full px-3 py-2 text-left rounded-md text-secondary"}
+          >
+            Sync
+          </button>
+          <button
+            onClick={() => {
               indexedDB.deleteDatabase(store.rep.idbName);
               window.location.reload();
             }}
