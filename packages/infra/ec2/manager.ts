@@ -210,7 +210,7 @@ async function removeApp(name: string) {
   console.log(`Removed app '${name}'`);
 }
 
-async function create({ sshPubkey }: { sshPubkey: string }) {
+async function provision({ sshPubkey }: { sshPubkey: string }) {
   const securityGroupName = `${config.name}-security-group`;
 
   // Check if security group exists
@@ -348,9 +348,9 @@ async function main() {
   const args = process.argv.slice(3);
 
   switch (command) {
-    case "create":
+    case "provision":
       const sshPubkey = await Bun.file(resolve(process.env.HOME!, ".ssh/id_ed25519.pub")).text();
-      await create({ sshPubkey });
+      await provision({ sshPubkey });
       break;
 
     case "setup":
