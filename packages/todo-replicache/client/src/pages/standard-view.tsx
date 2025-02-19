@@ -68,6 +68,13 @@ function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void })
   );
 }
 
+function focusItem(id: string) {
+  const editor = document.getElementById(id)?.querySelector("[contenteditable='true']");
+  if (editor) {
+    (editor as HTMLElement).focus();
+  }
+}
+
 export function StandardView() {
   const store = useStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,12 +96,7 @@ export function StandardView() {
         if (e.shiftKey) {
           navigate(`/items/${id}`);
         } else {
-          setTimeout(() => {
-            const editor = document.getElementById(id)?.querySelector(".ProseMirror");
-            if (editor) {
-              (editor as HTMLElement).focus();
-            }
-          }, 0);
+          setTimeout(() => focusItem(id));
         }
       }
       if (isHotkey("escape", e)) {
@@ -190,6 +192,16 @@ export function StandardView() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className={cn("outline-none")}
         />
+        <button
+          onClick={() => {
+            const id = ulid();
+            store.items.create({ id });
+            setTimeout(() => focusItem(id), 100);
+          }}
+          className="md:hidden flex items-center justify-center w-8 h-8 ml-auto mr-2 hover:bg-secondary/10"
+        >
+          <span className="text-xl">+</span>
+        </button>
       </div>
       <div
         ref={itemsContainerRef}

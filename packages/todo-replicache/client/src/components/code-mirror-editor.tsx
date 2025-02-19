@@ -11,12 +11,20 @@ import {
 } from "@codemirror/language";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
-import { completionKeymap, closeBracketsKeymap, closeBrackets } from "@codemirror/autocomplete";
+import { syntaxTree } from "@codemirror/language";
+import {
+  completionKeymap,
+  closeBracketsKeymap,
+  closeBrackets,
+  autocompletion,
+  CompletionContext,
+} from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { tags } from "@lezer/highlight";
 import { useStore } from "../hooks/store";
+import { useNavigate } from "react-router-dom";
 
 export function CodeMirrorEditor({
   itemId,
@@ -25,6 +33,7 @@ export function CodeMirrorEditor({
   setSelectionBelow,
   onUpdate,
   deleteOnBackspace = false,
+  autoFocus = false,
 }: {
   itemId: string;
   content: string;
@@ -32,10 +41,20 @@ export function CodeMirrorEditor({
   setSelectionBelow?: () => void;
   onUpdate?: (props: { itemId: string; getContent: () => string }) => void;
   deleteOnBackspace?: boolean;
+  autoFocus?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const store = useStore();
   const initialContent = useRef(content);
+  const navigate = useNavigate();
+
+  // const notesRef = useRef<Item[]>([]);
+  // useEffect(() => {
+  //   (async () => {
+  //     const notes = await store.items.getAll();
+  //     notesRef.current = notes;
+  //   })();
+  // }, []);
 
   useEffect(() => {
     if (!container.current) return;
@@ -43,6 +62,45 @@ export function CodeMirrorEditor({
       doc: initialContent.current,
       parent: container.current,
       extensions: [
+        autocompletion({
+          activateOnTyping: true,
+          override: [
+            async (ctx: CompletionContext) => {
+              // If user hasn't typed "@", skip
+              const tokenBefore = ctx.matchBefore(/@[\w\s-]+/);
+              if (!tokenBefore) return null;
+
+              // Offer completions for all possible notes
+              const notes = await store.items.getAll();
+              return {
+                from: tokenBefore.from + 1, // after '@'
+                options: notes.map((n) => {
+                  return {
+                    label: n.name || n.content,
+                    apply: (view: EditorView) => {
+                      let alias = n.name;
+                      if (alias === null) {
+                        const firstCharIndex = n.content.match(/\w/s)?.index || 0;
+                        const newLineIndex =
+                          firstCharIndex + (n.content.slice(firstCharIndex).match(/\n/)?.index || n.content.length);
+                        const title = n.content.slice(firstCharIndex, newLineIndex).trim();
+                        alias = title;
+                      }
+                      const snippet = `[${alias}](./${n.id}.md)`;
+                      view.dispatch({
+                        changes: {
+                          from: tokenBefore.from,
+                          to: ctx.pos,
+                          insert: snippet,
+                        },
+                      });
+                    },
+                  };
+                }),
+              };
+            },
+          ],
+        }),
         markdown(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -61,9 +119,43 @@ export function CodeMirrorEditor({
             { tag: tags.heading1, textDecoration: "none" },
             { tag: tags.heading2, textDecoration: "none" },
             { tag: tags.heading3, textDecoration: "none" },
+            { tag: tags.link, cursor: "pointer" },
             { tag: tags.url, color: "var(--text-secondary)" },
           ])
         ),
+        EditorView.domEventHandlers({
+          click: (event, view) => {
+            console.log("clicked");
+            const pos = view.posAtDOM(event.target as Node);
+            const tree = syntaxTree(view.state);
+            const node = tree.resolveInner(pos);
+
+            // Find the URL node
+            let urlNode: typeof node | null = null;
+            if (node.name === "URL") {
+              urlNode = node;
+            } else if (node.name === "Link") {
+              const cursor = node.cursor();
+              while (cursor.next()) {
+                if (cursor.name === "URL") {
+                  urlNode = cursor.node;
+                  break;
+                }
+              }
+            }
+            if (!urlNode) return false;
+
+            const url = view.state.doc.sliceString(urlNode.from, urlNode.to);
+            event.preventDefault();
+            if (url.startsWith("./")) {
+              const id = url.slice(2).split(".")[0];
+              navigate(`/items/${id}`);
+            } else {
+              window.open(url);
+            }
+            return true;
+          },
+        }),
         // Set the caret color to the primary text color
         EditorView.theme({
           ".cm-content": {
@@ -142,6 +234,7 @@ export function CodeMirrorEditor({
             run: (view) => {
               if (deleteOnBackspace && view.state.selection.main.from === 0 && view.state.doc.toString().trim() === "") {
                 store.items.delete(itemId);
+                setSelectionAbove?.();
                 return true;
               }
               return false;
@@ -164,43 +257,11 @@ export function CodeMirrorEditor({
         ]),
       ],
     });
+    if (autoFocus) {
+      view.focus();
+    }
     return () => view.destroy();
-  }, [onUpdate, itemId, setSelectionAbove, setSelectionBelow, deleteOnBackspace, store.items]);
+  }, [onUpdate, itemId, setSelectionAbove, setSelectionBelow, deleteOnBackspace, store.items, autoFocus, navigate]);
 
   return <div ref={container}></div>;
 }
-
-// Autocompletion
-// Load the autocompletion system
-// autocompletion({
-//   activateOnTyping: true,
-//   override: [
-//     (ctx: CompletionContext) => {
-//       // If user hasn't typed "@", skip
-//       const tokenBefore = ctx.matchBefore(/@[\w\s-]+/);
-//       if (!tokenBefore) return null;
-
-//       // Offer completions for all possible notes
-//       return {
-//         from: tokenBefore.from + 1, // after '@'
-//         options: notesRef.current.map((n) => {
-//           return {
-//             label: n.name || n.content,
-//             apply: (view: EditorView) => {
-//               const title = n.content.match(/^#\s+([^\n]+)\n/)?.[1]?.trim();
-//               const alias = n.name || title || n.content.slice(0, 20) + (n.content.length > 20 ? "..." : "") || n.id;
-//               const snippet = `[${alias}](./${n.id}.md)`;
-//               view.dispatch({
-//                 changes: {
-//                   from: tokenBefore.from,
-//                   to: ctx.pos,
-//                   insert: snippet,
-//                 },
-//               });
-//             },
-//           };
-//         }),
-//       };
-//     },
-//   ],
-// }),import CodeMirrorEditor from "./code-mirror-editor";

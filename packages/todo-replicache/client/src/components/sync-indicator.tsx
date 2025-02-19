@@ -4,13 +4,13 @@ import { useDebounce } from "../hooks/use-debounce";
 
 export function SyncIndicator() {
   const store = useStore();
-  const [online, setOnline] = useState(true);
+  const [online, setOnline] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [countPendingMutations, setCountPendingMutations] = useState(0);
   const setSyncingDebounced = useDebounce(setSyncing, 1000);
 
   useEffect(() => {
-    setOnline(store.rep.online);
+    setOnline(!!store.rep.pushURL && !!store.rep.pullURL && store.rep.online);
     store.rep.onOnlineChange = setOnline;
     store.rep.onSync = async (syncing) => {
       setSyncingDebounced(syncing);

@@ -91,7 +91,7 @@ export function ItemPage() {
             />
             {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
-          <CodeMirrorEditor itemId={item.id} content={item.content} onUpdate={handleUpdate} />
+          <CodeMirrorEditor itemId={item.id} content={item.content} onUpdate={handleUpdate} autoFocus={true} />
         </div>
       </div>
     </div>

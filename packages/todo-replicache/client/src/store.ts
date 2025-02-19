@@ -116,7 +116,7 @@ export function createStore() {
         contentType = "markdown",
       }: {
         id?: string;
-        content: string;
+        content?: string;
         contentType?: "markdown" | "json";
         dueDate?: string;
       }) => {
@@ -224,7 +224,7 @@ export function createStore() {
       undoManager.destroy();
       rep.close();
     },
-  };
+  } as const;
 }
 
 export type Store = ReturnType<typeof createStore>;
