@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSubscribe } from "replicache-react";
 import { useStore } from "../hooks/store";
 import { useDebounce } from "../hooks/use-debounce";
+import { CodeMirrorEditor } from "../components/code-mirror-editor";
 import isHotkey from "is-hotkey";
-import { MarkdownEditor } from "../components/MarkdownEditor";
 
 export function ItemPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,9 +69,12 @@ export function ItemPage() {
       className="h-full overflow-y-auto scrollbar-hide hover:scrollbar-default [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#30363d] [&::-webkit-scrollbar-track]:bg-transparent"
     >
       <div className="max-w-3xl mx-auto pb-32">
-        <div className="mb-8">
+        <div className="my-8">
           <div className="flex items-center gap-2">
             <input
+              className={`mb-2 px-2 py-1 text-xs font-mono bg-[var(--bg-primary)] border-none outline-none ${
+                conflictingName ? "border-red-500" : "border-[var(--border-color)]"
+              } rounded-md text-[var(--text-secondary)] w-auto`}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -89,13 +92,10 @@ export function ItemPage() {
                   store.items.update(id, { name });
                 }
               }}
-              className={`mb-2 px-2 py-1 text-xs font-mono bg-[var(--bg-primary)] border-none outline-none ${
-                conflictingName ? "border-red-500" : "border-[var(--border-color)]"
-              } rounded-md text-[var(--text-secondary)] w-auto`}
             />
             {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
-          <MarkdownEditor itemId={item.id} content={item.content} onUpdate={handleUpdate} onKeyDown={handleKeyDownInEditor} />
+          <CodeMirrorEditor itemId={item.id} content={item.content} onUpdate={handleUpdate} />
         </div>
       </div>
     </div>

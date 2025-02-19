@@ -11,7 +11,6 @@ import { Sidebar, SidebarClose } from "lucide-react";
 import { SyncIndicator } from "./components/sync-indicator";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import CodeMirrorPage from "./pages/code-mirror-editor";
 
 declare global {
   interface Window {
@@ -139,7 +138,6 @@ function App() {
           <Routes>
             <Route path="/" element={<StandardView />} />
             <Route path="/items/:id" element={<ItemPage />} />
-            <Route path="/code-mirror" element={<CodeMirrorPage />} />
           </Routes>
         </Layout>
       </Router>

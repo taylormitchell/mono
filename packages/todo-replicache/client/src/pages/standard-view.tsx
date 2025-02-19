@@ -33,7 +33,12 @@ function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void })
   }, 1000);
 
   return (
-    <div id={item.id} className={cn("item flex items-start px-4 py-2 hover:bg-[var(--hover-color)] relative group")}>
+    <div
+      id={item.id}
+      className={cn(
+        "item flex items-start my-1 px-4 py-2 border border-primary rounded-md hover:bg-[var(--hover-color)] relative group"
+      )}
+    >
       <div className="flex-1">
         <div className="flex items-center gap-4">
           <CodeMirrorEditor
@@ -68,6 +73,7 @@ export function StandardView() {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const itemsContainerRef = useRef<HTMLDivElement>(null);
+  const [limit, setLimit] = useState(20);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -166,7 +172,7 @@ export function StandardView() {
     });
 
   return (
-    <div className="h-full w-full flex flex-col items-center">
+    <div className="h-full w-full pb-8 flex flex-col items-center">
       <div className="w-full h-10 pl-12 flex items-center gap-4 ml-4">
         <input
           ref={searchInputRef}
@@ -195,9 +201,15 @@ export function StandardView() {
         )}
       >
         <div className="w-[1000px] min-w-0 flex flex-col shrink">
-          {filteredItems.map((item) => (
+          {filteredItems.slice(0, limit).map((item) => (
             <ItemRow key={item.id} item={item} focusSearch={focusSearch} />
           ))}
+          {limit < filteredItems.length && (
+            <button onClick={() => setLimit(limit + 20)} className="text-xs text-secondary my-8">
+              Show more
+            </button>
+          )}
+          <div className="h-[100px] w-full shrink-0"></div>
         </div>
       </div>
     </div>

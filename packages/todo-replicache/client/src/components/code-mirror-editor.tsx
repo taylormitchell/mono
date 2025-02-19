@@ -35,21 +35,12 @@ export function CodeMirrorEditor({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const store = useStore();
-  // const notes = useSubscribe(
-  //   store.rep,
-  //   async (tx) => {
-  //     const notes = await store.items.getAll(tx);
-  //     return notes;
-  //   },
-  //   { dependencies: [], default: [] as Item[] }
-  // );
-  // const notesRef = useRef(notes);
-  // notesRef.current = notes;
+  const initialContent = useRef(content);
 
   useEffect(() => {
     if (!container.current) return;
     const view = new EditorView({
-      doc: content,
+      doc: initialContent.current,
       parent: container.current,
       extensions: [
         markdown(),
@@ -77,6 +68,9 @@ export function CodeMirrorEditor({
         EditorView.theme({
           ".cm-content": {
             caretColor: "var(--text-primary)",
+          },
+          ".cm-focused": {
+            outline: "none",
           },
           ".cm-gutters": {
             backgroundColor: "transparent",
@@ -106,39 +100,7 @@ export function CodeMirrorEditor({
         bracketMatching(),
         // Automatically close brackets
         closeBrackets(),
-        // Load the autocompletion system
-        // autocompletion({
-        //   activateOnTyping: true,
-        //   override: [
-        //     (ctx: CompletionContext) => {
-        //       // If user hasn't typed "@", skip
-        //       const tokenBefore = ctx.matchBefore(/@[\w\s-]+/);
-        //       if (!tokenBefore) return null;
 
-        //       // Offer completions for all possible notes
-        //       return {
-        //         from: tokenBefore.from + 1, // after '@'
-        //         options: notesRef.current.map((n) => {
-        //           return {
-        //             label: n.name || n.content,
-        //             apply: (view: EditorView) => {
-        //               const title = n.content.match(/^#\s+([^\n]+)\n/)?.[1]?.trim();
-        //               const alias = n.name || title || n.content.slice(0, 20) + (n.content.length > 20 ? "..." : "") || n.id;
-        //               const snippet = `[${alias}](./${n.id}.md)`;
-        //               view.dispatch({
-        //                 changes: {
-        //                   from: tokenBefore.from,
-        //                   to: ctx.pos,
-        //                   insert: snippet,
-        //                 },
-        //               });
-        //             },
-        //           };
-        //         }),
-        //       };
-        //     },
-        //   ],
-        // }),
         // Change the cursor to a crosshair when holding alt
         crosshairCursor(),
         // Style the gutter for current line specially
@@ -202,7 +164,42 @@ export function CodeMirrorEditor({
       ],
     });
     return () => view.destroy();
-  }, [onUpdate, itemId, setSelectionAbove, setSelectionBelow]);
+  }, [onUpdate, itemId, setSelectionAbove, setSelectionBelow, deleteOnBackspace, store.items]);
 
   return <div ref={container}></div>;
 }
+
+// Autocompletion
+// Load the autocompletion system
+// autocompletion({
+//   activateOnTyping: true,
+//   override: [
+//     (ctx: CompletionContext) => {
+//       // If user hasn't typed "@", skip
+//       const tokenBefore = ctx.matchBefore(/@[\w\s-]+/);
+//       if (!tokenBefore) return null;
+
+//       // Offer completions for all possible notes
+//       return {
+//         from: tokenBefore.from + 1, // after '@'
+//         options: notesRef.current.map((n) => {
+//           return {
+//             label: n.name || n.content,
+//             apply: (view: EditorView) => {
+//               const title = n.content.match(/^#\s+([^\n]+)\n/)?.[1]?.trim();
+//               const alias = n.name || title || n.content.slice(0, 20) + (n.content.length > 20 ? "..." : "") || n.id;
+//               const snippet = `[${alias}](./${n.id}.md)`;
+//               view.dispatch({
+//                 changes: {
+//                   from: tokenBefore.from,
+//                   to: ctx.pos,
+//                   insert: snippet,
+//                 },
+//               });
+//             },
+//           };
+//         }),
+//       };
+//     },
+//   ],
+// }),import CodeMirrorEditor from "./code-mirror-editor";
