@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSubscribe } from "replicache-react";
 import { useStore } from "../hooks/store";
 import { useDebounce } from "../hooks/use-debounce";
-import { CodeMirrorEditor } from "../components/code-mirror-editor";
 import isHotkey from "is-hotkey";
+import { CodeMirrorEditor } from "../components/code-mirror-editor";
 
 export function ItemPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,19 +37,15 @@ export function ItemPage() {
     store.items.update(itemId, { content: getContent() });
   }, 1000);
 
-  const handleKeyDownInEditor = useCallback((e: KeyboardEvent) => {
-    if (isHotkey("escape", e) && e.currentTarget instanceof HTMLElement) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.currentTarget.blur();
-      return true;
-    }
-    return false;
-  }, []);
-
   useEffect(
     function handleKeyDownOutsideEditor() {
-      const f = (e: KeyboardEvent) => isHotkey("escape", e) && navigate("/");
+      const f = (e: KeyboardEvent) => {
+        if (isHotkey("escape", e)) {
+          e.preventDefault();
+          e.stopPropagation();
+          navigate("/");
+        }
+      };
       document.addEventListener("keydown", f);
       return () => document.removeEventListener("keydown", f);
     },

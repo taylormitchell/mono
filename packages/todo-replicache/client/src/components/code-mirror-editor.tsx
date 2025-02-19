@@ -109,12 +109,13 @@ export function CodeMirrorEditor({
           {
             key: "Escape",
             run: (view) => {
-              if (view.hasFocus) {
-                view.dom.blur();
+              if (view.hasFocus && document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur();
                 return true;
               }
               return false;
             },
+            stopPropagation: true,
           },
           {
             key: "ArrowUp",
