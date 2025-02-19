@@ -86,6 +86,8 @@ export function CodeMirrorEditor({
             backgroundColor: "transparent",
           },
         }),
+        // Enable word wrapping
+        EditorView.lineWrapping,
         // A line number gutter
         // lineNumbers(),
         // A gutter with code folding markers
