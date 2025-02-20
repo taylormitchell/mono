@@ -4,21 +4,21 @@ import { StoreContext, useStore } from "./hooks/store";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { ItemPage } from "./pages/item-page";
 import { StandardView } from "./pages/standard-view";
+import { SettingsPage } from "./pages/settings";
 import { isHotkey } from "is-hotkey";
 
 import { cn } from "./lib/utils";
 import { Sidebar, SidebarClose } from "lucide-react";
 import { SyncIndicator } from "./components/sync-indicator";
 import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import { sidebarAtom } from "./lib/atoms";
+import { CommandBar } from "./components/command-bar";
 
 declare global {
   interface Window {
     store: Store | null;
   }
 }
-
-const sidebarAtom = atomWithStorage("sidebar-open", false);
 
 function StoreProvider({ children }: { children: React.ReactNode }) {
   const [{ isLoading, store }, setStore] = useState<{ isLoading: true; store: null } | { isLoading: false; store: Store }>({
@@ -66,6 +66,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-full w-full bg-primary flex relative overflow-hidden">
+      <CommandBar />
       {/* Sidebar Toggle Button */}
       <div className="fixed top-0 left-0 z-50 p-2 rounded-md flex items-center gap-2">
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
@@ -100,6 +101,15 @@ function Layout({ children }: { children: React.ReactNode }) {
             Home
           </button>
           <div className="border-t border-primary my-4" />
+          <button
+            onClick={() => {
+              navigate("/settings");
+              setIsSidebarOpen(false);
+            }}
+            className={"w-full px-3 py-2 text-left rounded-md text-secondary"}
+          >
+            Settings
+          </button>
           <button
             onClick={() => {
               store.rep.pull();
@@ -138,6 +148,7 @@ function App() {
           <Routes>
             <Route path="/" element={<StandardView />} />
             <Route path="/items/:id" element={<ItemPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Layout>
       </Router>

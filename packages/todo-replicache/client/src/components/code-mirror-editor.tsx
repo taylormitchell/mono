@@ -25,6 +25,9 @@ import { EditorState } from "@codemirror/state";
 import { tags } from "@lezer/highlight";
 import { useStore } from "../hooks/store";
 import { useNavigate } from "react-router-dom";
+import { useAtomValue } from "jotai";
+import { featureFlagsAtom } from "../lib/atoms";
+import { vim } from "@replit/codemirror-vim";
 
 export function CodeMirrorEditor({
   itemId,
@@ -47,6 +50,7 @@ export function CodeMirrorEditor({
   const store = useStore();
   const initialContent = useRef(content);
   const navigate = useNavigate();
+  const featureFlags = useAtomValue(featureFlagsAtom);
 
   // const notesRef = useRef<Item[]>([]);
   // useEffect(() => {
@@ -62,6 +66,7 @@ export function CodeMirrorEditor({
       doc: initialContent.current,
       parent: container.current,
       extensions: [
+        ...(featureFlags.vimMode ? [vim()] : []),
         autocompletion({
           activateOnTyping: true,
           override: [
@@ -261,7 +266,17 @@ export function CodeMirrorEditor({
       view.focus();
     }
     return () => view.destroy();
-  }, [onUpdate, itemId, setSelectionAbove, setSelectionBelow, deleteOnBackspace, store.items, autoFocus, navigate]);
+  }, [
+    onUpdate,
+    itemId,
+    setSelectionAbove,
+    setSelectionBelow,
+    deleteOnBackspace,
+    store.items,
+    autoFocus,
+    navigate,
+    featureFlags.vimMode,
+  ]);
 
   return <div ref={container}></div>;
 }
