@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSubscribe } from "replicache-react";
 import { useStore } from "../hooks/store";
@@ -33,9 +33,16 @@ export function ItemPage() {
   }, 200);
   const conflictingName = item && existingNames.has(name) && name !== item.name;
 
-  const handleUpdate = useDebounce(({ itemId, getContent }: { itemId: string; getContent: () => string }) => {
-    store.items.update(itemId, { content: getContent() });
+  const handleUpdate = useDebounce(({ itemId, content }: { itemId: string; content: string }) => {
+    store.items.update(itemId, { content });
   }, 1000);
+
+  const handleUnmount = useCallback(
+    ({ itemId, content }: { itemId: string; content: string }) => {
+      handleUpdate.runImmediately({ itemId, content });
+    },
+    [handleUpdate]
+  );
 
   useEffect(
     function handleKeyDownOutsideEditor() {
@@ -91,7 +98,13 @@ export function ItemPage() {
             />
             {conflictingName && <span className="text-xs text-[#6e7681]">Name already exists</span>}
           </div>
-          <CodeMirrorEditor itemId={item.id} content={item.content} onUpdate={handleUpdate} autoFocus={true} />
+          <CodeMirrorEditor
+            itemId={item.id}
+            content={item.content}
+            onUpdate={handleUpdate}
+            onUnmount={handleUnmount}
+            autoFocus={true}
+          />
         </div>
       </div>
     </div>

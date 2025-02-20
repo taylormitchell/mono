@@ -1,5 +1,5 @@
 import { crosshairCursor, EditorView, highlightActiveLineGutter, highlightSpecialChars, keymap } from "@codemirror/view";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import {
   bracketMatching,
   defaultHighlightStyle,
@@ -35,6 +35,7 @@ export function CodeMirrorEditor({
   setSelectionAbove,
   setSelectionBelow,
   onUpdate,
+  onUnmount,
   deleteOnBackspace = false,
   autoFocus = false,
 }: {
@@ -42,28 +43,26 @@ export function CodeMirrorEditor({
   content: string;
   setSelectionAbove?: () => void;
   setSelectionBelow?: () => void;
-  onUpdate?: (props: { itemId: string; getContent: () => string }) => void;
+  onUpdate?: (props: { itemId: string; content: string }) => void;
+  onUnmount?: (props: { itemId: string; content: string }) => void;
   deleteOnBackspace?: boolean;
   autoFocus?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const store = useStore();
-  const initialContent = useRef(content);
   const navigate = useNavigate();
   const featureFlags = useAtomValue(featureFlagsAtom);
-
-  // const notesRef = useRef<Item[]>([]);
-  // useEffect(() => {
-  //   (async () => {
-  //     const notes = await store.items.getAll();
-  //     notesRef.current = notes;
-  //   })();
-  // }, []);
+  // The initial content is the content value when this item id was first rendered.
+  // We do this to avoid the editor getting re-created every time we save it's content.
+  const initialContent = useMemo(() => {
+    return content;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemId]);
 
   useEffect(() => {
     if (!container.current) return;
     const view = new EditorView({
-      doc: initialContent.current,
+      doc: initialContent,
       parent: container.current,
       extensions: [
         ...(featureFlags.vimMode ? [vim()] : []),
@@ -109,7 +108,7 @@ export function CodeMirrorEditor({
         markdown(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            onUpdate?.({ itemId, getContent: () => update.state.doc.toString() });
+            onUpdate?.({ itemId, content: update.state.doc.toString() });
           }
         }),
         // Internally, codemirror represents code elements (e.g., keywords,
@@ -265,10 +264,15 @@ export function CodeMirrorEditor({
     if (autoFocus) {
       view.focus();
     }
-    return () => view.destroy();
+    return () => {
+      onUnmount?.({ itemId, content: view.state.doc.toString() });
+      view.destroy();
+    };
   }, [
-    onUpdate,
     itemId,
+    initialContent,
+    onUpdate,
+    onUnmount,
     setSelectionAbove,
     setSelectionBelow,
     deleteOnBackspace,
