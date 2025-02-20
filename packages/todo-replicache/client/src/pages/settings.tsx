@@ -5,7 +5,7 @@ export const SettingsPage = () => {
   const [featureFlags, setFeatureFlags] = useAtom(featureFlagsAtom);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto my-12 px-6">
       <h1 className="text-3xl font-bold mb-8">Settings</h1>
 
       <section className="mb-8">

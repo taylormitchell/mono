@@ -74,9 +74,10 @@ function Layout({ children }: { children: React.ReactNode }) {
         </button>
       </div>
 
+      {/* Sidebar */}
       <div
         className={cn(
-          "w-48 bg-primary border-primary border-r p-4 fixed min-h-screen z-40 transition-transform duration-300 ease-in-out",
+          "fixed top-0 left-0 w-48 bg-primary border-primary border-r p-4 min-h-screen z-40 transition-transform duration-300 ease-in-out",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -134,8 +135,8 @@ function Layout({ children }: { children: React.ReactNode }) {
       {/* Overlay */}
       {isSidebarOpen && <div className="fixed inset-0 z-30" onClick={() => setIsSidebarOpen(false)} />}
 
-      {/* Main content */}
-      <div className={cn("h-full w-full transition-all duration-300", isSidebarOpen ? "pl-48" : "pl-0")}>{children}</div>
+      {/* Main content*/}
+      <div className="h-full w-full">{children}</div>
     </div>
   );
 }
