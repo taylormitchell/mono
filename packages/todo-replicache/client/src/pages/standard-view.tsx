@@ -28,8 +28,8 @@ function ItemRow({ item, focusSearch }: { item: Item; focusSearch: () => void })
     if (el instanceof HTMLElement) el.focus();
   }, [item.id]);
 
-  const handleUpdate = useDebounce(({ itemId, getContent }: { itemId: string; getContent: () => string }) => {
-    store.items.update(itemId, { content: getContent() });
+  const handleUpdate = useDebounce(({ itemId, content }: { itemId: string; content: string }) => {
+    store.items.update(itemId, { content });
   }, 1000);
 
   return (
