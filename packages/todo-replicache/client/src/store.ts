@@ -23,7 +23,6 @@ if (env.VITE_REPLICACHE_PUSH_URL?.startsWith("/")) {
 if (env.VITE_REPLICACHE_PULL_URL?.startsWith("/")) {
   env.VITE_REPLICACHE_PULL_URL = window.location.origin + env.VITE_REPLICACHE_PULL_URL;
 }
-console.log("env", env);
 
 // Define mutator types
 type MutationNames = Mutation["name"];

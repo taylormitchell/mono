@@ -99,6 +99,15 @@ export function StandardView() {
           setTimeout(() => focusItem(id));
         }
       }
+      if (isHotkey("ctrl+.", e)) {
+        const itemId = document.activeElement?.closest(".item")?.id;
+        if (itemId) {
+          e.preventDefault();
+          e.stopPropagation();
+          navigate(`/items/${itemId}`);
+          return;
+        }
+      }
       if (isHotkey("escape", e)) {
         e.preventDefault();
         e.stopPropagation();

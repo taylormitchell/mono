@@ -9,7 +9,7 @@ import {
   HighlightStyle,
   foldGutter,
 } from "@codemirror/language";
-import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
+import { historyKeymap, history } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import { syntaxTree } from "@codemirror/language";
 import {
@@ -247,7 +247,7 @@ export function CodeMirrorEditor({
           // Closed-brackets aware backspace
           ...closeBracketsKeymap,
           // A large set of basic bindings
-          ...defaultKeymap,
+          // ...defaultKeymap,
           // Search-related keys
           ...searchKeymap,
           // Redo/undo keys
