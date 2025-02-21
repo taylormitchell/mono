@@ -54,11 +54,11 @@ o() {
 }
 
 # taylor's tech
-alias t="bun /Users/taylormitchell/Code/home/packages/todo-cli/cli.ts"
-alias n="bun /Users/taylormitchell/Code/home/packages/note-cli/cli.ts"
+alias t="bun /Users/taylormitchell/Code/mono/packages/todo-cli/cli.ts"
+alias n="bun /Users/taylormitchell/Code/mono/packages/note-cli/cli.ts"
 alias x="clear"
-export home="/Users/taylormitchell/Code/home"
-export notes="/Users/taylormitchell/Code/home/notes"
+export mono="/Users/taylormitchell/Code/mono"
+export notes="/Users/taylormitchell/Code/notes/notes"
 
 
 

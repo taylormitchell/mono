@@ -1,0 +1,30 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "@taylor/todo-cli",
+      "dependencies": {
+        "chalk": "^5.3.0",
+        "commander": "^12.1.0",
+      },
+      "devDependencies": {
+        "@types/commander": "^2.12.2",
+        "@types/node": "^20.14.15",
+        "typescript": "^5.5.4",
+      },
+    },
+  },
+  "packages": {
+    "@types/commander": ["@types/commander@2.12.5", "", { "dependencies": { "commander": "*" } }, "sha512-YXGZ/rz+s57VbzcvEV9fUoXeJlBt5HaKu5iUheiIWNsJs23bz6AnRuRiZBRVBLYyPnixNvVnuzM5pSaxr8Yp/g=="],
+
+    "@types/node": ["@types/node@20.16.7", "", { "dependencies": { "undici-types": "~6.19.2" } }, ""],
+
+    "chalk": ["chalk@5.3.0", "", {}, ""],
+
+    "commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
+
+    "typescript": ["typescript@5.6.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-hjcS1mhfuyi4WW8IWtjP7brDrG2cuDZukyrYrSauoXGNgx0S7zceP07adYkJycEr56BOUTNPzbInooiN3fn1qw=="],
+
+    "undici-types": ["undici-types@6.19.8", "", {}, ""],
+  }
+}

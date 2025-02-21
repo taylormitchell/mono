@@ -1,8 +1,13 @@
 import path from "path";
 import { execSync } from "child_process";
+import "dotenv/config";
+
+if (!process.env.REPO_DIR) {
+  throw new Error("REPO_DIR is not set");
+}
 
 export function getRepoRoot() {
-  return path.resolve(__dirname, "../../");
+  return process.env.REPO_DIR;
 }
 
 export function getNotesDir() {

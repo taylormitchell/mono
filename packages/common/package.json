@@ -1,17 +1,20 @@
 {
   "name": "common",
   "version": "1.0.0",
+  "type": "module",
   "license": "ISC",
   "author": "Taylor Mitchell <taylor.j.mitchell@gmail.com>",
   "dependencies": {
     "chalk": "^4.1.2",
     "date-fns": "^3.6.0",
     "date-fns-tz": "^3.2.0",
+    "dotenv": "^16.4.7",
     "glob": "^8.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.2",
     "@types/glob": "^8.1.0",
-    "@types/node": "^18.0.0"
+    "@types/node": "^22.13.4"
   }
 }
