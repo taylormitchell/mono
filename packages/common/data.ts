@@ -1,6 +1,8 @@
 import path from "path";
 import { execSync } from "child_process";
-import "dotenv/config";
+import dotenv from "dotenv";
+
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 if (!process.env.REPO_DIR) {
   throw new Error("REPO_DIR is not set");
