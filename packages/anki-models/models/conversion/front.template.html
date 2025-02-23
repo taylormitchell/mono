@@ -1,18 +1,44 @@
 <script>
+  var isFirst = true;
   window.evaluateEquation = () => {
-    const input = 10;
-    const equation = document.getElementById("equation")?.innerHTML.replace("{{Input}}", input);
+    if (!isFirst && window.result) {
+      console.log("Already evaluated equation");
+      return window.result;
+    }
+    console.log("Evaluating equation");
+    isFirst = false;
+    const input = document.getElementById("input")?.innerHTML;
+    const args = input.split(/\s*,\s*/);
+    let inputValue = 0;
+    if (args[0].includes("-")) {
+      const [min, max] = args[0].split("-").map(Number);
+      const step = args[1] ? Number(args[1]) : 1;
+      inputValue = Math.floor(Math.random() * ((max - min) / step + 1)) * step + min;
+    } else if (args.length > 1) {
+      inputValue = args[Math.floor(Math.random() * args.length)];
+    } else {
+      inputValue = args[0];
+    }
+    const inputUnit = document.getElementById("inputUnit")?.innerHTML;
+    const outputUnit = document.getElementById("outputUnit")?.innerHTML;
+    const equation = document
+      .getElementById("equation")
+      ?.innerHTML.replace("{{Input}}", inputValue);
     const output = eval(equation);
-    window.result = { input, output };
+    window.result = { input: inputValue, output, inputUnit, outputUnit };
     return window.result;
   };
 </script>
+<div id="input" style="display: none">{{Input}}</div>
+<div id="inputUnit" style="display: none">{{InputUnit}}</div>
+<div id="outputUnit" style="display: none">{{OutputUnit}}</div>
 <div id="equation" style="display: none">{{Equation}}</div>
-<div id="input"></div>
+<div id="front"></div>
 <script>
   const result = window.evaluateEquation();
-  const inputElement = document.getElementById("input");
-  if (inputElement) {
-    inputElement.innerHTML = result.input;
+  const frontElement = document.getElementById("front");
+  if (frontElement) {
+    console.log("setting input", result);
+    frontElement.innerHTML = result.input + " " + result.inputUnit;
   }
 </script>

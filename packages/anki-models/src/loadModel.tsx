@@ -16,12 +16,25 @@ export function getAvailableModels(): string[] {
 }
 
 const frontTemplates = import.meta.glob("/models/*/front.template.html", {
-  as: "raw",
+  query: "raw",
+  import: "default",
   eager: true,
 });
-const backTemplates = import.meta.glob("/models/*/back.template.html", { as: "raw", eager: true });
-const fieldsFiles = import.meta.glob("/models/*/fields.txt", { as: "raw", eager: true });
-const stylingFiles = import.meta.glob("/models/*/styling.css", { as: "raw", eager: true });
+const backTemplates = import.meta.glob("/models/*/back.template.html", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const fieldsFiles = import.meta.glob("/models/*/fields.txt", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const stylingFiles = import.meta.glob("/models/*/styling.css", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
 
 console.log(frontTemplates);
 

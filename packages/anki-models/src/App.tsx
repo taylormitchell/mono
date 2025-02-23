@@ -112,7 +112,6 @@ function App() {
             ref={(el) => {
               if (el) {
                 el.innerHTML = renderFrontSide(model.frontTemplate);
-                console.log("evaluating front template script");
                 executeTemplate(el.innerHTML);
               }
             }}
@@ -126,7 +125,6 @@ function App() {
             ref={(el) => {
               if (el) {
                 el.innerHTML = renderBackSide(model.backTemplate, model.frontTemplate);
-                console.log("evaluating back template script");
                 executeTemplate(el.innerHTML);
               }
             }}
