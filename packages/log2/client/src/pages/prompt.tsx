@@ -8,7 +8,7 @@ import { GLOBAL_PROMPT_ID } from "../lib/utils";
 export function PromptEdit() {
   const store = useStore();
   const navigate = useNavigate();
-  const [editedContent, setEditedContent] = useState<string>("");
+  const [editedContent, setEditedContent] = useState<string | null>(null);
 
   const prompt = useSubscribe(
     store.rep,
@@ -24,13 +24,11 @@ export function PromptEdit() {
 
   const handleSave = async () => {
     if (await store.prompt.has(GLOBAL_PROMPT_ID)) {
-      console.log("updating prompt");
-      await store.prompt.update(GLOBAL_PROMPT_ID, { text: editedContent });
+      await store.prompt.update(GLOBAL_PROMPT_ID, { text: editedContent || "" });
     } else {
-      console.log("creating prompt");
       await store.prompt.create({
         id: GLOBAL_PROMPT_ID,
-        text: editedContent,
+        text: editedContent || "",
       });
     }
   };
@@ -49,7 +47,11 @@ export function PromptEdit() {
       </div>
 
       <div className="p-4 border-t border-base">
-        <button className="w-full py-2 bg-[var(--accent-color)] rounded hover:brightness-110" onClick={handleSave}>
+        <button
+          disabled={editedContent === null || editedContent === prompt?.text}
+          className="w-full py-2 bg-[var(--accent-color)] rounded hover:brightness-110 disabled:opacity-50 disabled:hover:brightness-100"
+          onClick={handleSave}
+        >
           Save Prompt
         </button>
       </div>
