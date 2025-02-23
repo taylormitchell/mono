@@ -4,7 +4,7 @@ import { useStore } from "../hooks/store";
 import { RefreshCcw, Trash2, Loader, ArrowUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { getTimestampWithTimezone } from "../lib/utils";
+import { getTimestampWithTimezone, GLOBAL_PROMPT_ID } from "../lib/utils";
 import { SyncIndicator } from "../components/sync-indicator";
 
 let apiUrl = import.meta.env.VITE_API_URL;
@@ -30,10 +30,11 @@ export function Home() {
   const processWithAI = async (logId: string, text: string, timestamp: string) => {
     setProcessingLogs((prev) => new Set(prev).add(logId));
     try {
+      const prompt = await store.prompt.get(GLOBAL_PROMPT_ID);
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, timestamp }),
+        body: JSON.stringify({ message: text, timestamp, userPrompt: prompt?.text || "" }),
       });
       const result = await response.json();
       if (result.success && Array.isArray(result.data)) {
@@ -81,6 +82,21 @@ export function Home() {
       <div className="flex items-center gap-4">
         <button onClick={() => store.hardReset()} className="hover-bg rounded-full">
           <RefreshCcw size={14} />
+        </button>
+        <button onClick={() => navigate("/prompt")} className="hover-bg rounded-full p-1" title="Edit Global Prompt">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
         </button>
         <div className="ml-auto">
           <SyncIndicator />

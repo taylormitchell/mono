@@ -11,9 +11,9 @@ import type { Request, Response } from "express";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { z } from "zod";
-import { logSchema, Mutation, mutationSchema } from "../../../shared/types";
+import { logSchema, Mutation, mutationSchema, promptSchema } from "../../../shared/types";
 import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
-import { logTable } from "./db/schema";
+import { logTable, promptTable } from "./db/schema";
 
 const pushSchema = z.object({
   pushVersion: z.literal(1),
@@ -90,6 +90,19 @@ export async function handlePull(req: Request, res: Response) {
         });
       }
 
+      // Get changed prompts since requested version
+      const changedPrompts = await tr
+        .select()
+        .from(promptTable)
+        .where(gt(promptTable.version, clientVersion));
+      for (const prompt of changedPrompts) {
+        patch.push({
+          op: "put",
+          key: `prompt/${prompt.id}`,
+          value: promptSchema.parse(prompt),
+        });
+      }
+
       // Build and return response
       const body = {
         lastMutationIDChanges,
@@ -126,45 +139,75 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
 
   console.log(`Mutation ${mutation.id} is new - processing`);
 
-  switch (mutation.name) {
-    case "createLog": {
-      await db
-        .insert(logTable)
-        .values({
-          ...mutation.args,
-          version: nextVersion,
-        })
-        .onConflictDoUpdate({
-          target: [logTable.id],
-          set: {
+  try {
+    switch (mutation.name) {
+      case "createLog": {
+        await db
+          .insert(logTable)
+          .values({
             ...mutation.args,
             version: nextVersion,
-          },
-        });
-      break;
-    }
-    case "updateLog": {
-      const { id, ...args } = mutation.args;
-      await db
-        .update(logTable)
-        .set({
-          ...args,
+          })
+          .onConflictDoUpdate({
+            target: [logTable.id],
+            set: {
+              ...mutation.args,
+              version: nextVersion,
+            },
+          });
+        break;
+      }
+      case "updateLog": {
+        const { id, ...args } = mutation.args;
+        await db
+          .update(logTable)
+          .set({
+            ...args,
+            version: nextVersion,
+          })
+          .where(eq(logTable.id, id));
+        break;
+      }
+      case "deleteLog": {
+        const { id: logID, deletedAt } = mutation.args;
+        await db
+          .update(logTable)
+          .set({ deletedAt, version: nextVersion })
+          .where(eq(logTable.id, logID));
+        break;
+      }
+      case "createPrompt": {
+        await db.insert(promptTable).values({
+          ...mutation.args,
           version: nextVersion,
-        })
-        .where(eq(logTable.id, id));
-      break;
+        });
+        break;
+      }
+      case "updatePrompt": {
+        const { id, ...args } = mutation.args;
+        await db
+          .update(promptTable)
+          .set({
+            ...args,
+            version: nextVersion,
+          })
+          .where(eq(promptTable.id, id));
+        break;
+      }
+      case "deletePrompt": {
+        const { id: promptID, deletedAt } = mutation.args;
+        await db
+          .update(promptTable)
+          .set({ deletedAt, version: nextVersion })
+          .where(eq(promptTable.id, promptID));
+        break;
+      }
+      default:
+        console.log("unknown mutation", mutation);
+        mutation satisfies never;
     }
-    case "deleteLog": {
-      const { id: logID, deletedAt } = mutation.args;
-      await db
-        .update(logTable)
-        .set({ deletedAt, version: nextVersion })
-        .where(eq(logTable.id, logID));
-      break;
-    }
-    default:
-      console.log("unknown mutation", mutation);
-      mutation satisfies never;
+  } catch (e) {
+    console.error(`Error processing mutation ${mutation.id}`, e);
   }
 
   await setLastMutationID(db, clientID, clientGroupID, nextMutationID, nextVersion);

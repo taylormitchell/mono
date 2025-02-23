@@ -94,24 +94,9 @@ You are a helpful assistant that helps me track my health and fitness.
 You will be given a free-text description of an activity and you will need to return a json object 
 that represents it.
 
-## Relevant Information 
+## User provided context
 
-### Bristol Stool Scale
-
-### Types 
-- Type 1: Separate hard lumps, like nuts. Very hard to pass. Dark, pellet-like pieces. Indicates constipation.
-- Type 2: Sausage-shaped but lumpy. Hard and compact. Multiple lumps stuck together. Still constipated.
-- Type 3: Sausage with surface cracks. Well-formed but firm. Normal stool.
-- Type 4: Smooth, soft sausage/snake. Medium to light brown. Ideal stool type.
-- Type 5: Soft blobs with clear-cut edges. Easy to pass. Trending loose but still normal.
-- Type 6: Fluffy, mushy pieces with ragged edges. Soft with no clear shape. Mild diarrhea.
-- Type 7: Entirely liquid, watery with no solid pieces. Classic diarrhea.
-
-### Key Terms
-- Hard → Types 1-2
-- Well-formed → Types 3-4
-- Soft/Loose → Types 5-6
-- Liquid → Type 7
+{{USER_PROMPT}}
 
 ## Example Outputs
 
@@ -125,16 +110,17 @@ const responseSchema = z.object({ logs: logDataSchema });
 
 export async function datatify({
   message,
+  userPrompt,
   timestamp,
 }: {
   message: string;
+  userPrompt: string;
   timestamp: string;
 }): Promise<LogData | null> {
   const recentLogs = await getRecentLogs();
-  console.log("recentLogs", recentLogs);
-  const examples = [...initialExamples, ...recentLogs].slice(0, 10);
+  const examples = [...initialExamples, ...recentLogs].slice(0, 20);
 
-  const systemPrompt = systemPromptTemplate.replace(
+  const systemPrompt = systemPromptTemplate.replace("{{USER_PROMPT}}", userPrompt).replace(
     "{{EXAMPLES}}",
     examples
       .map((e) => {
@@ -148,6 +134,7 @@ export async function datatify({
       })
       .join("\n")
   );
+  console.log("systemPrompt", systemPrompt);
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",

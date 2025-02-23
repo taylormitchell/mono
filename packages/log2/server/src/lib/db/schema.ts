@@ -11,6 +11,15 @@ export const logTable = pgTable("log", {
   version: integer("version").notNull().default(0),
 });
 
+export const promptTable = pgTable("prompt", {
+  id: text("id").primaryKey(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  deletedAt: text("deleted_at"),
+  text: text("text").notNull().default(""),
+  version: integer("version").notNull().default(0),
+});
+
 export const replicacheServerTable = pgTable("replicache_server", {
   id: serial("id").primaryKey(),
   version: integer("version").notNull(),

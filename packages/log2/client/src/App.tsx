@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { isHotkey } from "is-hotkey";
 import { Home } from "./pages/home";
 import { LogEdit } from "./pages/edit";
+import { PromptEdit } from "./pages/prompt";
 
 declare global {
   interface Window {
@@ -54,6 +55,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/edit/:id" element={<LogEdit />} />
+            <Route path="/prompt" element={<PromptEdit />} />
           </Routes>
         </Router>
       </div>

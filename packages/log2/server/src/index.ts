@@ -23,7 +23,11 @@ app.get("/api/", (_: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
 });
 
-const aiRequestSchema = z.object({ message: z.string(), timestamp: z.string() });
+const aiRequestSchema = z.object({
+  message: z.string(),
+  timestamp: z.string(),
+  userPrompt: z.string(),
+});
 app.post("/api/ai", async (req: Request, res: Response) => {
   try {
     console.log("Received AI request", req.body);

@@ -15,6 +15,17 @@ export const logSchema = z.object({
 
 export type Log = z.infer<typeof logSchema>;
 
+export const promptSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable().default(null),
+  version: z.number().default(0),
+});
+
+export type Prompt = z.infer<typeof promptSchema>;
+
 const createLogMutationSchema = z.object({
   id: z.number(),
   clientID: z.string(),
@@ -44,10 +55,39 @@ const deleteLogMutationSchema = z.object({
   }),
 });
 
+const createPromptMutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  timestamp: z.number(),
+  name: z.literal("createPrompt"),
+  args: promptSchema,
+});
+
+const updatePromptMutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  timestamp: z.number(),
+  name: z.literal("updatePrompt"),
+  args: promptSchema.partial().extend({
+    id: z.string(),
+  }),
+});
+
+const deletePromptMutationSchema = z.object({
+  id: z.number(),
+  clientID: z.string(),
+  timestamp: z.number(),
+  name: z.literal("deletePrompt"),
+  args: z.object({ id: z.string(), deletedAt: z.string() }),
+});
+
 export const mutationSchema = z.union([
   createLogMutationSchema,
   updateLogMutationSchema,
   deleteLogMutationSchema,
+  createPromptMutationSchema,
+  updatePromptMutationSchema,
+  deletePromptMutationSchema,
 ]);
 
 export type Mutation = z.infer<typeof mutationSchema>;

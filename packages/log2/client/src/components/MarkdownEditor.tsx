@@ -1,68 +1,58 @@
 import { useEffect, useRef } from "react";
-import { EditorState } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "prosemirror-markdown";
-import { exampleSetup } from "prosemirror-example-setup";
-import "./MarkdownEditor.css";
+import { EditorView } from "codemirror";
+import { markdown } from "@codemirror/lang-markdown";
+import { keymap, dropCursor, rectangularSelection, highlightActiveLineGutter, crosshairCursor } from "@codemirror/view";
+import { indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import { lintKeymap } from "@codemirror/lint";
 
-export function MarkdownEditor({
-  itemId,
-  content,
-  onBlur,
-  onKeyDown,
-}: {
-  itemId: string;
-  content: string;
-  onBlur?: (e: FocusEvent, props: { itemId: string; content: string; contentType: "markdown" | "json" }) => void;
-  onKeyDown?: (
-    e: KeyboardEvent,
-    props: {
-      itemId: string;
-      content: string;
-      contentType: "markdown" | "json";
-      selection: { fromAt: "start" | "end" | "middle"; toAt: "start" | "end" | "middle" };
-    }
-  ) => boolean;
-}) {
+export function MarkdownEditor({ content, onChange }: { content: string; onChange: (content: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+
+  const initialContent = useRef(content);
 
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const view = new EditorView(editorRef.current, {
-      state: EditorState.create({
-        doc: defaultMarkdownParser.parse(content),
-        plugins: exampleSetup({ schema, menuBar: false, floatingMenu: false, menuContent: [] }),
-      }),
-      handleDOMEvents: {
-        blur: (view, e) => {
-          const doc = defaultMarkdownSerializer.serialize(view.state.doc);
-          onBlur?.(e, { itemId, content: doc, contentType: "markdown" });
-        },
-        keydown: (_, e) => {
-          if (!onKeyDown) return false;
-          onKeyDown(e, {
-            itemId,
-            content,
-            contentType: "markdown",
-            selection: {
-              fromAt:
-                view.state.selection.from === 1
-                  ? "start"
-                  : view.state.selection.from === view.state.doc.content.size - 1
-                  ? "end"
-                  : "middle",
-              toAt:
-                view.state.selection.to === 1
-                  ? "start"
-                  : view.state.selection.to === view.state.doc.content.size - 1
-                  ? "end"
-                  : "middle",
-            },
-          });
-        },
-      },
+    const view = new EditorView({
+      parent: editorRef.current,
+      doc: initialContent.current,
+      extensions: [
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged) {
+            const doc = update.state.doc.toString();
+            onChange(doc);
+          }
+        }),
+        EditorView.theme({
+          ".cm-content": {
+            caretColor: "var(--text-primary)",
+          },
+        }),
+        highlightActiveLineGutter(),
+        history(),
+        dropCursor(),
+        indentOnInput(),
+        bracketMatching(),
+        closeBrackets(),
+        autocompletion(),
+        rectangularSelection(),
+        crosshairCursor(),
+        highlightSelectionMatches(),
+        keymap.of([
+          ...closeBracketsKeymap,
+          ...defaultKeymap,
+          ...searchKeymap,
+          ...historyKeymap,
+          ...foldKeymap,
+          ...completionKeymap,
+          ...lintKeymap,
+        ]),
+        markdown(),
+      ],
     });
 
     viewRef.current = view;
@@ -70,7 +60,11 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [itemId, content, onBlur, onKeyDown]);
+  }, [onChange]);
 
-  return <div ref={editorRef} className="w-full h-full" />;
+  return (
+    <div>
+      <div className="[&_.cm-content]:caret-[var(--text-primary)]" ref={editorRef} />
+    </div>
+  );
 }

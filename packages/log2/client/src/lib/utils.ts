@@ -45,3 +45,4 @@ export const getTimestampWithTimezone = (): string => {
 
   return `${year}-${month}-${day}T${hour}:${minute}:${second}${sign}${hours}:${minutes}`;
 };
+export const GLOBAL_PROMPT_ID = "global";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Log, LogData, Mutation, logSchema } from "../../shared/types";
+import { Log, LogData, Mutation, logSchema, promptSchema, Prompt } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 import { ulid } from "ulid";
@@ -77,6 +77,8 @@ export function createUndoManager() {
 
 export function createStore() {
   const log = generate("log", logSchema.parse);
+  const prompt = generate("prompt", promptSchema.parse);
+
   const rep = new Replicache({
     name: "item-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
@@ -92,6 +94,15 @@ export function createStore() {
       },
       async deleteLog(tx: WriteTransaction, props) {
         return log.delete(tx, props.id);
+      },
+      async createPrompt(tx: WriteTransaction, props) {
+        return prompt.set(tx, props);
+      },
+      async updatePrompt(tx: WriteTransaction, props) {
+        return prompt.update(tx, props);
+      },
+      async deletePrompt(tx: WriteTransaction, props) {
+        return prompt.delete(tx, props.id);
       },
     } satisfies Mutators,
   });
@@ -154,6 +165,64 @@ export function createStore() {
       },
       getAll: async (tx?: ReadTransaction) => {
         const res = await (tx ? log.list(tx) : rep.query((tx) => log.list(tx)));
+        return res.filter((item) => item.deletedAt === null);
+      },
+    },
+    prompt: {
+      create: async ({
+        id = ulid(),
+        text = "",
+        createdAt = new Date().toISOString(),
+      }: {
+        id?: string;
+        text: string;
+        createdAt?: string;
+      }) => {
+        const prompt: Prompt = {
+          id,
+          text,
+          createdAt,
+          updatedAt: createdAt,
+          deletedAt: null,
+          version: 0,
+        };
+        const action: UndoableAction = {
+          do: () => rep.mutate.createPrompt(prompt),
+          undo: () => rep.mutate.updatePrompt({ id, deletedAt: new Date().toISOString() }),
+        };
+        await action.do();
+        undoManager.add(action);
+        return prompt;
+      },
+      update: async (id: string, props: Partial<Prompt>) => {
+        const item = await rep.query((tx) => prompt.get(tx, id));
+        const prevProps: Partial<Prompt> = item
+          ? Object.entries(props).reduce((acc, [key]) => ({ ...acc, [key]: item[key as keyof Prompt] }), {})
+          : {};
+        const action: UndoableAction = {
+          do: () => rep.mutate.updatePrompt({ id, ...props }),
+          undo: () => (item ? rep.mutate.updatePrompt({ id, ...prevProps }) : Promise.resolve()),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      delete: async (id: string) => {
+        const item = await rep.query((tx) => prompt.get(tx, id));
+        const action: UndoableAction = {
+          do: () => rep.mutate.deletePrompt({ id, deletedAt: new Date().toISOString() }),
+          undo: () => (item ? rep.mutate.createPrompt(item) : Promise.resolve()),
+        };
+        await action.do();
+        undoManager.add(action);
+      },
+      has: async (id: string, tx?: ReadTransaction) => {
+        return tx ? prompt.has(tx, id) : rep.query((tx) => prompt.has(tx, id));
+      },
+      get: async (id: string, tx?: ReadTransaction) => {
+        return tx ? prompt.get(tx, id) : rep.query((tx) => prompt.get(tx, id));
+      },
+      getAll: async (tx?: ReadTransaction) => {
+        const res = await (tx ? prompt.list(tx) : rep.query((tx) => prompt.list(tx)));
         return res.filter((item) => item.deletedAt === null);
       },
     },
