@@ -12,7 +12,7 @@ export const config = {
   domain: "taylors.tech",
   email: "taylor.j.mitchell@gmail.com",
   region: "us-east-1",
-  repoDir: "/home/ec2-user/code/home",
+  repoDir: "/home/ec2-user/code/mono",
 } as const;
 
 const REMOTE_CONFIG_PATH = "/home/ec2-user/nginx-apps.json";
@@ -333,7 +333,7 @@ async function setup() {
     # Clone the repo
     mkdir ~/code
     cd ~/code
-    git clone git@github.com:taylormitchell/home.git
+    git clone git@github.com:taylormitchell/mono.git
 
     # Install certbot
     sudo yum install certbot -y
