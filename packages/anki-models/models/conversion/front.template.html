@@ -1,0 +1,18 @@
+<script>
+  window.evaluateEquation = () => {
+    const input = 10;
+    const equation = document.getElementById("equation")?.innerHTML.replace("{{Input}}", input);
+    const output = eval(equation);
+    window.result = { input, output };
+    return window.result;
+  };
+</script>
+<div id="equation" style="display: none">{{Equation}}</div>
+<div id="input"></div>
+<script>
+  const result = window.evaluateEquation();
+  const inputElement = document.getElementById("input");
+  if (inputElement) {
+    inputElement.innerHTML = result.input;
+  }
+</script>
