@@ -24,8 +24,8 @@ async function main() {
 
   // Install deps, build, and start
   await $`ssh ${remoteHost} '
-    cd ${appDir}/server &&
-    npm install &&
+    cd ${appDir}/shared && bun install
+    cd ${appDir}/server && bun install
     bun run db:up &&
     echo .env && echo PORT=${apps.items.port} >> .env &&
     pm2 delete items || true && pm2 start "bun start" --name items
