@@ -134,51 +134,23 @@ export function StandardView() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [store, searchQuery, navigate]);
 
-  const view = useSubscribe(
-    store.rep,
-    async (tx) => {
-      const allView = await store.views.get(tx, "all");
-      return allView ?? null;
-    },
-    { default: null }
-  );
-
-  // After pull, create the all view if it doesn't exist
-  useEffect(() => {
-    (async () => {
-      await store.rep.pull();
-      const view = await store.rep.query((tx) => store.views.get(tx, "all"));
-      if (view) return;
-      await store.views.create({ id: "all", name: "All" });
-    })();
-  }, [store.rep, store.views]);
-
   const items = useSubscribe(
     store.rep,
     async (tx) => {
-      if (!view) return [];
-      const allItems = await store.items.getAll(tx);
-      return allItems;
-      // if (!view.filter?.status) return allItems;
-      // return allItems.filter((item) => item.status === view.filter.status);
+      return await store.items.getAll(tx);
     },
-    { default: [] as Item[], dependencies: [view] }
+    { default: [] as Item[] }
   );
 
   const focusSearch = useCallback(() => {
     searchInputRef.current?.focus();
   }, []);
 
-  if (!view) return null;
-
   const filteredItems = items
     .filter((item) => {
       return item.content.toLowerCase().includes(searchQuery.toLowerCase());
     })
     .sort((a, b) => {
-      // if (view.sort.field === "position") {
-      //   return comparePositions(a, b, view.positions);
-      // }
       return b.createdAt.localeCompare(a.createdAt);
     });
 
