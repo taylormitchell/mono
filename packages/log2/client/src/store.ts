@@ -3,6 +3,7 @@ import { Log, LogData, Mutation, logSchema, promptSchema, Prompt } from "../../s
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 import { ulid } from "ulid";
+import { getTimestampWithTimezone } from "./lib/utils";
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
@@ -115,7 +116,7 @@ export function createStore() {
         id = ulid(),
         text = "",
         data = [],
-        createdAt = new Date().toISOString(),
+        createdAt = getTimestampWithTimezone(),
       }: {
         id?: string;
         text: string;
@@ -133,7 +134,7 @@ export function createStore() {
         };
         const action: UndoableAction = {
           do: () => rep.mutate.createLog(log),
-          undo: () => rep.mutate.updateLog({ id, deletedAt: new Date().toISOString() }),
+          undo: () => rep.mutate.updateLog({ id, deletedAt: getTimestampWithTimezone() }),
         };
         await action.do();
         undoManager.add(action);
@@ -154,7 +155,7 @@ export function createStore() {
       delete: async (id: string) => {
         const item = await rep.query((tx) => log.get(tx, id));
         const action: UndoableAction = {
-          do: () => rep.mutate.deleteLog({ id, deletedAt: new Date().toISOString() }),
+          do: () => rep.mutate.deleteLog({ id, deletedAt: getTimestampWithTimezone() }),
           undo: () => (item ? rep.mutate.createLog(item) : Promise.resolve()),
         };
         await action.do();
@@ -172,7 +173,7 @@ export function createStore() {
       create: async ({
         id = ulid(),
         text = "",
-        createdAt = new Date().toISOString(),
+        createdAt = getTimestampWithTimezone(),
       }: {
         id?: string;
         text: string;
@@ -188,7 +189,7 @@ export function createStore() {
         };
         const action: UndoableAction = {
           do: () => rep.mutate.createPrompt(prompt),
-          undo: () => rep.mutate.updatePrompt({ id, deletedAt: new Date().toISOString() }),
+          undo: () => rep.mutate.updatePrompt({ id, deletedAt: getTimestampWithTimezone() }),
         };
         await action.do();
         undoManager.add(action);
@@ -209,7 +210,7 @@ export function createStore() {
       delete: async (id: string) => {
         const item = await rep.query((tx) => prompt.get(tx, id));
         const action: UndoableAction = {
-          do: () => rep.mutate.deletePrompt({ id, deletedAt: new Date().toISOString() }),
+          do: () => rep.mutate.deletePrompt({ id, deletedAt: getTimestampWithTimezone() }),
           undo: () => (item ? rep.mutate.createPrompt(item) : Promise.resolve()),
         };
         await action.do();

@@ -11,9 +11,13 @@ import type { Request, Response } from "express";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { z } from "zod";
-import { logSchema, Mutation, mutationSchema, promptSchema } from "../../../shared/types";
-import { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
+import { logSchema, mutationSchema, promptSchema } from "../../../shared/types";
+import type { Mutation, ServerMutation } from "../../../shared/types";
+import type { PushRequestV1, PatchOperation, PullResponseV1 } from "replicache";
 import { logTable, promptTable } from "./db/schema";
+import { dataifyLog } from "./ai";
+import { sendToClient } from "./server-side-events";
+import type { Log } from "../../../shared/types";
 
 const pushSchema = z.object({
   pushVersion: z.literal(1),
@@ -40,12 +44,14 @@ export async function handlePush(req: Request, res: Response) {
     const db = await getDb();
     for (const mutation of push.mutations) {
       await db.transaction(async (tr) => {
-        return processMutation(tr, push.clientGroupID, mutation);
+        return processClientMutation(tr, push.clientGroupID, mutation);
       });
+      if (mutation.name === "createLog") {
+        setTimeout(() => addDataToLog(db, mutation.args.id), 0);
+      }
     }
-
     res.json({});
-    await sendPoke();
+    sendToClient({ type: "poke" });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -119,7 +125,11 @@ export async function handlePull(req: Request, res: Response) {
   }
 }
 
-async function processMutation(db: NodePgDatabase, clientGroupID: string, mutation: Mutation) {
+async function processClientMutation(
+  db: NodePgDatabase,
+  clientGroupID: string,
+  mutation: Mutation
+) {
   const { clientID } = mutation;
 
   const prevVersion = await getServerVersion(db);
@@ -140,72 +150,7 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
   console.log(`Mutation ${mutation.id} is new - processing`);
 
   try {
-    switch (mutation.name) {
-      case "createLog": {
-        await db
-          .insert(logTable)
-          .values({
-            ...mutation.args,
-            version: nextVersion,
-          })
-          .onConflictDoUpdate({
-            target: [logTable.id],
-            set: {
-              ...mutation.args,
-              version: nextVersion,
-            },
-          });
-        break;
-      }
-      case "updateLog": {
-        const { id, ...args } = mutation.args;
-        await db
-          .update(logTable)
-          .set({
-            ...args,
-            version: nextVersion,
-          })
-          .where(eq(logTable.id, id));
-        break;
-      }
-      case "deleteLog": {
-        const { id: logID, deletedAt } = mutation.args;
-        await db
-          .update(logTable)
-          .set({ deletedAt, version: nextVersion })
-          .where(eq(logTable.id, logID));
-        break;
-      }
-      case "createPrompt": {
-        await db.insert(promptTable).values({
-          ...mutation.args,
-          version: nextVersion,
-        });
-        break;
-      }
-      case "updatePrompt": {
-        const { id, ...args } = mutation.args;
-        await db
-          .update(promptTable)
-          .set({
-            ...args,
-            version: nextVersion,
-          })
-          .where(eq(promptTable.id, id));
-        break;
-      }
-      case "deletePrompt": {
-        const { id: promptID, deletedAt } = mutation.args;
-        await db
-          .update(promptTable)
-          .set({ deletedAt, version: nextVersion })
-          .where(eq(promptTable.id, promptID));
-        break;
-      }
-      default:
-        console.log("unknown mutation", mutation);
-        mutation satisfies never;
-    }
+    await applyMutation(db, mutation, nextVersion);
   } catch (e) {
     console.error(`Error processing mutation ${mutation.id}`, e);
   }
@@ -214,7 +159,126 @@ async function processMutation(db: NodePgDatabase, clientGroupID: string, mutati
   await setServerVersion(db, nextVersion);
 }
 
-async function sendPoke() {
-  // Implement your poke mechanism here
-  // This could be WebSocket, Server-Sent Events, or polling
+export async function processServerMutation(db: NodePgDatabase, mutation: ServerMutation) {
+  const prevVersion = await getServerVersion(db);
+  const nextVersion = prevVersion + 1;
+  await applyMutation(db, mutation, nextVersion);
+  await setServerVersion(db, nextVersion);
+}
+
+async function applyMutation(
+  db: NodePgDatabase,
+  mutation: Mutation | ServerMutation,
+  nextVersion: number
+) {
+  switch (mutation.name) {
+    case "createLog": {
+      await db
+        .insert(logTable)
+        .values({
+          ...mutation.args,
+          version: nextVersion,
+        })
+        .onConflictDoUpdate({
+          target: [logTable.id],
+          set: {
+            ...mutation.args,
+            version: nextVersion,
+          },
+        });
+      break;
+    }
+    case "updateLog": {
+      const { id, ...args } = mutation.args;
+      await db
+        .update(logTable)
+        .set({
+          ...args,
+          version: nextVersion,
+        })
+        .where(eq(logTable.id, id));
+      break;
+    }
+    case "deleteLog": {
+      const { id: logID, deletedAt } = mutation.args;
+      await db
+        .update(logTable)
+        .set({ deletedAt, version: nextVersion })
+        .where(eq(logTable.id, logID));
+      break;
+    }
+    case "createPrompt": {
+      await db.insert(promptTable).values({
+        ...mutation.args,
+        version: nextVersion,
+      });
+      break;
+    }
+    case "updatePrompt": {
+      const { id, ...args } = mutation.args;
+      await db
+        .update(promptTable)
+        .set({
+          ...args,
+          version: nextVersion,
+        })
+        .where(eq(promptTable.id, id));
+      break;
+    }
+    case "deletePrompt": {
+      const { id: promptID, deletedAt } = mutation.args;
+      await db
+        .update(promptTable)
+        .set({ deletedAt, version: nextVersion })
+        .where(eq(promptTable.id, promptID));
+      break;
+    }
+    default:
+      console.log("unknown mutation", mutation);
+      mutation satisfies never;
+  }
+}
+
+async function addDataToLog(db: NodePgDatabase, logId: string) {
+  const logRecord = (await db.select().from(logTable).where(eq(logTable.id, logId)).limit(1))[0];
+  if (!logRecord) {
+    console.error(`Log ${logId} not found`);
+    return;
+  }
+  if (logRecord.data.length > 0) {
+    console.log(`Log ${logId} already has data - skipping`);
+    return;
+  }
+
+  try {
+    sendToClient({ type: "startProcessingLog", args: { id: logId } });
+    const result = await dataifyLog(db, logRecord);
+    if (!result.success) {
+      throw result.error;
+    }
+    if (result.data.length === 0) {
+      throw "No log data found";
+    }
+    await db.transaction((tr) =>
+      processServerMutation(tr, {
+        name: "updateLog",
+        args: { id: logId, data: result.data },
+      })
+    );
+    sendToClient({
+      type: "finishedProcessingLog",
+      args: { id: logId, success: true },
+    });
+    sendToClient({ type: "poke" });
+  } catch (e) {
+    console.error("Error adding data to log:", e);
+    sendToClient({
+      type: "finishedProcessingLog",
+      args: {
+        id: logId,
+        success: false,
+        message: e instanceof Error ? e.message : String(e),
+      },
+    });
+  }
 }

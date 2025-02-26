@@ -1,28 +1,80 @@
 import OpenAI from "openai";
 import { z } from "zod";
-import { logDataSchema, type LogData } from "../../../shared/types";
-import { getDb } from "./db/helpers";
-import { desc, isNull } from "drizzle-orm";
-import { logTable } from "./db/schema";
+import { desc, eq, isNull, and, not } from "drizzle-orm";
+import { logTable, promptTable } from "./db/schema";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { logDataSchema, type Log, type LogData } from "../../../shared/types";
 
-async function getRecentLogs(): Promise<
-  { eventDescription: string; eventSubmittedAt: string; response: any[] }[]
-> {
-  const db = await getDb();
-  const logs = await db
+const MAX_EXAMPLES = 20;
+
+const responseSchema = z.object({ logs: logDataSchema });
+
+export async function dataifyLog(
+  db: NodePgDatabase,
+  logRecord: Log
+): Promise<{ success: true; data: LogData } | { success: false; error: string }> {
+  // Get user prompt
+  const promptRecord = await db.select().from(promptTable).limit(1);
+  const userPrompt = promptRecord.length > 0 ? promptRecord[0].text : "";
+
+  // Create examples for prompt
+  const recentLogRecords = await db
     .select()
     .from(logTable)
-    .where(isNull(logTable.deletedAt))
+    .where(and(isNull(logTable.deletedAt), not(eq(logTable.id, logRecord.id))))
     .orderBy(desc(logTable.createdAt))
-    .limit(10);
+    .limit(MAX_EXAMPLES);
+  const examples: string = [
+    ...initialExamples,
+    ...recentLogRecords.map((log) => ({
+      eventDescription: log.text,
+      eventSubmittedAt: log.createdAt,
+      response: log.data || [],
+    })),
+  ]
+    .slice(0, MAX_EXAMPLES)
+    .map((e) => {
+      return [
+        `Message: ${JSON.stringify({
+          eventSubmittedAt: e.eventSubmittedAt,
+          eventDescription: e.eventDescription,
+        })}`,
+        `Response: ${JSON.stringify({ logs: e.response })}`,
+      ].join("\n");
+    })
+    .join("\n");
 
-  return logs.map((log) => ({
-    eventDescription: log.text,
-    eventSubmittedAt: log.createdAt,
-    response: log.data || [],
-  }));
+  // Process with AI
+  const systemPrompt = systemPromptTemplate
+    .replace("{{USER_PROMPT}}", userPrompt)
+    .replace("{{EXAMPLES}}", examples);
+  console.log("systemPrompt", systemPrompt);
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: JSON.stringify({
+          eventSubmittedAt: logRecord.createdAt,
+          eventDescription: logRecord.text,
+        }),
+      },
+    ],
+    response_format: { type: "json_object" },
+  });
+  console.log(response.choices[0].message.content);
+  const result = responseSchema.safeParse(JSON.parse(response.choices[0].message.content ?? "{}"));
+  if (!result.success) {
+    console.error(result.error);
+    return { success: false, error: "Invalid response from AI" };
+  }
+  if ("error" in result.data) {
+    console.error("AI returned an error", result.data.error);
+    return { success: false, error: `AI returned an error: ${result.data.error}` };
+  }
+  return { success: true, data: result.data.logs };
 }
-console.log("ai.ts loaded");
 
 const openai = new OpenAI({
   apiKey: process.env["OPENAI_API_KEY"],
@@ -115,57 +167,3 @@ The following examples demonstrate the expected format. This list is not exhaust
 
 {{EXAMPLES}}
 `;
-
-const responseSchema = z.object({ logs: logDataSchema });
-
-export async function datatify({
-  message,
-  userPrompt,
-  timestamp,
-}: {
-  message: string;
-  userPrompt: string;
-  timestamp: string;
-}): Promise<LogData | null> {
-  const recentLogs = await getRecentLogs();
-  const examples = [...initialExamples, ...recentLogs].slice(0, 20);
-
-  const systemPrompt = systemPromptTemplate.replace("{{USER_PROMPT}}", userPrompt).replace(
-    "{{EXAMPLES}}",
-    examples
-      .map((e) => {
-        return [
-          `Message: ${JSON.stringify({
-            eventSubmittedAt: e.eventSubmittedAt,
-            eventDescription: e.eventDescription,
-          })}`,
-          `Response: ${JSON.stringify({ logs: e.response })}`,
-        ].join("\n");
-      })
-      .join("\n")
-  );
-  console.log("systemPrompt", systemPrompt);
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: JSON.stringify({ eventSubmittedAt: timestamp, eventDescription: message }),
-      },
-    ],
-    response_format: { type: "json_object" },
-  });
-  console.log(response.choices[0].message.content);
-  const result = responseSchema.safeParse(JSON.parse(response.choices[0].message.content ?? "{}"));
-  if (!result.success) {
-    console.error(result.error);
-    return null;
-  }
-  if ("error" in result.data) {
-    console.error("AI returned an error", result.data.error);
-    return null;
-  }
-  return result.data.logs;
-}

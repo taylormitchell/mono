@@ -7,7 +7,7 @@ export const logTable = pgTable("log", {
   updatedAt: text("updated_at").notNull(),
   deletedAt: text("deleted_at"),
   text: text("text").notNull().default(""),
-  data: jsonb("data").$type<LogData>(),
+  data: jsonb("data").$type<LogData>().notNull().default([]),
   version: integer("version").notNull().default(0),
 });
 

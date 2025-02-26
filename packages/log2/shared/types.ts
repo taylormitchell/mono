@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-export const logDataSchema = z.array(z.record(z.string(), z.any()));
+export const logDataSchema = z.array(
+  z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+);
 export type LogData = z.infer<typeof logDataSchema>;
 
 export const logSchema = z.object({
@@ -90,4 +92,26 @@ export const mutationSchema = z.union([
   deletePromptMutationSchema,
 ]);
 
+export type ServerMutation =
+  | Omit<z.infer<typeof createLogMutationSchema>, "clientID" | "timestamp" | "id">
+  | Omit<z.infer<typeof updateLogMutationSchema>, "clientID" | "timestamp" | "id">
+  | Omit<z.infer<typeof deleteLogMutationSchema>, "clientID" | "timestamp" | "id">
+  | Omit<z.infer<typeof createPromptMutationSchema>, "clientID" | "timestamp" | "id">
+  | Omit<z.infer<typeof updatePromptMutationSchema>, "clientID" | "timestamp" | "id">
+  | Omit<z.infer<typeof deletePromptMutationSchema>, "clientID" | "timestamp" | "id">;
+
 export type Mutation = z.infer<typeof mutationSchema>;
+
+export const sseMessageSchema = z.union([
+  z.object({ type: z.literal("poke") }),
+  z.object({ type: z.literal("startProcessingLog"), args: z.object({ id: z.string() }) }),
+  z.object({
+    type: z.literal("finishedProcessingLog"),
+    args: z.union([
+      z.object({ id: z.string(), success: z.literal(true) }),
+      z.object({ id: z.string(), success: z.literal(false), message: z.string() }),
+    ]),
+  }),
+]);
+
+export type SSEMessage = z.infer<typeof sseMessageSchema>;

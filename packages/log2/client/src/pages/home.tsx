@@ -4,20 +4,17 @@ import { useStore } from "../hooks/store";
 import { RefreshCcw, Trash2, Loader, ArrowUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { getTimestampWithTimezone, GLOBAL_PROMPT_ID } from "../lib/utils";
 import { SyncIndicator } from "../components/sync-indicator";
-
-let apiUrl = import.meta.env.VITE_API_URL;
-if (!apiUrl.startsWith("http")) {
-  apiUrl = window.location.origin + apiUrl;
-}
+import { useSseEvents } from "../hooks/use-sse-events";
+import { toast } from "../components/toast";
 
 export function Home() {
   const store = useStore();
   const navigate = useNavigate();
   const [inputText, setInputText] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [processingLogs, setProcessingLogs] = useState<Set<string>>(new Set());
+  const [processingLogs, setProcessingLogs] = useState<Record<string, boolean>>({});
+  const timeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   const logs = useSubscribe(
     store.rep,
@@ -27,34 +24,7 @@ export function Home() {
     { default: [] as Log[] }
   );
 
-  const processWithAI = async (logId: string, text: string, timestamp: string) => {
-    setProcessingLogs((prev) => new Set(prev).add(logId));
-    try {
-      const prompt = await store.prompt.get(GLOBAL_PROMPT_ID);
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, timestamp, userPrompt: prompt?.text || "" }),
-      });
-      const result = await response.json();
-      if (result.success && Array.isArray(result.data)) {
-        await store.log.update(logId, { data: result.data });
-        shouldScrollRef.current = true;
-      } else {
-        throw new Error(result.error || "Unexpected response format");
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setProcessingLogs((prev) => {
-        const next = new Set(prev);
-        next.delete(logId);
-        return next;
-      });
-    }
-  };
-
-  // Create a new log
+  // Create a log and flag it as processing
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputText.trim()) {
@@ -62,10 +32,41 @@ export function Home() {
       setInputText("");
       if (log) {
         shouldScrollRef.current = true;
-        processWithAI(log.id, log.text, getTimestampWithTimezone());
+        setProcessingLogs((prev) => ({ ...prev, [log.id]: true }));
+        timeoutsRef.current[log.id] = setTimeout(() => {
+          setProcessingLogs((prev) => {
+            const next = { ...prev };
+            delete next[log.id];
+            return next;
+          });
+          toast.error("Timeout while processing log");
+        }, 5000);
       }
     }
   };
+
+  // Subscribe to log processing events from server
+  useSseEvents(
+    (message) => {
+      if (message.type === "finishedProcessingLog") {
+        if (!message.args.success) {
+          toast.error(`Error processing log: ${message.args.message}`);
+        }
+
+        if (timeoutsRef.current[message.args.id]) {
+          clearTimeout(timeoutsRef.current[message.args.id]);
+          delete timeoutsRef.current[message.args.id];
+        }
+
+        setProcessingLogs((prev) => {
+          const next = { ...prev };
+          delete next[message.args.id];
+          return next;
+        });
+      }
+    },
+    [store]
+  );
 
   // Scroll to the bottom of the list when the logs change (including initial load)
   // and whenever we just kicked off a new AI processing task
@@ -77,6 +78,7 @@ export function Home() {
     }
   }, [logs, processingLogs]);
 
+  console.log("render", processingLogs);
   return (
     <div className="flex flex-col h-full w-full gap-4 p-4">
       <div className="flex items-center gap-4">
@@ -112,21 +114,25 @@ export function Home() {
               <div className="flex justify-between items-start">
                 <div className="text-sm">{log.text}</div>
                 <button
-                  onClick={() => store.log.delete(log.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    store.log.delete(log.id);
+                  }}
                   className="p-1 hover-bg rounded-full text-secondary hover:text-error"
                   title="Delete"
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
-              {processingLogs.has(log.id) && (
+              {processingLogs[log.id] ? (
                 <div className="flex items-center gap-2 text-xs text-secondary">
                   <Loader className="animate-spin" size={12} />
                   Processing with AI...
                 </div>
-              )}
-              {log.data && Object.keys(log.data).length > 0 && (
+              ) : log.data && Object.keys(log.data).length > 0 ? (
                 <pre className="text-xs text-secondary bg-secondary p-2 rounded">{JSON.stringify(log.data, null, 2)}</pre>
+              ) : (
+                <button className="text-xs text-secondary bg-secondary p-2 rounded">Retry</button>
               )}
             </div>
           ))}

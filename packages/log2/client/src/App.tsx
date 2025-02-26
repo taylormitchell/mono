@@ -6,7 +6,8 @@ import { isHotkey } from "is-hotkey";
 import { Home } from "./pages/home";
 import { LogEdit } from "./pages/edit";
 import { PromptEdit } from "./pages/prompt";
-
+import { useSseEvents } from "./hooks/use-sse-events";
+import { ToastContainer } from "./components/toast-container";
 declare global {
   interface Window {
     store: Store | null;
@@ -43,6 +44,16 @@ function StoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useSseEvents(
+    (message) => {
+      if (!store) return;
+      if (message.type === "poke") {
+        store.rep.pull();
+      }
+    },
+    [store]
+  );
+
   if (isLoading) return null;
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
@@ -59,6 +70,7 @@ function App() {
           </Routes>
         </Router>
       </div>
+      <ToastContainer />
     </StoreProvider>
   );
 }
