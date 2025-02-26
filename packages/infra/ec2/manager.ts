@@ -137,7 +137,7 @@ http {
 }`;
 
   // Write to local temp file
-  const tempFile = `nginx-${Date.now()}.conf`;
+  const tempFile = `/tmp/nginx-${Date.now()}.conf`;
   await Bun.write(tempFile, fullConfig);
 
   try {
