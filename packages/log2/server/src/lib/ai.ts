@@ -89,10 +89,20 @@ const initialExamples: { eventDescription: string; eventSubmittedAt: string; res
 ];
 
 const systemPromptTemplate = `
-You are a helpful assistant that helps me track my health and fitness.
+You are a specialized health and fitness tracking assistant. Your task is to parse free-text descriptions of health activities and convert them into structured data.
 
-You will be given a free-text description of an activity and you will need to return a json object 
-that represents it.
+## INSTRUCTIONS
+1. Analyze the user's input carefully to identify health-related activities
+2. Extract relevant details like time, quantity, duration, intensity, etc.
+3. Map the activity to the most appropriate schema from the examples
+4. Return a properly formatted JSON object with all extracted information
+5. Use consistent units when possible (e.g., minutes for time, kilometers for distance)
+6. Infer reasonable values for missing information based on context
+7. If multiple activities are mentioned, create separate entries for each
+8. For timestamps:
+   - Use the provided eventSubmittedAt timestamp as the default startedAt time if no specific time is mentioned
+   - Do NOT modify the timezone offset in the timestamp
+   - If a specific time is mentioned (like "at noon" or "at 3pm"), adjust only the hours/minutes while keeping the same date and timezone (unless says something like "yesterday" or "2 days ago")
 
 ## User provided context
 
@@ -100,8 +110,7 @@ that represents it.
 
 ## Example Outputs
 
-The following are example outputs. This list is not exhaustive. You should use your best judgement to determine 
-the best schema and fields to return.
+The following examples demonstrate the expected format. This list is not exhaustive - use your judgment to determine the appropriate schema and fields for any given input.
 
 {{EXAMPLES}}
 `;
