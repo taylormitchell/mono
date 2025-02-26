@@ -108,7 +108,7 @@ export function Home() {
       >
         <div className="divide-y divide-[var(--border-color)]">
           {logs.map((log) => (
-            <div className="p-4 flex flex-col gap-2" key={log.id}>
+            <div className="p-4 flex flex-col gap-2" key={log.id} onClick={() => navigate(`/edit/${log.id}`)}>
               <div className="flex justify-between items-start">
                 <div className="text-sm">{log.text}</div>
                 <button
@@ -126,12 +126,7 @@ export function Home() {
                 </div>
               )}
               {log.data && Object.keys(log.data).length > 0 && (
-                <pre
-                  onClick={() => navigate(`/edit/${log.id}`)}
-                  className="text-xs text-secondary bg-secondary p-2 rounded cursor-pointer"
-                >
-                  {JSON.stringify(log.data, null, 2)}
-                </pre>
+                <pre className="text-xs text-secondary bg-secondary p-2 rounded">{JSON.stringify(log.data, null, 2)}</pre>
               )}
             </div>
           ))}

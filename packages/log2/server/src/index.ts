@@ -1,13 +1,11 @@
+import "./lib/load-env";
+import path from "path";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { resetDb } from "./lib/db/helpers";
 import { handlePush, handlePull } from "./lib/replicache";
 import cors from "cors";
-import path from "path";
-import dotenv from "dotenv";
 import { datatify } from "./lib/ai";
 import { z } from "zod";
-
-dotenv.config();
 
 const app = express();
 const port = process.env["PORT"] || 3078;
@@ -34,13 +32,15 @@ app.post("/api/ai", async (req: Request, res: Response) => {
     const parsed = aiRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       console.error("Invalid request", { body: req.body, error: parsed.error });
-      return res.status(400).json({ error: "Invalid request" });
+      res.status(400).json({ error: "Invalid request" });
+    } else {
+      const log = await datatify(parsed.data);
+      if (!log) {
+        res.status(500).json({ success: false, error: "Failed to generate log" });
+      } else {
+        res.status(200).json({ success: true, data: log });
+      }
     }
-    const log = await datatify(parsed.data);
-    if (!log) {
-      return res.status(500).json({ success: false, error: "Failed to generate log" });
-    }
-    res.status(200).json({ success: true, data: log });
   } catch (e) {
     console.error(e);
     res.status(500).json({ success: false, error: "Internal server error" });

@@ -4,6 +4,7 @@ import { useStore } from "../hooks/store";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSubscribe } from "replicache-react";
 import { logDataSchema } from "../../../shared/types";
+import { isEditableElement, useHotkey } from "../hooks/use-hotkey";
 
 export function LogEdit() {
   const id = useParams().id || "";
@@ -11,6 +12,8 @@ export function LogEdit() {
   const navigate = useNavigate();
   const [editedData, setEditedData] = useState<{ text: string; data: Record<string, unknown>[] | null } | null>(null);
   const [editedText, setEditedText] = useState<string | null>(null);
+
+  useHotkey("Escape", () => !isEditableElement(document.activeElement) && navigate("/"), [navigate]);
 
   const log = useSubscribe(
     store.rep,
@@ -66,7 +69,7 @@ export function LogEdit() {
             store.log.update(id, { text: editedText || log.text, data: editedData.data });
             navigate("/");
           }}
-          disabled={!editedData || editedData.data === null}
+          disabled={!(editedText || (editedData && editedData.data !== null))}
         >
           Update Log
         </button>

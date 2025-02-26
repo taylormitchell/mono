@@ -1,9 +1,12 @@
 {
   "name": "items",
   "scripts": {
+    "dev:client": "cd client && bun run dev",
+    "dev:server": "cd server && bun run dev",
+    "dev": "concurrently \"bun run dev:client\" \"bun run dev:server\"",
     "deploy": "bun run scripts/deploy.ts"
   },
-  "dependencies": {
-    "lucide-react": "^0.475.0"
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }

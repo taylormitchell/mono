@@ -22,6 +22,7 @@ async function getRecentLogs(): Promise<
     response: log.data || [],
   }));
 }
+console.log("ai.ts loaded");
 
 const openai = new OpenAI({
   apiKey: process.env["OPENAI_API_KEY"],
