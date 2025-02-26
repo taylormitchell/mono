@@ -132,6 +132,10 @@ export function Home() {
               ) : log.data && Object.keys(log.data).length > 0 ? (
                 <pre className="text-xs text-secondary bg-secondary p-2 rounded">{JSON.stringify(log.data, null, 2)}</pre>
               ) : (
+                // TODO: There needs to be an API to make this work. This also makes me feel like the
+                // client should trigger the initial processing, not the server. It is a little weird
+                // that the server is triggering in response to a mutation. Thats a new concept and
+                // unnecessary atm.
                 <button className="text-xs text-secondary bg-secondary p-2 rounded">Retry</button>
               )}
             </div>
