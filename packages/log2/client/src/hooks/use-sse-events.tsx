@@ -1,7 +1,11 @@
-import { sseMessageSchema } from "../../../shared/types";
-import { useCallback } from "react";
-import { useEffect } from "react";
-import { SSEMessage } from "../../../shared/types";
+import { sseMessageSchema, type SSEMessage } from "../../../shared/types";
+import { useCallback, useEffect } from "react";
+
+let apiUrl = import.meta.env.VITE_API_URL || "";
+if (!apiUrl.match(/^https?:\/\//)) {
+  apiUrl = window.location.origin + apiUrl;
+}
+const sseUrl = apiUrl + "/api/events";
 
 export function useSseEvents(callback: (message: SSEMessage) => void, deps: unknown[] = []) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -11,11 +15,8 @@ export function useSseEvents(callback: (message: SSEMessage) => void, deps: unkn
     let eventSource: EventSource | null = null;
 
     function connect() {
-      const serverUrl = import.meta.env.DEV
-        ? "http://localhost:3078/api/events" // Development server URL
-        : "/api/events";
-
-      eventSource = new EventSource(serverUrl);
+      console.log("Connecting to SSE at", sseUrl);
+      eventSource = new EventSource(sseUrl);
 
       eventSource.onmessage = (event) => {
         try {

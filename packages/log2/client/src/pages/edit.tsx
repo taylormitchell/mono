@@ -5,13 +5,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSubscribe } from "replicache-react";
 import { logDataSchema } from "../../../shared/types";
 import { isEditableElement, useHotkey } from "../hooks/use-hotkey";
-
+import { toast } from "../components/toast";
+import { extractDataFromLog } from "../lib/utils";
 export function LogEdit() {
   const id = useParams().id || "";
   const store = useStore();
   const navigate = useNavigate();
   const [editedData, setEditedData] = useState<{ text: string; data: Record<string, unknown>[] | null } | null>(null);
   const [editedText, setEditedText] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useHotkey("Escape", () => !isEditableElement(document.activeElement) && navigate("/"), [navigate]);
 
@@ -22,6 +24,22 @@ export function LogEdit() {
     },
     { default: null }
   );
+
+  const handleSubmit = useCallback(async () => {
+    setIsProcessing(true);
+    const timeoutId = setTimeout(() => {
+      setIsProcessing(false);
+      toast.error("Timeout while processing log");
+    }, 5000);
+    const result = await extractDataFromLog(id);
+    if (result.success) {
+      await store.rep.pull();
+    } else {
+      toast.error(`Error processing log: ${result.error}`);
+    }
+    clearTimeout(timeoutId);
+    setIsProcessing(false);
+  }, [id, store.rep]);
 
   const handleChange = useCallback((content: string) => {
     try {
@@ -55,8 +73,14 @@ export function LogEdit() {
 
         {log.data && (
           <div className="mt-4">
-            <h3 className="text-sm font-semibold mb-2">Result:</h3>
-            <JsonEditor content={JSON.stringify(log.data, null, 2)} onChange={handleChange} />
+            <button onClick={handleSubmit} className="text-sm text-secondary hover:text-primary">
+              Re-extract data
+            </button>
+            {isProcessing ? (
+              <div className="text-sm text-secondary">Processing...</div>
+            ) : (
+              <JsonEditor content={JSON.stringify(log.data, null, 2)} onChange={handleChange} />
+            )}
           </div>
         )}
       </div>

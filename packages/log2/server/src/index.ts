@@ -2,12 +2,9 @@ import "./lib/load-env";
 import path from "path";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { resetDb } from "./lib/db/helpers";
-import { handlePush, handlePull } from "./lib/replicache";
+import { handlePush, handlePull, addDataToLog } from "./lib/replicache";
 import cors from "cors";
-import { addClient, removeClient } from "./lib/server-side-events";
-
-// Store connected clients
-const clients = new Set<Response>();
+import { requestHandler as sseHandler } from "./lib/server-side-events";
 
 const app = express();
 const port = process.env["PORT"] || 3078;
@@ -23,46 +20,17 @@ app.get("/api/", (_: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
 });
 
-// const aiRequestSchema = z.object({
-//   message: z.string(),
-//   timestamp: z.string(),
-//   userPrompt: z.string(),
-// });
-// app.post("/api/ai", async (req: Request, res: Response) => {
-//   try {
-//     console.log("Received AI request", req.body);
-//     const parsed = aiRequestSchema.safeParse(req.body);
-//     if (!parsed.success) {
-//       console.error("Invalid request", { body: req.body, error: parsed.error });
-//       res.status(400).json({ error: "Invalid request" });
-//     } else {
-//       const log = await datatify(parsed.data);
-//       if (!log) {
-//         res.status(500).json({ success: false, error: "Failed to generate log" });
-//       } else {
-//         res.status(200).json({ success: true, data: log });
-//       }
-//     }
-//   } catch (e) {
-//     console.error(e);
-//     res.status(500).json({ success: false, error: "Internal server error" });
-//   }
-// });
-
-app.get("/api/events", (req: Request, res: Response) => {
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-  });
-  addClient(res);
-  req.on("close", () => {
-    removeClient(res);
-    console.log(`Client disconnected, ${clients.size} clients remaining`);
-  });
-  console.log(`Client connected, ${clients.size} clients connected`);
+app.post("/api/log/:id/extract-data", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await addDataToLog(id);
+  if (!result.success) {
+    res.json({ success: false, error: result.error });
+  } else {
+    res.json({ success: true });
+  }
 });
 
+app.get("/api/events", sseHandler);
 app.post("/api/push", handlePush);
 app.post("/api/pull", handlePull);
 

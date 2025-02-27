@@ -7,24 +7,19 @@ import { getTimestampWithTimezone } from "./lib/utils";
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
-  VITE_REPLICACHE_PUSH_URL: z
-    .string()
-    .regex(/^(https?:\/\/|\/)/)
-    .optional(), // starts with http or /
-  VITE_REPLICACHE_PULL_URL: z
+  VITE_API_URL: z
     .string()
     .regex(/^(https?:\/\/|\/)/)
     .optional(), // starts with http or /
 });
 
 const env = envSchema.parse(import.meta.env);
-if (env.VITE_REPLICACHE_PUSH_URL?.startsWith("/")) {
-  env.VITE_REPLICACHE_PUSH_URL = window.location.origin + env.VITE_REPLICACHE_PUSH_URL;
+if (env.VITE_API_URL?.startsWith("/")) {
+  env.VITE_API_URL = window.location.origin + env.VITE_API_URL;
 }
-if (env.VITE_REPLICACHE_PULL_URL?.startsWith("/")) {
-  env.VITE_REPLICACHE_PULL_URL = window.location.origin + env.VITE_REPLICACHE_PULL_URL;
-}
-console.log("env", env);
+
+const pullURL = env.VITE_API_URL + "/api/pull";
+const pushURL = env.VITE_API_URL + "/api/push";
 
 // Define mutator types
 type MutationNames = Mutation["name"];
@@ -83,8 +78,8 @@ export function createStore() {
   const rep = new Replicache({
     name: "item-user-id",
     licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
-    pushURL: env.VITE_REPLICACHE_PUSH_URL,
-    pullURL: env.VITE_REPLICACHE_PULL_URL,
+    pushURL,
+    pullURL,
     pullInterval: 5000,
     mutators: {
       async createLog(tx: WriteTransaction, props) {
@@ -138,7 +133,7 @@ export function createStore() {
         };
         await action.do();
         undoManager.add(action);
-        return log;
+        return log.id;
       },
       update: async (id: string, props: Partial<Log>) => {
         const item = await rep.query((tx) => log.get(tx, id));

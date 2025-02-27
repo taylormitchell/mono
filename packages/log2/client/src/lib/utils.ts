@@ -46,3 +46,24 @@ export const getTimestampWithTimezone = (): string => {
   return `${year}-${month}-${day}T${hour}:${minute}:${second}${sign}${hours}:${minutes}`;
 };
 export const GLOBAL_PROMPT_ID = "global";
+
+function getApiUrl() {
+  let apiUrl = import.meta.env.VITE_API_URL || "";
+  if (!apiUrl.match(/^https?:\/\//)) {
+    apiUrl = window.location.origin + apiUrl;
+  }
+  return apiUrl;
+}
+
+export const extractDataFromLog = async (logId: string): Promise<{ success: true } | { success: false; error: string }> => {
+  const apiUrl = getApiUrl();
+  const result = await fetch(`${apiUrl}/api/log/${logId}/extract-data`, { method: "POST" });
+  if (!result.ok) {
+    return { success: false, error: `Fetch failed: ${result.status} - ${result.statusText}` };
+  }
+  const data = await result.json();
+  if (!data.success) {
+    return { success: false, error: data.error };
+  }
+  return { success: true };
+};

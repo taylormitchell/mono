@@ -92,26 +92,7 @@ export const mutationSchema = z.union([
   deletePromptMutationSchema,
 ]);
 
-export type ServerMutation =
-  | Omit<z.infer<typeof createLogMutationSchema>, "clientID" | "timestamp" | "id">
-  | Omit<z.infer<typeof updateLogMutationSchema>, "clientID" | "timestamp" | "id">
-  | Omit<z.infer<typeof deleteLogMutationSchema>, "clientID" | "timestamp" | "id">
-  | Omit<z.infer<typeof createPromptMutationSchema>, "clientID" | "timestamp" | "id">
-  | Omit<z.infer<typeof updatePromptMutationSchema>, "clientID" | "timestamp" | "id">
-  | Omit<z.infer<typeof deletePromptMutationSchema>, "clientID" | "timestamp" | "id">;
-
 export type Mutation = z.infer<typeof mutationSchema>;
 
-export const sseMessageSchema = z.union([
-  z.object({ type: z.literal("poke") }),
-  z.object({ type: z.literal("startProcessingLog"), args: z.object({ id: z.string() }) }),
-  z.object({
-    type: z.literal("finishedProcessingLog"),
-    args: z.union([
-      z.object({ id: z.string(), success: z.literal(true) }),
-      z.object({ id: z.string(), success: z.literal(false), message: z.string() }),
-    ]),
-  }),
-]);
-
+export const sseMessageSchema = z.object({ type: z.literal("poke") });
 export type SSEMessage = z.infer<typeof sseMessageSchema>;

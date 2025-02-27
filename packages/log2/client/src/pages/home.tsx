@@ -1,12 +1,18 @@
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { RefreshCcw, Trash2, Loader, ArrowUp } from "lucide-react";
+import { RefreshCcw, Trash2, Loader, ArrowUp, Expand } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { SyncIndicator } from "../components/sync-indicator";
 import { useSseEvents } from "../hooks/use-sse-events";
 import { toast } from "../components/toast";
+import { extractDataFromLog } from "../lib/utils";
+
+let apiUrl = import.meta.env.VITE_API_URL || "";
+if (!apiUrl.match(/^https?:\/\//)) {
+  apiUrl = window.location.origin + apiUrl;
+}
 
 export function Home() {
   const store = useStore();
@@ -14,7 +20,6 @@ export function Home() {
   const [inputText, setInputText] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [processingLogs, setProcessingLogs] = useState<Record<string, boolean>>({});
-  const timeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   const logs = useSubscribe(
     store.rep,
@@ -24,49 +29,41 @@ export function Home() {
     { default: [] as Log[] }
   );
 
+  const extractData = async (logId: string) => {
+    setProcessingLogs((prev) => ({ ...prev, [logId]: true }));
+    const timeoutId = setTimeout(() => {
+      setProcessingLogs((prev) => {
+        const next = { ...prev };
+        delete next[logId];
+        return next;
+      });
+      toast.error("Timeout while processing log");
+    }, 5000);
+    await store.rep.push();
+    const result = await extractDataFromLog(logId);
+    if (result.success) {
+      await store.rep.pull();
+    } else {
+      toast.error(`Error processing log: ${result.error}`);
+    }
+    clearTimeout(timeoutId);
+    setProcessingLogs((prev) => {
+      const next = { ...prev };
+      delete next[logId];
+      return next;
+    });
+  };
+
   // Create a log and flag it as processing
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputText.trim()) {
-      const log = await store.log.create({ text: inputText.trim(), data: [] });
+      const logId = await store.log.create({ text: inputText.trim(), data: [] });
       setInputText("");
-      if (log) {
-        shouldScrollRef.current = true;
-        setProcessingLogs((prev) => ({ ...prev, [log.id]: true }));
-        timeoutsRef.current[log.id] = setTimeout(() => {
-          setProcessingLogs((prev) => {
-            const next = { ...prev };
-            delete next[log.id];
-            return next;
-          });
-          toast.error("Timeout while processing log");
-        }, 5000);
-      }
+      shouldScrollRef.current = true;
+      await extractData(logId);
     }
   };
-
-  // Subscribe to log processing events from server
-  useSseEvents(
-    (message) => {
-      if (message.type === "finishedProcessingLog") {
-        if (!message.args.success) {
-          toast.error(`Error processing log: ${message.args.message}`);
-        }
-
-        if (timeoutsRef.current[message.args.id]) {
-          clearTimeout(timeoutsRef.current[message.args.id]);
-          delete timeoutsRef.current[message.args.id];
-        }
-
-        setProcessingLogs((prev) => {
-          const next = { ...prev };
-          delete next[message.args.id];
-          return next;
-        });
-      }
-    },
-    [store]
-  );
 
   // Scroll to the bottom of the list when the logs change (including initial load)
   // and whenever we just kicked off a new AI processing task
@@ -78,7 +75,6 @@ export function Home() {
     }
   }, [logs, processingLogs]);
 
-  console.log("render", processingLogs);
   return (
     <div className="flex flex-col h-full w-full gap-4 p-4">
       <div className="flex items-center gap-4">
@@ -110,19 +106,42 @@ export function Home() {
       >
         <div className="divide-y divide-[var(--border-color)]">
           {logs.map((log) => (
-            <div className="p-4 flex flex-col gap-2" key={log.id} onClick={() => navigate(`/edit/${log.id}`)}>
+            <div className="p-4 flex flex-col gap-2" key={log.id}>
               <div className="flex justify-between items-start">
                 <div className="text-sm">{log.text}</div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    store.log.delete(log.id);
-                  }}
-                  className="p-1 hover-bg rounded-full text-secondary hover:text-error"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="flex items-center gap-1 ml-auto">
+                  {!processingLogs[log.id] && (!log.data || Object.keys(log.data).length === 0) && (
+                    <button
+                      className="p-1 hover-bg rounded-full text-secondary hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        extractData(log.id);
+                      }}
+                    >
+                      <RefreshCcw size={16} />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/edit/${log.id}`);
+                    }}
+                    className="p-1 hover-bg rounded-full text-secondary hover:text-primary"
+                    title="Open"
+                  >
+                    <Expand size={16} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      store.log.delete(log.id);
+                    }}
+                    className="p-1 hover-bg rounded-full text-secondary hover:text-error"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
               {processingLogs[log.id] ? (
                 <div className="flex items-center gap-2 text-xs text-secondary">
@@ -131,13 +150,7 @@ export function Home() {
                 </div>
               ) : log.data && Object.keys(log.data).length > 0 ? (
                 <pre className="text-xs text-secondary bg-secondary p-2 rounded">{JSON.stringify(log.data, null, 2)}</pre>
-              ) : (
-                // TODO: There needs to be an API to make this work. This also makes me feel like the
-                // client should trigger the initial processing, not the server. It is a little weird
-                // that the server is triggering in response to a mutation. Thats a new concept and
-                // unnecessary atm.
-                <button className="text-xs text-secondary bg-secondary p-2 rounded">Retry</button>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
