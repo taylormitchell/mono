@@ -11,7 +11,10 @@ export function LogEdit() {
   const id = useParams().id || "";
   const store = useStore();
   const navigate = useNavigate();
-  const [editedData, setEditedData] = useState<{ text: string; data: Record<string, unknown>[] | null } | null>(null);
+  const [editedData, setEditedData] = useState<{
+    text: string;
+    data: Record<string, string | number | boolean | null>[] | null;
+  } | null>(null);
   const [editedText, setEditedText] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 

@@ -5,7 +5,6 @@ import { RefreshCcw, Trash2, Loader, ArrowUp, Expand } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { SyncIndicator } from "../components/sync-indicator";
-import { useSseEvents } from "../hooks/use-sse-events";
 import { toast } from "../components/toast";
 import { extractDataFromLog } from "../lib/utils";
 
