@@ -52,6 +52,7 @@ export function getApiUrl() {
   if (!apiUrl.match(/^https?:\/\//)) {
     apiUrl = window.location.origin + apiUrl;
   }
+  console.log("getApiUrl", { apiUrl, VITE_API_URL: import.meta.env.VITE_API_URL });
   return apiUrl;
 }
 
