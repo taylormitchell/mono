@@ -8,11 +8,6 @@ import { SyncIndicator } from "../components/sync-indicator";
 import { toast } from "../components/toast";
 import { extractDataFromLog } from "../lib/utils";
 
-let apiUrl = import.meta.env.VITE_API_URL || "";
-if (!apiUrl.match(/^https?:\/\//)) {
-  apiUrl = window.location.origin + apiUrl;
-}
-
 export function Home() {
   const store = useStore();
   const navigate = useNavigate();

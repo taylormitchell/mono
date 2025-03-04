@@ -1,10 +1,8 @@
 import { sseMessageSchema, type SSEMessage } from "../../../shared/types";
 import { useCallback, useEffect } from "react";
+import { getApiUrl } from "../lib/utils";
 
-let apiUrl = import.meta.env.VITE_API_URL || "";
-if (!apiUrl.match(/^https?:\/\//)) {
-  apiUrl = window.location.origin + apiUrl;
-}
+const apiUrl = getApiUrl();
 const sseUrl = apiUrl + "/api/events";
 
 export function useSseEvents(callback: (message: SSEMessage) => void, deps: unknown[] = []) {

@@ -1,25 +1,12 @@
-import { z } from "zod";
 import { Log, LogData, Mutation, logSchema, promptSchema, Prompt } from "../../shared/types";
 import { generate } from "@rocicorp/rails";
 import { WriteTransaction, Replicache, ReadTransaction } from "replicache";
 import { ulid } from "ulid";
-import { getTimestampWithTimezone } from "./lib/utils";
+import { getTimestampWithTimezone, getApiUrl } from "./lib/utils";
 
-const envSchema = z.object({
-  VITE_REPLICACHE_LICENSE_KEY: z.string(),
-  VITE_API_URL: z
-    .string()
-    .regex(/^(https?:\/\/|\/)/)
-    .optional(), // starts with http or /
-});
-
-const env = envSchema.parse(import.meta.env);
-if (env.VITE_API_URL?.startsWith("/")) {
-  env.VITE_API_URL = window.location.origin + env.VITE_API_URL;
-}
-
-const pullURL = env.VITE_API_URL + "/api/pull";
-const pushURL = env.VITE_API_URL + "/api/push";
+const apiUrl = getApiUrl();
+const pullURL = apiUrl + "/api/pull";
+const pushURL = apiUrl + "/api/push";
 
 // Define mutator types
 type MutationNames = Mutation["name"];
@@ -77,7 +64,7 @@ export function createStore() {
 
   const rep = new Replicache({
     name: "item-user-id",
-    licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
+    licenseKey: import.meta.env.VITE_REPLICACHE_LICENSE_KEY,
     pushURL,
     pullURL,
     pullInterval: 5000,

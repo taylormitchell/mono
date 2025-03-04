@@ -19,8 +19,7 @@ async function main() {
   await $`scp -r client/dist ${remoteHost}:${appDir}/client/`;
 
   // Copy envs to server
-  await $`scp server/.env.production ${remoteHost}:${appDir}/server/.env`;
-  await $`scp client/.env.production ${remoteHost}:${appDir}/client/.env`;
+  await $`scp .env.production ${remoteHost}:${appDir}/.env`;
 
   // Install deps, build, and start
   await ec2.exec(`

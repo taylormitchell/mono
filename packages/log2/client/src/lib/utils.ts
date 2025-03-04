@@ -47,7 +47,7 @@ export const getTimestampWithTimezone = (): string => {
 };
 export const GLOBAL_PROMPT_ID = "global";
 
-function getApiUrl() {
+export function getApiUrl() {
   let apiUrl = import.meta.env.VITE_API_URL || "";
   if (!apiUrl.match(/^https?:\/\//)) {
     apiUrl = window.location.origin + apiUrl;
