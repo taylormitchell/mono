@@ -15,6 +15,13 @@
       "when": 1740344197321,
       "tag": "0001_fixed_deadpool",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1741134760919,
+      "tag": "0002_dusty_gravity",
+      "breakpoints": true
     }
   ]
 }
