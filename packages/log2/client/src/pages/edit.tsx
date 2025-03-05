@@ -7,13 +7,14 @@ import { logDataSchema } from "../../../shared/types";
 import { isEditableElement, useHotkey } from "../hooks/use-hotkey";
 import { toast } from "../components/toast";
 import { extractDataFromLog } from "../lib/utils";
+
 export function LogEdit() {
   const id = useParams().id || "";
   const store = useStore();
   const navigate = useNavigate();
   const [editedData, setEditedData] = useState<{
     text: string;
-    data: Record<string, string | number | boolean | null>[] | null;
+    data: Record<string, string | number | boolean | null | string[]>[] | null;
   } | null>(null);
   const [editedText, setEditedText] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
