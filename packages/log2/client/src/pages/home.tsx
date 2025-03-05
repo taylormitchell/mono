@@ -1,7 +1,7 @@
 import { useSubscribe } from "replicache-react";
 import { Log } from "../../../shared/types";
 import { useStore } from "../hooks/store";
-import { RefreshCcw, Trash2, Loader, ArrowUp, Expand } from "lucide-react";
+import { RefreshCcw, Loader, ArrowUp, Expand } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { SyncIndicator } from "../components/sync-indicator";
