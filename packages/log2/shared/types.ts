@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const logDataSchema = z.array(
-  z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+  z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.string())])
+  )
 );
 export type LogData = z.infer<typeof logDataSchema>;
 
