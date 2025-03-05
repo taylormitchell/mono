@@ -28,7 +28,10 @@ export function useSseEvents(callback: (message: SSEMessage) => void, deps: unkn
       eventSource.onerror = (error) => {
         console.error("SSE error:", error);
         eventSource?.close();
-        connect();
+        setTimeout(() => {
+          console.log("Retrying SSE connection");
+          connect();
+        }, 1000);
       };
     }
 
