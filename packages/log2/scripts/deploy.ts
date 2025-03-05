@@ -23,10 +23,10 @@ async function main() {
 
   // Install deps, build, and start
   await ec2.exec(`
+    echo >> .env && echo "PORT=${apps.log.port}" >> .env &&
     cd ${appDir}/shared && bun i &&
     cd ${appDir}/server && bun i &&
     bun run db:up &&
-    echo >> .env && echo "PORT=${apps.log.port}" >> .env &&
     pm2 delete log || true && pm2 start "bun start" --name log
   `);
 }
