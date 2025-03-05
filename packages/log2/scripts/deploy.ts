@@ -20,13 +20,12 @@ async function main() {
 
   // Copy envs to server
   await $`scp .env.production ${remoteHost}:${appDir}/.env`;
+  await ec2.exec(`cd ${appDir} && echo >> .env && echo "PORT=${apps.log.port}" >> .env`);
 
   // Install deps, build, and start
   await ec2.exec(`
-    echo >> .env && echo "PORT=${apps.log.port}" >> .env &&
     cd ${appDir}/shared && bun i &&
-    cd ${appDir}/server && bun i &&
-    bun run db:up &&
+    cd ${appDir}/server && bun i && bun run db:up &&
     pm2 delete log || true && pm2 start "bun start" --name log
   `);
 }
