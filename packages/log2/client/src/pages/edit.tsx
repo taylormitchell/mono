@@ -54,6 +54,14 @@ export function LogEdit() {
     }
   }, []);
 
+  const handleDelete = useCallback(async () => {
+    await store.log.delete(id);
+    navigate("/");
+    setTimeout(() => {
+      toast.info("Log deleted successfully");
+    }, 100);
+  }, [id, navigate, store.log]);
+
   if (!log) {
     return <div>Log not found</div>;
   }
@@ -90,17 +98,22 @@ export function LogEdit() {
       </div>
 
       <div className="p-4 border-t border-base">
-        <button
-          className="w-full py-2 bg-[var(--accent-color)] rounded hover:brightness-110 disabled:opacity-50"
-          onClick={() => {
-            if (!editedData || editedData.data === null) return;
-            store.log.update(id, { text: editedText || log.text, data: editedData.data });
-            navigate("/");
-          }}
-          disabled={!(editedText || (editedData && editedData.data !== null))}
-        >
-          Update Log
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="flex-1 py-2 bg-[var(--accent-color)] rounded hover:brightness-110 disabled:opacity-50"
+            onClick={() => {
+              if (!editedData || editedData.data === null) return;
+              store.log.update(id, { text: editedText || log.text, data: editedData.data });
+              navigate("/");
+            }}
+            disabled={!(editedText || (editedData && editedData.data !== null))}
+          >
+            Update Log
+          </button>
+          <button className="py-2 px-4 bg-red-500 text-white rounded hover:brightness-110" onClick={handleDelete}>
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );

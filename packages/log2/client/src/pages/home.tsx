@@ -18,7 +18,8 @@ export function Home() {
   const logs = useSubscribe(
     store.rep,
     async (tx) => {
-      return (await store.log.getAll(tx)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const logs = await store.log.getAll(tx);
+      return logs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     },
     { default: [] as Log[] }
   );
@@ -124,16 +125,6 @@ export function Home() {
                     title="Open"
                   >
                     <Expand size={16} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      store.log.delete(log.id);
-                    }}
-                    className="p-1 hover-bg rounded-full text-secondary hover:text-error"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
