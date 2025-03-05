@@ -4,7 +4,7 @@
     "dev:client": "cd client && bun run dev",
     "dev:server": "cd server && bun run dev",
     "dev": "concurrently \"bun run dev:client\" \"bun run dev:server\"",
-    "deploy": "bun run scripts/deploy.ts"
+    "deploy": "NODE_ENV=production bun run scripts/deploy.ts"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

@@ -3,31 +3,31 @@ import { $ } from "bun";
 
 async function main() {
   // Build client
-  await $`cd client && npm run build`;
+  await $`cd client && bun run build`;
 
-  // Add app to nginx
-  const apps = await ec2.addApp("log", 3079);
-  await ec2.pushNginxConf();
+  // // Add app to nginx
+  // const apps = await ec2.addApp("log", 3079);
+  // await ec2.pushNginxConf();
 
-  // Pull repo
-  await ec2.exec(`cd ${ec2.config.repoDir} && git pull`);
-  const appDir = ec2.config.repoDir + "/packages/log2";
+  // // Pull repo
+  // await ec2.exec(`cd ${ec2.config.repoDir} && git pull`);
+  // const appDir = ec2.config.repoDir + "/packages/log2";
 
-  // Copy build to server
-  const remoteHost = await ec2.getRemoteHost();
-  await ec2.exec(`rm -rf ${appDir}/client/dist`);
-  await $`scp -r client/dist ${remoteHost}:${appDir}/client/`;
+  // // Copy build to server
+  // const remoteHost = await ec2.getRemoteHost();
+  // await ec2.exec(`rm -rf ${appDir}/client/dist`);
+  // await $`scp -r client/dist ${remoteHost}:${appDir}/client/`;
 
-  // Copy envs to server
-  await $`scp .env.production ${remoteHost}:${appDir}/.env`;
-  await ec2.exec(`cd ${appDir} && echo >> .env && echo "PORT=${apps.log.port}" >> .env`);
+  // // Copy envs to server
+  // await $`scp .env.production ${remoteHost}:${appDir}/.env`;
+  // await ec2.exec(`cd ${appDir} && echo >> .env && echo "PORT=${apps.log.port}" >> .env`);
 
-  // Install deps, build, and start
-  await ec2.exec(`
-    cd ${appDir}/shared && bun i &&
-    cd ${appDir}/server && bun i && bun run db:up &&
-    pm2 delete log || true && pm2 start "bun start" --name log
-  `);
+  // // Install deps, build, and start
+  // await ec2.exec(`
+  //   cd ${appDir}/shared && bun i &&
+  //   cd ${appDir}/server && bun i && bun run db:up &&
+  //   pm2 delete log || true && pm2 start "bun start" --name log
+  // `);
 }
 
 main();
