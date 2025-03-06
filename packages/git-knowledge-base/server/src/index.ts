@@ -16,7 +16,9 @@ app.use(express.static(path.join(__dirname, "../../client/dist")));
 // Replicache pull
 app.post(env.REPLICACHE_PULL_PATH, async (req, res) => {
   try {
+    console.log("Processing pull");
     const pullResponse = await processPull(pullSchema.parse(req.body));
+    console.log("Pull response:", pullResponse);
     res.status(200).json(pullResponse);
   } catch (error) {
     console.error("Error processing pull:", error);
@@ -29,6 +31,7 @@ app.post(env.REPLICACHE_PULL_PATH, async (req, res) => {
 // Replicache push
 app.post(env.REPLICACHE_PUSH_PATH, async (req, res) => {
   try {
+    console.log("Processing push");
     await processPush(pushSchema.parse(req.body));
     res.status(200).json({ success: true });
   } catch (error) {

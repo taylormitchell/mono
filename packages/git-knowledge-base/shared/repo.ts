@@ -3,8 +3,15 @@ import chalk from "chalk";
 import { glob } from "glob";
 import { join, dirname, normalize, resolve, relative } from "path";
 import { z } from "zod";
-import { executeGit, getFirstCommitDate, getLastCommit, getPreviousPath } from "./git";
-import { isGitRepository, getLatestCommitHash, getChangedFilesSince } from "./git";
+import {
+  isGitRepository,
+  getLatestCommitHash,
+  getChangedFilesSince,
+  executeGit,
+  getLastCommit,
+  getPreviousPath,
+} from "./git";
+import { fileMetadataSchema } from "./web/schemas";
 
 export const METADATA_DIR = ".metadata/";
 export const CONFIG_PATH = join(METADATA_DIR, ".meta-config.json");
@@ -13,19 +20,6 @@ export const configSchema = z.object({
   schemaVersion: z.number().int().positive(),
   lastCommitHash: z.string().nullable(),
   ignore: z.array(z.string()),
-});
-
-export const fileMetadataSchema = z.object({
-  schemaVersion: z.number(),
-  firstCommitDate: z.string().optional(),
-  lastCommitDate: z.string().optional(),
-  lastCommitHash: z.string().optional(),
-  custom: z
-    .object({
-      createdAt: z.string().optional(),
-      updatedAt: z.string().optional(),
-    })
-    .optional(),
 });
 
 export type FileMetadata = z.infer<typeof fileMetadataSchema>;

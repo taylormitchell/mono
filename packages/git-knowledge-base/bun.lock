@@ -6,6 +6,7 @@
       "dependencies": {
         "@codemirror/lang-markdown": "^6.2.3",
         "@codemirror/language-data": "^6.3.1",
+        "@rocicorp/rails": "^0.11.1",
         "@trpc/client": "^11.0.0-rc.824",
         "@trpc/react-query": "^10.45.0",
         "@trpc/server": "^11.0.0-rc.824",
@@ -241,6 +242,8 @@
     "@rocicorp/lock": ["@rocicorp/lock@1.0.4", "", { "dependencies": { "@rocicorp/resolver": "^1.0.2" } }, "sha512-FavTiO8ETXFXDVfA87IThGduTTTR8iqzBnr/c60gUUmbk7knGEXPmf2B+yiNuluJD0ku0fL2V2r62UXnsLXl6w=="],
 
     "@rocicorp/logger": ["@rocicorp/logger@5.3.0", "", {}, "sha512-j5WYYkzpGxkemS9cUEzGvWJFOdrKRSbTXKC6P032oXMnVb5VLr/aN/7RT7jczAwmQgkY2ds+/93CEiua4rCY1A=="],
+
+    "@rocicorp/rails": ["@rocicorp/rails@0.11.1", "", {}, "sha512-Zv9sQHCBtOE5GcF7kRTOvoL0msZMu5/BTfRVql3AxLxcoGE0GtOQEwym1eZJpEalTHtVr2sfXeHBJvQa7xi1OQ=="],
 
     "@rocicorp/resolver": ["@rocicorp/resolver@1.0.2", "", {}, "sha512-TfjMTQp9cNNqNtHFfa+XHEGdA7NnmDRu+ZJH4YF3dso0Xk/b9DMhg/sl+b6CR4ThFZArXXDsG1j8Mwl34wcOZQ=="],
 

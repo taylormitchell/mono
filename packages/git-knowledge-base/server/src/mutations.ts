@@ -56,10 +56,14 @@ export async function updateFile({
     // Update metadata
     if (data.metadata) {
       const metadata = getFileMetadata({ repoDir, filePath });
-      setMetadata({ repoDir, filePath, metadata: {
-        ...metadata,
-        ...data.metadata,
-        custom: { ...metadata?.custom, ...data.metadata?.custom },
+      setMetadata({
+        repoDir,
+        filePath,
+        metadata: {
+          ...metadata,
+          ...data.metadata,
+          custom: { ...metadata?.custom, ...data.metadata?.custom },
+        },
       });
     }
     return true;
@@ -70,13 +74,7 @@ export async function updateFile({
 }
 
 // Delete a file
-export async function deleteFile({
-  repoDir,
-  filePath,
-}: {
-  repoDir: string;
-  filePath: string;
-}) {
+export async function deleteFile({ repoDir, filePath }: { repoDir: string; filePath: string }) {
   try {
     const fullPath = path.join(env.GIT_REPO_PATH, filePath);
 

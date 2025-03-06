@@ -1,10 +1,12 @@
 import { spawn } from "bun";
-import type { GitResult } from "../types";
 
 /**
  * Executes a git command and returns the result
  */
-export async function executeGit(args: string[], options?: { cwd?: string }): Promise<GitResult> {
+export async function executeGit(
+  args: string[],
+  options?: { cwd?: string }
+): Promise<{ success: boolean; data?: string; error?: string }> {
   try {
     const proc = spawn(["git", ...args], {
       stdout: "pipe",
@@ -171,6 +173,7 @@ export async function getChangedFilesSince(
 ): Promise<string[]> {
   if (!lastCommitHash) {
     // If no commit hash provided, return all files in the repo
+    console.log("Getting all files in repo", { cwd: options?.cwd });
     const result = await executeGit(["ls-files"], { cwd: options?.cwd });
 
     if (!result.success || !result.data) {
@@ -183,7 +186,10 @@ export async function getChangedFilesSince(
   }
 
   // Get files that have changed since the last commit hash
-  const result = await executeGit(["diff", "--name-only", lastCommitHash, "HEAD"]);
+  console.log("Getting changed files since", lastCommitHash);
+  const result = await executeGit(["diff", "--name-only", lastCommitHash, "HEAD"], {
+    cwd: options?.cwd,
+  });
 
   if (!result.success) {
     console.error(`Failed to get changed files: ${result.error}`);
@@ -221,7 +227,13 @@ export async function isGitRepository(options?: { cwd?: string }): Promise<boole
   return result.success && result.data === "true";
 }
 
-export async function commitIsLater(commit1: string, commit2: string): Promise<boolean> {
-  const result = await executeGit(["rev-list", "--count", "--left-only", commit1, commit2]);
+export async function commitIsLater(
+  commit1: string,
+  commit2: string,
+  options?: { cwd?: string }
+): Promise<boolean> {
+  const result = await executeGit(["rev-list", "--count", "--left-only", commit1, commit2], {
+    cwd: options?.cwd,
+  });
   return result.success && result.data ? parseInt(result.data) > 0 : false;
 }

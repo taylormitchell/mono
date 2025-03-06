@@ -10,7 +10,7 @@ import {
   executeGit,
   commitIsLater,
 } from "../../shared/git";
-import { METADATA_DIR } from "../../shared/repo";
+import { getFileMetadata, METADATA_DIR } from "../../shared/repo";
 import { metadataPathToContentPath } from "../../shared/repo";
 import { updateRepo } from "../../shared/repo";
 import { env } from "./env";
@@ -72,21 +72,21 @@ export async function processPush(pushData: Push): Promise<void> {
       case "createFile":
         await createFile({
           repoDir: env.GIT_REPO_PATH,
-          filePath: mutation.args.path,
+          filePath: mutation.args.id,
           data: mutation.args,
         });
         break;
       case "updateFile":
         await updateFile({
           repoDir: env.GIT_REPO_PATH,
-          filePath: mutation.args.path,
+          filePath: mutation.args.id,
           data: mutation.args,
         });
         break;
       case "deleteFile":
         await deleteFile({
           repoDir: env.GIT_REPO_PATH,
-          filePath: mutation.args.path,
+          filePath: mutation.args.id,
         });
         break;
       default:
@@ -125,7 +125,9 @@ export async function processPush(pushData: Push): Promise<void> {
 
 export async function processPull(pullData: Pull): Promise<PullResponseV1> {
   const { cookie, clientGroupID } = pullData;
-  const files = await getChangedFilesSince(cookie);
+  console.log("Processing pull with cookie:", cookie);
+  const files = await getChangedFilesSince(cookie, { cwd: env.GIT_REPO_PATH });
+  console.log("Files:", files);
 
   // Build patch
   const patch: Array<PatchOperation> = [];
@@ -136,15 +138,17 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
       : changedFilePath;
 
     try {
-      if (await fs.exists(filePath)) {
+      const absoluteFilePath = path.join(env.GIT_REPO_PATH, filePath);
+      if (await fs.exists(absoluteFilePath)) {
         // File exists, add it to patch
-        const content = await fs.readFile(path.join(env.GIT_REPO_PATH, filePath), "utf-8");
-        const metadata = getMetadata(filePath);
-
+        const content = await fs.readFile(absoluteFilePath, "utf-8");
+        const metadata = getFileMetadata({ repoDir: env.GIT_REPO_PATH, filePath }) ?? {
+          schemaVersion: 1,
+        };
         patch.push({
           op: "put" as const,
           key: `file/${filePath}`,
-          value: { path: filePath, content, metadata } satisfies File,
+          value: { id: filePath, content, metadata } satisfies File,
         });
       } else {
         // If file doesn't exist, it was deleted
@@ -155,7 +159,8 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
     }
   }
 
-  const currentCommit = await getCurrentCommit();
+  const currentCommit = await getCurrentCommit({ cwd: env.GIT_REPO_PATH });
+  console.log("Current commit:", currentCommit);
 
   const lastMutationIDChanges: Record<string, number> = {};
   for (const [clientID, client] of Object.entries(clients)) {
@@ -163,12 +168,13 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
       client.clientGroupID === clientGroupID &&
       client.lastCommit &&
       cookie &&
-      (await commitIsLater(client.lastCommit, cookie))
+      (await commitIsLater(client.lastCommit, cookie, { cwd: env.GIT_REPO_PATH }))
     ) {
       lastMutationIDChanges[clientID] = client.lastMutationID;
     }
   }
 
+  console.log("Last mutation ID changes:", lastMutationIDChanges);
   return {
     cookie: currentCommit,
     lastMutationIDChanges: lastMutationIDChanges,

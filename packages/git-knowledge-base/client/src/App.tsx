@@ -1,8 +1,9 @@
-import { Routes, Route } from "react-router-dom";
 import { MutatorDefs, Replicache } from "replicache";
 import { z } from "zod";
-import { File } from "../../shared/web/schemas";
+import { File, fileSchema } from "../../shared/web/schemas";
 import { getTimestampWithTimezone } from "./lib/utils";
+import { useSubscribe } from "replicache-react";
+import { generate } from "@rocicorp/rails";
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
@@ -62,13 +63,50 @@ export const rep = new Replicache({
   pullInterval: 10000, // Pull every 10 seconds
 });
 
+const file = generate("file", fileSchema.parse);
+
 function App() {
+  const files = useSubscribe(rep, file.list, { default: [] as File[] });
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Routes>
-        {/* <Route path="/" element={<HomePage />} /> */}
-        <Route path="/" element={<TestPage />} />
-      </Routes>
+      <div className="container mx-auto py-8">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Files</h1>
+          <button
+            onClick={() => rep.pull()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow"
+          >
+            Sync Data
+          </button>
+          <button
+            onClick={() => {
+              indexedDB.deleteDatabase(rep.idbName);
+              window.location.reload();
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow"
+          >
+            Reset
+          </button>
+        </div>
+        <div className="grid grid-cols-1 gap-4">
+          {files.map((file) => (
+            <div key={file.id} className="bg-white p-4 rounded shadow">
+              <h2 className="text-lg font-semibold">{file.id}</h2>
+              <pre className="mt-2 whitespace-pre-wrap">{file.content}</pre>
+              <div className="mt-2 text-sm text-gray-500">
+                <div>Schema Version: {file.metadata.schemaVersion}</div>
+                {file.metadata.lastCommitHash && (
+                  <div>Last Commit: {file.metadata.lastCommitHash}</div>
+                )}
+                {file.metadata.lastCommitDate && (
+                  <div>Last Updated: {file.metadata.lastCommitDate}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

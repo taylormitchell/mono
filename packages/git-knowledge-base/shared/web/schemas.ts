@@ -1,9 +1,21 @@
 import { z } from "zod";
 import type { MutationV1 } from "replicache";
-import { fileMetadataSchema } from "../repo";
+
+export const fileMetadataSchema = z.object({
+  schemaVersion: z.number(),
+  firstCommitDate: z.string().optional(),
+  lastCommitDate: z.string().optional(),
+  lastCommitHash: z.string().optional(),
+  custom: z
+    .object({
+      createdAt: z.string().optional(),
+      updatedAt: z.string().optional(),
+    })
+    .optional(),
+});
 
 export const fileSchema = z.object({
-  path: z.string(),
+  id: z.string(),
   content: z.string(),
   metadata: fileMetadataSchema,
 });
@@ -21,7 +33,7 @@ export const updateFileMutationSchema = z.object({
   name: z.literal("updateFile"),
   clientID: z.string(),
   timestamp: z.number(),
-  args: fileSchema.partial().extend({ path: z.string() }),
+  args: fileSchema.partial().extend({ id: z.string() }),
 });
 
 export const deleteFileMutationSchema = z.object({
@@ -29,7 +41,7 @@ export const deleteFileMutationSchema = z.object({
   name: z.literal("deleteFile"),
   clientID: z.string(),
   timestamp: z.number(),
-  args: z.object({ path: z.string() }),
+  args: z.object({ id: z.string() }),
 });
 
 export const mutationSchema = z.union([
