@@ -3,5 +3,11 @@ import { updateRepo } from "../../../shared/files";
 export async function updateCommand(
   options: { force?: boolean; verbose?: boolean } = {}
 ): Promise<boolean> {
-  return updateRepo(options);
+  try {
+    await updateRepo({ repoDir: process.cwd() });
+    return true;
+  } catch (error) {
+    console.error(`Failed to update repository: ${error}`);
+    return false;
+  }
 }

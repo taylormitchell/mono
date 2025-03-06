@@ -12,6 +12,17 @@ program
   .description("A tool for tracking file metadata in git repositories")
   .version("1.0.0");
 
+// Init command
+program
+  .command("init")
+  .description("Initialize a new git repository")
+  .action(async () => {
+    const success = await initCommand();
+    if (!success) {
+      process.exit(1);
+    }
+  });
+
 // Update command
 program
   .command("update")
@@ -19,7 +30,6 @@ program
   .option("-f, --force", "Force update all files regardless of lastCommitHash")
   .option("-v, --verbose", "Show verbose output")
   .action(async (options) => {
-    console.log(chalk.blue("Updating metadata..."));
     const success = await updateCommand(options);
     if (!success) {
       process.exit(1);

@@ -1,7 +1,7 @@
 import fs from "fs";
 import chalk from "chalk";
 import { glob } from "glob";
-import { join, dirname, normalize, resolve } from "path";
+import { join, dirname, normalize, resolve, relative } from "path";
 import { z } from "zod";
 import { executeGit, getFirstCommitDate, getLastCommit, getPreviousPath } from "./git";
 import { isGitRepository, getLatestCommitHash, getChangedFilesSince } from "./git";
@@ -76,7 +76,8 @@ export function getFileMetadata({
   filePath: string;
 }): FileMetadata | null {
   assertRepo(repoDir);
-  const absPath = join(repoDir, filePath);
+  const metadataPath = contentPathToMetadataPath(filePath);
+  const absPath = join(repoDir, metadataPath);
   try {
     if (!fs.existsSync(absPath)) return null;
     return fileMetadataSchema.parse(JSON.parse(fs.readFileSync(absPath, "utf-8")));
@@ -96,7 +97,8 @@ export async function setMetadata({
   metadata: FileMetadata | null;
 }) {
   assertRepo(repoDir);
-  const absPath = join(repoDir, filePath);
+  const metadataPath = contentPathToMetadataPath(filePath);
+  const absPath = join(repoDir, metadataPath);
   if (metadata) {
     if (!fs.existsSync(dirname(absPath))) {
       fs.mkdirSync(dirname(absPath), { recursive: true });
@@ -107,11 +109,15 @@ export async function setMetadata({
   }
 }
 
+/**
+ * Returns all the metadata file paths relative to the repo root
+ */
 export async function getAllMetadataFilePaths({ repoDir }: { repoDir: string }): Promise<string[]> {
   assertRepo(repoDir);
   const metadataDir = join(repoDir, METADATA_DIR);
   const configPath = join(repoDir, CONFIG_PATH);
-  return await glob(`${metadataDir}/**/*.json`, { ignore: [configPath] });
+  const absPaths = await glob(`${metadataDir}/**/*.json`, { ignore: [configPath] });
+  return absPaths.map((absPath) => relative(repoDir, absPath));
 }
 
 export function contentPathToMetadataPath(filePath: string): string {
@@ -128,13 +134,18 @@ export function metadataPathToContentPath(metadataPath: string): string {
 }
 
 export async function initRepo({ repoDir }: { repoDir: string }) {
-  if (!fs.existsSync(join(repoDir, METADATA_DIR))) {
-    fs.mkdirSync(join(repoDir, METADATA_DIR), { recursive: true });
-  }
-  if (!isGitRepository({ cwd: repoDir })) {
+  if (!fs.existsSync(join(repoDir, ".git"))) {
+    console.log("Initializing git repository...");
     await executeGit(["init"], { cwd: repoDir });
   }
+  if (!fs.existsSync(join(repoDir, METADATA_DIR))) {
+    console.log("Creating metadata directory...");
+    fs.mkdirSync(join(repoDir, METADATA_DIR), { recursive: true });
+  }
   writeConfig({ repoDir, config: defaultConfig });
+  await executeGit(["add", "."], { cwd: repoDir });
+  await executeGit(["commit", "-m", "Add metadata"], { cwd: repoDir });
+  console.log(chalk.green("Repository initialized."));
 }
 
 export async function updateRepo({ repoDir }: { repoDir: string }): Promise<boolean> {
@@ -155,10 +166,10 @@ export async function updateRepo({ repoDir }: { repoDir: string }): Promise<bool
     });
     const filesToUpdate = notIgnoredFiles.filter((file) => changedFiles.has(file));
     if (filesToUpdate.length === 0) {
-      console.log(chalk.green("No files to update."));
+      console.log(chalk.green("No committed file changes since last update."));
       return true;
     } else {
-      console.log(chalk.green(`Found ${filesToUpdate.length} files to update.`));
+      console.log(chalk.green(`Found ${filesToUpdate.length} updated files.`));
     }
 
     // Process each file
@@ -181,7 +192,9 @@ export async function updateRepo({ repoDir }: { repoDir: string }): Promise<bool
           if (fs.existsSync(previousMetadataPath)) {
             if (!fs.existsSync(metadataPath)) {
               fs.renameSync(previousMetadataPath, metadataPath);
-              console.log(chalk.blue(`Moved metadata for ${filePath} to ${metadataPath}`));
+              console.log(
+                chalk.blue(`Moved metadata from ${previousMetadataPath} to ${metadataPath}`)
+              );
             } else {
               fs.unlinkSync(previousMetadataPath);
               console.log(chalk.blue(`Removed metadata for ${previousPath}`));
@@ -192,7 +205,8 @@ export async function updateRepo({ repoDir }: { repoDir: string }): Promise<bool
         // Update the last commit hash and date
         const lastCommit = await getLastCommit(filePath, { cwd: repoDir });
         if (lastCommit) {
-          const metadata = getFileMetadata({ repoDir, filePath }) || { schemaVersion: 1 };
+          let existingMetadata = getFileMetadata({ repoDir, filePath });
+          const metadata = existingMetadata ?? { schemaVersion: 1 };
           setMetadata({
             repoDir,
             filePath,
@@ -202,7 +216,11 @@ export async function updateRepo({ repoDir }: { repoDir: string }): Promise<bool
               lastCommitDate: lastCommit?.date,
             },
           });
-          console.log(chalk.blue(`Updated metadata for ${filePath}`));
+          if (existingMetadata) {
+            console.log(chalk.blue(`Updated metadata for ${filePath}`));
+          } else {
+            console.log(chalk.green(`Created metadata for ${filePath}`));
+          }
         }
 
         successCount++;
@@ -236,7 +254,9 @@ export async function updateRepo({ repoDir }: { repoDir: string }): Promise<bool
     config.lastCommitHash = latestCommitHash;
     writeConfig({ repoDir, config });
 
-    console.log(chalk.green(`Update complete.`));
+    // Commit the changes to the metadata directory
+    await executeGit(["add", METADATA_DIR], { cwd: repoDir });
+    await executeGit(["commit", "-m", "Update metadata"], { cwd: repoDir });
     return true;
   } catch (error) {
     console.error(chalk.red(`Update failed: ${error}`));

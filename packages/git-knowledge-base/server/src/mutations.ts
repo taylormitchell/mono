@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { env } from "./env";
 import { File } from "../../shared/web/schemas";
-import { contentPathToMetadataPath, getFileMetadata, setMetadata } from "../../shared/files";
+import { getFileMetadata, setMetadata } from "../../shared/files";
 
 // Create a file
 export async function createFile(filePath: string, data: File) {
@@ -17,8 +17,7 @@ export async function createFile(filePath: string, data: File) {
     await fs.writeFile(fullPath, data.content);
 
     // Create metadata
-    const metadataPath = contentPathToMetadataPath(filePath);
-    await setMetadata(metadataPath, data.metadata);
+    await setMetadata({ repoDir: env.GIT_REPO_PATH, filePath, metadata: data.metadata });
 
     return true;
   } catch (error) {
@@ -76,7 +75,7 @@ export async function deleteFile(filePath: string) {
     await fs.unlink(fullPath);
 
     // Delete metadata
-    await setMetadata(fullPath, null);
+    await setMetadata({ repoDir: env.GIT_REPO_PATH, filePath, metadata: null });
 
     return true;
   } catch (error) {
