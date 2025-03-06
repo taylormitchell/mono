@@ -1,0 +1,13 @@
+{
+  "name": "git-knowledge-base",
+  "module": "index.ts",
+  "type": "module",
+  "bin": {
+    "git-metadata": "./index.ts"
+  },
+  "scripts": {
+    "start": "bun run index.ts",
+    "dev": "bun --watch index.ts",
+    "test": "bun run src/test.ts"
+  }
+}
