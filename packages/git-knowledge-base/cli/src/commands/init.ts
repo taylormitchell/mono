@@ -1,4 +1,4 @@
-import { initRepo } from "../../../shared/files";
+import { initRepo } from "../../../shared/repo";
 
 export async function initCommand(): Promise<boolean> {
   try {

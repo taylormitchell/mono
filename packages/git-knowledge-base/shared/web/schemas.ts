@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { MutationV1 } from "replicache";
-import { fileMetadataSchema } from "../files";
+import { fileMetadataSchema } from "../repo";
 
 export const fileSchema = z.object({
   path: z.string(),

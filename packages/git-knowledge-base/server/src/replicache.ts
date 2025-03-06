@@ -10,9 +10,9 @@ import {
   executeGit,
   commitIsLater,
 } from "../../shared/git";
-import { METADATA_DIR } from "../../shared/files";
-import { metadataPathToContentPath } from "../../shared/files";
-import { getMetadata } from "../../shared/files";
+import { METADATA_DIR } from "../../shared/repo";
+import { metadataPathToContentPath } from "../../shared/repo";
+import { updateRepo } from "../../shared/repo";
 import { env } from "./env";
 
 type ClientState = {
@@ -68,17 +68,29 @@ export async function processPush(pushData: Push): Promise<void> {
     }
 
     // Process the mutation
-    // TODO: Do we commit after each? Or commit all together?
     switch (mutation.name) {
       case "createFile":
-        await createFile(mutation.args.path, mutation.args);
+        await createFile({
+          repoDir: env.GIT_REPO_PATH,
+          filePath: mutation.args.path,
+          data: mutation.args,
+        });
         break;
       case "updateFile":
-        await updateFile(mutation.args.path, mutation.args);
+        await updateFile({
+          repoDir: env.GIT_REPO_PATH,
+          filePath: mutation.args.path,
+          data: mutation.args,
+        });
         break;
       case "deleteFile":
-        await deleteFile(mutation.args.path);
+        await deleteFile({
+          repoDir: env.GIT_REPO_PATH,
+          filePath: mutation.args.path,
+        });
         break;
+      default:
+        mutation satisfies never;
     }
 
     // Update client's last mutation ID
@@ -88,11 +100,15 @@ export async function processPush(pushData: Push): Promise<void> {
       lastMutationID: mutation.id,
     };
   }
-  // TODO: Commit all together
-  await executeGit(["add", "."]);
-  await executeGit(["commit", "-m", "Replicache commit"]);
-  const commit = await getCurrentCommit();
 
+  // Commit mutation changes
+  await executeGit(["add", "."]);
+  await executeGit(["commit", "-m", "File updates from web client"]);
+
+  // Update metadata and commit
+  await updateRepo({ repoDir: env.GIT_REPO_PATH, message: "Update metadata" });
+
+  const commit = await getCurrentCommit();
   if (commit) {
     for (const clientID of clientIDs) {
       const client: ClientState =

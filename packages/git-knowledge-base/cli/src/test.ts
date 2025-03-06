@@ -8,7 +8,7 @@ import {
   executeGit,
 } from "../../shared/git";
 import { scanRepository } from "../../shared/utils/files";
-import { handleRenamedFile } from "../../shared/files";
+import { handleRenamedFile } from "../../shared/repo";
 import { initConfig } from "../../shared/config";
 import path from "path";
 import { mkdtemp, mkdir, writeFile, rm } from "fs/promises";

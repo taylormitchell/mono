@@ -2,12 +2,20 @@ import fs from "fs/promises";
 import path from "path";
 import { env } from "./env";
 import { File } from "../../shared/web/schemas";
-import { getFileMetadata, setMetadata } from "../../shared/files";
+import { getFileMetadata, setMetadata } from "../../shared/repo";
 
 // Create a file
-export async function createFile(filePath: string, data: File) {
+export async function createFile({
+  repoDir,
+  filePath,
+  data,
+}: {
+  repoDir: string;
+  filePath: string;
+  data: File;
+}) {
   try {
-    const fullPath = path.join(env.GIT_REPO_PATH, filePath);
+    const fullPath = path.join(repoDir, filePath);
 
     // Create file
     if (await fs.exists(fullPath)) {
@@ -62,7 +70,13 @@ export async function updateFile({
 }
 
 // Delete a file
-export async function deleteFile(filePath: string) {
+export async function deleteFile({
+  repoDir,
+  filePath,
+}: {
+  repoDir: string;
+  filePath: string;
+}) {
   try {
     const fullPath = path.join(env.GIT_REPO_PATH, filePath);
 

@@ -148,7 +148,13 @@ export async function initRepo({ repoDir }: { repoDir: string }) {
   console.log(chalk.green("Repository initialized."));
 }
 
-export async function updateRepo({ repoDir }: { repoDir: string }): Promise<boolean> {
+export async function updateRepo({
+  repoDir,
+  message,
+}: {
+  repoDir: string;
+  message?: string;
+}): Promise<boolean> {
   assertRepo(repoDir);
   try {
     const config = readConfig({ repoDir }) ?? writeConfig({ repoDir, config: defaultConfig });
@@ -256,7 +262,7 @@ export async function updateRepo({ repoDir }: { repoDir: string }): Promise<bool
 
     // Commit the changes to the metadata directory
     await executeGit(["add", METADATA_DIR], { cwd: repoDir });
-    await executeGit(["commit", "-m", "Update metadata"], { cwd: repoDir });
+    await executeGit(["commit", "-m", message ?? "Update metadata"], { cwd: repoDir });
     return true;
   } catch (error) {
     console.error(chalk.red(`Update failed: ${error}`));

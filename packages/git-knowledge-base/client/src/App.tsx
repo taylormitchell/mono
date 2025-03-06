@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
-import { Replicache } from "replicache";
+import { MutatorDefs, Replicache } from "replicache";
 import { z } from "zod";
+import { File } from "../../shared/web/schemas";
+import { getTimestampWithTimezone } from "./lib/utils";
 
 const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
@@ -14,36 +16,36 @@ const pushUrl = new URL(env.VITE_REPLICACHE_PUSH_PATH, env.VITE_API_URL);
 const pullUrl = new URL(env.VITE_REPLICACHE_PULL_PATH, env.VITE_API_URL);
 
 // Define mutations
-const mutators = {
-  createFile: async (tx: any, { path, content }: { path: string; content: string }) => {
-    await tx.put(`file/${path}`, {
+const mutators: MutatorDefs = {
+  createFile: async (tx, { path, content }: { path: string; content: string }) => {
+    await tx.set(`file/${path}`, {
+      path,
       content,
-      isDirectory: false,
       metadata: {
         schemaVersion: 1,
-        path,
-        firstCommitDate: new Date().toISOString(),
-        lastCommitDate: new Date().toISOString(),
-        lastCommitHash: "",
         custom: {
           createdAt: new Date().toISOString(),
         },
       },
-    });
+    } satisfies File);
   },
-  updateFile: async (tx: any, { path, content }: { path: string; content: string }) => {
-    const existing = (await tx.get(`file/${path}`)) as FileData | null;
+  updateFile: async (tx, { path, content }: { path: string; content: string }) => {
+    const existing = (await tx.get(`file/${path}`)) as File | null;
     if (!existing) {
       throw new Error(`File not found: ${path}`);
     }
-    await tx.put(`file/${path}`, {
+    await tx.set(`file/${path}`, {
       ...existing,
+      path,
       content,
       metadata: {
         ...existing.metadata,
-        lastCommitDate: new Date().toISOString(),
+        custom: {
+          ...existing.metadata.custom,
+          updatedAt: getTimestampWithTimezone(),
+        },
       },
-    });
+    } satisfies File);
   },
   deleteFile: async (tx: any, { path }: { path: string }) => {
     await tx.del(`file/${path}`);

@@ -1,4 +1,4 @@
-import { updateRepo } from "../../../shared/files";
+import { updateRepo } from "../../../shared/repo";
 
 export async function updateCommand(
   options: { force?: boolean; verbose?: boolean } = {}
