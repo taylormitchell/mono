@@ -16,21 +16,12 @@ export async function createFile({
 }) {
   try {
     const fullPath = path.join(repoDir, filePath);
-
-    // Create file
-    if (await fs.exists(fullPath)) {
-      throw new Error(`File ${filePath} already exists`);
-    }
+    if (await fs.exists(fullPath)) throw new Error(`File ${filePath} already exists`);
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, data.content);
-
-    // Create metadata
     await setMetadata({ repoDir: env.GIT_REPO_PATH, filePath, metadata: data.metadata });
-
-    return true;
   } catch (error) {
     console.error(`Error creating file ${filePath}:`, error);
-    return false;
   }
 }
 
@@ -56,20 +47,10 @@ export async function updateFile({
     // Update metadata
     if (data.metadata) {
       const metadata = getFileMetadata({ repoDir, filePath });
-      setMetadata({
-        repoDir,
-        filePath,
-        metadata: {
-          ...metadata,
-          ...data.metadata,
-          custom: { ...metadata?.custom, ...data.metadata?.custom },
-        },
-      });
+      setMetadata({ repoDir, filePath, metadata: { ...metadata, ...data.metadata } });
     }
-    return true;
   } catch (error) {
     console.error(`Error updating file ${filePath}:`, error);
-    return false;
   }
 }
 

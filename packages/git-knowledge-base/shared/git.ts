@@ -1,4 +1,4 @@
-import { spawn } from "bun";
+import { env, spawn } from "bun";
 
 /**
  * Executes a git command and returns the result
@@ -6,7 +6,7 @@ import { spawn } from "bun";
 export async function executeGit(
   args: string[],
   options?: { cwd?: string }
-): Promise<{ success: boolean; data?: string; error?: string }> {
+): Promise<{ success: true; data: string } | { success: false; error: string }> {
   try {
     const proc = spawn(["git", ...args], {
       stdout: "pipe",
@@ -73,6 +73,43 @@ export async function getFirstCommitDate(
 export async function getCurrentCommit(options?: { cwd?: string }): Promise<string | null> {
   const result = await executeGit(["rev-parse", "HEAD"], { cwd: options?.cwd });
   return result.success && result.data ? result.data : null;
+}
+
+export async function getCommitOrder(
+  commitHash: string,
+  options?: { cwd?: string }
+): Promise<number | null> {
+  try {
+    const result = await executeGit(["rev-list", "--count", commitHash], {
+      cwd: options?.cwd,
+    });
+    if (!result.success) {
+      console.error("Error getting commit order:", result.error);
+      return null;
+    }
+    return parseInt(result.data, 10);
+  } catch (error) {
+    console.error("Error getting commit order:", error);
+    return null;
+  }
+}
+
+export async function getCountBetweenCommits(
+  commit1: string,
+  commit2: string,
+  options?: { cwd?: string }
+): Promise<number | null> {
+  if (commit1 === commit2) {
+    return 0;
+  }
+  const result = await executeGit(["rev-list", "--count", `${commit1}..${commit2}`], {
+    cwd: options?.cwd,
+  });
+  if (!result.success) {
+    console.error("Error getting commit order:", result.error);
+    return null;
+  }
+  return parseInt(result.data, 10);
 }
 
 /**
@@ -172,8 +209,6 @@ export async function getChangedFilesSince(
   options?: { cwd?: string }
 ): Promise<string[]> {
   if (!lastCommitHash) {
-    // If no commit hash provided, return all files in the repo
-    console.log("Getting all files in repo", { cwd: options?.cwd });
     const result = await executeGit(["ls-files"], { cwd: options?.cwd });
 
     if (!result.success || !result.data) {
@@ -186,7 +221,6 @@ export async function getChangedFilesSince(
   }
 
   // Get files that have changed since the last commit hash
-  console.log("Getting changed files since", lastCommitHash);
   const result = await executeGit(["diff", "--name-only", lastCommitHash, "HEAD"], {
     cwd: options?.cwd,
   });
@@ -236,4 +270,11 @@ export async function commitIsLater(
     cwd: options?.cwd,
   });
   return result.success && result.data ? parseInt(result.data) > 0 : false;
+}
+
+export async function commitAll(options?: { cwd?: string; message?: string }) {
+  await executeGit(["add", "."], { cwd: options?.cwd });
+  await executeGit(["commit", "-m", options?.message ?? "File updates from web client"], {
+    cwd: options?.cwd,
+  });
 }

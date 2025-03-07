@@ -1,86 +1,121 @@
-# Implementation Plan for Metadata Tracking Tool
+# Implementation Plan for Git-Based Knowledge Management System
 
-This document outlines the major stages for implementing the git metadata tracking tool as specified in the design document.
+## Phase 1: Core Infrastructure
 
-## Stage 1: Project Setup and Core Infrastructure
+### 1.1 Repository Management
+- [x] Complete the metadata directory structure
+- [x] Implement basic Git operations wrapper
+- [x] Create repository initialization functionality
+- [x] Build metadata synchronization with Git history
 
-1. **Create Basic Project Structure**
-   - Define core interfaces and types
-   - Set up directory structure
-   - Create CLI entry point
+### 1.2 CLI Tool Enhancement
+- [x] Implement repository initialization command
+- [x] Create metadata update/refresh command
+- [ ] Add file metadata inspection commands
+- [ ] Implement batch operations for metadata management
 
-2. **Implement Configuration Management**
-   - Create config file handling
-   - Implement reading/writing of `.meta-config.json`
-   - Add validation for configuration
+### 1.3 Shared Code Refinement
+- [x] Finalize schema definitions
+- [x] Complete Git operations utilities
+- [ ] Add comprehensive error handling
+- [ ] Implement logging system
 
-## Stage 2: Git Integration and File Operations
+## Phase 2: Server Implementation
 
-1. **Implement Git Operations**
-   - Create utility functions for git commands
-   - Implement functions to get first commit date
-   - Implement functions to get last commit date and hash
-   - Add detection for renamed files
+### 2.1 API Server Setup
+- [x] Create basic server structure
+- [x] Implement environment configuration
 
-2. **Implement File System Operations**
-   - Create functions to scan repository for files
-   - Implement directory creation for metadata
-   - Add file reading/writing utilities
-   - Implement path mapping between content and metadata
+### 2.2 Replicache Integration
+- [x] Implement push endpoint
+- [x] Implement pull endpoint
+- [ ] Handle concurrent push handling
 
-3. **Implement Metadata Generation**
-   - Create functions to generate metadata objects
-   - Implement JSON serialization/deserialization
-   - Add handling for preserving custom fields
+### 2.3 Content Operations
+- [x] Implement file creation
+- [x] Implement file update
+- [x] Implement file deletion
+- [ ] Add support for binary files
+- [ ] Implement file move/rename operations
 
-## Stage 3: Core Commands and Workflows
+## Phase 3: Web Client Development
 
-1. **Implement Init Command**
-   - Create initial configuration
-   - Generate metadata for all files
-   - Handle first-time setup edge cases
+### 3.1 UI Framework
+- [x] Set up React application
+- [x] Configure Replicache client
+- [ ] Implement responsive layout
+- [ ] Create theme and styling system
 
-2. **Implement Update Command**
-   - Add incremental update logic using lastCommitHash
-   - Implement detection of changed files
-   - Add handling for deleted files
-   - Implement renamed file detection and handling
+### 3.2 Core Components
+- [ ] Build file browser component
+- [ ] Create file editor with syntax highlighting
+- [ ] Implement metadata display panel
+- [ ] Add search and filter functionality
 
-3. **Add Error Handling and Logging**
-   - Implement robust error handling
-   - Add logging for operations
-   - Create user-friendly error messages
+### 3.3 State Management
+- [x] Configure Replicache mutators
+- [ ] Implement optimistic UI updates
+- [ ] Create subscription hooks for real-time updates
+- [ ] Add offline capability indicators
 
-## Stage 4: Testing and Refinement
+## Phase 4: Advanced Features 
 
-1. **Create Test Cases**
-   - Set up test environment with sample repository
-   - Create tests for core functionality
-   - Add tests for edge cases
+### 4.1 Metadata Enhancements
+- [ ] Implement tagging system
+- [ ] Add custom metadata fields
+- [ ] Create metadata editor UI
+- [ ] Build metadata visualization components
 
-2. **Performance Optimization**
-   - Implement parallel processing
-   - Optimize git operations
-   - Add progress indicators for long-running operations
+### 4.2 Search and Discovery
+- [ ] Implement full-text search
+- [ ] Add metadata-based filtering
+- [ ] Create saved searches functionality
+- [ ] Build search results visualization
 
-3. **Documentation and Polishing**
-   - Create comprehensive README
-   - Add inline code documentation
-   - Create usage examples
-   - Final review and cleanup
+### 4.3 Collaboration Features
+- [ ] Implement multi-user awareness
+- [ ] Add change indicators for collaborative editing
+- [ ] Create activity feed for repository changes
+- [ ] Implement simple commenting system
 
-## Stage 5: Future Enhancements (Post-MVP)
+## Phase 5: Testing and Optimization
 
-1. **Additional Commands**
-   - Add status command to show pending updates
-   - Add info command to display metadata for specific files
+### 5.1 Performance Testing
+- [ ] Benchmark with large repositories
+- [ ] Optimize Git operations for speed
+- [ ] Implement caching strategies
+- [ ] Reduce network payload sizes
 
-2. **Advanced Features**
-   - Add support for custom validation rules
-   - Implement conflict resolution strategies
-   - Add support for more complex ignore patterns
+### 5.2 Cross-Platform Testing
+- [ ] Test on multiple browsers
+- [ ] Verify mobile responsiveness
+- [ ] Test CLI on different operating systems
+- [ ] Validate offline functionality
 
-3. **Integration Options**
-   - Create hooks for git operations
-   - Add API for programmatic usage
-   - Consider editor integrations 
+### 5.3 Documentation and Deployment
+- [ ] Complete user documentation
+- [ ] Create developer API documentation
+- [ ] Prepare deployment guides
+- [ ] Build CI/CD pipeline
+
+## Phase 6: Extended Capabilities (Future)
+
+### 6.1 Extended Content Types
+- [ ] Add support for structured data (JSON, YAML)
+- [ ] Implement media file handling (images, PDFs)
+- [ ] Create specialized viewers for different content types
+- [ ] Build import/export functionality
+
+### 6.2 Integration Capabilities
+- [ ] Set up authentication system (if required)
+- [ ] Configure CORS and security middleware
+- [ ] Implement webhooks for external systems
+- [ ] Create API for third-party integration
+- [ ] Build plugin system for extensibility
+- [ ] Add support for external authentication providers
+
+### 6.3 Advanced Collaboration
+- [ ] Implement real-time collaborative editing
+- [ ] Add permission system for access control
+- [ ] Create workflow capabilities for content approval
+- [ ] Build notification system for changes

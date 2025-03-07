@@ -7,8 +7,9 @@ import { PullResponseV1, PatchOperation } from "replicache";
 import {
   getChangedFilesSince,
   getCurrentCommit,
-  executeGit,
-  commitIsLater,
+  commitAll,
+  getCommitOrder,
+  getCountBetweenCommits,
 } from "../../shared/git";
 import { getFileMetadata, METADATA_DIR } from "../../shared/repo";
 import { metadataPathToContentPath } from "../../shared/repo";
@@ -19,7 +20,7 @@ type ClientState = {
   clientID: string;
   clientGroupID: string;
   lastMutationID: number;
-  lastCommit: string | null;
+  version: { hash: string; order: number } | null;
 };
 const clients: Record<string, ClientState> = {};
 
@@ -33,15 +34,53 @@ export const pushSchema = z.object({
 
 type Push = z.infer<typeof pushSchema>;
 
+export const cookieSchema = z
+  .object({
+    hash: z.string(),
+    order: z.number(),
+  })
+  .nullable();
+
+type Cookie = z.infer<typeof cookieSchema>;
+
 export const pullSchema = z.object({
   pullVersion: z.literal(1),
   schemaVersion: z.string(),
   profileID: z.string(),
-  cookie: z.string().nullable(),
+  cookie: cookieSchema,
   clientGroupID: z.string(),
 });
 
 type Pull = z.infer<typeof pullSchema>;
+
+let cachedVersion: { hash: string; order: number } | null = null;
+
+async function getCurrentVersion(): Promise<{ hash: string; order: number } | null> {
+  const commit = await getCurrentCommit({ cwd: env.GIT_REPO_PATH });
+  if (!commit) {
+    console.error("Failed to get current commit");
+    return null;
+  }
+  if (cachedVersion) {
+    // Compute the order using an offset from the cached version
+    const diff = await getCountBetweenCommits(cachedVersion.hash, commit, {
+      cwd: env.GIT_REPO_PATH,
+    });
+    if (diff === null) {
+      console.error("Failed to get count between commits");
+      return null;
+    }
+    return { hash: commit, order: cachedVersion.order + diff };
+  } else {
+    // Compute the order from the beginning
+    const order = await getCommitOrder(commit, { cwd: env.GIT_REPO_PATH });
+    if (!order) {
+      console.error("Failed to get commit order");
+      return null;
+    }
+    return { hash: commit, order };
+  }
+}
 
 export async function processPush(pushData: Push): Promise<void> {
   const { mutations, clientGroupID } = pushData;
@@ -50,9 +89,10 @@ export async function processPush(pushData: Push): Promise<void> {
   const clientIDs = new Set<string>();
   for (const mutation of mutations) {
     const { clientID } = mutation;
-    const client: ClientState = clientID
-      ? clients[clientID]
-      : { clientID, clientGroupID, lastMutationID: 0, lastCommit: null };
+    const client: ClientState =
+      clientID in clients
+        ? clients[clientID]
+        : { clientID, clientGroupID, lastMutationID: 0, version: null };
 
     // Skip if already processed
     if (mutation.id <= client.lastMutationID) {
@@ -102,36 +142,45 @@ export async function processPush(pushData: Push): Promise<void> {
   }
 
   // Commit mutation changes
-  await executeGit(["add", "."]);
-  await executeGit(["commit", "-m", "File updates from web client"]);
+  await commitAll({ cwd: env.GIT_REPO_PATH, message: "File updates from web client" });
 
   // Update metadata and commit
   await updateRepo({ repoDir: env.GIT_REPO_PATH, message: "Update metadata" });
 
-  const commit = await getCurrentCommit();
-  if (commit) {
-    for (const clientID of clientIDs) {
-      const client: ClientState =
-        clientID in clients
-          ? clients[clientID]
-          : { clientID, clientGroupID, lastMutationID: 0, lastCommit: null };
-      clients[clientID] = {
-        ...client,
-        lastCommit: commit,
-      };
-    }
+  // Get the latest version
+  const latestVersion = await getCurrentVersion();
+  if (!latestVersion) {
+    // TODO: Should we updated anyways? even if it's null?
+    console.error("Failed to get current version");
+    return;
+  }
+
+  // Update our version caches
+  cachedVersion = latestVersion;
+  for (const clientID of clientIDs) {
+    const client: ClientState =
+      clientID in clients
+        ? clients[clientID]
+        : { clientID, clientGroupID, lastMutationID: 0, version: null };
+    clients[clientID] = { ...client, version: { ...latestVersion } };
   }
 }
 
 export async function processPull(pullData: Pull): Promise<PullResponseV1> {
   const { cookie, clientGroupID } = pullData;
-  console.log("Processing pull with cookie:", cookie);
-  const files = await getChangedFilesSince(cookie, { cwd: env.GIT_REPO_PATH });
-  console.log("Files:", files);
 
-  // Build patch
+  // Update our version cache
+  const latestVersion = await getCurrentVersion();
+  if (!latestVersion) {
+    throw new Error("Failed to get current version");
+  }
+  cachedVersion = latestVersion;
+
+  // Build patches for changed files
   const patch: Array<PatchOperation> = [];
-
+  const files = await getChangedFilesSince(cookie?.hash ?? null, {
+    cwd: env.GIT_REPO_PATH,
+  });
   for (const changedFilePath of files) {
     const filePath = changedFilePath.startsWith(METADATA_DIR)
       ? metadataPathToContentPath(changedFilePath)
@@ -159,24 +208,21 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
     }
   }
 
-  const currentCommit = await getCurrentCommit({ cwd: env.GIT_REPO_PATH });
-  console.log("Current commit:", currentCommit);
-
   const lastMutationIDChanges: Record<string, number> = {};
   for (const [clientID, client] of Object.entries(clients)) {
     if (
       client.clientGroupID === clientGroupID &&
-      client.lastCommit &&
-      cookie &&
-      (await commitIsLater(client.lastCommit, cookie, { cwd: env.GIT_REPO_PATH }))
+      client.version &&
+      cachedVersion &&
+      client.version.order > (cookie?.order ?? 0)
     ) {
       lastMutationIDChanges[clientID] = client.lastMutationID;
     }
   }
 
-  console.log("Last mutation ID changes:", lastMutationIDChanges);
+  const newCookie: Cookie = latestVersion ? { ...latestVersion } : null;
   return {
-    cookie: currentCommit,
+    cookie: newCookie,
     lastMutationIDChanges: lastMutationIDChanges,
     patch,
   };

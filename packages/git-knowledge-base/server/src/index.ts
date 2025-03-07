@@ -10,14 +10,26 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // Serve static files from the client build directory
 app.use(express.static(path.join(__dirname, "../../client/dist")));
 
 // Replicache pull
 app.post(env.REPLICACHE_PULL_PATH, async (req, res) => {
   try {
-    console.log("Processing pull");
-    const pullResponse = await processPull(pullSchema.parse(req.body));
+    const pullBody = pullSchema.safeParse(req.body);
+    if (!pullBody.success) {
+      console.error("Invalid pull body:", req.body);
+      console.error("Error:", pullBody.error);
+      return res.status(400).json({ success: false, error: pullBody.error.message });
+    }
+    console.log("Pull body:", pullBody.data);
+    const pullResponse = await processPull(pullBody.data);
     console.log("Pull response:", pullResponse);
     res.status(200).json(pullResponse);
   } catch (error) {
@@ -31,8 +43,14 @@ app.post(env.REPLICACHE_PULL_PATH, async (req, res) => {
 // Replicache push
 app.post(env.REPLICACHE_PUSH_PATH, async (req, res) => {
   try {
-    console.log("Processing push");
-    await processPush(pushSchema.parse(req.body));
+    const pushBody = pushSchema.safeParse(req.body);
+    if (!pushBody.success) {
+      console.error("Invalid push body:", req.body);
+      console.error("Error:", pushBody.error);
+      return res.status(400).json({ success: false, error: pushBody.error.message });
+    }
+    console.log("Push body:", pushBody.data);
+    await processPush(pushBody.data);
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error processing push:", error);

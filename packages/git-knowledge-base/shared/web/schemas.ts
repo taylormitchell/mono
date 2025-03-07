@@ -6,12 +6,8 @@ export const fileMetadataSchema = z.object({
   firstCommitDate: z.string().optional(),
   lastCommitDate: z.string().optional(),
   lastCommitHash: z.string().optional(),
-  custom: z
-    .object({
-      createdAt: z.string().optional(),
-      updatedAt: z.string().optional(),
-    })
-    .optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 });
 
 export const fileSchema = z.object({

@@ -1,7 +1,9 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
-import chalk from "chalk";
-import { initCommand, updateCommand } from "./commands";
+import { initCommand } from "./commands/init";
+import { updateCommand } from "./commands/update";
+import { saveCommand } from "./commands/save";
+import { statusCommand } from "./commands/status";
 
 // Create the program
 const program = new Command();
@@ -31,6 +33,28 @@ program
   .option("-v, --verbose", "Show verbose output")
   .action(async (options) => {
     const success = await updateCommand(options);
+    if (!success) {
+      process.exit(1);
+    }
+  });
+
+// Save command
+program
+  .command("save")
+  .description("Save the current state of the repository")
+  .action(async () => {
+    const success = await saveCommand();
+    if (!success) {
+      process.exit(1);
+    }
+  });
+
+// Status command
+program
+  .command("status")
+  .description("Show the status of the repository")
+  .action(async () => {
+    const success = await statusCommand();
     if (!success) {
       process.exit(1);
     }
