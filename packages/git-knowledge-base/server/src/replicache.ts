@@ -10,6 +10,8 @@ import {
   commitAll,
   getCommitOrder,
   getCountBetweenCommits,
+  getLastCommit,
+  getFirstCommitDate,
 } from "../../shared/git";
 import { getFileMetadata, METADATA_DIR } from "../../shared/repo";
 import { metadataPathToContentPath } from "../../shared/repo";
@@ -53,6 +55,16 @@ export const pullSchema = z.object({
 
 type Pull = z.infer<typeof pullSchema>;
 
+// Cache for git commit information
+const commitCache: {
+  lastCommit: Record<string, { hash: string; date: string } | null>;
+  firstCommitDate: Record<string, string | null>;
+} = {
+  lastCommit: {},
+  firstCommitDate: {},
+};
+
+// Clear cache when version changes
 let cachedVersion: { hash: string; order: number } | null = null;
 
 async function getCurrentVersion(): Promise<{ hash: string; order: number } | null> {
@@ -174,6 +186,13 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
   if (!latestVersion) {
     throw new Error("Failed to get current version");
   }
+
+  // Clear cache if version changed
+  if (!cachedVersion || cachedVersion.hash !== latestVersion.hash) {
+    commitCache.lastCommit = {};
+    commitCache.firstCommitDate = {};
+  }
+
   cachedVersion = latestVersion;
 
   // Build patches for changed files
@@ -191,13 +210,37 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
       if (await fs.exists(absoluteFilePath)) {
         // File exists, add it to patch
         const content = await fs.readFile(absoluteFilePath, "utf-8");
+
+        // Get metadata from file
         const metadata = getFileMetadata({ repoDir: env.GIT_REPO_PATH, filePath }) ?? {
           schemaVersion: 1,
         };
+
+        // Get commit information from cache or Git
+        let lastCommit = commitCache.lastCommit[filePath];
+        if (lastCommit === undefined) {
+          lastCommit = await getLastCommit(filePath, { cwd: env.GIT_REPO_PATH });
+          commitCache.lastCommit[filePath] = lastCommit;
+        }
+
+        let firstCommitDate = commitCache.firstCommitDate[filePath];
+        if (firstCommitDate === undefined) {
+          firstCommitDate = await getFirstCommitDate(filePath, { cwd: env.GIT_REPO_PATH });
+          commitCache.firstCommitDate[filePath] = firstCommitDate;
+        }
+
+        // Merge Git commit info with existing metadata
+        const enrichedMetadata = {
+          ...metadata,
+          lastCommitHash: lastCommit?.hash,
+          lastCommitDate: lastCommit?.date,
+          firstCommitDate: firstCommitDate || undefined,
+        };
+
         patch.push({
           op: "put" as const,
           key: `file/${filePath}`,
-          value: { id: filePath, content, metadata } satisfies File,
+          value: { id: filePath, content, metadata: enrichedMetadata } satisfies File,
         });
       } else {
         // If file doesn't exist, it was deleted

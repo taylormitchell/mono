@@ -202,25 +202,19 @@ export async function updateRepo({
           }
         }
 
-        // Update the last commit hash and date
-        const lastCommit = await getLastCommit(filePath, { cwd: repoDir });
-        if (lastCommit) {
+        if (!fs.existsSync(metadataPath)) {
           let existingMetadata = getFileMetadata({ repoDir, filePath });
-          const metadata = existingMetadata ?? { schemaVersion: 1 };
-          setMetadata({
-            repoDir,
-            filePath,
-            metadata: {
-              ...metadata,
-              lastCommitHash: lastCommit?.hash,
-              lastCommitDate: lastCommit?.date,
-            },
-          });
-          if (existingMetadata) {
-            console.log(chalk.blue(`Updated metadata for ${filePath}`));
-          } else {
-            console.log(chalk.green(`Created metadata for ${filePath}`));
+          if (!existingMetadata) {
+            setMetadata({
+              repoDir,
+              filePath,
+              metadata: { schemaVersion: 1 },
+            });
+            console.log(chalk.green(`Created basic metadata for ${filePath}`));
           }
+        } else {
+          // Don't modify existing metadata
+          console.log(chalk.blue(`Preserved existing metadata for ${filePath}`));
         }
 
         successCount++;

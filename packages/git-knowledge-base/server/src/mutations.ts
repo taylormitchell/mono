@@ -46,8 +46,8 @@ export async function updateFile({
 
     // Update metadata
     if (data.metadata) {
-      const metadata = getFileMetadata({ repoDir, filePath });
-      setMetadata({ repoDir, filePath, metadata: { ...metadata, ...data.metadata } });
+      const existingMetadata = getFileMetadata({ repoDir, filePath }) || { schemaVersion: 1 };
+      setMetadata({ repoDir, filePath, metadata: { ...existingMetadata, ...data.metadata } });
     }
   } catch (error) {
     console.error(`Error updating file ${filePath}:`, error);
