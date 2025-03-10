@@ -56,6 +56,7 @@ o() {
 # taylor's tech
 alias t="bun /Users/taylormitchell/Code/mono/packages/todo-cli/cli.ts"
 alias n="bun /Users/taylormitchell/Code/mono/packages/note-cli/cli.ts"
+alias gkb="bun /Users/taylormitchell/Code/mono/packages/git-knowledge-base/cli/index.ts"
 alias x="clear"
 export mono="/Users/taylormitchell/Code/mono"
 export notes="/Users/taylormitchell/Code/notes/notes"
