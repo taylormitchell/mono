@@ -41,9 +41,6 @@ const DEFAULT_CACHE: CommitCache = {
   files: {},
 };
 
-// Path to the cache file
-const CACHE_FILE_PATH = path.join(env.SERVER_DATA_DIR, "commit-cache.json");
-
 // In-memory cache
 let memoryCache: CommitCache | null = null;
 
@@ -60,14 +57,14 @@ async function loadCacheFromDisk(): Promise<CommitCache> {
   try {
     // Check if the cache file exists
     try {
-      await fs.access(CACHE_FILE_PATH);
+      await fs.access(env.COMMIT_CACHE_PATH);
     } catch (error) {
       // File doesn't exist, return default cache
       return DEFAULT_CACHE;
     }
 
     // Read and parse the cache file
-    const cacheContent = await fs.readFile(CACHE_FILE_PATH, "utf-8");
+    const cacheContent = await fs.readFile(env.COMMIT_CACHE_PATH, "utf-8");
     const parsedCache = JSON.parse(cacheContent);
 
     // Validate against schema
@@ -84,10 +81,10 @@ async function loadCacheFromDisk(): Promise<CommitCache> {
 async function saveCacheToDisk(cache: CommitCache): Promise<void> {
   try {
     // Ensure the directory exists
-    await fs.mkdir(path.dirname(CACHE_FILE_PATH), { recursive: true });
+    await fs.mkdir(path.dirname(env.COMMIT_CACHE_PATH), { recursive: true });
 
     // Write the cache to disk
-    await fs.writeFile(CACHE_FILE_PATH, JSON.stringify(cache, null, 2), "utf-8");
+    await fs.writeFile(env.COMMIT_CACHE_PATH, JSON.stringify(cache, null, 2), "utf-8");
   } catch (error) {
     console.error("Error saving commit cache:", error);
   }

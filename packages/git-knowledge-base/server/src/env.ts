@@ -5,6 +5,7 @@ const envSchema = z.object({
   REPLICACHE_PULL_PATH: z.string(),
   REPLICACHE_PUSH_PATH: z.string(),
   GIT_REPO_PATH: z.string(),
+  COMMIT_CACHE_PATH: z.string(),
 });
 
 export const env = envSchema.parse(process.env);

@@ -1,5 +1,4 @@
 import fs from "fs";
-import chalk from "chalk";
 import { glob } from "glob";
 import { join, dirname, normalize, relative } from "path";
 import { z } from "zod";
@@ -138,7 +137,7 @@ export async function initRepo({ repoDir }: { repoDir: string }) {
   writeConfig({ repoDir, config: defaultConfig });
   // await executeGit(["add", "."], { cwd: repoDir });
   // await executeGit(["commit", "-m", "Add metadata"], { cwd: repoDir });
-  console.log(chalk.green("Repository initialized."));
+  console.log("Repository initialized.");
 }
 
 export async function updateRepo({
@@ -165,10 +164,10 @@ export async function updateRepo({
     });
     const filesToUpdate = notIgnoredFiles.filter((file) => changedFiles.has(file));
     if (filesToUpdate.length === 0) {
-      console.log(chalk.green("No committed file changes since last update."));
+      console.log("No committed file changes since last update.");
       return true;
     } else {
-      console.log(chalk.green(`Found ${filesToUpdate.length} updated files.`));
+      console.log(`Found ${filesToUpdate.length} updated files.`);
     }
 
     // Process each file
@@ -191,12 +190,10 @@ export async function updateRepo({
           if (fs.existsSync(previousMetadataPath)) {
             if (!fs.existsSync(metadataPath)) {
               fs.renameSync(previousMetadataPath, metadataPath);
-              console.log(
-                chalk.blue(`Moved metadata from ${previousMetadataPath} to ${metadataPath}`)
-              );
+              console.log(`Moved metadata from ${previousMetadataPath} to ${metadataPath}`);
             } else {
               fs.unlinkSync(previousMetadataPath);
-              console.log(chalk.blue(`Removed metadata for ${previousPath}`));
+              console.log(`Removed metadata for ${previousPath}`);
             }
           }
         }
@@ -209,17 +206,17 @@ export async function updateRepo({
               filePath,
               metadata: { schemaVersion: 1 },
             });
-            console.log(chalk.green(`Created basic metadata for ${filePath}`));
+            console.log(`Created basic metadata for ${filePath}`);
           }
         } else {
           // Don't modify existing metadata
-          console.log(chalk.blue(`Preserved existing metadata for ${filePath}`));
+          console.log(`Preserved existing metadata for ${filePath}`);
         }
 
         successCount++;
       } catch (error) {
         errorCount++;
-        console.log(chalk.red(`Error processing ${filePath}: ${error}`));
+        console.log(`Error processing ${filePath}: ${error}`);
       }
     }
 
@@ -236,10 +233,10 @@ export async function updateRepo({
         if (fs.existsSync(metadataPath)) {
           fs.unlinkSync(metadataPath);
           deletedCount++;
-          console.log(chalk.blue(`Removed metadata for ${filePath}`));
+          console.log(`Removed metadata for ${filePath}`);
         }
       } catch (error) {
-        console.log(chalk.red(`Error handling deleted file ${metadataPath}: ${error}`));
+        console.log(`Error handling deleted file ${metadataPath}: ${error}`);
       }
     }
 
@@ -252,7 +249,7 @@ export async function updateRepo({
     await executeGit(["commit", "-m", message ?? "Update metadata"], { cwd: repoDir });
     return true;
   } catch (error) {
-    console.error(chalk.red(`Update failed: ${error}`));
+    console.error(`Update failed: ${error}`);
     return false;
   }
 }
