@@ -4,12 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"cd server && bun run dev\" \"cd client && bun run dev\"",
-    "client:dev": "cd client && bun run dev",
-    "build": "cd client && bun run build",
-    "server:start": "bun run server/src/index.ts",
     "typecheck": "tsc --noEmit",
-    "cli": "bun run cli/index.ts",
-    "test-repo": "rm -rf test-repo && mkdir test-repo && cd test-repo && bun run ../cli/index.ts init"
+    "deploy": "bun run scripts/deploy.ts"
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.2.3",
