@@ -137,8 +137,8 @@ export async function initRepo({ repoDir }: { repoDir: string }) {
     fs.mkdirSync(join(repoDir, METADATA_DIR), { recursive: true });
   }
   writeConfig({ repoDir, config: defaultConfig });
-  await executeGit(["add", "."], { cwd: repoDir });
-  await executeGit(["commit", "-m", "Add metadata"], { cwd: repoDir });
+  // await executeGit(["add", "."], { cwd: repoDir });
+  // await executeGit(["commit", "-m", "Add metadata"], { cwd: repoDir });
   console.log(chalk.green("Repository initialized."));
 }
 

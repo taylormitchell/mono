@@ -38,20 +38,20 @@ export async function executeGit(
 }
 
 /**
- * Gets the first commit date for a file
+ * Gets the first commit information for a file
  * @param filePath Path to the file
- * @returns ISO datetime string of the first commit or null if not found
+ * @returns Object containing the first commit date, hash, author, and message, or null if not found
  */
-export async function getFirstCommitDate(
+export async function getFirstCommitInfo(
   filePath: string,
   options?: { cwd?: string }
-): Promise<string | null> {
+): Promise<{ date: string; hash: string; author?: string; message?: string } | null> {
   // Use git log with reverse order to get the first commit
   const result = await executeGit(
     [
       "log",
       "--follow", // Follow renames
-      "--format=%aI", // ISO 8601 author date
+      "--format=%H%n%aI%n%an%n%s", // Hash, ISO 8601 author date, author name, subject
       "--reverse", // Oldest first
       "--",
       filePath,
@@ -61,13 +61,36 @@ export async function getFirstCommitDate(
 
   if (!result.success || !result.data) {
     const issue = !result.success ? result.error : "No data returned";
-    console.error(`Failed to get first commit date for ${filePath}: ${issue}`);
+    console.error(`Failed to get first commit info for ${filePath}: ${issue}`);
     return null;
   }
 
-  // Get the first line (first commit date)
+  // Parse the output (hash on first line, date on second, author on third, message on fourth)
   const lines = result.data.split("\n");
-  return lines[0] ?? null;
+  if (lines.length < 2) {
+    console.error(`Unexpected git log output format for ${filePath}`);
+    return null;
+  }
+
+  return {
+    hash: lines[0],
+    date: lines[1],
+    author: lines.length > 2 ? lines[2] : undefined,
+    message: lines.length > 3 ? lines[3] : undefined,
+  };
+}
+
+/**
+ * Gets the first commit date for a file
+ * @param filePath Path to the file
+ * @returns ISO datetime string of the first commit or null if not found
+ */
+export async function getFirstCommitDate(
+  filePath: string,
+  options?: { cwd?: string }
+): Promise<string | null> {
+  const commitInfo = await getFirstCommitInfo(filePath, options);
+  return commitInfo ? commitInfo.date : null;
 }
 
 export async function getCurrentCommit(options?: { cwd?: string }): Promise<string | null> {
@@ -115,14 +138,14 @@ export async function getCountBetweenCommits(
 /**
  * Gets the last commit date and hash for a file
  * @param filePath Path to the file
- * @returns Object containing the last commit date and hash, or null if not found
+ * @returns Object containing the last commit date, hash, author, and message, or null if not found
  */
 export async function getLastCommit(
   filePath: string,
   options?: { cwd?: string }
-): Promise<{ date: string; hash: string } | null> {
+): Promise<{ date: string; hash: string; author?: string; message?: string } | null> {
   // Use git log to get the last commit
-  const result = await executeGit(["log", "-1", "--format=%H%n%aI", "--", filePath], {
+  const result = await executeGit(["log", "-1", "--format=%H%n%aI%n%an%n%s", "--", filePath], {
     cwd: options?.cwd,
   });
 
@@ -132,7 +155,7 @@ export async function getLastCommit(
     return null;
   }
 
-  // Parse the output (hash on first line, date on second)
+  // Parse the output (hash on first line, date on second, author on third, message on fourth)
   const lines = result.data.split("\n");
   if (lines.length < 2) {
     console.error(`Unexpected git log output format for ${filePath}`);
@@ -142,6 +165,8 @@ export async function getLastCommit(
   return {
     hash: lines[0],
     date: lines[1],
+    author: lines.length > 2 ? lines[2] : undefined,
+    message: lines.length > 3 ? lines[3] : undefined,
   };
 }
 

@@ -10,13 +10,12 @@ import {
   commitAll,
   getCommitOrder,
   getCountBetweenCommits,
-  getLastCommit,
-  getFirstCommitDate,
 } from "../../shared/git";
 import { getFileMetadata, METADATA_DIR } from "../../shared/repo";
 import { metadataPathToContentPath } from "../../shared/repo";
 import { updateRepo } from "../../shared/repo";
 import { env } from "./env";
+import { getCommitInfoForFile } from "./commit-cache";
 
 type ClientState = {
   clientID: string;
@@ -55,16 +54,7 @@ export const pullSchema = z.object({
 
 type Pull = z.infer<typeof pullSchema>;
 
-// Cache for git commit information
-const commitCache: {
-  lastCommit: Record<string, { hash: string; date: string } | null>;
-  firstCommitDate: Record<string, string | null>;
-} = {
-  lastCommit: {},
-  firstCommitDate: {},
-};
-
-// Clear cache when version changes
+// Cache for version information
 let cachedVersion: { hash: string; order: number } | null = null;
 
 async function getCurrentVersion(): Promise<{ hash: string; order: number } | null> {
@@ -187,19 +177,17 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
     throw new Error("Failed to get current version");
   }
 
-  // Clear cache if version changed
-  if (!cachedVersion || cachedVersion.hash !== latestVersion.hash) {
-    commitCache.lastCommit = {};
-    commitCache.firstCommitDate = {};
-  }
-
   cachedVersion = latestVersion;
 
   // Build patches for changed files
   const patch: Array<PatchOperation> = [];
+
+  console.log("Getting changed files since", cookie?.hash ?? null);
   const files = await getChangedFilesSince(cookie?.hash ?? null, {
     cwd: env.GIT_REPO_PATH,
   });
+
+  console.log("Getting content for", files.length, "files");
   for (const changedFilePath of files) {
     const filePath = changedFilePath.startsWith(METADATA_DIR)
       ? metadataPathToContentPath(changedFilePath)
@@ -207,6 +195,12 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
 
     try {
       const absoluteFilePath = path.join(env.GIT_REPO_PATH, filePath);
+
+      // Skip non-markdown files
+      if (!filePath.endsWith(".md")) {
+        continue;
+      }
+
       if (await fs.exists(absoluteFilePath)) {
         // File exists, add it to patch
         const content = await fs.readFile(absoluteFilePath, "utf-8");
@@ -216,25 +210,16 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
           schemaVersion: 1,
         };
 
-        // Get commit information from cache or Git
-        let lastCommit = commitCache.lastCommit[filePath];
-        if (lastCommit === undefined) {
-          lastCommit = await getLastCommit(filePath, { cwd: env.GIT_REPO_PATH });
-          commitCache.lastCommit[filePath] = lastCommit;
-        }
-
-        let firstCommitDate = commitCache.firstCommitDate[filePath];
-        if (firstCommitDate === undefined) {
-          firstCommitDate = await getFirstCommitDate(filePath, { cwd: env.GIT_REPO_PATH });
-          commitCache.firstCommitDate[filePath] = firstCommitDate;
-        }
+        // Get commit information from the cache
+        const commitInfo = await getCommitInfoForFile(filePath);
 
         // Merge Git commit info with existing metadata
         const enrichedMetadata = {
           ...metadata,
-          lastCommitHash: lastCommit?.hash,
-          lastCommitDate: lastCommit?.date,
-          firstCommitDate: firstCommitDate || undefined,
+          lastCommitHash: commitInfo.lastCommit?.hash,
+          lastCommitDate: commitInfo.lastCommit?.date,
+          firstCommitHash: commitInfo.firstCommit?.hash,
+          firstCommitDate: commitInfo.firstCommit?.date,
         };
 
         patch.push({
@@ -251,6 +236,7 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
     }
   }
 
+  console.log("Getting last mutation ID changes");
   const lastMutationIDChanges: Record<string, number> = {};
   for (const [clientID, client] of Object.entries(clients)) {
     if (
@@ -263,6 +249,7 @@ export async function processPull(pullData: Pull): Promise<PullResponseV1> {
     }
   }
 
+  console.log("Returning pull response");
   const newCookie: Cookie = latestVersion ? { ...latestVersion } : null;
   return {
     cookie: newCookie,

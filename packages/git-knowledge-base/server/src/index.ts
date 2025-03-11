@@ -3,9 +3,16 @@ import cors from "cors";
 import path from "path";
 import { env } from "./env";
 import { processPull, processPush, pullSchema, pushSchema } from "./replicache";
+import { initCommitCache } from "./commit-cache";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Initialize the commit cache
+console.log("Initializing commit cache...");
+initCommitCache().catch((error) => {
+  console.error("Failed to initialize commit cache:", error);
+});
 
 app.use(cors());
 app.use(express.json());
@@ -28,9 +35,9 @@ app.post(env.REPLICACHE_PULL_PATH, async (req, res) => {
       console.error("Error:", pullBody.error);
       return res.status(400).json({ success: false, error: pullBody.error.message });
     }
-    console.log("Pull body:", pullBody.data);
+    // console.log("Pull body:", pullBody.data);
     const pullResponse = await processPull(pullBody.data);
-    console.log("Pull response:", pullResponse);
+    // console.log("Pull response:", pullResponse);
     res.status(200).json(pullResponse);
   } catch (error) {
     console.error("Error processing pull:", error);

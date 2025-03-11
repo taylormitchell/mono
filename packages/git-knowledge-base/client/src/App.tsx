@@ -69,22 +69,33 @@ const mutators = {
 } satisfies Mutators;
 
 // Create a singleton instance of Replicache
-export const rep = new Replicache({
-  name: "git-knowledge-base-client",
-  licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
-  pushURL: pushUrl.toString(),
-  pullURL: pullUrl.toString(),
-  mutators,
-  pullInterval: 10000, // Pull every 10 seconds
-});
 
 function App() {
   const [showNewFileModal, setShowNewFileModal] = useState(false);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
+  const [rep, setRep] = useState<Replicache | null>(null);
 
+  useEffect(() => {
+    const rep = new Replicache({
+      name: "git-knowledge-base-client",
+      licenseKey: env.VITE_REPLICACHE_LICENSE_KEY,
+      pushURL: pushUrl.toString(),
+      pullURL: pullUrl.toString(),
+      mutators,
+      pullInterval: 10000, // Pull every 10 seconds
+    });
+    rep.pull().then(() => {
+      setRep(rep);
+    });
+  }, []);
+
+  if (!rep) {
+    return <div className="flex items-center justify-center h-full">Loading...</div>;
+  }
   return (
     <BrowserRouter>
       <AppRoutes
+        rep={rep}
         showNewFileModal={showNewFileModal}
         setShowNewFileModal={setShowNewFileModal}
         isCommandBarOpen={isCommandBarOpen}
@@ -95,11 +106,13 @@ function App() {
 }
 
 function AppRoutes({
+  rep,
   showNewFileModal,
   setShowNewFileModal,
   isCommandBarOpen,
   setIsCommandBarOpen,
 }: {
+  rep: Replicache;
   showNewFileModal: boolean;
   setShowNewFileModal: (show: boolean) => void;
   isCommandBarOpen: boolean;
@@ -200,7 +213,10 @@ function AppRoutes({
               files={sortedFiles}
               onFileSelect={(file) => navigate(`/edit/${encodeURIComponent(file.id)}`)}
               onNewFile={() => setShowNewFileModal(true)}
-              onRefresh={() => rep.pull()}
+              onReset={() => {
+                indexedDB.deleteDatabase(rep.idbName);
+                window.location.reload();
+              }}
               onOpenCommandBar={() => setIsCommandBarOpen(true)}
             />
           }

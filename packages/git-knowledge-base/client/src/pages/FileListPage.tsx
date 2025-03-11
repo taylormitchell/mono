@@ -7,7 +7,7 @@ interface FileListPageProps {
   files: FileType[];
   onFileSelect: (file: FileType) => void;
   onNewFile: () => void;
-  onRefresh: () => void;
+  onReset: () => void;
   onOpenCommandBar: () => void;
 }
 
@@ -15,7 +15,7 @@ export default function FileListPage({
   files,
   onFileSelect,
   onNewFile,
-  onRefresh,
+  onReset,
   onOpenCommandBar,
 }: FileListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,11 +88,11 @@ export default function FileListPage({
             New File
           </button>
           <button
-            onClick={onRefresh}
+            onClick={onReset}
             className="btn-secondary px-4 py-2 rounded-md flex items-center"
           >
             <RefreshCw size={16} className="mr-2" />
-            Refresh
+            Reset
           </button>
         </div>
       </header>
