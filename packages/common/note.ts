@@ -79,7 +79,7 @@ export function createFile(filepath: string, content: string = "") {
 }
 
 export function openFile(filepath: string) {
-  execSync(`cursor ${filepath}`);
+  execSync(`vim "${filepath}"`, { stdio: "inherit" });
   // open in obsidian
   // const file = filepath.replace(getNotesDir(), "").replace(/\\/g, "/");
   // execSync(`open -n "obsidian://open?vault=data&file=${file}"`);

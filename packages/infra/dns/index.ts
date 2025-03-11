@@ -1,3 +1,4 @@
+// DreamHost DNS API: https://help.dreamhost.com/hc/en-us/articles/217555707-DNS-API-commands
 import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(__dirname, "../.env") });
@@ -31,4 +32,14 @@ export async function setDomainIp(props: { domain: string; ip: string }) {
     console.log(await exec({ cmd: "dns-remove_record", record, type: "A", value: ip }));
     console.log(await exec({ cmd: "dns-add_record", record, type: "A", value: ip }));
   }
+}
+
+export async function getRecords(): Promise<string> {
+  const response = await fetch(`https://api.dreamhost.com/?key=${apiKey}&cmd=dns-list_records`);
+  return await response.text();
+}
+
+if (require.main === module) {
+  const records = await getRecords();
+  console.log(records);
 }
