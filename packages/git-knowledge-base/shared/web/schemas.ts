@@ -50,6 +50,7 @@ export type Mutation = z.infer<typeof mutationSchema>;
 
 // Check if all the mutations we've defined are valid
 type CheckValidMutation<T extends MutationV1> = T;
+// @ts-ignore
 type _ = CheckValidMutation<Mutation>;
 
 // Types derived from schemas

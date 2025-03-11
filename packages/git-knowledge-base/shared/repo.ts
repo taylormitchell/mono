@@ -1,14 +1,13 @@
 import fs from "fs";
 import chalk from "chalk";
 import { glob } from "glob";
-import { join, dirname, normalize, resolve, relative } from "path";
+import { join, dirname, normalize, relative } from "path";
 import { z } from "zod";
 import {
   isGitRepository,
   getLatestCommitHash,
   getChangedFilesSince,
   executeGit,
-  getLastCommit,
   getPreviousPath,
 } from "./git";
 import { fileMetadataSchema } from "./web/schemas";

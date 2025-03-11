@@ -69,12 +69,10 @@ const mutators = {
   },
 } satisfies Mutators;
 
-// Create a singleton instance of Replicache
-
 function App() {
   const [showNewFileModal, setShowNewFileModal] = useState(false);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
-  const [rep, setRep] = useState<Replicache | null>(null);
+  const [rep, setRep] = useState<Replicache<typeof mutators> | null>(null);
 
   useEffect(() => {
     const rep = new Replicache({
@@ -113,7 +111,7 @@ function AppRoutes({
   isCommandBarOpen,
   setIsCommandBarOpen,
 }: {
-  rep: Replicache;
+  rep: Replicache<typeof mutators>;
   showNewFileModal: boolean;
   setShowNewFileModal: (show: boolean) => void;
   isCommandBarOpen: boolean;
@@ -218,7 +216,6 @@ function AppRoutes({
                 indexedDB.deleteDatabase(rep.idbName);
                 window.location.reload();
               }}
-              onOpenCommandBar={() => setIsCommandBarOpen(true)}
             />
           }
         />

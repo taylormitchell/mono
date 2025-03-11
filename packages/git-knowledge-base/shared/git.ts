@@ -1,4 +1,4 @@
-import { env, spawn } from "bun";
+import { spawn } from "bun";
 
 /**
  * Executes a git command and returns the result
@@ -198,7 +198,6 @@ export async function getPreviousPath(
   // Parse the output to find rename entries
   // Format will be: commit-hash followed by R100 old-path new-path
   const lines = result.data.split("\n");
-  let currentCommit = "";
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -211,7 +210,6 @@ export async function getPreviousPath(
       !line.startsWith("D")
     ) {
       // This is a commit hash line
-      currentCommit = line;
     } else if (line.startsWith("R")) {
       const parts = line.split("\t");
       if (parts.length >= 3) {

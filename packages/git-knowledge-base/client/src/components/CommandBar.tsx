@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Command } from "cmdk";
 import { File as FileType } from "../../../shared/web/schemas";
 import { Search, FilePlus, FileText } from "lucide-react";
-import { generateTimestampFilename } from "../utils/filename";
 
 interface CommandBarProps {
   files: FileType[];

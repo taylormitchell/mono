@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { File as FileType } from "../../../shared/web/schemas";
 import { FileMetadata } from "../../../shared/repo";
-import { FilePlus, RefreshCw, Search, Command } from "lucide-react";
+import { FilePlus, RefreshCw, Search } from "lucide-react";
 
 interface FileListPageProps {
   files: FileType[];
   onFileSelect: (file: FileType) => void;
   onNewFile: () => void;
   onReset: () => void;
-  onOpenCommandBar: () => void;
 }
 
 export default function FileListPage({
@@ -16,7 +15,6 @@ export default function FileListPage({
   onFileSelect,
   onNewFile,
   onReset,
-  onOpenCommandBar,
 }: FileListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInputFocused, setSearchInputFocused] = useState(false);
