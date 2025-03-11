@@ -17,12 +17,13 @@ const envSchema = z.object({
   VITE_REPLICACHE_LICENSE_KEY: z.string(),
   VITE_REPLICACHE_PULL_PATH: z.string(),
   VITE_REPLICACHE_PUSH_PATH: z.string(),
-  VITE_API_URL: z.string(),
+  VITE_API_URL: z.string().optional(),
 });
 
 const env = envSchema.parse(import.meta.env);
-const pushUrl = new URL(env.VITE_REPLICACHE_PUSH_PATH, env.VITE_API_URL);
-const pullUrl = new URL(env.VITE_REPLICACHE_PULL_PATH, env.VITE_API_URL);
+const apiUrl = env.VITE_API_URL ?? window.location.origin;
+const pushUrl = new URL(env.VITE_REPLICACHE_PUSH_PATH, apiUrl);
+const pullUrl = new URL(env.VITE_REPLICACHE_PULL_PATH, apiUrl);
 
 // Define mutations
 type MutationNames = Mutation["name"];
