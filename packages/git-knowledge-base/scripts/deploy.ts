@@ -27,6 +27,7 @@ async function main() {
   const cachePath = `${cacheDir}/commit-cache.json`;
   await $`ssh ${remoteHost} '
     cd ${appDir}/server && bun install
+    cd ${appDir}/shared && bun install
     echo .env && echo PORT=${apps["git-knowledge-base"].port} >> .env &&
     echo COMMIT_CACHE_PATH=${cachePath} >> .env &&
     mkdir -p ${cacheDir} &&
