@@ -1,12 +1,13 @@
 import * as ec2 from "../../infra/ec2/manager";
 import { $ } from "bun";
+import { env } from "../server/src/env";
 
 async function main() {
   // Build client
   await $`cd client && bun run build`;
 
   // Add app to nginx
-  const apps = await ec2.addApp("git-knowledge-base", 3080);
+  const apps = await ec2.addApp("git-knowledge-base", env.PORT);
   await ec2.pushNginxConf();
 
   const remoteHost = await ec2.getRemoteHost();
@@ -31,7 +32,6 @@ async function main() {
     mkdir -p ${cacheDir} &&
     cd ${appDir}/shared && bun install &&
     cd ${appDir}/server && bun install &&
-    cd ${appDir}/server && echo .env && echo PORT=${apps["git-knowledge-base"].port} >> .env &&
     cd ${appDir}/server && pm2 delete git-knowledge-base || true && pm2 start "bun start" --name git-knowledge-base
   '`;
 }
