@@ -5,22 +5,29 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Run Dev",
       "type": "bun",
       "internalConsoleOptions": "neverOpen",
       "request": "launch",
-      "name": "Debug File",
-      "program": "${file}",
+      "program": "node_modules/concurrently/dist/bin/concurrently.js",
+      "args": ["cd server && bun run dev", "cd client && bun run dev"],
       "cwd": "${workspaceFolder}",
       "stopOnEntry": false,
       "watchMode": false
     },
     {
+      "name": "Launch Debug Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3010",
+      "webRoot": "${workspaceFolder}/client"
+    },
+    {
       "type": "bun",
       "internalConsoleOptions": "neverOpen",
       "request": "launch",
-      "name": "Debug Dev",
-      "program": "node_modules/concurrently/dist/bin/concurrently.js",
-      "args": ["cd server && bun run dev", "cd client && bun run dev"],
+      "name": "Debug File",
+      "program": "${file}",
       "cwd": "${workspaceFolder}",
       "stopOnEntry": false,
       "watchMode": false

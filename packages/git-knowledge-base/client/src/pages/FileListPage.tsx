@@ -68,9 +68,68 @@ export default function FileListPage({
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
-  // Function to get the most relevant date (created or updated)
   const getRelevantDate = (metadata: FileMetadata) => {
-    return metadata.updatedAt || metadata.createdAt || metadata.lastCommitDate || "";
+    return metadata.createdAt || metadata.firstCommitDate || "";
+  };
+
+  // Function to get date string for grouping
+  const getDateString = (dateString?: string) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    if (isToday) {
+      return "Today";
+    }
+
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    }
+
+    return date.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+  };
+
+  // Group files by date
+  const groupFilesByDate = (files: FileType[]) => {
+    const groups: { [key: string]: FileType[] } = {};
+
+    files.forEach((file) => {
+      const dateString = getDateString(getRelevantDate(file.metadata));
+      if (!groups[dateString]) {
+        groups[dateString] = [];
+      }
+      groups[dateString].push(file);
+    });
+
+    // Sort files within each group by date (newest first)
+    Object.keys(groups).forEach((key) => {
+      groups[key].sort((a, b) => {
+        const dateA = new Date(getRelevantDate(a.metadata) || 0);
+        const dateB = new Date(getRelevantDate(b.metadata) || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+    });
+
+    return Object.entries(groups).sort((a, b) => {
+      // Sort dates in descending order (newest first)
+      const dateA =
+        a[0] === "Today"
+          ? new Date()
+          : a[0] === "Yesterday"
+          ? new Date(new Date().setDate(new Date().getDate() - 1))
+          : new Date(a[0]);
+      const dateB =
+        b[0] === "Today"
+          ? new Date()
+          : b[0] === "Yesterday"
+          ? new Date(new Date().setDate(new Date().getDate() - 1))
+          : new Date(b[0]);
+      return dateB.getTime() - dateA.getTime();
+    });
   };
 
   return (
@@ -126,23 +185,35 @@ export default function FileListPage({
             </button>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200">
-            {filteredFiles.map((file) => (
-              <li
-                key={file.id}
-                onClick={() => onFileSelect(file)}
-                className="file-list-item px-4 py-3 cursor-pointer hover:bg-gray-50"
-              >
-                <div className="flex justify-between items-center mb-1">
-                  <h2 className="font-medium text-gray-900 truncate">{file.id}</h2>
-                  <span className="text-sm text-gray-500">
-                    {formatDate(getRelevantDate(file.metadata))}
-                  </span>
+          <div>
+            {groupFilesByDate(filteredFiles).map(([dateString, files]) => (
+              <div key={dateString}>
+                <div className="sticky top-0 bg-gray-50 px-4 py-2 text-sm font-medium">
+                  {dateString}
                 </div>
-                <p className="file-snippet text-gray-600">{getContentSnippet(file.content)}</p>
-              </li>
+                <ul className="divide-y divide-gray-200">
+                  {files.map((file) => (
+                    <li
+                      key={file.id}
+                      onClick={() => onFileSelect(file)}
+                      className="file-list-item px-4 py-3 cursor-pointer hover:bg-gray-50"
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="file-snippet text-gray-600">
+                          {getContentSnippet(file.content)}
+                        </p>
+                        <span className="text-sm text-gray-500 ml-2 whitespace-nowrap">
+                          {formatDate(getRelevantDate(file.metadata)).includes(":")
+                            ? formatDate(getRelevantDate(file.metadata))
+                            : ""}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

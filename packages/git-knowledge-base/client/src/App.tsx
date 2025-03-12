@@ -122,26 +122,13 @@ function AppRoutes({
 
   // Sort files by createdAt if available, otherwise by firstCommitDate
   const sortedFiles = [...files].sort((a, b) => {
-    // Use createdAt if both files have it
-    if (a.metadata.createdAt && b.metadata.createdAt) {
-      return new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime();
-    }
+    const aCreatedAt = a.metadata.createdAt ?? a.metadata.firstCommitDate;
+    const bCreatedAt = b.metadata.createdAt ?? b.metadata.firstCommitDate;
 
-    // If only one file has createdAt, prioritize it
-    if (a.metadata.createdAt) return -1;
-    if (b.metadata.createdAt) return 1;
-
-    // Fall back to firstCommitDate if available
-    if (a.metadata.firstCommitDate && b.metadata.firstCommitDate) {
-      return (
-        new Date(b.metadata.firstCommitDate).getTime() -
-        new Date(a.metadata.firstCommitDate).getTime()
-      );
-    }
-
-    // If only one file has firstCommitDate, prioritize it
-    if (a.metadata.firstCommitDate) return -1;
-    if (b.metadata.firstCommitDate) return 1;
+    if (aCreatedAt && bCreatedAt)
+      return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
+    if (aCreatedAt) return -1;
+    if (bCreatedAt) return 1;
 
     // If neither has date information, sort by ID
     return a.id.localeCompare(b.id);
