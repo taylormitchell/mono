@@ -1,13 +1,20 @@
 import * as ec2 from "../../infra/ec2/manager";
 import { $ } from "bun";
-import { env } from "../server/src/env";
+import dotenv from "dotenv";
 
 async function main() {
+  // Load env
+  dotenv.config({ path: "../server/.env.production" });
+  const port = Number(process.env.PORT);
+  if (isNaN(port)) {
+    throw new Error("PORT is not set");
+  }
+
   // Build client
   await $`cd client && bun run build`;
 
   // Add app to nginx
-  const apps = await ec2.addApp("git-knowledge-base", env.PORT);
+  const apps = await ec2.addApp("git-knowledge-base", port);
   await ec2.pushNginxConf();
 
   const remoteHost = await ec2.getRemoteHost();
