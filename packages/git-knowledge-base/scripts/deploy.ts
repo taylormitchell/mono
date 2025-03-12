@@ -8,6 +8,7 @@ async function main() {
   // Add app to nginx
   const apps = await ec2.addApp("git-knowledge-base", 3080);
   await ec2.pushNginxConf();
+
   const remoteHost = await ec2.getRemoteHost();
 
   // Pull repo
