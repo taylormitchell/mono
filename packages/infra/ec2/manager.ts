@@ -190,8 +190,12 @@ export async function listApps() {
 export async function addApp(name: string, port: number, subdomain?: string) {
   const apps = await loadAppConfig();
   subdomain = subdomain ?? name;
-  if (Object.entries(apps).some(([n, app]) => n !== name && app.port === port)) {
-    throw new Error(`App '${name}' (${subdomain}.${config.domain} -> port ${port}) already exists`);
+  for (const [n, app] of Object.entries(apps)) {
+    if (n !== name && app.port === port) {
+      throw new Error(`App '${n}' is already using port ${port}`);
+    } else if (n !== name && app.subdomain === subdomain) {
+      throw new Error(`App '${n}' is already using subdomain ${subdomain}`);
+    }
   }
   apps[name] = { subdomain, port };
   await saveAppConfig(apps);
