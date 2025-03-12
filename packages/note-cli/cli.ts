@@ -50,11 +50,7 @@ program
       }
     }
     p = createPost(p, options.message);
-    if (!options.message) {
-      openFile(p);
-    } else {
-      console.log(`Created post at ${p}`);
-    }
+    console.log(p);
   });
 
 program
@@ -67,14 +63,10 @@ program
 program
   .command("daily [dateOrOffset]")
   .description("Open or create daily note with optional date or offset from today")
-  .option("-n, --no-open", "Create the note without opening it")
   .action((dateOrOffset, options) => {
-    const shouldOpen = options.open !== false;
     const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
     const path = getOrCreateDailyNote(date);
-    if (shouldOpen) {
-      openFile(path);
-    }
+    console.log(path);
   });
 
 program
@@ -83,7 +75,7 @@ program
   .action((dateOrOffset) => {
     const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
     const path = getOrCreateWeeklyNote(date);
-    openFile(path);
+    console.log(path);
   });
 
 program
@@ -91,7 +83,7 @@ program
   .description("Open or create this month's note")
   .action(() => {
     const path = getOrCreateMonthlyNote();
-    openFile(path);
+    console.log(path);
   });
 
 program

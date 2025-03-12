@@ -25,13 +25,15 @@ async function main() {
   // Install deps, build, and start
   const cacheDir = "/home/ec2-user/data/git-knowledge-base";
   const cachePath = `${cacheDir}/commit-cache.json`;
+  const repoPath = "/home/ec2-user/data/notes";
   await $`ssh ${remoteHost} '
-    cd ${appDir}/server && bun install
     cd ${appDir}/shared && bun install
+    cd ${appDir}/server && bun install
     echo .env && echo PORT=${apps["git-knowledge-base"].port} >> .env &&
-    echo COMMIT_CACHE_PATH=${cachePath} >> .env &&
+    echo .env && echo COMMIT_CACHE_PATH=${cachePath} >> .env &&
+    echo .env && echo GIT_REPO_PATH=${repoPath} >> .env &&
     mkdir -p ${cacheDir} &&
-    pm2 delete git-knowledge-base || true && pm2 start "bun start" --name git-knowledge-base
+    cd ${appDir}/server && pm2 delete git-knowledge-base || true && pm2 start "bun start" --name git-knowledge-base
   '`;
 }
 
