@@ -11,7 +11,7 @@ fi
 source "$git_helpers_path"
 
 # Sync the notes directory
-notes_dir="$HOME/Dropbox/data/notes"
+notes_dir="$HOME/Code/notes"
 if [ ! -d "$notes_dir" ]; then
     echo "ERROR: notes directory not found at $notes_dir" >&2
     exit 1
