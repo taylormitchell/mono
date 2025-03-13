@@ -2,30 +2,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 export PROMPT="%1~ %# "
 
 # git helpers
-alias gwip="git add --all && git commit -m \"wip\""
-alias gcleanup="git add --all && git commit -m \"clean up\""
-function gsave() {
-  git_status=$(git status --porcelain)
-  if [ -n "$git_status" ]; then
-    git add --all
-    if [ -z "$1" ]; then
-      echo "committing all"
-      git commit -m "save" || true
-    else
-      echo "committing all with message: $1"
-      git commit -m "$1" || true
-    fi
-  else
-    echo "no changes to commit"
-  fi
-}
-function gsync() {
-  echo "pulling"
-  git pull
-  gsave
-  echo "pushing"
-  git push
-}
+source ~/Code/mono/packages/infra/mac/git-helpers.sh
 
 # Create vite app with tailwind set up
 my-create-vite() {

@@ -1,2 +1,3 @@
 0 0 * * * cd ~/Code/mono/packages/kindle-highlights && ~/.bun/bin/bun index.ts 2>&1 | ~/Code/mono/packages/infra/mac/log.sh "kindle-highlights"
-# */5 * * * * cd ~/Code/mono/packages/infra/mac && ./sync.sh 2>&1 | ~/Code/mono/packages/infra/mac/log.sh "sync"
+0 * * * * ~/Code/mono/packages/infra/mac/sync-notes.sh 2>&1 | ~/Code/mono/packages/infra/mac/log.sh "sync-notes"
+
