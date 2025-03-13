@@ -61,7 +61,6 @@ function gsync() {
   echo "Syncing branch: $branch"
   
   # Save current changes
-  echo "Saving current changes..."
   gsave || {
     echo "WARNING: Could not save changes, but continuing with sync"
   }
