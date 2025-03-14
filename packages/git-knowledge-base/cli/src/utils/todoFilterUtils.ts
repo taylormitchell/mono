@@ -174,7 +174,6 @@ export function parseFilterString(filterString: string): TodoFilterOptions {
           today.setHours(0, 0, 0, 0);
           const tomorrow = new Date(today);
           tomorrow.setDate(tomorrow.getDate() + 1);
-          options.dueAfter = today.toISOString();
           options.dueBefore = tomorrow.toISOString();
         } else if (value === "tomorrow") {
           const tomorrow = new Date();
@@ -182,14 +181,12 @@ export function parseFilterString(filterString: string): TodoFilterOptions {
           tomorrow.setHours(0, 0, 0, 0);
           const dayAfter = new Date(tomorrow);
           dayAfter.setDate(dayAfter.getDate() + 1);
-          options.dueAfter = tomorrow.toISOString();
           options.dueBefore = dayAfter.toISOString();
         } else if (value === "week") {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const nextWeek = new Date(today);
           nextWeek.setDate(nextWeek.getDate() + 7);
-          options.dueAfter = today.toISOString();
           options.dueBefore = nextWeek.toISOString();
         } else if (value.startsWith("before:")) {
           options.dueBefore = new Date(value.substring(7)).toISOString();
