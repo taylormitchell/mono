@@ -4,15 +4,16 @@ import { initCommand } from "./commands/init";
 import { updateCommand } from "./commands/update";
 import { saveCommand } from "./commands/save";
 import { statusCommand } from "./commands/status";
+import { listTodos, createTodo } from "./commands/todo";
 
 // Create the program
 const program = new Command();
 
 // Set up program metadata
 program
-  .name("git-metadata")
+  .name("gkb")
   .description("A tool for tracking file metadata in git repositories")
-  .version("1.0.0");
+  .version("0.0.1");
 
 // Init command
 program
@@ -55,6 +56,32 @@ program
   .description("Show the status of the repository")
   .action(async () => {
     const success = await statusCommand();
+    if (!success) {
+      process.exit(1);
+    }
+  });
+
+// Todo command
+const todoCommand = program.command("todo").description("Manage todo items");
+
+// Todo list subcommand
+todoCommand
+  .command("list")
+  .description("List all todos in the current directory")
+  .action(async () => {
+    const success = await listTodos();
+    if (!success) {
+      process.exit(1);
+    }
+  });
+
+// Todo create subcommand
+todoCommand
+  .command("create")
+  .description("Create a new todo")
+  .argument("<description>", "Description of the todo")
+  .action(async (description) => {
+    const success = await createTodo(description);
     if (!success) {
       process.exit(1);
     }
