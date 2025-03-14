@@ -1,53 +1,60 @@
+import chalk from "chalk";
+import { createTodoFileContents } from "../schemas/todo";
+import { getAllTodos, writeTodoFile, readTodoFile } from "../utils/todoFileUtils";
+import { filterTodos, sortTodos, parseFilterString } from "../utils/todoFilterUtils";
 import fs from "fs";
 import path from "path";
-import chalk from "chalk";
-import { v4 as uuidv4 } from "uuid";
-
-// Define the Todo type
-interface Todo {
-  type: "todo";
-  description: string;
-  createdAt: string;
-  completedAt?: string;
-  dueDate?: string;
-}
 
 /**
  * List all todos in the current directory
  */
-export async function listTodos(): Promise<boolean> {
+export async function listTodos(
+  options: {
+    filter?: string;
+    sort?: "dueDate" | "createdAt" | "completedAt" | "priority" | "description";
+    direction?: "asc" | "desc";
+    directory?: string;
+  } = {}
+): Promise<boolean> {
+  const directory = options.directory || process.cwd();
   try {
-    const files = fs.readdirSync(process.cwd());
-    const todoFiles = files.filter((file) => {
-      // Check if the file is a JSON file
-      if (!file.endsWith(".json")) return false;
+    // Get all todos
+    let todos = getAllTodos(directory);
 
-      try {
-        const content = fs.readFileSync(path.join(process.cwd(), file), "utf-8");
-        const data = JSON.parse(content);
-        return data.type === "todo";
-      } catch (error) {
-        return false;
-      }
-    });
+    // Apply filters if provided
+    if (options.filter) {
+      const filterOptions = parseFilterString(options.filter);
+      todos = filterTodos(todos, filterOptions);
+    }
 
-    if (todoFiles.length === 0) {
+    // Apply sorting if provided
+    if (options.sort) {
+      todos = sortTodos(todos, options.sort, options.direction || "desc");
+    }
+
+    if (todos.length === 0) {
       console.log("No todos found.");
       return true;
     }
 
-    console.log(chalk.bold("\nTodos:"));
-
-    // Read and display each todo
-    for (const file of todoFiles) {
-      const content = fs.readFileSync(path.join(process.cwd(), file), "utf-8");
-      const todo = JSON.parse(content) as Todo;
-
+    // Display each todo
+    for (const todo of todos) {
       const status = todo.completedAt ? chalk.green("✓") : chalk.yellow("○");
       const description = todo.description;
       const dueInfo = todo.dueDate ? chalk.blue(` (Due: ${todo.dueDate})`) : "";
+      const priorityColor = todo.priority
+        ? todo.priority === "high"
+          ? chalk.red
+          : todo.priority === "medium"
+          ? chalk.yellow
+          : chalk.gray
+        : (text: string) => text;
 
-      console.log(`${status} ${description}${dueInfo} [${path.basename(file, ".json")}]`);
+      const priorityInfo = todo.priority ? ` [${priorityColor(todo.priority)}]` : "";
+      const tagsInfo = todo.tags?.length ? chalk.cyan(` #${todo.tags.join(" #")}`) : "";
+
+      const relativePath = path.relative(directory, todo.filePath);
+      console.log(`${status} ${description}${dueInfo}${priorityInfo}${tagsInfo} [${relativePath}]`);
     }
 
     return true;
@@ -60,28 +67,125 @@ export async function listTodos(): Promise<boolean> {
 /**
  * Create a new todo
  */
-export async function createTodo(description: string): Promise<boolean> {
+export async function createTodo(
+  description: string,
+  options: {
+    dueDate?: string;
+    priority?: "low" | "medium" | "high";
+    tags?: string[];
+    notes?: string;
+    fileOrDirectory?: string;
+  } = {}
+): Promise<boolean> {
   try {
-    // Generate a UUID for the new todo
-    const id = uuidv4().toUpperCase();
-    const filename = `${id}.json`;
-
-    // Create the todo object
-    const todo: Todo = {
-      type: "todo",
-      description,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Write the todo to a file
-    fs.writeFileSync(path.join(process.cwd(), filename), JSON.stringify(todo, null, 2));
-
-    console.log(chalk.green(`Todo created: ${description}`));
-    console.log(`File: ${filename}`);
-
+    const todo = createTodoFileContents(description, options);
+    const filePath = writeTodoFile(todo, options.fileOrDirectory || process.cwd());
+    console.log(path.relative(process.cwd(), filePath));
     return true;
   } catch (error) {
     console.error(`Error creating todo: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
+/**
+ * Complete a todo
+ */
+export async function completeTodo(filePath: string): Promise<boolean> {
+  try {
+    const todo = readTodoFile(filePath);
+
+    if (!todo) {
+      console.error(`Todo file ${filePath} not found.`);
+      return false;
+    }
+
+    if (todo.completedAt) {
+      todo.completedAt = undefined;
+      console.log(chalk.yellow(`Todo marked as incomplete: ${todo.description}`));
+    } else {
+      todo.completedAt = new Date().toISOString();
+      console.log(chalk.green(`Todo completed: ${todo.description}`));
+    }
+    writeTodoFile(todo, filePath);
+    return true;
+  } catch (error) {
+    console.error(
+      `Error completing todo: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return false;
+  }
+}
+
+/**
+ * Delete a todo
+ */
+export async function deleteTodo(filePaths: string[]): Promise<boolean> {
+  try {
+    for (const filePath of filePaths) {
+      if (!fs.existsSync(filePath)) {
+        console.error(`Todo file not found: ${filePath}`);
+        return false;
+      }
+      const todo = readTodoFile(filePath);
+      fs.unlinkSync(filePath);
+      console.log(`Todo deleted: ${todo.description}`);
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error deleting todo: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
+/**
+ * Edit a todo
+ */
+export async function editTodo(
+  id: string,
+  updates: {
+    description?: string;
+    dueDate?: string;
+    priority?: "low" | "medium" | "high";
+    tags?: string[];
+    notes?: string;
+  }
+): Promise<boolean> {
+  try {
+    const todos = getAllTodos();
+    const todo = todos.find((t) => t.id === id);
+
+    if (!todo) {
+      console.error(`Todo with ID ${id} not found.`);
+      return false;
+    }
+
+    // Apply updates
+    if (updates.description) {
+      todo.description = updates.description;
+    }
+
+    if (updates.dueDate !== undefined) {
+      todo.dueDate = updates.dueDate || undefined;
+    }
+
+    if (updates.priority !== undefined) {
+      todo.priority = updates.priority || undefined;
+    }
+
+    if (updates.tags !== undefined) {
+      todo.tags = updates.tags.length > 0 ? updates.tags : undefined;
+    }
+
+    const success = writeTodoFile(todo);
+
+    if (success) {
+      console.log(chalk.green(`Todo updated: ${todo.description}`));
+    }
+
+    return success;
+  } catch (error) {
+    console.error(`Error editing todo: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
