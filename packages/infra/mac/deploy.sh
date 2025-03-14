@@ -32,5 +32,19 @@ ln -s "$(pwd)/.zprofile" "$HOME/.zprofile" || {
 }
 source "$HOME/.zprofile" || echo "WARNING: Failed to source .zprofile, please restart your shell"
 
+# Update .vimrc
+echo "Updating .vimrc..."
+if [ -L "$HOME/.vimrc" ]; then
+  rm "$HOME/.vimrc" || {
+    echo "ERROR: Failed to remove existing .vimrc symlink"
+    exit 1
+  }
+fi
+echo "Creating new .vimrc symlink"
+ln -s "$(pwd)/.vimrc" "$HOME/.vimrc" || {
+  echo "ERROR: Failed to create .vimrc symlink"
+  exit 1
+}
+
 echo "Deployment completed successfully"
 

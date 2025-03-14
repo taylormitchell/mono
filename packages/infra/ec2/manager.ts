@@ -347,6 +347,84 @@ async function setup() {
   // TODO set IP on taylor.tech A record. not sure if to do here or elsewhere
 }
 
+export async function restartInstance() {
+  console.log(`Restarting EC2 instance '${config.name}'...`);
+
+  try {
+    // Get instance ID
+    const instanceIdResult = await $`aws ec2 describe-instances \
+      --filters "Name=tag:Name,Values=${config.name}" "Name=instance-state-name,Values=running,pending,stopped,stopping" \
+      --region ${config.region} \
+      --query "Reservations[*].Instances[*].InstanceId" \
+      --output text`.quiet();
+
+    const instanceId = instanceIdResult.text().trim();
+
+    if (!instanceId) {
+      console.error(`❌ No instance found with name '${config.name}'`);
+      return;
+    }
+
+    // Restart the instance
+    console.log(`Restarting instance with ID: ${instanceId}`);
+    await $`aws ec2 reboot-instances --instance-ids ${instanceId} --region ${config.region}`;
+
+    console.log(`✅ Restart command sent to instance '${config.name}'`);
+    console.log("The instance will be unavailable for a short period while it restarts.");
+
+    // Reset the cached IP since it might change after restart
+    _ip = null;
+  } catch (error) {
+    console.error(`❌ Failed to restart instance:`, error);
+  }
+}
+
+export async function deployCron() {
+  const ip = await getIp();
+  const remoteHost = `${config.username}@${ip}`;
+  const scriptsDir = resolve(__dirname, "cron/scripts");
+  const crontabPath = resolve(__dirname, "cron/crontab");
+
+  if (!Bun.file(crontabPath).exists()) {
+    console.error(`❌ Crontab file not found at ${crontabPath}`);
+    return;
+  }
+
+  console.log(`Deploying cron scripts to ${remoteHost}...`);
+
+  try {
+    // Create remote directories
+    await $`ssh ${remoteHost} 'mkdir -p ~/cron/scripts'`.quiet();
+
+    // Copy all scripts from the scripts directory
+    await $`scp ${scriptsDir}/* ${remoteHost}:~/cron/scripts/`.quiet();
+
+    // Copy the crontab file
+    await $`scp ${crontabPath} ${remoteHost}:~/cron/crontab`.quiet();
+
+    // Install crontab
+    await $`ssh ${remoteHost} '
+      # Make scripts executable
+      chmod +x ~/cron/scripts/*.sh
+
+      # Install cronie if not already installed
+      if ! command -v crontab &> /dev/null; then
+        echo "Installing cronie package..."
+        sudo dnf install -y cronie
+        sudo systemctl enable crond
+        sudo systemctl start crond
+      fi
+      
+      # Install the crontab from the file
+      crontab ~/cron/crontab
+    '`;
+
+    console.log("✅ Cron scripts and crontab deployed successfully");
+  } catch (error) {
+    console.error("❌ Failed to deploy cron scripts:", error);
+  }
+}
+
 async function main() {
   const command = process.argv[2];
   const args = process.argv.slice(3);
@@ -390,6 +468,14 @@ async function main() {
       await pushNginxConf();
       break;
 
+    case "deploy-cron":
+      await deployCron();
+      break;
+
+    case "restart":
+      await restartInstance();
+      break;
+
     default:
       console.log(`
 Usage: bun nginx-manager.ts <command>
@@ -399,6 +485,8 @@ Commands:
   add <name> <port> [subdomain]    Add a new app
   remove <name>              Remove an app
   push                       Push the nginx config to the server
+  deploy-cron                Deploy cron scripts and crontab to the server
+  restart                    Restart the EC2 instance
       `);
       process.exit(1);
   }
