@@ -1,4 +1,3 @@
-eval "$(/opt/homebrew/bin/brew shellenv)"
 export PROMPT="%1~ %# "
 
 # git helpers
@@ -17,6 +16,4 @@ alias gkb="bun $HOME/Code/mono/packages/git-knowledge-base/cli/index.ts"
 alias x="clear"
 export mono="$HOME/Code/mono"
 export notes="$HOME/Code/notes/notes"
-
-
 
