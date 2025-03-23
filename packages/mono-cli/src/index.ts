@@ -43,6 +43,7 @@ if (!parsed.success) {
 }
 const config = parsed.data;
 const scriptsDir = path.join(config.rootDir, "scripts");
+const packagesDir = path.join(config.rootDir, "packages");
 
 // Create a new Command instance
 const program = new Command();
@@ -70,6 +71,22 @@ program
     fs.writeFileSync(filePath, "");
     console.log(`Created ${filePath}`);
     $`${config.defaultEditor} ${filePath}`;
+  });
+
+program
+  .command("root")
+  .description("Print the mono repo root directory")
+  .action(() => {
+    console.log(config.rootDir);
+  });
+
+program
+  .command("list")
+  .description("List all packages in the monorepo")
+  .action(async () => {
+    fs.readdirSync(packagesDir)
+      .filter((dir) => fs.statSync(path.join(packagesDir, dir)).isDirectory())
+      .forEach((dir) => console.log(dir));
   });
 
 // Parse command line arguments

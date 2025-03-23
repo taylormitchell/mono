@@ -21,6 +21,7 @@ import { parseDuration, formatDuration } from "@common/logs/types";
 import { getTodos, groupBy, lessThanOrEqualTo, listTodosDueToday } from "@common/todo/parsers";
 import type { Todo } from "@common/todo/types";
 import fs from "fs";
+
 function parseDateOrOffset(dateOrOffset: string): Date | number {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
     const [year, month, day] = dateOrOffset.split("-").map(Number);
@@ -81,6 +82,13 @@ program
     if (!success) {
       process.exit(1);
     }
+  });
+
+program
+  .command("root")
+  .description("Open the root note")
+  .action(() => {
+    console.log(getNotesDir());
   });
 
 program
