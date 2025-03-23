@@ -21,6 +21,7 @@ import { parseDuration, formatDuration } from "@common/logs/types";
 import { getTodos, groupBy, lessThanOrEqualTo, listTodosDueToday } from "@common/todo/parsers";
 import type { Todo } from "@common/todo/types";
 import fs from "fs";
+import { executeGit } from "../../shared/git";
 
 function parseDateOrOffset(dateOrOffset: string): Date | number {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
@@ -171,6 +172,96 @@ program
     }
     p = createPost(p, options.message);
     console.log(p);
+  });
+
+// Analogous to how `tail` shows you the last lines of a file, this
+// command shows you the last `n` files modified in the notes repo.
+// TODO: This is not working as expected and slow.
+program
+  .command("tail [n]")
+  .description("Show the last `n` files modified in the notes repo")
+  .action(async (n = 5) => {
+    console.log("Not implemented");
+    return;
+    const notesDir = getNotesDir();
+    const files: { path: string; lastUpdated: Date }[] = [];
+
+    // First get modified files in working directory
+    const statusResult = await executeGit(["status", "--porcelain"], { cwd: notesDir });
+    if (statusResult.success) {
+      const modifiedFiles = statusResult.data
+        .split("\n")
+        .filter((line) => line.trim())
+        .map((line) => {
+          const filePath = line.slice(3);
+          const fullPath = path.join(notesDir, filePath);
+          let stats;
+          try {
+            stats = fs.statSync(fullPath);
+          } catch (error) {
+            // If file doesn't exist, use current date
+            stats = { mtime: new Date() };
+          }
+          return {
+            path: filePath,
+            lastUpdated: stats.mtime,
+          };
+        });
+      files.push(...modifiedFiles);
+    }
+
+    // If we need more files, walk through commit history
+    if (files.length < n) {
+      const logResult = await executeGit(["log", "--format=%H%n%aI", "--name-only"], {
+        cwd: notesDir,
+      });
+
+      if (logResult.success) {
+        const lines = logResult.data.split("\n");
+        let currentCommitHash: string | null = null;
+        let currentCommitDate: Date | null = null;
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          if (!currentCommitHash) {
+            currentCommitHash = line;
+            continue;
+          }
+
+          if (!currentCommitDate) {
+            currentCommitDate = new Date(line);
+            continue;
+          }
+
+          // This is a file path
+          const filePath = line;
+          if (!files.some((f) => f.path === filePath)) {
+            files.push({
+              path: filePath,
+              lastUpdated: currentCommitDate,
+            });
+          }
+
+          if (files.length >= n) break;
+
+          // Reset for next commit
+          if (!lines[lines.indexOf(line) + 1]?.trim()) {
+            currentCommitHash = null;
+            currentCommitDate = null;
+          }
+        }
+      }
+    }
+
+    // Sort by most recently updated
+    files.sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
+
+    // Trim to requested number
+    files.splice(n);
+    files.forEach((file) => {
+      console.log(file.path, file.lastUpdated);
+    });
   });
 
 // -------- Todo --------

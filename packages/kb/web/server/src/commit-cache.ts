@@ -7,7 +7,7 @@ import {
   getLastCommit,
   getFirstCommitInfo,
   getChangedFilesSince,
-} from "../../shared/git";
+} from "../../../shared/git";
 
 // Define the schema for a commit entry
 const commitEntrySchema = z.object({
