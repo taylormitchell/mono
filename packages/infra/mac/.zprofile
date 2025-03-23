@@ -35,7 +35,7 @@ alias t="bun /Users/taylormitchell/Code/mono/packages/todo-cli/cli.ts"
 alias n="bun /Users/taylormitchell/Code/mono/packages/note-cli/cli.ts"
 alias gkb="bun /Users/taylormitchell/Code/mono/packages/git-knowledge-base/cli/index.ts"
 alias x="clear"
-export mono="/Users/taylormitchell/Code/mono"
+alias mono="bun /Users/taylormitchell/Code/mono/packages/mono-cli/index.ts"
 export notes="/Users/taylormitchell/Code/notes/notes"
 
 
