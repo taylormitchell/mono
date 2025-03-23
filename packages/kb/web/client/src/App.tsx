@@ -1,7 +1,7 @@
 import { Replicache, WriteTransaction } from "replicache";
 import { z } from "zod";
-import { File, fileSchema, Mutation } from "../../shared/web/schemas";
-import { FileMetadata } from "../../shared/repo";
+import { File, fileSchema, Mutation } from "../../../shared/web/schemas";
+import { FileMetadata } from "../../../shared/repo";
 import { getTimestampWithTimezone } from "./lib/utils";
 import { useSubscribe } from "replicache-react";
 import { generate } from "@rocicorp/rails";

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { File as FileType } from "../../../shared/web/schemas";
-import { FileMetadata } from "../../../shared/repo";
+import { File as FileType } from "../../../../shared/web/schemas";
+import { FileMetadata } from "../../../../shared/repo";
 import { FilePlus, RefreshCw, Search } from "lucide-react";
 
 interface FileListPageProps {

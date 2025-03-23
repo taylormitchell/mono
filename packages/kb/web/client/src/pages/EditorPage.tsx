@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Trash2, ChevronDown, ChevronUp, Circle } from "lucide-react";
-import { FileMetadata } from "../../../shared/repo";
+import { FileMetadata } from "../../../../shared/repo";
 import { getTimestampWithTimezone } from "../lib/utils";
 
 interface EditorPageProps {

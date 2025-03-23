@@ -11,13 +11,9 @@ o() {
 }
 
 # taylor's tech
-alias t="bun $HOME/Code/mono/packages/todo-cli/cli.ts"
-alias n="bun $HOME/Code/mono/packages/note-cli/cli.ts"
-alias gkb="bun $HOME/Code/mono/packages/git-knowledge-base/cli/index.ts"
 alias x="clear"
-alias mono="bun /Users/taylormitchell/Code/mono/packages/mono-cli/index.ts"
-export notes="/Users/taylormitchell/Code/notes/notes"
-export notes="$HOME/Code/notes/notes"
+alias mono="bun $HOME/Code/mono/packages/mono-cli/index.ts"
+alias kb="bun $HOME/Code/mono/packages/kb/cli/index.ts"
 
 
 

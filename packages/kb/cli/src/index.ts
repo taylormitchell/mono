@@ -6,16 +6,38 @@ import { saveCommand } from "./commands/save";
 import { statusCommand } from "./commands/status";
 import { listTodos, createTodo, completeTodo, editTodo, deleteTodo } from "./commands/todo";
 import path from "path";
-// Create the program
-const program = new Command();
+import {
+  listDir,
+  createPost,
+  createNote,
+  getOrCreateDailyNote,
+  getOrCreateWeeklyNote,
+  getOrCreateMonthlyNote,
+} from "@common/note";
+import { getNotesDir } from "@common/data";
+import { readFileSync } from "fs";
+import { getTodayLogEvents } from "@common/logs/utils";
+import { parseDuration, formatDuration } from "@common/logs/types";
+import { getTodos, groupBy, lessThanOrEqualTo, listTodosDueToday } from "@common/todo/parsers";
+import type { Todo } from "@common/todo/types";
+import fs from "fs";
+function parseDateOrOffset(dateOrOffset: string): Date | number {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
+    const [year, month, day] = dateOrOffset.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  } else if (!isNaN(parseInt(dateOrOffset))) {
+    return parseInt(dateOrOffset);
+  } else {
+    throw new Error(
+      `Invalid input: must be a date in YYYY-MM-DD format or a number. Received: ${dateOrOffset}`
+    );
+  }
+}
 
-// Set up program metadata
-program
-  .name("gkb")
-  .description("A tool for tracking file metadata in git repositories")
-  .version("0.0.1");
+const program = new Command().name("kb").description("A tool for managing my notes");
 
-// Init command
+// -------- Top Level Commands --------
+
 program
   .command("init")
   .description("Initialize a new git repository")
@@ -61,11 +83,172 @@ program
     }
   });
 
-// Todo command
+program
+  .command("daily [dateOrOffset]")
+  .description("Open or create daily note with optional date or offset from today")
+  .action((dateOrOffset, options) => {
+    const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
+    const path = getOrCreateDailyNote(date);
+    console.log(path);
+  });
+
+program
+  .command("weekly [dateOrOffset]")
+  .description("Open or create this week's note with optional date or offset from today")
+  .action((dateOrOffset) => {
+    const date = dateOrOffset ? parseDateOrOffset(dateOrOffset) : undefined;
+    const path = getOrCreateWeeklyNote(date);
+    console.log(path);
+  });
+
+program
+  .command("monthly")
+  .description("Open or create this month's note")
+  .action(() => {
+    const path = getOrCreateMonthlyNote();
+    console.log(path);
+  });
+
+program
+  .command("today")
+  .description("Output today's daily note and summarize log events")
+  .action(() => {
+    // Output today's daily note
+    const todayNote = getOrCreateDailyNote();
+    console.log("Today's Daily Note:");
+    console.log(readFileSync(todayNote, "utf-8"));
+
+    // Summarize today's log events
+    console.log("\nToday's Log Events Summary:");
+    const logEvents = getTodayLogEvents();
+
+    if (logEvents.length > 0) {
+      const summary = logEvents.reduce((acc, event) => {
+        if (!acc[event.type]) {
+          acc[event.type] = { count: 0, totalDuration: 0, message: "" };
+        }
+        acc[event.type].count++;
+        if (event.duration) {
+          acc[event.type].totalDuration += parseDuration(event.duration);
+        }
+        if (event.message) {
+          acc[event.type].message = event.message;
+        }
+        return acc;
+      }, {});
+
+      Object.entries(summary).forEach(([type, data]: [string, any]) => {
+        let details = [data.totalDuration && formatDuration(data.totalDuration), data.message]
+          .filter(Boolean)
+          .join(" ");
+        details = details ? `(${details})` : "";
+        console.log(`${type}: ${data.count} ${details}`);
+      });
+    } else {
+      console.log("No log events for today.");
+    }
+  });
+
+program
+  .command("post [path]")
+  .option("-m, --message <content>", "content of the post")
+  .description("Create a new post with optional content")
+  .action((p: string | undefined, options: Partial<{ message: string }>) => {
+    if (p !== undefined && !path.isAbsolute(p)) {
+      if (p.startsWith("@")) {
+        p = path.join(getNotesDir(), p.slice(1));
+      } else {
+        p = path.join(process.cwd(), p);
+      }
+    }
+    p = createPost(p, options.message);
+    console.log(p);
+  });
+
+// -------- Todo --------
+// Todo api which parses todos from markdown files.
+
 const todoCommand = program.command("todo").description("Manage todo items");
 
-// Todo list subcommand
+function renderByFile(todos: Todo[]) {
+  const todosByFile = groupBy(todos, "relativeFilename");
+  todosByFile.forEach((todos, relativeFilename) => {
+    console.log(`File: ${relativeFilename}`);
+    console.log("=".repeat(relativeFilename.length + 6));
+    todos.forEach((todo) => {
+      console.log(
+        `  ${todo.status}: ${todo.text}`,
+        todo.due ? `Due: ${todo.due.toISOString().split("T")[0]}` : ""
+      );
+    });
+  });
+}
+
 todoCommand
+  .command("ls [pathname]")
+  .description("List all todos")
+  .option("-j, --ignore-journals", "Ignore todos from journal entries")
+  .option(
+    "-d, --due [date]",
+    "Show todos due by the specified date or offset (e.g., '2023-09-15' or '3' for 3 days from now)"
+  )
+  .action((pathname, options) => {
+    let todos = getTodos(pathname).filter((todo) => todo.status === "TODO");
+    if (options.ignoreJournals) {
+      const rootDir = getNotesDir();
+      todos = todos.filter((todo) => !todo.filename.startsWith(path.join(rootDir, "journals")));
+    }
+    if (options.due) {
+      let dueDate = new Date();
+      if (options.due === true) {
+        // no-op
+      } else if (options.due.match(/^\d+$/)) {
+        const offset = parseInt(options.due);
+        dueDate.setDate(dueDate.getDate() + offset);
+      } else if (options.due.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        dueDate = new Date(options.due);
+      }
+      todos = todos.filter((todo) => todo.due && lessThanOrEqualTo(todo.due, dueDate));
+    }
+    renderByFile(todos);
+  });
+
+todoCommand
+  .command("due [offset]")
+  .description("List todos due today")
+  .option("-i, --ignore-today", "Ignore todos from today's daily page")
+  .action((offset = 0, options) => {
+    listTodosDueToday(getNotesDir(), parseInt(offset), options.ignoreToday);
+  });
+
+// add a line to the top of the /gtd/someday-maybe.md file
+todoCommand
+  .command("sm [line]")
+  .description("Add a line to the top of the /gtd/someday-maybe.md file")
+  .action((line) => {
+    const filename = path.join(getNotesDir(), "gtd", "someday-maybe.md");
+    fs.appendFileSync(filename, "\n" + line);
+  });
+
+// add a todo to the bottom of the /gtd/todo.md file
+todoCommand
+  .command("todo [line]")
+  .description("Add a todo to the bottom of the /gtd/todo.md file")
+  .action((line) => {
+    const filename = path.join(getNotesDir(), "gtd", "todo.md");
+    fs.appendFileSync(filename, "\nTODO " + line);
+  });
+
+// -------- Todo (experimental)  --------
+// A new experimental set of todo commands for managing todos
+// defined using individual files.
+
+const todoExperimentalCommand = program
+  .command("todo-experimental")
+  .description("Manage todo items");
+
+// Todo list subcommand
+todoExperimentalCommand
   .command("list")
   .description("List all todos in the current directory")
   .option("--filter <filter>", "Filter todos (e.g., 'status:incomplete due:today')")
@@ -83,7 +266,7 @@ todoCommand
   });
 
 // Todo create subcommand
-todoCommand
+todoExperimentalCommand
   .command("create")
   .description("Create a new todo")
   .argument("<description>", "Description of the todo")
@@ -141,7 +324,7 @@ todoCommand
   });
 
 // Todo complete subcommand
-todoCommand
+todoExperimentalCommand
   .command("complete")
   .description("Mark a todo as completed or incomplete (toggles status)")
   .argument("<id>", "ID of the todo")
@@ -153,7 +336,7 @@ todoCommand
   });
 
 // Todo delete subcommand
-todoCommand
+todoExperimentalCommand
   .command("delete")
   .description("Delete one or more todos")
   .argument("<ids...>", "ID(s) of the todo(s) to delete (space-separated)")
@@ -165,7 +348,7 @@ todoCommand
   });
 
 // Todo edit subcommand
-todoCommand
+todoExperimentalCommand
   .command("edit")
   .description("Edit a todo")
   .argument("<id>", "ID of the todo")
@@ -234,6 +417,19 @@ todoCommand
       process.exit(1);
     }
   });
+
+// Catch-all command for unmatched commands
+program.on("command:*", (operands) => {
+  if (operands.length === 1 && operands[0].includes(" ")) {
+    // A quick way to create a post via `kb "some post text`"
+    const p = createPost(getNotesDir(), operands[0]);
+    console.log(p);
+  } else {
+    console.error(`Unknown command: ${operands.join(" ")}`);
+    console.error("See --help for a list of available commands.");
+    process.exit(1);
+  }
+});
 
 // Parse command line arguments
 program.parse();

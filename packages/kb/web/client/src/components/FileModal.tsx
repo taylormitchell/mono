@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileMetadata } from "../../../shared/repo";
+import { FileMetadata } from "../../../../shared/repo";
 import { toTimestampWithTimezone } from "../lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 

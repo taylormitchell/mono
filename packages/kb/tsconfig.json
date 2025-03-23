@@ -11,6 +11,6 @@
     "declaration": true,
     "jsx": "react-jsx"
   },
-  "include": ["server/src", "shared"],
-  "exclude": ["node_modules", "client"]
+  "include": ["web/server/src", "shared"],
+  "exclude": ["node_modules", "web/client"]
 }

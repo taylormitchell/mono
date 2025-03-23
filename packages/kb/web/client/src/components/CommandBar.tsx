@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Command } from "cmdk";
-import { File as FileType } from "../../../shared/web/schemas";
+import { File as FileType } from "../../../../shared/web/schemas";
 import { Search, FilePlus, FileText } from "lucide-react";
 
 interface CommandBarProps {
