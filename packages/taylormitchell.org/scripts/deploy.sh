@@ -2,7 +2,7 @@
 set -e
 
 # 1. Build resume
-cd ../../data/resume
+cd ../resume
 bash build.sh
 
 # 2. Copy resume files to website directory
