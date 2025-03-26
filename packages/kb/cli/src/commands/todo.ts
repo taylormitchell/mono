@@ -53,7 +53,7 @@ export async function listTodos(
       const priorityInfo = todo.priority ? ` [${priorityColor(todo.priority)}]` : "";
       const tagsInfo = todo.tags?.length ? chalk.cyan(` #${todo.tags.join(" #")}`) : "";
 
-      const relativePath = path.relative(directory, todo.filePath);
+      const relativePath = path.relative(process.cwd(), todo.filePath);
       console.log(`${status} ${description}${dueInfo}${priorityInfo}${tagsInfo} [${relativePath}]`);
     }
 

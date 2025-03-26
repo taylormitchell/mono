@@ -22,6 +22,8 @@ import { getTodos, groupBy, lessThanOrEqualTo, listTodosDueToday } from "@common
 import type { Todo } from "@common/todo/types";
 import fs from "fs";
 import { executeGit } from "../../shared/git";
+import os from "os";
+import { z } from "zod";
 
 function parseDateOrOffset(dateOrOffset: string): Date | number {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
@@ -34,6 +36,17 @@ function parseDateOrOffset(dateOrOffset: string): Date | number {
       `Invalid input: must be a date in YYYY-MM-DD format or a number. Received: ${dateOrOffset}`
     );
   }
+}
+
+// Load config file
+const configSchema = z.object({ rootDir: z.string(), defaultEditor: z.string() });
+type Config = z.infer<typeof configSchema>;
+let config: Config = {};
+try {
+  const data = JSON.parse(readFileSync(path.join(os.homedir(), ".kbrc.json"), "utf-8"));
+  config = configSchema.parse(data);
+} catch (error) {
+  console.warn("Error loading config file", error);
 }
 
 const program = new Command().name("kb").description("A tool for managing my notes");
@@ -342,9 +355,7 @@ todoCommand
 // A new experimental set of todo commands for managing todos
 // defined using individual files.
 
-const todoExperimentalCommand = program
-  .command("todo-experimental")
-  .description("Manage todo items");
+const todoExperimentalCommand = program.command("todo2").description("Manage todo items");
 
 // Todo list subcommand
 todoExperimentalCommand
@@ -358,6 +369,7 @@ todoExperimentalCommand
       filter: options.filter,
       sort: options.sort,
       direction: options.direction as "asc" | "desc",
+      directory: options.directory || config.rootDir,
     });
     if (!success) {
       process.exit(1);
@@ -375,52 +387,64 @@ todoExperimentalCommand
   .option("--notes <text>", "Additional notes for the todo")
   .option("--directory <directory>", "Directory to save the todo file to")
   .option("--file <file>", "File to save the todo to")
-  .action(async (description, options) => {
-    // Process tags if provided
-    const tags = options.tags
-      ? options.tags.split(",").map((tag: string) => tag.trim())
-      : undefined;
+  .action(
+    async (
+      description: string,
+      options: {
+        due?: string;
+        priority?: string;
+        tags?: string;
+        notes?: string;
+        directory?: string;
+        file?: string;
+      }
+    ) => {
+      // Process tags if provided
+      const tags = options.tags
+        ? options.tags.split(",").map((tag: string) => tag.trim())
+        : undefined;
 
-    // Process due date if provided
-    let dueDate = options.due;
-    if (dueDate) {
-      // Handle natural language dates
-      if (dueDate === "today") {
-        dueDate = new Date().toISOString();
-      } else if (dueDate === "tomorrow") {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        dueDate = tomorrow.toISOString();
-      } else if (dueDate.match(/^\d+d$/)) {
-        // Handle "3d" format (3 days from now)
-        const days = parseInt(dueDate.replace("d", ""));
-        const date = new Date();
-        date.setDate(date.getDate() + days);
-        dueDate = date.toISOString();
-      } else if (!dueDate.includes("T")) {
-        // If it's just a date without time, add time
-        dueDate = new Date(`${dueDate}T23:59:59`).toISOString();
+      // Process due date if provided
+      let dueDate = options.due;
+      if (dueDate) {
+        // Handle natural language dates
+        if (dueDate === "today") {
+          dueDate = new Date().toISOString();
+        } else if (dueDate === "tomorrow") {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          dueDate = tomorrow.toISOString();
+        } else if (dueDate.match(/^\d+d$/)) {
+          // Handle "3d" format (3 days from now)
+          const days = parseInt(dueDate.replace("d", ""));
+          const date = new Date();
+          date.setDate(date.getDate() + days);
+          dueDate = date.toISOString();
+        } else if (!dueDate.includes("T")) {
+          // If it's just a date without time, add time
+          dueDate = new Date(`${dueDate}T23:59:59`).toISOString();
+        }
+      }
+
+      // Process file or directory if provided
+      let fileOrDirectory = options.directory || config.rootDir;
+      if (!fileOrDirectory.startsWith("/")) {
+        fileOrDirectory = path.join(process.cwd(), fileOrDirectory);
+      }
+
+      const success = await createTodo(description, {
+        dueDate,
+        priority: options.priority as "low" | "medium" | "high" | undefined,
+        tags,
+        notes: options.notes,
+        fileOrDirectory,
+      });
+
+      if (!success) {
+        process.exit(1);
       }
     }
-
-    // Process file or directory if provided
-    let fileOrDirectory = options.directory || options.file || process.cwd();
-    if (!fileOrDirectory.startsWith("/")) {
-      fileOrDirectory = path.join(process.cwd(), fileOrDirectory);
-    }
-
-    const success = await createTodo(description, {
-      dueDate,
-      priority: options.priority as "low" | "medium" | "high" | undefined,
-      tags,
-      notes: options.notes,
-      fileOrDirectory,
-    });
-
-    if (!success) {
-      process.exit(1);
-    }
-  });
+  );
 
 // Todo complete subcommand
 todoExperimentalCommand
