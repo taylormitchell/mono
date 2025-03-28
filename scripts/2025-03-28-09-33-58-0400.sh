@@ -1,0 +1,1 @@
+echo $TERM_PROGRAM

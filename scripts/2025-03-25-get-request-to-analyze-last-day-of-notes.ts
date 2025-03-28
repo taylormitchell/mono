@@ -33,7 +33,8 @@ Notes:
 `;
 
 async function main() {
-  const res = await $`git diff --unified=10000 HEAD@{1.day.ago}`.quiet();
+  const n = process.argv[2] ?? 1;
+  const res = await $`git diff --unified=10000 HEAD@{${n}.day.ago}`.quiet();
   const text = res.text();
   console.log(prompt.replace("{{DIFF}}", text));
 }
