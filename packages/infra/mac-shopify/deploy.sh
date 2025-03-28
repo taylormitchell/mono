@@ -22,5 +22,13 @@ ln -s "$(pwd)/.zprofile" "$HOME/.zprofile" || {
 }
 source "$HOME/.zprofile" || echo "WARNING: Failed to source .zprofile, please restart your shell"
 
+# Link .vimrc
+echo "Linking .vimrc..."
+ln -s "$(pwd)/.vimrc" "$HOME/.vimrc" || {
+  echo "ERROR: Failed to create .vimrc symlink"
+  exit 1
+}
+
+
 echo "Deployment completed successfully"
 
