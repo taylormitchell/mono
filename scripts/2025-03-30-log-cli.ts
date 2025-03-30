@@ -172,30 +172,9 @@ function showNowItems(limit?: number): void {
     );
   }
 
-  console.log("Currently working on:");
-
-  // Group by section
-  const sections = new Map<string, TodoItem[]>();
-
   nowItems.forEach((item) => {
-    if (!sections.has(item.section)) {
-      sections.set(item.section, []);
-    }
-    sections.get(item.section)?.push(item);
+    console.log(`- ${item.text}`);
   });
-
-  // Display items grouped by section
-  for (const [section, items] of sections.entries()) {
-    if (section) {
-      console.log(`\n${section}`);
-    } else {
-      console.log("\nUncategorized");
-    }
-
-    items.forEach((item) => {
-      console.log(`- ${item.text}`);
-    });
-  }
 }
 
 // Main function to handle commands
