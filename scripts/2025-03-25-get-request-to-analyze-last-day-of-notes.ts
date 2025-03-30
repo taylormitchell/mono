@@ -1,7 +1,7 @@
 import { $ } from "bun";
 
 const prompt = `
-Please analyze the following git diff of my personal notes from the last 24 hours and provide a concise, bulleted summary.
+Please analyze the following git diff of my personal notes from the last {{N}} days and provide a concise, bulleted summary.
 
 \`\`\`
 {{DIFF}}
@@ -13,6 +13,9 @@ Focus on these key areas:
 - Important concepts, ideas, or information captured
 - Notable patterns or connections between topics
 
+## People
+- Information about people in my life, be it important or just fun tidbits
+
 ## Questions and Uncertainties
 - Explicitly noted questions
 - Areas needing further exploration
@@ -22,10 +25,6 @@ Focus on these key areas:
 - Next steps based on notes
 - Mentioned deadlines
 
-## Flashcards
-- Suggest 2-3 flashcards based on the most important content
-- Prioritize information about people in my life
-
 Notes:
 - Ignore deleted TODOs or other removed content
 - Don't repeat items already listed in my log
@@ -33,9 +32,10 @@ Notes:
 `;
 
 async function main() {
-  const res = await $`git diff --unified=10000 HEAD@{1.day.ago}`.quiet();
+  const n = process.argv[2] || "1";
+  const res = await $`git diff --unified=10000 HEAD@{${n}.day.ago}`.quiet();
   const text = res.text();
-  console.log(prompt.replace("{{DIFF}}", text));
+  console.log(prompt.replace("{{N}}", n).replace("{{DIFF}}", text));
 }
 
 main();

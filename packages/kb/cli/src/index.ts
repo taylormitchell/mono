@@ -4,7 +4,7 @@ import { initCommand } from "./commands/init";
 import { updateCommand } from "./commands/update";
 import { saveCommand } from "./commands/save";
 import { statusCommand } from "./commands/status";
-import { listTodos, createTodo, completeTodo, editTodo, deleteTodo } from "./commands/todo";
+import { listTodos, createTodo, completeTodo, editTodo, deleteTodo } from "./commands/todo2";
 import path from "path";
 import {
   listDir,
