@@ -39,7 +39,7 @@ function parseDateOrOffset(dateOrOffset: string): Date | number {
 }
 
 // Load config file
-const configSchema = z.object({ rootDir: z.string(), defaultEditor: z.string() });
+const configSchema = z.object({ rootDir: z.string(), defaultEditor: z.string().optional() });
 type Config = z.infer<typeof configSchema>;
 let config: Config = {};
 try {
