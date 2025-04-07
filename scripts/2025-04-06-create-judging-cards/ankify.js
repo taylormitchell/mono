@@ -39,7 +39,14 @@ async function invokeAnki(action, params = {}) {
 }
 
 async function main() {
-  const skills = JSON.parse(fs.readFileSync(skillsJsonPath, "utf8")).slice(0, 2);
+  let skills = JSON.parse(fs.readFileSync(skillsJsonPath, "utf8"));
+
+  // Shuffle skills array using Fisher-Yates algorithm
+  for (let i = skills.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [skills[i], skills[j]] = [skills[j], skills[i]];
+  }
+
   try {
     // Check if Anki is running
     const version = await invokeAnki("version");

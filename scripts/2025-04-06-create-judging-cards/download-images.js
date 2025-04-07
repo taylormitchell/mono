@@ -27,7 +27,7 @@ async function downloadImage(url, filename) {
 async function downloadAllImages() {
   console.log("Starting image downloads...");
 
-  for (const skill of skills.slice(0, 5)) {
+  for (const skill of skills) {
     const filename = `${skill.skillId}.svg`;
     await downloadImage(skill.imgSrc, filename);
   }

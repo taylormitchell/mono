@@ -1,15 +1,13 @@
 async function main() {
-  // const events = ["FX", "PH", "SR", "PB", "HB"];
-  const events = ["FX"];
+  const events = ["FX", "PH", "SR", "PB", "HB"];
 
   // constants
-  const EVENT_TO_SHORT = { FX: "fx", PH: "ph", SR: "s", VT: "v", PB: "pb", HB: "hb" };
-  const GROUP_TO_INT = { I: 1, II: 2, III: 3, IV: 4 };
+  const EVENT_TO_SHORT = { FX: "fx", PH: "ph", SR: "r", VT: "v", PB: "pb", HB: "hb" };
 
   const skills = [];
   for (const event of events) {
-    console.log("Clicking event:", event);
     const eventShort = EVENT_TO_SHORT[event].toUpperCase();
+    console.log(`Clicking event: ${event} (${eventShort})`);
     const el = document.querySelector(`#divSearchArea [value="${eventShort}"]`);
     if (!el) {
       throw new Error(`Event ${event} not found`);
