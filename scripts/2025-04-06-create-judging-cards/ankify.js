@@ -7,6 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const skillsJsonPath = path.join(__dirname, "skills.json");
 const deckName = "5-National Judging Course";
 const modelName = "Gymnastics skill 2025-04-06";
+const imageDir = path.join(__dirname, "images");
+if (!fs.existsSync(imageDir)) {
+  throw new Error("Images directory does not exist");
+}
 
 // Function to send requests to Anki Connect
 async function invokeAnki(action, params = {}) {
@@ -31,18 +35,6 @@ async function invokeAnki(action, params = {}) {
   } catch (error) {
     console.error(`Anki Connect error (${action}):`, error.message);
     throw error;
-  }
-}
-
-// Function to download an image from URL
-async function downloadImage(imageUrl) {
-  try {
-    const response = await fetch(imageUrl);
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer).toString("base64");
-  } catch (error) {
-    console.error(`Error downloading image: ${imageUrl}`, error.message);
-    return null;
   }
 }
 
@@ -79,29 +71,20 @@ async function main() {
     // Process each skill
     console.log(`Processing ${skills.length} gymnastics skills...`);
     let successCount = 0;
+    let updateCount = 0;
 
     for (const skill of skills) {
       try {
-        // Download the image
-        const imageBase64 = await downloadImage(skill.imgSrc);
-        if (!imageBase64) {
-          console.warn(`Skipping ${skill.skillId} due to image download failure`);
-          continue;
-        }
-
-        // Generate a filename for the image in Anki
-        const safeSkillId = skill.skillId.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
-        const ankiImageFilename = `gymnastics_${safeSkillId}.svg`;
-
         // Generate the sameBoxList content
         let sameBoxList = "";
         if (boxIdToSkills[skill.boxId] && boxIdToSkills[skill.boxId].length > 1) {
-          sameBoxList = boxIdToSkills[skill.boxId]
-            .map((s) => `${s.skillNumber}: ${s.desc}`)
-            .join("<br>");
+          sameBoxList = `<ul>${boxIdToSkills[skill.boxId]
+            .map((s) => `<li>${s.desc}</li>`)
+            .join("")}</ul>`;
         }
 
         // Create the note with the image
+        const filename = `${skill.skillId}.svg`;
         const note = {
           deckName: deckName,
           modelName: modelName,
@@ -113,30 +96,48 @@ async function main() {
             value: skill.value,
             sameBoxList: sameBoxList,
           },
-          tags: ["gymnastics", skill.event, `Group${skill.group}`, `Value${skill.value}`],
+          tags: [skill.event, `Group${skill.group}`],
           picture: [
             {
-              data: imageBase64,
-              filename: ankiImageFilename,
+              path: path.join(imageDir, filename),
+              filename,
               fields: ["image"],
             },
           ],
         };
 
-        // Add the note to Anki
-        const noteId = await invokeAnki("addNote", { note });
-        console.log(`Added note for ${skill.skillId} with ID: ${noteId}`);
-        successCount++;
+        // Check if note already exists
+        const existingNotes = await invokeAnki("findNotes", { query: `skillId:${skill.skillId}` });
+
+        if (existingNotes.length > 0) {
+          // Update existing note
+          const noteId = existingNotes[0];
+          delete note.fields.image;
+          await invokeAnki("updateNoteFields", {
+            note: {
+              id: noteId,
+              fields: note.fields,
+              tags: note.tags,
+            },
+          });
+          console.log(`Updated note for ${skill.skillId} with ID: ${noteId}`);
+          updateCount++;
+        } else {
+          // Add new note
+          const noteId = await invokeAnki("addNote", { note });
+          console.log(`Added note for ${skill.skillId} with ID: ${noteId}`);
+          successCount++;
+        }
 
         // Add a small delay to avoid overwhelming the server
         await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
-        console.error(`Error adding note for ${skill.skillId}:`, error.message);
+        console.error(`Error processing ${skill.skillId}:`, error.message);
       }
     }
 
     console.log(
-      `Finished adding ${successCount} out of ${skills.length} skills to Anki deck: ${deckName}`
+      `Finished processing ${skills.length} skills: ${successCount} added, ${updateCount} updated in Anki deck: ${deckName}`
     );
   } catch (error) {
     console.error("Error:", error.message);

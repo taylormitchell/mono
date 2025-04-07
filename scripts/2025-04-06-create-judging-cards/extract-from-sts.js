@@ -18,27 +18,11 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
     skills.push(
       ...getSkills(event).map((skill) => {
-        const parts = skill.skillNumber.split(".");
-        const boxNumber = parts[0].padStart(2, "0");
-        const skillIndex = (parts[1] || "0").padStart(2, "0");
-        if (boxNumber.length !== 2 || skillIndex.length !== 2) {
-          throw new Error(`Unexpected skill number: ${skill.skillNumber}`);
-        }
-        const groupNum = GROUP_TO_INT[skill.group];
-        if (groupNum === undefined) {
-          throw new Error(`Unexpected group: ${skill.group}`);
-        }
-        const boxId = `${eventShort}${groupNum}${boxNumber}`.toLowerCase();
-        const skillId = `${eventShort}${groupNum}${boxNumber}${skillIndex}`.toLowerCase();
-        const filename = skill.imgSrc.split("/").pop().split(".")[0];
-        if (filename !== skillId) {
-          console.log("Issue with filename or skillId:", {
-            filename,
-            skillId,
-            skill,
-          });
-          return null;
-        }
+        const boxId = `${event}-${skill.group}-${skill.boxNumber}`.toLowerCase();
+        const skillId = `${event}-${skill.group}-${skill.skillNumber.replace(
+          ".",
+          "-"
+        )}`.toLowerCase();
         return { ...skill, event, boxId, skillId };
       })
     );
@@ -75,6 +59,7 @@ function parseSkill(el) {
   }
   const desc = lines[0].trim();
   const imgSrc = el.querySelector("img").src;
+  const filename = imgSrc.split("/").pop().split("?")[0];
   const value = lines[2][0].trim();
   if (!["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"].includes(value)) {
     console.log("Unexpected value:", { text, value });
@@ -100,6 +85,7 @@ function parseSkill(el) {
     desc,
     imgSrc,
     value,
+    filename,
   };
 }
 
