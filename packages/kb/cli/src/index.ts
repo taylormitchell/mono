@@ -24,6 +24,7 @@ import fs from "fs";
 import { executeGit } from "../../shared/git";
 import os from "os";
 import { z } from "zod";
+import { execSync } from "child_process";
 
 function parseDateOrOffset(dateOrOffset: string): Date | number {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
@@ -52,13 +53,6 @@ try {
 const program = new Command().name("kb").description("A tool for managing my notes");
 
 // -------- Top Level Commands --------
-
-program
-  .command("cd")
-  .description("Set current working directory to the notes repo")
-  .action(() => {
-    process.chdir(getNotesDir());
-  });
 
 program
   .command("root")
