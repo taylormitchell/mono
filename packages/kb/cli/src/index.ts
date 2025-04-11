@@ -54,6 +54,20 @@ const program = new Command().name("kb").description("A tool for managing my not
 // -------- Top Level Commands --------
 
 program
+  .command("cd")
+  .description("Set current working directory to the notes repo")
+  .action(() => {
+    process.chdir(getNotesDir());
+  });
+
+program
+  .command("root")
+  .description("Open the root note")
+  .action(() => {
+    console.log(getNotesDir());
+  });
+
+program
   .command("init")
   .description("Initialize a new git repository")
   .action(async () => {
@@ -98,12 +112,7 @@ program
     }
   });
 
-program
-  .command("root")
-  .description("Open the root note")
-  .action(() => {
-    console.log(getNotesDir());
-  });
+
 
 program
   .command("daily [dateOrOffset]")

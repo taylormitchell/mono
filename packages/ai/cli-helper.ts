@@ -2,9 +2,10 @@ import { OpenAI } from 'openai';
 import * as dotenv from 'dotenv';
 import * as readline from 'readline';
 import { spawn } from 'child_process';
+import path from 'path';
 
 // Load environment variables from .env file
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // Check if API key is available
 if (!process.env.OPENAI_API_KEY) {
