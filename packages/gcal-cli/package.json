@@ -1,0 +1,19 @@
+{
+  "name": "gcal-cli",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "^1.2.9",
+    "@types/luxon": "^3.6.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "chrono-node": "^2.8.0",
+    "commander": "^13.1.0",
+    "googleapis": "^148.0.0",
+    "luxon": "^3.6.1",
+    "open": "^10.1.1"
+  }
+}

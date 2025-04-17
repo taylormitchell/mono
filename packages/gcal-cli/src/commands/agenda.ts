@@ -1,0 +1,177 @@
+import { Command } from "commander";
+import { DateTime } from "luxon";
+import { getClients, listEvents, listTasks } from "../google";
+import { parseNatural, toRFC3339 } from "../time";
+
+/**
+ * Build an ISO string for the start of the local day.
+ */
+function startOfDay(d: Date): string {
+  const res = DateTime.fromJSDate(d).startOf("day").toISO();
+  if (!res) throw new Error("Could not get start of day");
+  return res;
+}
+
+/**
+ * Build an ISO string for the end of the local day (23:59:59.999).
+ */
+function endOfDay(d: Date): string {
+  const res = DateTime.fromJSDate(d).endOf("day").toISO();
+  if (!res) throw new Error("Could not get end of day");
+  return res;
+}
+
+/**
+ * Pretty‑print a date‑time (HH:mm) or "All‑day".
+ */
+function fmt(dt?: string, allday = false): string {
+  if (allday || !dt) return "All‑day ";
+  return DateTime.fromISO(dt).toFormat("HH:mm");
+}
+
+export function agendaCmd(): Command {
+  const cmd = new Command("agenda")
+    .description("Show events & tasks in a date window")
+    .addHelpText("after", "\n  Defaults: Work Intentions, Intentions")
+    .option("--today", "agenda for today (default)")
+    .option("--tomorrow", "agenda for tomorrow")
+    .option("--after <dt>", "ISO or natural language start")
+    .option("--before <dt>", "ISO or natural language end")
+    .option(
+      "--cal <names>",
+      'Comma‑separated calendar names. Defaults to "Work Intentions,Intentions"'
+    )
+    .option("--account <name>", "Google account (default)")
+    .action(async (opts) => {
+      // 1. Compute time window --------------------------------------------
+      let timeMin: string | undefined;
+      let timeMax: string | undefined;
+
+      if (opts.after || opts.before) {
+        const after = opts.after ? parseNatural(opts.after) : undefined;
+        const before = opts.before ? parseNatural(opts.before) : undefined;
+
+        if (after) timeMin = toRFC3339(after);
+        if (before) timeMax = toRFC3339(before);
+
+        // If user gave only one bound, default the other to ±24 h
+        if (!timeMin && timeMax) {
+          timeMin = toRFC3339(DateTime.fromISO(timeMax).minus({ days: 1 }).toJSDate());
+        }
+        if (!timeMax && timeMin) {
+          timeMax = toRFC3339(DateTime.fromISO(timeMin).plus({ days: 1 }).toJSDate());
+        }
+      }
+
+      // Default / --today
+      if (!timeMin || !timeMax || opts.today) {
+        const today = new Date();
+        timeMin = startOfDay(today);
+        timeMax = endOfDay(today);
+      }
+
+      // Default / --tomorrow
+      if (!timeMin || !timeMax || opts.tomorrow) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        timeMin = startOfDay(tomorrow);
+        timeMax = endOfDay(tomorrow);
+      }
+
+      // 2. Fetch data ------------------------------------------------------
+      const { cal, tasks } = await getClients(opts.account);
+      // Determine which calendars to pull from.
+      const defaultCalNames = ["Work Intentions", "Intentions"];
+      const calNames: string[] = opts.cal
+        ? opts.cal.split(",").map((s: string) => s.trim())
+        : defaultCalNames;
+
+      // Map names → IDs (case‑insensitive)
+      const list = await cal.calendarList.list();
+      const calMap: Record<string, string> = {};
+      for (const c of list.data.items ?? []) {
+        if (c.summary) calMap[c.summary.toLowerCase()] = c.id!;
+      }
+
+      const calIds: string[] = [];
+      for (const name of calNames) {
+        const id = calMap[name.toLowerCase()];
+        if (!id) throw new Error(`Calendar "${name}" not found`);
+        calIds.push(id);
+      }
+
+      // Pull events from each calendar
+      const evtsArr = await Promise.all(
+        calIds.map((cid) => listEvents(cal, cid, timeMin!, timeMax!))
+      );
+      const evts = evtsArr.flat();
+      const tlist = await listTasks(tasks, "@default", timeMax);
+
+      // 3. Split tasks: timed vs. untimed ----------------------------------
+      const timedTasks: any[] = [];
+      const untimedTasks: any[] = [];
+      for (const t of tlist) {
+        if (!t.due) continue;
+        // Google uses full‑day tasks with "YYYY‑MM‑DD" (no 'T')
+        if (t.due.includes("T")) timedTasks.push(t);
+        else untimedTasks.push(t);
+      }
+
+      // 4. Merge events + timed tasks -------------------------------------
+      type Item =
+        | { type: "event"; summary: string; start: string; allday: boolean }
+        | { type: "task"; title: string; due: string };
+
+      const items: Item[] = [];
+
+      for (const e of evts) {
+        const allday = !!e.start?.date && !e.start.dateTime;
+        items.push({
+          type: "event",
+          summary: e.summary ?? "(no title)",
+          start: e.start?.dateTime ?? e.start?.date!, // fall back to all‑day date
+          allday,
+        });
+      }
+
+      for (const t of timedTasks) {
+        items.push({
+          type: "task",
+          title: t.title ?? "(untitled task)",
+          due: t.due!,
+        });
+      }
+
+      // Sort by start/due time
+      items.sort((a, b) => {
+        const ta = a.type === "event" ? a.start : a.due;
+        const tb = b.type === "event" ? b.start : b.due;
+        return ta.localeCompare(tb);
+      });
+
+      // 5. Render ----------------------------------------------------------
+      console.log();
+      console.log(`Agenda ${DateTime.fromISO(timeMin).toFormat("yyyy‑LL‑dd")}`);
+      console.log("────────────────────────────────────────");
+
+      for (const it of items) {
+        if (it.type === "event") {
+          console.log(`${fmt(it.start, it.allday)}  ${it.summary}`);
+        } else {
+          console.log(`${fmt(it.due)}  · [ ] ${it.title}`);
+        }
+      }
+
+      if (untimedTasks.length) {
+        console.log("\nTasks:");
+        console.log("──────");
+        for (const t of untimedTasks) {
+          const due = DateTime.fromISO(t.due).toFormat("yyyy‑LL‑dd");
+          console.log(`• [ ] ${t.title}  (due ${due})`);
+        }
+      }
+      console.log();
+    });
+
+  return cmd;
+}
