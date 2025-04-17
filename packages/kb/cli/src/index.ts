@@ -24,6 +24,7 @@ import fs from "fs";
 import { executeGit } from "../../shared/git";
 import os from "os";
 import { z } from "zod";
+import { execSync } from "child_process";
 
 function parseDateOrOffset(dateOrOffset: string): Date | number {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrOffset)) {
@@ -39,7 +40,7 @@ function parseDateOrOffset(dateOrOffset: string): Date | number {
 }
 
 // Load config file
-const configSchema = z.object({ rootDir: z.string(), defaultEditor: z.string() });
+const configSchema = z.object({ rootDir: z.string(), defaultEditor: z.string().optional() });
 type Config = z.infer<typeof configSchema>;
 let config: Config = {};
 try {
@@ -52,6 +53,13 @@ try {
 const program = new Command().name("kb").description("A tool for managing my notes");
 
 // -------- Top Level Commands --------
+
+program
+  .command("root")
+  .description("Open the root note")
+  .action(() => {
+    console.log(getNotesDir());
+  });
 
 program
   .command("init")
@@ -98,12 +106,7 @@ program
     }
   });
 
-program
-  .command("root")
-  .description("Open the root note")
-  .action(() => {
-    console.log(getNotesDir());
-  });
+
 
 program
   .command("daily [dateOrOffset]")

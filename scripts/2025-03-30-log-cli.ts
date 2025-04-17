@@ -172,9 +172,13 @@ function showNowItems(limit?: number): void {
     );
   }
 
-  nowItems.forEach((item) => {
-    console.log(`- ${item.text}`);
-  });
+  if (nowItems.length == 1) {
+    console.log(nowItems[0].text);
+  } else {
+    nowItems.forEach((item) => {
+      console.log(`- ${item.text}`);
+    });
+  }
 }
 
 // Main function to handle commands
