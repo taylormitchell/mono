@@ -17,6 +17,7 @@ export function nowCmd(): Command {
       'Comma‑separated calendar names. Defaults to "Work Intentions,Intentions"'
     )
     .option("--account <name>", "Google account (default)")
+    .option("--show-ids", "Show item IDs")
     .action(async (opts) => {
       const { cal } = await getClients(opts.account);
 
@@ -69,7 +70,8 @@ export function nowCmd(): Command {
         const endISO = current.end?.dateTime ?? current.end?.date!;
         const start = DateTime.fromISO(startISO).toFormat("HH:mm");
         const end = DateTime.fromISO(endISO).toFormat("HH:mm");
-        console.log(`${start}‑${end}  ${current.summary ?? "(no title)"}`);
+        const idPart = opts.showIds && current.id ? ` (${current.id})` : "";
+        console.log(`${start}‑${end}  ${current.summary ?? "(no title)"}${idPart}`);
       } else {
         console.log("No event or intention scheduled right now.");
       }

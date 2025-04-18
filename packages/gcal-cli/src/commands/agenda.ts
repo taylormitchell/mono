@@ -42,6 +42,7 @@ export function agendaCmd(): Command {
       'Comma‑separated calendar names. Defaults to "Work Intentions,Intentions"'
     )
     .option("--account <name>", "Google account (default)")
+    .option("--show-ids", "Show item IDs")
     .action(async (opts) => {
       // 1. Compute time window --------------------------------------------
       let timeMin: string | undefined;
@@ -169,10 +170,12 @@ export function agendaCmd(): Command {
       for (const it of items) {
         if (it.type === "event") {
           const paddedSummary = it.summary.padEnd(maxLength);
-          console.log(`${fmt(it.start, it.allday)}  ${paddedSummary} [${it.id}]`);
+          const idPart = opts.showIds ? ` [${it.id}]` : "";
+          console.log(`${fmt(it.start, it.allday)}  ${paddedSummary}${idPart}`);
         } else {
           // const paddedTitle = it.title.padEnd(maxLength);
-          // console.log(`${fmt(it.due)}  · [ ] ${paddedTitle} (${it.id})`);
+          // const idPart = opts.showIds ? ` (${it.id})` : "";
+          // console.log(`${fmt(it.due)}  · [ ] ${paddedTitle}${idPart}`);
         }
       }
 

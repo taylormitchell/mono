@@ -33,6 +33,7 @@ export function lsCmd(): Command {
     )
     .option("--account <name>", "Google account (default)")
     .option("--contains <str>", "Filter items containing substring")
+    .option("--show-ids", "Show item IDs")
     .action(async (opts) => {
       let timeMin: string | undefined;
       let timeMax: string | undefined;
@@ -165,10 +166,12 @@ export function lsCmd(): Command {
       for (const it of finalItems) {
         if (it.type === "event") {
           const time = fmt(it.start, it.allday);
-          console.log(`${time}  ${it.summary} (${it.id})`);
+          const idPart = opts.showIds ? ` (${it.id})` : "";
+          console.log(`${time}  ${it.summary}${idPart}`);
         } else {
           const time = fmt(it.due, !it.timed);
-          console.log(`${time}  · [ ] ${it.title} (${it.id})`);
+          const idPart = opts.showIds ? ` (${it.id})` : "";
+          console.log(`${time}  · [ ] ${it.title}${idPart}`);
         }
       }
       console.log();

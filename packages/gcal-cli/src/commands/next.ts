@@ -10,6 +10,7 @@ export function nextCmd(): Command {
       'Comma‑separated calendar names. Defaults to "Work Intentions,Intentions"'
     )
     .option("--account <name>", "Google account (default)")
+    .option("--show-ids", "Show item IDs")
     .action(async (opts) => {
       const { cal, tasks } = await getClients(opts.account);
 
@@ -80,11 +81,13 @@ export function nextCmd(): Command {
         const endISO = e.end?.dateTime ?? e.end?.date!;
         const start = DateTime.fromISO(startISO).toFormat("HH:mm");
         const end = DateTime.fromISO(endISO).toFormat("HH:mm");
-        console.log(`${start}-${end}  ${e.summary ?? "(no title)"}`);
+        const idPart = opts.showIds && e.id ? ` (${e.id})` : "";
+        console.log(`${start}-${end}  ${e.summary ?? "(no title)"}${idPart}`);
       } else if (pickType === "task") {
         const t = nextTask!;
         const due = DateTime.fromISO(t.due!).toFormat("HH:mm");
-        console.log(`${due}  · [ ] ${t.title ?? "(untitled task)"}`);
+        const idPart = opts.showIds && t.id ? ` (${t.id})` : "";
+        console.log(`${due}  · [ ] ${t.title ?? "(untitled task)"}${idPart}`);
       } else {
         console.log("No upcoming events or timed tasks found.");
       }
