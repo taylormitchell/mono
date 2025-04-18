@@ -89,5 +89,18 @@ program
       .forEach((dir) => console.log(dir));
   });
 
+program
+  .command("path")
+  .description("Get the full path of a package")
+  .argument("<name>", "Name of the package")
+  .action((name: string) => {
+    const packagePath = path.join(packagesDir, name);
+    if (!fs.existsSync(packagePath)) {
+      console.error(`Package '${name}' not found`);
+      process.exit(1);
+    }
+    console.log(packagePath);
+  });
+
 // Parse command line arguments
 program.parse(process.argv);
