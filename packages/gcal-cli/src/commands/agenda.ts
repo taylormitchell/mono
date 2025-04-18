@@ -63,41 +63,46 @@ export function agendaCmd(): Command {
         }
       }
 
-      // Default / --today
-      if (!timeMin || !timeMax || opts.today) {
-        const today = new Date();
-        timeMin = startOfDay(today);
-        timeMax = endOfDay(today);
-      }
-
-      // Default / --tomorrow
-      if (!timeMin || !timeMax || opts.tomorrow) {
-        const tomorrow = new Date();
+      // Default time window: upcoming events from now until end of today
+      const now = new Date();
+      if (opts.today) {
+        timeMin = toRFC3339(now);
+        timeMax = endOfDay(now);
+      } else if (opts.tomorrow) {
+        const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         timeMin = startOfDay(tomorrow);
         timeMax = endOfDay(tomorrow);
+      } else if (!opts.after && !opts.before && (!timeMin || !timeMax)) {
+        timeMin = toRFC3339(now);
+        timeMax = endOfDay(now);
       }
 
       // 2. Fetch data ------------------------------------------------------
       const { cal, tasks } = await getClients(opts.account);
-      // Determine which calendars to pull from.
+      // Determine which calendars to pull from. Include primary by default.
       const defaultCalNames = ["Work Intentions", "Intentions"];
-      const calNames: string[] = opts.cal
-        ? opts.cal.split(",").map((s: string) => s.trim())
-        : defaultCalNames;
-
-      // Map names → IDs (case‑insensitive)
-      const list = await cal.calendarList.list();
+      const listCal = await cal.calendarList.list();
       const calMap: Record<string, string> = {};
-      for (const c of list.data.items ?? []) {
+      for (const c of listCal.data.items ?? []) {
         if (c.summary) calMap[c.summary.toLowerCase()] = c.id!;
       }
-
-      const calIds: string[] = [];
-      for (const name of calNames) {
-        const id = calMap[name.toLowerCase()];
-        if (!id) throw new Error(`Calendar "${name}" not found`);
-        calIds.push(id);
+      let calIds: string[];
+      if (opts.cal) {
+        const names = opts.cal.split(",").map((s: string) => s.trim());
+        calIds = names.map((name) => {
+          if (name.toLowerCase() === "primary") return "primary";
+          const id = calMap[name.toLowerCase()];
+          if (!id) throw new Error(`Calendar "${name}" not found`);
+          return id;
+        });
+      } else {
+        calIds = ["primary"];
+        for (const name of defaultCalNames) {
+          const id = calMap[name.toLowerCase()];
+          if (!id) throw new Error(`Calendar "${name}" not found`);
+          calIds.push(id);
+        }
       }
 
       // Pull events from each calendar
@@ -119,8 +124,8 @@ export function agendaCmd(): Command {
 
       // 4. Merge events + timed tasks -------------------------------------
       type Item =
-        | { type: "event"; summary: string; start: string; allday: boolean }
-        | { type: "task"; title: string; due: string };
+        | { type: "event"; id: string; summary: string; start: string; allday: boolean }
+        | { type: "task"; id: string; title: string; due: string };
 
       const items: Item[] = [];
 
@@ -128,6 +133,7 @@ export function agendaCmd(): Command {
         const allday = !!e.start?.date && !e.start.dateTime;
         items.push({
           type: "event",
+          id: e.id!,
           summary: e.summary ?? "(no title)",
           start: e.start?.dateTime ?? e.start?.date!, // fall back to all‑day date
           allday,
@@ -137,6 +143,7 @@ export function agendaCmd(): Command {
       for (const t of timedTasks) {
         items.push({
           type: "task",
+          id: t.id!,
           title: t.title ?? "(untitled task)",
           due: t.due!,
         });
@@ -151,25 +158,32 @@ export function agendaCmd(): Command {
 
       // 5. Render ----------------------------------------------------------
       console.log();
-      console.log(`Agenda ${DateTime.fromISO(timeMin).toFormat("yyyy‑LL‑dd")}`);
-      console.log("────────────────────────────────────────");
+      console.log(`${DateTime.fromISO(timeMin).toFormat("yyyy‑LL‑dd")}`);
+
+      // Find the maximum length of event summaries to align IDs
+      const maxLength = items.reduce((max, it) => {
+        const text = it.type === "event" ? it.summary : it.title;
+        return Math.max(max, text.length);
+      }, 0);
 
       for (const it of items) {
         if (it.type === "event") {
-          console.log(`${fmt(it.start, it.allday)}  ${it.summary}`);
+          const paddedSummary = it.summary.padEnd(maxLength);
+          console.log(`${fmt(it.start, it.allday)}  ${paddedSummary} [${it.id}]`);
         } else {
-          console.log(`${fmt(it.due)}  · [ ] ${it.title}`);
+          // const paddedTitle = it.title.padEnd(maxLength);
+          // console.log(`${fmt(it.due)}  · [ ] ${paddedTitle} (${it.id})`);
         }
       }
 
-      if (untimedTasks.length) {
-        console.log("\nTasks:");
-        console.log("──────");
-        for (const t of untimedTasks) {
-          const due = DateTime.fromISO(t.due).toFormat("yyyy‑LL‑dd");
-          console.log(`• [ ] ${t.title}  (due ${due})`);
-        }
-      }
+      // if (untimedTasks.length) {
+      //   console.log("\nTasks:");
+      //   console.log("──────");
+      //   for (const t of untimedTasks) {
+      //     const due = DateTime.fromISO(t.due).toFormat("yyyy‑LL‑dd");
+      //     console.log(`• [ ] ${t.title} (${t.id})  (due ${due})`);
+      //   }
+      // }
       console.log();
     });
 

@@ -17,7 +17,7 @@ alias mono="bun $HOME/Code/mono/packages/mono-cli/index.ts"
 alias kb="bun $HOME/Code/mono/packages/kb/cli/index.ts"
 alias log="bun $HOME/Code/mono/scripts/2025-03-30-log-cli.ts"
 alias code="cursor"
-alias cal="bun $HOME/Code/mono/packages/gcal-cli/index.ts"
+alias cal="bun --env-file $HOME/Code/mono/packages/gcal-cli/.env $HOME/Code/mono/packages/gcal-cli/index.ts"
 
 
 

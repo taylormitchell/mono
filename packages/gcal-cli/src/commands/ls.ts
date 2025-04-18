@@ -54,34 +54,46 @@ export function lsCmd(): Command {
         }
       }
 
-      if (!timeMin || !timeMax || opts.today) {
-        const today = new Date();
-        timeMin = startOfDay(today);
-        timeMax = endOfDay(today);
-      }
-      if (!timeMin || !timeMax || opts.tomorrow) {
-        const t = new Date();
+      // Default time window: upcoming events from now until end of today
+      const now = new Date();
+      if (opts.today) {
+        timeMin = toRFC3339(now);
+        timeMax = endOfDay(now);
+      } else if (opts.tomorrow) {
+        const t = new Date(now);
         t.setDate(t.getDate() + 1);
         timeMin = startOfDay(t);
         timeMax = endOfDay(t);
+      } else if (!opts.after && !opts.before && (!timeMin || !timeMax)) {
+        timeMin = toRFC3339(now);
+        timeMax = endOfDay(now);
       }
 
       const { cal, tasks } = await getClients(opts.account);
+      // Determine which calendars to pull from. Include primary by default.
       const defaultCalNames = ["Work Intentions", "Intentions"];
-      const calNames: string[] = opts.cal
-        ? opts.cal.split(",").map((s: string) => s.trim())
-        : defaultCalNames;
-
       const list = await cal.calendarList.list();
       const calMap: Record<string, string> = {};
       for (const c of list.data.items ?? []) {
         if (c.summary) calMap[c.summary.toLowerCase()] = c.id!;
       }
-      const calIds: string[] = [];
-      for (const name of calNames) {
-        const id = calMap[name.toLowerCase()];
-        if (!id) throw new Error(`Calendar "${name}" not found`);
-        calIds.push(id);
+      let calIds: string[];
+      if (opts.cal) {
+        const names = opts.cal.split(",").map((s: string) => s.trim());
+        calIds = names.map((name) => {
+          if (name.toLowerCase() === "primary") return "primary";
+          const id = calMap[name.toLowerCase()];
+          if (!id) throw new Error(`Calendar "${name}" not found`);
+          return id;
+        });
+      } else {
+        // default: include primary plus configured names
+        calIds = ["primary"];
+        for (const name of defaultCalNames) {
+          const id = calMap[name.toLowerCase()];
+          if (!id) throw new Error(`Calendar "${name}" not found`);
+          calIds.push(id);
+        }
       }
 
       const evtsArr = await Promise.all(
@@ -153,10 +165,10 @@ export function lsCmd(): Command {
       for (const it of finalItems) {
         if (it.type === "event") {
           const time = fmt(it.start, it.allday);
-          console.log(`${time}  ${it.id}  ${it.summary}`);
+          console.log(`${time}  ${it.summary} (${it.id})`);
         } else {
           const time = fmt(it.due, !it.timed);
-          console.log(`${time}  ${it.id}  · [ ] ${it.title}`);
+          console.log(`${time}  · [ ] ${it.title} (${it.id})`);
         }
       }
       console.log();
