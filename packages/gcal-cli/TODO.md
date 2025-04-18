@@ -31,7 +31,6 @@ In agenda view, todos that don't have a scheduled time (i.e. are "All day") shou
          c. Default title prefix `[ ] ` for todos
          d. Hook into your calendar client to create an event with start/end according to the parse
          e. Support an optional flag (e.g. `--notify`) or keyword (e.g. “notify me”) to add a popup alert at 0 minutes before end
-         f. Write unit tests around your parser and integration tests for the event creation
 2. Phase 2 – Default Calendars & Time‑filtered Listing
    a. Augment your config to treat the primary calendar as part of “default calendars” alongside ["Work Intentions","Intentions"]
    b. Modify your “list” (or “agenda”) command so that by default it:
@@ -39,13 +38,11 @@ In agenda view, todos that don't have a scheduled time (i.e. are "All day") shou
       – can still take explicit date‑range overrides
    c. When printing each event line, append the internal `id` in parentheses at end:
      `[ ] Playing with o3 2–3 pm (abcdef123456)`
-   d. Add tests covering both filtering and the new calendar‑list behavior
 3. Phase 3 – Agenda View & All‑Day “Todos” Section
    a. In your “agenda” view, split out:
       – Timed events (show first, in chronological order)
       – All‑day / unscheduled todos (show below, under a header like **“Unscheduled Todos”**)
    b. Make sure all‑day items still have the `[ ] ` prefix and (id) suffix
-   c. Add acceptance tests / screenshots of expected layout
 4. Cross‑Cutting / Finish‑Up
    • Update README.md / CLI help to document the new quick‑add syntax and defaults
    • Add examples to docs & README (e.g. “Work on issue #123 for 1h --notify”)

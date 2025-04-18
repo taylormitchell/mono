@@ -8,6 +8,7 @@ import { doneCmd } from "./commands/done";
 import { editCmd } from "./commands/edit";
 import { lsCmd } from "./commands/ls";
 import { rmCmd } from "./commands/rm";
+import { quickCmd } from "./commands/quick";
 
 const program = new Command()
   .name("gcal")
@@ -15,6 +16,7 @@ const program = new Command()
   .version("0.1.0");
 
 program.addCommand(addCmd());
+program.addCommand(quickCmd());
 program.addCommand(agendaCmd());
 program.addCommand(nowCmd());
 program.addCommand(nextCmd());
