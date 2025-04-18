@@ -25,15 +25,22 @@ export function quickCmd(): Command {
         start: { dateTime: toRFC3339(start) },
         end: { dateTime: toRFC3339(end) },
       };
-      if (opts.notify) {
-        requestBody.reminders = {
-          useDefault: false,
-          overrides: [{ method: "popup", minutes: 0 }],
-        };
-      }
 
       await cal.events.insert({ calendarId, requestBody });
       console.log("✅  Quick event added.");
+
+      // If notify flag is set, schedule a separate 'Times up!' event at end time
+      if (opts.notify) {
+        const reminderStart = end;
+        const reminderEnd = new Date(end.getTime() + 15 * 60 * 1000);
+        const reminderBody: any = {
+          summary: "Times up!",
+          start: { dateTime: toRFC3339(reminderStart) },
+          end: { dateTime: toRFC3339(reminderEnd) },
+        };
+        await cal.events.insert({ calendarId, requestBody: reminderBody });
+        console.log("✅  Reminder event 'Times up!' added.");
+      }
     });
   return cmd;
 }

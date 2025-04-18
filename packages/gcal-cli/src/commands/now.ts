@@ -33,7 +33,7 @@ export function nowCmd(): Command {
         if (c.summary) calMap[c.summary.toLowerCase()] = c.id!;
       }
 
-      const calIds: string[] = [];
+      const calIds: string[] = ["primary"];
       for (const name of calNames) {
         const id = calMap[name.toLowerCase()];
         if (!id) throw new Error(`Calendar "${name}" not found`);
