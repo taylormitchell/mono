@@ -1,5 +1,6 @@
 eval "$(/opt/homebrew/bin/brew shellenv)"
 export PROMPT="%1~ %# "
+source ~/.env
 
 # git helpers
 source ~/Code/mono/packages/infra/mac/git-helpers.sh
