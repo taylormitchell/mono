@@ -110,7 +110,10 @@ export function agendaCmd(): Command {
       const evtsArr = await Promise.all(
         calIds.map((cid) => listEvents(cal, cid, timeMin!, timeMax!))
       );
-      const evts = evtsArr.flat();
+      // Filter out birthday events (e.g., Contacts birthdays)
+      const evts = evtsArr
+        .flat()
+        .filter(e => !(e.summary || "").toLowerCase().includes("birthday"));
       const tlist = await listTasks(tasks, "@default", timeMax);
 
       // 3. Split tasks: timed vs. untimed ----------------------------------

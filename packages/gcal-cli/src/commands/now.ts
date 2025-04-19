@@ -49,7 +49,10 @@ export function nowCmd(): Command {
       const evtsArr = await Promise.all(
         calIds.map((cid) => listEvents(cal, cid, timeMin, timeMax))
       );
-      const events = evtsArr.flat();
+      // Filter out birthday events
+      const events = evtsArr
+        .flat()
+        .filter(e => !(e.summary || "").toLowerCase().includes("birthday"));
 
       const now = DateTime.local();
 
