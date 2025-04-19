@@ -25,6 +25,8 @@ export function lsCmd(): Command {
     .description("List events & tasks with filters")
     .option("--today", "today's items")
     .option("--tomorrow", "tomorrow's items")
+    .option("--this-week", "current week's items (Monday-Sunday)")
+    .option("--next-week", "next week's items (Monday-Sunday)")
     .option("--after <dt>", "ISO or natural language start")
     .option("--before <dt>", "ISO or natural language end")
     .option(
@@ -37,36 +39,44 @@ export function lsCmd(): Command {
     .action(async (opts) => {
       let timeMin: string | undefined;
       let timeMax: string | undefined;
-
-      if (opts.after || opts.before) {
-        const after = opts.after ? parseNatural(opts.after) : undefined;
+      const now = new Date();
+      
+      if (opts.thisWeek) {
+        // Find the Monday of current week
+        const currentWeekStart = DateTime.fromJSDate(now).startOf('week');
+        timeMin = toRFC3339(currentWeekStart.toJSDate());
+        timeMax = toRFC3339(currentWeekStart.plus({ days: 6 }).endOf('day').toJSDate());
+      } else if (opts.nextWeek) {
+        // Find the Monday of next week
+        const nextWeekStart = DateTime.fromJSDate(now).startOf('week').plus({ weeks: 1 });
+        timeMin = toRFC3339(nextWeekStart.toJSDate());
+        timeMax = toRFC3339(nextWeekStart.plus({ days: 6 }).endOf('day').toJSDate());
+      } else if (opts.after || opts.before) {
+        // When --before is specified without --after, default --after to now
+        const after = opts.after ? parseNatural(opts.after) : (opts.before ? now : undefined);
         const before = opts.before ? parseNatural(opts.before) : undefined;
+        
         if (after) timeMin = toRFC3339(after);
         if (before) timeMax = toRFC3339(before);
+        
+        // If user gave only one bound, default the other appropriately
         if (!timeMin && timeMax) {
-          timeMin = toRFC3339(
-            DateTime.fromISO(timeMax).minus({ days: 1 }).toJSDate()
-          );
+          timeMin = toRFC3339(now);
         }
         if (!timeMax && timeMin) {
-          timeMax = toRFC3339(
-            DateTime.fromISO(timeMin).plus({ days: 1 }).toJSDate()
-          );
+          timeMax = toRFC3339(DateTime.fromISO(timeMin).plus({ days: 1 }).toJSDate());
         }
-      }
-
-      // Default time window: upcoming events from now until end of today
-      const now = new Date();
-      if (opts.today) {
-        timeMin = toRFC3339(now);
+      } else if (opts.today) {
+        timeMin = startOfDay(now);
         timeMax = endOfDay(now);
       } else if (opts.tomorrow) {
         const t = new Date(now);
         t.setDate(t.getDate() + 1);
         timeMin = startOfDay(t);
         timeMax = endOfDay(t);
-      } else if (!opts.after && !opts.before && (!timeMin || !timeMax)) {
-        timeMin = toRFC3339(now);
+      } else if (!timeMin || !timeMax) {
+        // Default is today's agenda
+        timeMin = startOfDay(now);
         timeMax = endOfDay(now);
       }
 

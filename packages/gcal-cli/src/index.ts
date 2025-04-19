@@ -9,6 +9,7 @@ import { editCmd } from "./commands/edit";
 import { lsCmd } from "./commands/ls";
 import { rmCmd } from "./commands/rm";
 import { quickCmd } from "./commands/quick";
+import { todoCmd } from "./commands/todo";
 
 const program = new Command()
   .name("gcal")
@@ -24,5 +25,6 @@ program.addCommand(editCmd());
 program.addCommand(doneCmd());
 program.addCommand(lsCmd());
 program.addCommand(rmCmd());
+program.addCommand(todoCmd());
 
 program.parseAsync();
