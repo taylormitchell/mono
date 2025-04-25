@@ -20,6 +20,7 @@ alias cal="bun --env-file $HOME/Code/mono/packages/gcal-cli/.env $HOME/Code/mono
 # mono-cli
 cli_path="$HOME/Code/mono/packages/mono-cli/index.ts"
 my() {
+  # change directory
   if [ "$1" = "cd" ]; then
     if [ -z "$2" ]; then
       cd $(bun $cli_path root)
@@ -28,12 +29,14 @@ my() {
     fi
   elif [ "$1" = "root" ]; then
     cd $(bun $cli_path root)
+  # create script
   elif [ "$1" = "script" ]; then
     if [ "$TERM_PROGRAM" = "vscode" ]; then
       code $(bun $cli_path script $2)
     else
       vim $(bun $cli_path script $2)
     fi
+  # create note
   elif [ "$1" = "note" ]; then
     local note_path=$(bun $cli_path note ${@:2})
     if [[ "$*" =~ " -m " ]]; then
@@ -45,6 +48,7 @@ my() {
         vim $note_path
       fi
     fi
+  # run mono-cli
   else
     bun $cli_path "$@"
   fi

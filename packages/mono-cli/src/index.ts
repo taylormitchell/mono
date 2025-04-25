@@ -4,6 +4,18 @@ import path from "path";
 import os from "os";
 import { z } from "zod";
 import { $ } from "bun";
+import OpenAI from "openai";
+import dotenv from "dotenv";
+
+// Check and load OpenAI API key
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+if (!OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY is not set in environment variables");
+}
+
+// OpenAI client
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 /**
  * Returns a timestamp with the current timezone offset
@@ -26,6 +38,47 @@ const toTimestampWithTimezone = (date: Date): string => {
 
   return `${year}-${month}-${day}-${hour}-${minute}-${second}${sign}${hours}${minutes}`;
 };
+
+// System prompt to instruct the model
+const requestCommandPrompt = `
+You are a command line assistant. Convert natural language descriptions into the appropriate command line commands.
+Only respond with the exact command that should be run, nothing else.
+Do not include any explanations, markdown formatting, or backticks.
+`;
+
+const arbitraryPrompt = `
+You are a helpful assistant that can answer questions and help with tasks.
+`;
+
+/**
+ * Gets a command suggestion from OpenAI based on a natural language query
+ */
+async function getAIResponse(query: string, prompt: string): Promise<string> {
+  if (!openai) {
+    return "Error: OPENAI_API_KEY is not set in environment variables";
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-nano",
+      messages: [
+        { role: "system", content: prompt },
+        { role: "user", content: query },
+      ],
+      temperature: 0.3,
+      max_tokens: 100,
+    });
+
+    if (response.choices[0]?.message?.content) {
+      return response.choices[0].message.content.trim();
+    } else {
+      return "No command suggestion available.";
+    }
+  } catch (error) {
+    console.error("Error getting command suggestion:", error);
+    return "Error occurred while getting command suggestion.";
+  }
+}
 
 // Load config
 const CONFIG_FILE = path.join(os.homedir(), ".myrc.json");
@@ -128,6 +181,29 @@ program
     }
     console.log(packagePath);
   });
+
+program
+  .command("ai")
+  .description("AI-powered CLI command helper")
+  .argument("[query]", "Arbitrary question or prompt for the AI assistant")
+  .action(async (query?: string) => {
+    if (query) {
+      const response = await getAIResponse(query, arbitraryPrompt);
+      console.log(response);
+    } else {
+      console.log("Usage: my ai [query] - Ask an arbitrary question");
+      console.log("       my ai cmd [query] - Convert natural language to a shell command");
+    }
+  })
+  .addCommand(
+    new Command("cmd")
+      .description("Convert natural language to a shell command")
+      .argument("<query>", "Natural language description of the command you want")
+      .action(async (query: string) => {
+        const command = await getAIResponse(query, requestCommandPrompt);
+        console.log(command);
+      })
+  );
 
 // Parse command line arguments
 program.parse(process.argv);
