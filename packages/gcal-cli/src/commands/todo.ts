@@ -112,19 +112,27 @@ export function todoCmd(): Command {
           console.log("─".repeat(formattedDate.length));
           
           const dateTasksSorted = tasksByDate[date].sort((a, b) => {
-            // Sort by time for tasks with time, then untimed tasks
-            if (a.due.includes('T') && b.due.includes('T')) {
-              return a.due.localeCompare(b.due);
-            }
-            if (a.due.includes('T')) return -1;
-            if (b.due.includes('T')) return 1;
-            return 0;
+            // Check for UTC midnight tasks (all-day tasks with time component)
+            const aIsAllDayUtc = a.due.endsWith('T00:00:00Z') || a.due.endsWith('T00:00:00.000Z');
+            const bIsAllDayUtc = b.due.endsWith('T00:00:00Z') || b.due.endsWith('T00:00:00.000Z');
+            
+            const aIsAllDay = !a.due.includes('T') || aIsAllDayUtc;
+            const bIsAllDay = !b.due.includes('T') || bIsAllDayUtc;
+            
+            // Sort all-day tasks to the bottom
+            if (aIsAllDay && !bIsAllDay) return 1;
+            if (!aIsAllDay && bIsAllDay) return -1;
+            
+            // Both are all-day or both are timed, so sort by due time
+            return a.due.localeCompare(b.due);
           });
           
           for (const task of dateTasksSorted) {
-            const time = task.due.includes('T') 
-              ? DateTime.fromISO(task.due).toFormat("HH:mm")
-              : "All-day";
+            // Check if task is an all-day UTC midnight task
+            const isAllDayUtc = task.due.endsWith('T00:00:00Z') || task.due.endsWith('T00:00:00.000Z');
+            const isAllDay = !task.due.includes('T') || isAllDayUtc;
+            
+            const time = isAllDay ? "All-day" : DateTime.fromISO(task.due).toFormat("HH:mm");
             
             const idPart = opts.showIds ? ` [${task.id}]` : "";
             const statusIcon = task.status === 'needsAction' ? '□' : '✓';

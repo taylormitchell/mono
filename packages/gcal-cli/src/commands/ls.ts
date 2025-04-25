@@ -40,25 +40,25 @@ export function lsCmd(): Command {
       let timeMin: string | undefined;
       let timeMax: string | undefined;
       const now = new Date();
-      
+
       if (opts.thisWeek) {
         // Find the Monday of current week
-        const currentWeekStart = DateTime.fromJSDate(now).startOf('week');
+        const currentWeekStart = DateTime.fromJSDate(now).startOf("week");
         timeMin = toRFC3339(currentWeekStart.toJSDate());
-        timeMax = toRFC3339(currentWeekStart.plus({ days: 6 }).endOf('day').toJSDate());
+        timeMax = toRFC3339(currentWeekStart.plus({ days: 6 }).endOf("day").toJSDate());
       } else if (opts.nextWeek) {
         // Find the Monday of next week
-        const nextWeekStart = DateTime.fromJSDate(now).startOf('week').plus({ weeks: 1 });
+        const nextWeekStart = DateTime.fromJSDate(now).startOf("week").plus({ weeks: 1 });
         timeMin = toRFC3339(nextWeekStart.toJSDate());
-        timeMax = toRFC3339(nextWeekStart.plus({ days: 6 }).endOf('day').toJSDate());
+        timeMax = toRFC3339(nextWeekStart.plus({ days: 6 }).endOf("day").toJSDate());
       } else if (opts.after || opts.before) {
         // When --before is specified without --after, default --after to now
-        const after = opts.after ? parseNatural(opts.after) : (opts.before ? now : undefined);
+        const after = opts.after ? parseNatural(opts.after) : opts.before ? now : undefined;
         const before = opts.before ? parseNatural(opts.before) : undefined;
-        
+
         if (after) timeMin = toRFC3339(after);
         if (before) timeMax = toRFC3339(before);
-        
+
         // If user gave only one bound, default the other appropriately
         if (!timeMin && timeMax) {
           timeMin = toRFC3339(now);
@@ -113,80 +113,67 @@ export function lsCmd(): Command {
       // Filter out birthday events
       const events = evtsArr
         .flat()
-        .filter(e => !(e.summary || "").toLowerCase().includes("birthday"));
+        .filter((e) => !(e.summary || "").toLowerCase().includes("birthday"));
       const tlist = await listTasks(tasks, "@default", timeMax!);
-      const tasksFiltered = tlist.filter((t) => {
-        if (!t.due) return false;
-        const dueDate = DateTime.fromISO(t.due);
-        return (
-          toRFC3339(dueDate.toJSDate()) >= timeMin! &&
-          toRFC3339(dueDate.toJSDate()) <= timeMax!
-        );
-      });
+      const tasksFiltered = tlist
+        .filter((t) => !!t.due)
+        .map((t) => ({ ...t, dueDate: t.due!.split("T")[0] }))
+        .filter((t) => {
+          const dueDate = DateTime.fromISO(t.dueDate);
+          return (
+            toRFC3339(dueDate.toJSDate()) >= timeMin! && toRFC3339(dueDate.toJSDate()) <= timeMax!
+          );
+        });
 
-      type Item =
-        | {
-            id: string;
-            type: "event";
-            summary: string;
-            start: string;
-            allday: boolean;
-          }
-        | {
-            id: string;
-            type: "task";
-            title: string;
-            due: string;
-            timed: boolean;
-          };
-      const items: Item[] = [];
-      for (const e of events) {
+      // Filter by contains if needed
+      const cont = opts.contains ? opts.contains.toLowerCase() : null;
+
+      // Process events
+      let filteredEvents = events.map((e) => {
         const allday = !!e.start?.date && !e.start.dateTime;
         const start = e.start?.dateTime ?? e.start?.date!;
-        items.push({
+        return {
           id: e.id!,
-          type: "event",
           summary: e.summary || "(no title)",
           start,
           allday,
-        });
-      }
-      for (const t of tasksFiltered) {
-        const timed = t.due.includes("T");
-        items.push({
-          id: t.id!,
-          type: "task",
-          title: t.title || "(untitled task)",
-          due: t.due!,
-          timed,
-        });
-      }
-      items.sort((a, b) => {
-        const ta = a.type === "event" ? a.start : a.due;
-        const tb = b.type === "event" ? b.start : b.due;
-        return ta.localeCompare(tb);
+        };
       });
 
-      const cont = opts.contains ? opts.contains.toLowerCase() : null;
-      const finalItems = cont
-        ? items.filter((it) => {
-            const text = it.type === "event" ? it.summary : it.title;
-            return text.toLowerCase().includes(cont);
-          })
-        : items;
+      // Filter events if contains is specified
+      if (cont) {
+        filteredEvents = filteredEvents.filter((e) => e.summary.toLowerCase().includes(cont));
+      }
+
+      // Sort events by date/time
+      filteredEvents.sort((a, b) => {
+        return a.start.localeCompare(b.start);
+      });
+
+      // Process tasks
+      let filteredTasks = tasksFiltered;
+
+      // Filter tasks if contains is specified
+      if (cont) {
+        filteredTasks = filteredTasks.filter((t) => (t.title || "").toLowerCase().includes(cont));
+      }
 
       console.log();
-      for (const it of finalItems) {
-        if (it.type === "event") {
-          const time = fmt(it.start, it.allday);
-          const idPart = opts.showIds ? ` (${it.id})` : "";
-          console.log(`${time}  ${it.summary}${idPart}`);
-        } else {
-          const time = fmt(it.due, !it.timed);
-          const idPart = opts.showIds ? ` (${it.id})` : "";
-          console.log(`${time}  · [ ] ${it.title}${idPart}`);
-        }
+
+      // Display events first
+      for (const e of filteredEvents) {
+        const time = fmt(e.start, e.allday);
+        const idPart = opts.showIds ? ` (${e.id})` : "";
+        console.log(`${time}  ${e.summary}${idPart}`);
       }
+
+      // Display tasks second (always after events)
+      for (const t of filteredTasks) {
+        const time = fmt(t.due!, false);
+        const idPart = opts.showIds ? ` (${t.id})` : "";
+        console.log(`${time}  · [ ] ${t.title || "(untitled task)"}${idPart}`);
+      }
+
       console.log();
     });
   return cmd;

@@ -57,20 +57,20 @@ export function agendaCmd(): Command {
       let timeMin: string | undefined;
       let timeMax: string | undefined;
       const now = new Date();
-      
+
       if (opts.thisWeek) {
         // Find the Monday of current week
-        const currentWeekStart = DateTime.fromJSDate(now).startOf('week');
+        const currentWeekStart = DateTime.fromJSDate(now).startOf("week");
         timeMin = toRFC3339(currentWeekStart.toJSDate());
-        timeMax = toRFC3339(currentWeekStart.plus({ days: 6 }).endOf('day').toJSDate());
+        timeMax = toRFC3339(currentWeekStart.plus({ days: 6 }).endOf("day").toJSDate());
       } else if (opts.nextWeek) {
         // Find the Monday of next week
-        const nextWeekStart = DateTime.fromJSDate(now).startOf('week').plus({ weeks: 1 });
+        const nextWeekStart = DateTime.fromJSDate(now).startOf("week").plus({ weeks: 1 });
         timeMin = toRFC3339(nextWeekStart.toJSDate());
-        timeMax = toRFC3339(nextWeekStart.plus({ days: 6 }).endOf('day').toJSDate());
+        timeMax = toRFC3339(nextWeekStart.plus({ days: 6 }).endOf("day").toJSDate());
       } else if (opts.after || opts.before) {
         // When --before is specified without --after, default --after to now
-        const after = opts.after ? parseNatural(opts.after) : (opts.before ? now : undefined);
+        const after = opts.after ? parseNatural(opts.after) : opts.before ? now : undefined;
         const before = opts.before ? parseNatural(opts.before) : undefined;
 
         if (after) timeMin = toRFC3339(after);
@@ -131,23 +131,13 @@ export function agendaCmd(): Command {
       // Filter out birthday events (e.g., Contacts birthdays)
       const evts = evtsArr
         .flat()
-        .filter(e => !(e.summary || "").toLowerCase().includes("birthday"));
+        .filter((e) => !(e.summary || "").toLowerCase().includes("birthday"));
       const tlist = await listTasks(tasks, "@default", timeMax);
 
-      // 3. Split tasks: timed vs. untimed ----------------------------------
-      const timedTasks: any[] = [];
-      const untimedTasks: any[] = [];
-      for (const t of tlist) {
-        if (!t.due) continue;
-        // Google uses full‑day tasks with "YYYY‑MM‑DD" (no 'T')
-        if (t.due.includes("T")) timedTasks.push(t);
-        else untimedTasks.push(t);
-      }
-
       // 4. Merge events + timed tasks -------------------------------------
-      type Item =
-        | { type: "event"; id: string; summary: string; start: string; allday: boolean }
-        | { type: "task"; id: string; title: string; due: string };
+      type Event = { type: "event"; id: string; summary: string; start: string; allday: boolean };
+      type Task = { type: "task"; id: string; title: string; dueDate: string };
+      type Item = Event | Task;
 
       const items: Item[] = [];
 
@@ -162,42 +152,41 @@ export function agendaCmd(): Command {
         });
       }
 
-      for (const t of timedTasks) {
+      for (const t of tlist) {
+        // For tasks, always treat as a date only - ignore time components
+        // Extract just the date part (YYYY-MM-DD) from the due string
+        const dueDate = t.due?.split("T")[0];
+        if (!dueDate) continue;
+
         items.push({
           type: "task",
           id: t.id!,
           title: t.title ?? "(untitled task)",
-          due: t.due!,
+          dueDate: dueDate, // Store just the date part
         });
       }
 
-      // Sort by start/due time
-      items.sort((a, b) => {
-        const ta = a.type === "event" ? a.start : a.due;
-        const tb = b.type === "event" ? b.start : b.due;
-        return ta.localeCompare(tb);
-      });
-
       // 5. Render ----------------------------------------------------------
       console.log();
-      
+
       // Group items by day
       const itemsByDay: Record<string, Item[]> = {};
-      
+
       for (const item of items) {
-        const date = item.type === "event" 
-          ? DateTime.fromISO(item.start).startOf('day').toISO()
-          : DateTime.fromISO(item.due).startOf('day').toISO();
-        
+        const date =
+          item.type === "event"
+            ? DateTime.fromISO(item.start).startOf("day").toISO()?.split("T")[0]
+            : item.dueDate;
+
         if (!date) continue;
-        
+
         if (!itemsByDay[date]) {
           itemsByDay[date] = [];
         }
-        
+
         itemsByDay[date].push(item);
       }
-      
+
       // Find the maximum length of event summaries to align IDs
       const maxLength = items.reduce((max, it) => {
         const text = it.type === "event" ? it.summary : it.title;
@@ -209,33 +198,31 @@ export function agendaCmd(): Command {
         // Print date header
         console.log(formatDateHeader(date));
         console.log("─".repeat(formatDateHeader(date).length));
-        
-        for (const it of itemsByDay[date]) {
-          if (it.type === "event") {
-            const paddedSummary = it.summary.padEnd(maxLength);
-            const idPart = opts.showIds ? ` [${it.id}]` : "";
-            console.log(`${fmt(it.start, it.allday)}  ${paddedSummary}${idPart}`);
-          } else {
-            const paddedTitle = it.title.padEnd(maxLength);
-            const idPart = opts.showIds ? ` [${it.id}]` : "";
-            console.log(`${fmt(it.due)}  · [ ] ${paddedTitle}${idPart}`);
-          }
-        }
-        
-        console.log(); // Add space between days
-      }
 
-      // Display untimed tasks at the end
-      if (untimedTasks.length) {
-        console.log("Untimed Tasks");
-        console.log("─".repeat(12));
-        
-        for (const t of untimedTasks) {
-          const due = DateTime.fromISO(t.due).toFormat("yyyy‑LL‑dd");
-          const idPart = opts.showIds ? ` [${t.id}]` : "";
-          console.log(`• [ ] ${t.title}${idPart}  (due ${due})`);
+        const events: Event[] = itemsByDay[date]
+          .filter((it) => it.type === "event")
+          .sort((a, b) => {
+            if (a.allday && !b.allday) return 1;
+            if (!a.allday && b.allday) return -1;
+            return a.start.localeCompare(b.start);
+          });
+
+        const tasks: Task[] = itemsByDay[date].filter((it) => it.type === "task");
+
+        for (const it of events) {
+          const paddedSummary = it.summary.padEnd(maxLength);
+          const idPart = opts.showIds ? ` [${it.id}]` : "";
+          console.log(`${fmt(it.start, it.allday)}  ${paddedSummary}${idPart}`);
         }
-        console.log();
+
+        for (const it of tasks) {
+          // For tasks, don't show a time - they go at the bottom of each day
+          const paddedTitle = it.title.padEnd(maxLength);
+          const idPart = opts.showIds ? ` [${it.id}]` : "";
+          console.log(`[ ] ${paddedTitle}${idPart}`);
+        }
+
+        console.log(); // Add space between days
       }
     });
 

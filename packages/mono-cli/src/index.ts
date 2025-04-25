@@ -28,10 +28,11 @@ const toTimestampWithTimezone = (date: Date): string => {
 };
 
 // Load config
-const CONFIG_FILE = path.join(os.homedir(), ".monorc.json");
+const CONFIG_FILE = path.join(os.homedir(), ".myrc.json");
 const configSchema = z.object({
   rootDir: z.string(),
   defaultEditor: z.string().default("cursor"),
+  notesDir: z.string().default(path.join(os.homedir(), "Code/notes/notes")),
 });
 if (!fs.existsSync(CONFIG_FILE)) {
   throw new Error(`No config file at: ${CONFIG_FILE}`);
@@ -48,7 +49,7 @@ const packagesDir = path.join(config.rootDir, "packages");
 // Create a new Command instance
 const program = new Command();
 
-program.name("mono").description("CLI tool for managing a personal monorepo");
+program.name("my").description("CLI tool for managing a personal monorepo");
 
 program
   .command("script")
@@ -57,8 +58,8 @@ program
     "<type>",
     `Type of script to create
     Examples:
-    - mono script js -> 2025-03-23-15-48-35-0400.js
-    - mono script sh -> 2025-03-23-15-48-35-0400.sh
+    - my script js -> 2025-03-23-15-48-35-0400.js
+    - my script sh -> 2025-03-23-15-48-35-0400.sh
     `
   )
   .action((type: string) => {
@@ -69,20 +70,46 @@ program
     const filename = `${toTimestampWithTimezone(new Date())}.${type}`;
     const filePath = path.join(scriptsDir, filename);
     fs.writeFileSync(filePath, "");
-    console.log(`Created ${filePath}`);
-    $`${config.defaultEditor} ${filePath}`;
+    console.log(filePath);
+  });
+
+program
+  .command("note")
+  .description("Create a new markdown note")
+  .argument("[filename]", "Name of the note file (optional)")
+  .option("-m, --message <message>", "Initial content of the note")
+  .action((filename?: string, options: { message?: string } = {}) => {
+    const notesDir = config.notesDir;
+    if (!fs.existsSync(notesDir)) {
+      fs.mkdirSync(notesDir, { recursive: true });
+    }
+    const noteFilename = filename || `${toTimestampWithTimezone(new Date())}.md`;
+    const filePath = path.join(notesDir, noteFilename);
+    fs.writeFileSync(filePath, options.message || "");
+    console.log(filePath);
   });
 
 program
   .command("root")
-  .description("Print the mono repo root directory")
+  .description("Print the my repo root directory")
   .action(() => {
     console.log(config.rootDir);
   });
 
 program
+  .command("packages")
+  .description("Commands for managing packages")
+  .addCommand(
+    new Command("ls").description("List all packages in the my repo").action(async () => {
+      fs.readdirSync(packagesDir)
+        .filter((dir) => fs.statSync(path.join(packagesDir, dir)).isDirectory())
+        .forEach((dir) => console.log(dir));
+    })
+  );
+
+program
   .command("list")
-  .description("List all packages in the monorepo")
+  .description("List all packages in the my repo")
   .action(async () => {
     fs.readdirSync(packagesDir)
       .filter((dir) => fs.statSync(path.join(packagesDir, dir)).isDirectory())

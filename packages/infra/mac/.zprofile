@@ -18,11 +18,35 @@ alias code="cursor"
 alias cal="bun --env-file $HOME/Code/mono/packages/gcal-cli/.env $HOME/Code/mono/packages/gcal-cli/index.ts"
 
 # mono-cli
-mono() {
+cli_path="$HOME/Code/mono/packages/mono-cli/index.ts"
+my() {
   if [ "$1" = "cd" ]; then
-    cd $(bun $HOME/Code/mono/packages/mono-cli/index.ts path $2)
+    if [ -z "$2" ]; then
+      cd $(bun $cli_path root)
+    else
+      cd $(bun $cli_path path $2)
+    fi
+  elif [ "$1" = "root" ]; then
+    cd $(bun $cli_path root)
+  elif [ "$1" = "script" ]; then
+    if [ "$TERM_PROGRAM" = "vscode" ]; then
+      code $(bun $cli_path script $2)
+    else
+      vim $(bun $cli_path script $2)
+    fi
+  elif [ "$1" = "note" ]; then
+    local note_path=$(bun $cli_path note ${@:2})
+    if [[ "$*" =~ " -m " ]]; then
+      echo $note_path
+    else
+      if [ "$TERM_PROGRAM" = "vscode" ]; then
+        code $note_path
+      else
+        vim $note_path
+      fi
+    fi
   else
-    bun $HOME/Code/mono/packages/mono-cli/index.ts "$@"
+    bun $cli_path "$@"
   fi
 }
 

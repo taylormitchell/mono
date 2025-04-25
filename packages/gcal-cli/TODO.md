@@ -1,10 +1,20 @@
 TODOs:
-- [x] By default, --after should be now. So if I so `gcal agenda --before '7 days'` itll give me to next week
-- [x] When in agenda view with multiple days, each day should have a human readable date above it which includes day of the week
-- [x] Add shortcuts --this-week and --next-week which shows the 7 days from Monday to Sunday in the current week or next week
-- [x] More ways to view todos. I'm not sure what this should be. Use judgement based on what you know todo apps should have.
-  - Added a new dedicated `gcal todo` command with various filtering options
-  - Supports filtering by time (today, tomorrow, this week, next week)
-  - Supports filtering by status (overdue, no due date, all)
-  - Groups tasks by date with clear date headers
-  - Shows tasks with and without due dates in separate sections
+
+- [x] I noticed that "all day" todos show up as 20:00. I'm guessing they have a UTC 0:00 time and then my local time is converted to that. If it's an all day todo, I don't want to see it with a time at all. I want the todos placed at the bottom without a time.
+```
+gcal-cli % gcal agenda
+
+Fri, Apr 18, 2025
+─────────────────
+20:00  · [ ] Try on suit
+20:00  · [ ] Play with keyboard
+
+Sat, Apr 19, 2025
+─────────────────
+09:00  Worked on ridge ring return and Ray's gift
+11:00  national judging course - day 1
+```
+
+- [ ] When I click on a TODO and complete it, have it update the cache. Actually, I think I need a config approach where my various CLI projects (this one, `p`, etc) have a common config management system.
+
+- [ ] Create a bash helper script for `gcal` and `p`. For example, I have a system I run called "OG" (operational goals) and "OG Week x", which is a doc with my current projects. I'd like to create a concept of a "sprint" which is 1-2 weeks. Then have a command like `gcal sprint start` which creates a series of todos and events for the sprint. This is getting a bit specific to me. But I'd like "gcal" and "p" to know if I'm in a sprint, and show me my sprint stats from the CLI.
