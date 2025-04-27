@@ -42,7 +42,7 @@ export default function Sidebar({
   if (!lists) return null;
 
   return (
-    <div className="w-64 bg-white dark:bg-gray-900 p-4 border-r border-gray-200 dark:border-gray-800 h-screen">
+    <div className="w-64 bg-white dark:bg-gray-900 p-4 border-r border-gray-200 dark:border-gray-800 h-full overflow-y-auto flex flex-col">
       {/* Lists list */}
       <div className="mb-4">
         <h2 className="text-sm font-medium uppercase tracking-wider text-gray-500 mb-2">Lists</h2>

@@ -199,31 +199,33 @@ export default function TaskListView({
   const completedTasks = filteredTasks.filter((task) => task.status === "completed");
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-md shadow overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-md shadow overflow-hidden flex flex-col h-full">
       {view.type === "list" && <TaskAddRow listId={view.id} onAddTask={handleAddTask} />}
 
-      {activeTasks.length === 0 ? (
-        <div className="p-6 text-center text-gray-500">
-          {filterText ? "No matching tasks" : "No tasks in this list"}
-        </div>
-      ) : (
-        <div>
-          {activeTasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onToggleComplete={handleToggleComplete}
-              onEdit={handleEditTask}
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto">
+        {activeTasks.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            {filterText ? "No matching tasks" : "No tasks in this list"}
+          </div>
+        ) : (
+          <div>
+            {activeTasks.map((task) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                onToggleComplete={handleToggleComplete}
+                onEdit={handleEditTask}
+              />
+            ))}
+          </div>
+        )}
 
-      <CompletedAccordion
-        tasks={completedTasks}
-        onToggleComplete={handleToggleComplete}
-        onEdit={handleEditTask}
-      />
+        <CompletedAccordion
+          tasks={completedTasks}
+          onToggleComplete={handleToggleComplete}
+          onEdit={handleEditTask}
+        />
+      </div>
     </div>
   );
 }
