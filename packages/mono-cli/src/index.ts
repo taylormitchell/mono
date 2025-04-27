@@ -39,6 +39,54 @@ const toTimestampWithTimezone = (date: Date): string => {
   return `${year}-${month}-${day}-${hour}-${minute}-${second}${sign}${hours}${minutes}`;
 };
 
+/**
+ * Generates a prompt for note analysis from git diff
+ */
+const getNotesAnalysisPrompt = async (days: string = "1"): Promise<string> => {
+  const prompt = `
+Please analyze the following git diff of my personal notes from the last {{N}} days and provide a concise, bulleted summary.
+
+The command used to generate this diff was \`git diff --unified=10000\` so it includes most if not all of the file contents.
+
+\`\`\`
+{{DIFF}}
+\`\`\`
+
+Focus on these key areas:
+
+## Key Information
+- Important concepts, ideas, or information captured
+- Notable patterns or connections between topics
+
+## People
+- Information about people in my life, be it important or just fun tidbits
+
+## Questions and Uncertainties
+- Explicitly noted questions
+- Areas needing further exploration
+
+## Action Items
+- New TODOs created
+- Next steps based on notes
+- Mentioned deadlines
+
+Notes:
+- Ignore deleted TODOs or other removed content
+- Don't repeat items already listed in my log
+- Format your response using Markdown
+`;
+
+  try {
+    const res =
+      await $`cd ${config.notesDir} && git diff --unified=10000 HEAD@{${days}.day.ago}`.quiet();
+    const text = res.text();
+    return prompt.replace("{{N}}", days).replace("{{DIFF}}", text);
+  } catch (error) {
+    console.error("Error getting git diff:", error);
+    return "Error occurred while retrieving git diff.";
+  }
+};
+
 // System prompt to instruct the model
 const requestCommandPrompt = `
 You are a command line assistant. Convert natural language descriptions into the appropriate command line commands.
@@ -143,6 +191,19 @@ program
   });
 
 program
+  .command("notes")
+  .description("Commands for managing notes")
+  .addCommand(
+    new Command("diff")
+      .description("Get a summary of your notes changes in the last N days")
+      .argument("[days]", "Number of days to analyze", "1")
+      .action(async (days: string) => {
+        const prompt = await getNotesAnalysisPrompt(days);
+        console.log(prompt);
+      })
+  );
+
+program
   .command("root")
   .description("Print the my repo root directory")
   .action(() => {
@@ -171,15 +232,43 @@ program
 
 program
   .command("path")
-  .description("Get the full path of a package")
-  .argument("<name>", "Name of the package")
+  .description("Get the full path of a folder")
+  .argument("<name>", "Name of the folder")
   .action((name: string) => {
-    const packagePath = path.join(packagesDir, name);
-    if (!fs.existsSync(packagePath)) {
-      console.error(`Package '${name}' not found`);
-      process.exit(1);
+    // Check if it's the notes directory
+    if (name === "notes") {
+      console.log(config.notesDir);
+      return;
     }
-    console.log(packagePath);
+
+    if (name === "mono") {
+      console.log(config.rootDir);
+      return;
+    }
+
+    // Check packages directory first
+    const packagePath = path.join(packagesDir, name);
+    if (fs.existsSync(packagePath) && fs.statSync(packagePath).isDirectory()) {
+      console.log(packagePath);
+      return;
+    }
+
+    // Check root directory
+    const rootPath = path.join(config.rootDir, name);
+    if (fs.existsSync(rootPath) && fs.statSync(rootPath).isDirectory()) {
+      console.log(rootPath);
+      return;
+    }
+
+    // Check notes directory
+    const notesPath = path.join(config.notesDir, name);
+    if (fs.existsSync(notesPath) && fs.statSync(notesPath).isDirectory()) {
+      console.log(notesPath);
+      return;
+    }
+
+    console.error(`Folder '${name}' not found`);
+    process.exit(1);
   });
 
 program
