@@ -1,0 +1,62 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  height: 100vh;
+}
+.sidebar {
+  width: 220px;
+  padding: 1rem;
+  background: #f5f5f5;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+}
+main {
+  flex: 1;
+  padding: 1rem 2rem;
+  overflow-y: auto;
+}
+
+/* Lists & tags */
+.lists li.active > a,
+.tags li.active > a {
+  font-weight: 600;
+}
+
+/* Tasks */
+.tasks {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+.task {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.task.done .title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Forms */
+form.inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.add {
+  display: flex;
+  gap: 0.5rem;
+}
+
+input[type="text"],
+input[type="date"] {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+button {
+  padding: 0.25rem 0.75rem;
+}
