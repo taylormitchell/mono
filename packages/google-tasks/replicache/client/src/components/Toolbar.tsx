@@ -1,25 +1,33 @@
-type ToolbarProps = {
-  filterText: string;
-  setFilterText: (text: string) => void;
-  selectedListId: string | null;
-  selectedTag: string | null;
-  listTitle?: string;
-};
+import type { ViewSelection } from "../types";
+import { useSubscribe } from "replicache-react";
+import { rep } from "../replicache";
+import { getList } from "../mutators";
+import { getViewId } from "../utils";
 
 export default function Toolbar({
   filterText,
   setFilterText,
-  selectedListId,
-  selectedTag,
-  listTitle,
-}: ToolbarProps) {
-  // Get title for the current view
-  let title = "All Tasks";
-  if (selectedListId && listTitle) {
-    title = listTitle;
-  } else if (selectedTag) {
-    title = `#${selectedTag}`;
-  }
+  view,
+}: {
+  filterText: string;
+  setFilterText: (text: string) => void;
+  view: ViewSelection;
+}) {
+  const viewId = getViewId(view);
+  const title = useSubscribe(
+    rep,
+    async (tx) => {
+      if (view.type === "all") {
+        return "All Tasks";
+      } else if (view.type === "list") {
+        const list = await getList(tx, view.id);
+        return list?.title ?? "Untitled List";
+      } else if (view.type === "tag") {
+        return `#${view.id}`;
+      }
+    },
+    { default: "", dependencies: [viewId] }
+  );
 
   return (
     <div className="flex items-center justify-between mb-4">

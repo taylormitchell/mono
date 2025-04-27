@@ -18,6 +18,10 @@ npm run lint     # Run ESLint checks
 npm run preview  # Vite preview
 ```
 
+## Style Guide
+- Put function argument types in the function signature
+- Prefer large components over small components
+
 ## Working Guidelines
 1. Always check spec.md for requirements before implementing features
 2. Update todo.md as tasks are completed or new tasks are identified

@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { useSubscribe } from "replicache-react";
-
-type TaskItemProps = {
-  task: any;
+import { rep } from "../replicache";
+import type { Task, ViewSelection } from "../types";
+import { listTasks } from "../mutators";
+import { getViewId } from "../utils";
+const TaskItem = ({
+  task,
+  onToggleComplete,
+  onEdit,
+}: {
+  task: Task;
   onToggleComplete: (taskId: string, listId: string) => void;
   onEdit: (taskId: string) => void;
-};
-
-const TaskItem = ({ task, onToggleComplete, onEdit }: TaskItemProps) => {
+}) => {
   return (
     <div className="flex items-center p-3 border-b border-gray-200 dark:border-gray-700 group hover:bg-gray-50 dark:hover:bg-gray-800">
       <input
@@ -45,7 +50,7 @@ const TaskItem = ({ task, onToggleComplete, onEdit }: TaskItemProps) => {
 };
 
 type CompletedAccordionProps = {
-  tasks: any[];
+  tasks: Task[];
   onToggleComplete: (taskId: string, listId: string) => void;
   onEdit: (taskId: string) => void;
 };
@@ -141,17 +146,27 @@ const TaskAddRow = ({ listId, onAddTask }: TaskAddRowProps) => {
   );
 };
 
-type TaskListProps = {
-  selectedListId: string | null;
-  selectedTag: string | null;
+export default function TaskListView({
+  view,
+  filterText,
+}: {
+  view: ViewSelection;
   filterText: string;
-};
-
-export default function TaskList({ selectedListId, selectedTag, filterText }: TaskListProps) {
-  const tasks = useSubscribe<[string, any][]>((tx) =>
-    tx.scan({ prefix: "task/" }).entries().toArray()
+}) {
+  const viewId = getViewId(view);
+  const tasks = useSubscribe(
+    rep,
+    async (tx) => {
+      const tasks = await listTasks(tx);
+      if (view.type === "list") {
+        return tasks.filter((task) => task.listId === view.id);
+      } else if (view.type === "tag") {
+        return tasks.filter((task) => task.notes?.includes(`#${view.id}`));
+      }
+      return tasks;
+    },
+    { default: [] as Task[], dependencies: [viewId] }
   );
-
   const handleToggleComplete = (taskId: string, listId: string) => {
     // To be implemented with mutators later
     console.log("Toggle complete:", taskId, listId);
@@ -169,26 +184,13 @@ export default function TaskList({ selectedListId, selectedTag, filterText }: Ta
 
   if (!tasks) return <div className="p-4">Loading...</div>;
 
-  // Process tasks
-  const processedTasks = tasks.map(([_, task]) => task);
-
-  // Filter by list if selected
-  let filteredTasks = processedTasks;
-  if (selectedListId) {
-    filteredTasks = filteredTasks.filter((task) => task.listId === selectedListId);
-  }
-
-  // Filter by tag if selected
-  if (selectedTag) {
-    const tagRegex = new RegExp(`#${selectedTag}\\b`, "i");
-    filteredTasks = filteredTasks.filter((task) => tagRegex.test(task.notes || ""));
-  }
+  let filteredTasks = tasks;
 
   // Filter by text if provided
   if (filterText) {
     const searchRegex = new RegExp(filterText, "i");
     filteredTasks = filteredTasks.filter(
-      (task) => searchRegex.test(task.title) || searchRegex.test(task.notes || "")
+      (task) => searchRegex.test(task.title ?? "") || searchRegex.test(task.notes ?? "")
     );
   }
 
@@ -198,11 +200,11 @@ export default function TaskList({ selectedListId, selectedTag, filterText }: Ta
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-md shadow overflow-hidden">
-      {selectedListId && <TaskAddRow listId={selectedListId} onAddTask={handleAddTask} />}
+      {view.type === "list" && <TaskAddRow listId={view.id} onAddTask={handleAddTask} />}
 
       {activeTasks.length === 0 ? (
         <div className="p-6 text-center text-gray-500">
-          {filterText || selectedTag ? "No matching tasks" : "No tasks in this list"}
+          {filterText ? "No matching tasks" : "No tasks in this list"}
         </div>
       ) : (
         <div>

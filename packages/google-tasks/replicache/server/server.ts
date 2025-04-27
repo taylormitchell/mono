@@ -46,7 +46,9 @@ async function handlePull(req: Request, url: URL): Promise<Response> {
   }
 
   const lists = await listTaskLists();
-  const tasksArrays = await Promise.all(lists.map((l) => listTasks(l.id!)));
+  const tasksArrays = await Promise.all(
+    lists.map((l) => listTasks(l.id!).then((tasks) => tasks.map((t) => ({ listId: l.id, ...t }))))
+  );
   const tasks = tasksArrays.flat();
 
   const serverVersion = Math.max(nowMicros(), state.lastServerVersion + 1);
@@ -62,7 +64,7 @@ async function handlePull(req: Request, url: URL): Promise<Response> {
   const respBody = {
     cookie: serverVersion,
     lastMutationIDChanges: {
-      [clientID]: state.lastMutationIDByClient[clientID] ?? 0
+      [clientID]: state.lastMutationIDByClient[clientID] ?? 0,
     },
     patch,
   };
@@ -71,7 +73,7 @@ async function handlePull(req: Request, url: URL): Promise<Response> {
   pullCache.data = (st: typeof state, id: string) => ({
     cookie: serverVersion,
     lastMutationIDChanges: {
-      [id]: st.lastMutationIDByClient[id] ?? 0
+      [id]: st.lastMutationIDByClient[id] ?? 0,
     },
     patch,
   });
