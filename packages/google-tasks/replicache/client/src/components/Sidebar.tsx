@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { useSubscribe } from "replicache-react";
 import { rep } from "../replicache";
-import { listLists, listTasks } from "../mutators";
-import type { Task, TaskList, ViewSelection } from "../types";
+import { listLists, listTasks } from "../replicache";
+import type { ViewSelection } from "../types";
+import type { Task, TaskList } from "../../../shared/types";
 
 export default function Sidebar({
   view,
@@ -13,18 +15,20 @@ export default function Sidebar({
   const lists = useSubscribe(rep, listLists, { default: [] as TaskList[] });
   const tasks = useSubscribe(rep, listTasks, { default: [] as Task[] });
 
-  const tags = tasks
-    ? Array.from(
-        new Set(
-          tasks
-            .map((task) => {
-              const matches = task.notes?.match(/#(\w+)/g) || [];
-              return matches.map((tag: string) => tag.substring(1));
-            })
-            .flat()
-        )
-      ).sort()
-    : [];
+  const tags = useMemo(() => {
+    return tasks
+      ? Array.from(
+          new Set(
+            tasks
+              .map((task) => {
+                const matches = task.notes?.match(/#(\S+)/g) || [];
+                return matches.map((tag: string) => tag.substring(1));
+              })
+              .flat()
+          )
+        ).sort()
+      : [];
+  }, [tasks]);
 
   const handleSelectList = (listId: string) => {
     setView({ type: "list", id: listId });
@@ -34,15 +38,23 @@ export default function Sidebar({
     setView({ type: "tag", id: tag });
   };
 
-  const handleCreateList = () => {
-    // To be implemented with mutators later
-    console.log("Create new list");
-  };
-
-  if (!lists) return null;
-
   return (
     <div className="w-64 bg-white dark:bg-gray-900 p-4 border-r border-gray-200 dark:border-gray-800 h-full overflow-y-auto flex flex-col">
+      <div className="mb-4">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-gray-500 mb-2">Views</h2>
+        <ul className="space-y-1">
+          <li
+            className={`px-3 py-2 rounded-md cursor-pointer ${
+              view.type === "all"
+                ? "bg-blue-100 dark:bg-blue-900"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+            onClick={() => setView({ type: "all" })}
+          >
+            All Tasks
+          </li>
+        </ul>
+      </div>
       {/* Lists list */}
       <div className="mb-4">
         <h2 className="text-sm font-medium uppercase tracking-wider text-gray-500 mb-2">Lists</h2>
@@ -81,23 +93,26 @@ export default function Sidebar({
           ))}
         </ul>
       </div>
-      {/* List actions */}
-      <div className="mt-4">
-        <button
-          onClick={handleCreateList}
-          className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <svg
-            className="h-5 w-5 mr-2"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      {/* Debug controls */}
+      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-gray-500 mb-2">Debug</h2>
+        <div className="space-y-2">
+          <button
+            onClick={() => rep.pull()}
+            className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New List
-        </button>
+            Pull
+          </button>
+          <button
+            onClick={() => {
+              indexedDB.deleteDatabase(rep.idbName);
+              window.location.reload();
+            }}
+            className="w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
+          >
+            Reset
+          </button>
+        </div>
       </div>
     </div>
   );

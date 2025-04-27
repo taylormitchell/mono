@@ -1,6 +1,8 @@
 import { serve } from "bun";
 import { listTaskLists, listTasks } from "./google";
 import { loadState, saveState, nowMicros } from "./state";
+import { processMutations } from "./mutations";
+import { PushRequestV1 } from "replicache";
 
 const port = 3001;
 const pullCache: { data: any; expires: number } = { data: null, expires: 0 };
@@ -22,14 +24,20 @@ serve({
       return new Response(null, { headers });
     }
 
+    let res;
     if (url.pathname === "/pull") {
-      const res = await handlePull(req, url);
-      Object.entries(headers).forEach(([key, value]) => {
-        res.headers.set(key, value);
-      });
-      return res;
+      res = await handlePull(req, url);
+    } else if (url.pathname === "/push") {
+      res = await handlePush(req);
+    } else {
+      return new Response("Not Found", { status: 404 });
     }
-    return new Response("Not Found", { status: 404 });
+
+    // Add CORS headers to the response
+    Object.entries(headers).forEach(([key, value]) => {
+      res.headers.set(key, value);
+    });
+    return res;
   },
 });
 
@@ -77,9 +85,39 @@ async function handlePull(req: Request, url: URL): Promise<Response> {
     },
     patch,
   });
-  pullCache.expires = Date.now() + 30_000;
+  // pullCache.expires = Date.now() + 30_000;
+  pullCache.expires = Date.now() + 3_000;
 
   return json(respBody);
+}
+
+async function handlePush(req: Request): Promise<Response> {
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = await req.json();
+    const { mutations } = body as PushRequestV1;
+
+    if (!Array.isArray(mutations)) {
+      return new Response("Invalid request body", { status: 400 });
+    }
+
+    // Invalidate pull cache since state will change
+    pullCache.data = null;
+    pullCache.expires = 0;
+
+    // Process mutations and update state
+    const result = await processMutations(mutations);
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+  } catch (e) {
+    console.error("Error processing push:", e);
+  }
+  return new Response(null, { status: 200 });
 }
 
 function json(data: any): Response {

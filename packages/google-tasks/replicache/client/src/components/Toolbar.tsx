@@ -1,7 +1,7 @@
 import type { ViewSelection } from "../types";
 import { useSubscribe } from "replicache-react";
 import { rep } from "../replicache";
-import { getList } from "../mutators";
+import { getList } from "../replicache";
 import { getViewId } from "../utils";
 
 export default function Toolbar({

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { rep } from "../replicache";
-import type { Task, ViewSelection } from "../types";
-import { listTasks } from "../mutators";
-import { getViewId } from "../utils";
+import type { ViewSelection } from "../types";
+import type { Task } from "../../../shared/types";
+import { listTasks } from "../replicache";
+import { generateId, getViewId } from "../utils";
 const TaskItem = ({
   task,
   onToggleComplete,
@@ -96,18 +97,22 @@ const CompletedAccordion = ({ tasks, onToggleComplete, onEdit }: CompletedAccord
   );
 };
 
-type TaskAddRowProps = {
-  listId: string;
-  onAddTask: (title: string, listId: string) => void;
-};
-
-const TaskAddRow = ({ listId, onAddTask }: TaskAddRowProps) => {
+const TaskAddRow = ({ view }: { view: ViewSelection }) => {
   const [title, setTitle] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      onAddTask(title.trim(), listId);
+      try {
+        await rep.mutate.createTask({
+          id: generateId(),
+          listId: view.type === "list" ? view.id : undefined,
+          title,
+          notes: view.type === "tag" ? `#${view.id}` : "",
+        });
+      } catch (err) {
+        console.error("Error adding task:", err);
+      }
       setTitle("");
     }
   };
@@ -167,19 +172,24 @@ export default function TaskListView({
     },
     { default: [] as Task[], dependencies: [viewId] }
   );
-  const handleToggleComplete = (taskId: string, listId: string) => {
-    // To be implemented with mutators later
-    console.log("Toggle complete:", taskId, listId);
+  const handleToggleComplete = async (taskId: string) => {
+    try {
+      const task = tasks.find((task) => task.id === taskId);
+      if (task) {
+        await rep.mutate.updateTask({
+          id: taskId,
+          status: task.status === "completed" ? "needsAction" : "completed",
+        });
+      }
+    } catch (err) {
+      console.error("Error toggling task status:", err);
+    }
   };
 
   const handleEditTask = (taskId: string) => {
-    // To be implemented with mutators later
+    // This would typically open a modal or inline form
+    // For now, just log it - this would be connected to a UI element later
     console.log("Edit task:", taskId);
-  };
-
-  const handleAddTask = (title: string, listId: string) => {
-    // To be implemented with mutators later
-    console.log("Add task:", title, "to list:", listId);
   };
 
   if (!tasks) return <div className="p-4">Loading...</div>;
@@ -200,8 +210,7 @@ export default function TaskListView({
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-md shadow overflow-hidden flex flex-col h-full">
-      {view.type === "list" && <TaskAddRow listId={view.id} onAddTask={handleAddTask} />}
-
+      <TaskAddRow view={view} />
       <div className="flex-1 overflow-y-auto">
         {activeTasks.length === 0 ? (
           <div className="p-6 text-center text-gray-500">

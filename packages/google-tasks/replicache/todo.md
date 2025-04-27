@@ -2,32 +2,33 @@
 
 ## Next Steps
 
-1. **Complete Server Implementation**
-   - Fix replicache push handler to match specification
-   - Finish Google OAuth implementation in server/google.ts
-   - Connect Google Tasks API to mutation handlers
-   - Implement additional server endpoints for OAuth flow
+1. **Enhance User Experience**
+   - Add proper task editing UI with form/modal
+   - Add due date picker for task creation/editing
+   - Implement toast notifications for mutations success/failure
+   - Add confirmation dialogs for destructive actions
 
-2. **Implement Replicache Mutators**
-   - Define mutator functions in client/src/mutators directory
-   - Connect mutators to UI components
-   - Implement optimistic updates for all operations
+2. **Complete Google OAuth Flow**
+   - Finish Google OAuth implementation in server/google.ts
+   - Implement additional server endpoints for OAuth flow
+   - Add user authentication state management
 
 3. **Improve Data Model & Type Safety**
-   - Define proper TypeScript types for Task and TaskList models
-   - Refactor components to use these types instead of 'any'
-   - Add validation for data from the Google Tasks API
+   - Further refine TypeScript types
+   - Add more robust validation for data from the Google Tasks API
+   - Add error boundaries and fallbacks
 
 4. **Polish UI Components**
-   - Add form validation for task creation/editing
+   - Add proper form validation for task creation/editing
    - Improve responsive design for mobile devices
-   - Add loading states and error handling
+   - Add loading states and progress indicators
    - Enhance accessibility features
+   - Add dark mode toggle
 
 5. **Testing and Deployment**
    - Add basic tests for core functionality
    - Set up deployment pipeline
-   - Add error reporting
+   - Add error reporting and monitoring
 
 ## Completed
 - ✅ Restructured project according to spec.md
@@ -43,10 +44,19 @@
    - ✅ Implemented dark mode with Tailwind
 - ✅ Added task filtering (tag-based and free-text search)
 - ✅ Set up basic Replicache configuration and hooks
+- ✅ Implemented mutation handling
+   - ✅ Added server-side push endpoint
+   - ✅ Implemented client-side mutators for all operations
+   - ✅ Connected mutators to UI components
+   - ✅ Added basic optimistic updates
+- ✅ Improved UI
+   - ✅ Fixed scrolling behavior
+   - ✅ Enhanced layout for better user experience
 
 ## Current Status
-- Project structure now matches the specification
+- Project structure matches the specification
 - Viewing functionality is implemented (lists, tasks, filtering, tags)
-- Server-side pull endpoint is working correctly
-- UI components are in place with basic styling
-- Next major task is to implement mutators for writing operations
+- Writing functionality is implemented (create/update/delete tasks and lists)
+- Basic mutations are working with optimistic updates
+- Server-side pull and push endpoints are working correctly
+- Next major task is to enhance the UX with proper forms and notifications
