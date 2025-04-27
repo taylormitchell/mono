@@ -163,12 +163,25 @@ export default function TaskListView({
     rep,
     async (tx) => {
       const tasks = await listTasks(tx);
+
       if (view.type === "list") {
         return tasks.filter((task) => task.listId === view.id);
       } else if (view.type === "tag") {
         return tasks.filter((task) => task.notes?.includes(`#${view.id}`));
+      } else if (view.type === "due-today") {
+        // Filter tasks due today
+        const today = new Date().toISOString().split("T")[0];
+
+        return tasks.filter((task) => {
+          if (!task.due) return false;
+          const dueDate = task.due.split("T")[0];
+          return dueDate === today;
+        });
+      } else if (view.type === "upcoming") {
+        return tasks
+          .filter((task) => task.due)
+          .sort((a, b) => new Date(a.due!).getTime() - new Date(b.due!).getTime());
       }
-      return tasks;
     },
     { default: [] as Task[], dependencies: [viewId] }
   );

@@ -7,6 +7,10 @@ export function getViewId(view: ViewSelection) {
     return view.type + "/" + view.id;
   } else if (view.type === "all") {
     return view.type;
+  } else if (view.type === "due-today") {
+    return view.type;
+  } else if (view.type === "upcoming") {
+    return view.type;
   } else {
     return view satisfies never;
   }

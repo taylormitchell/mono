@@ -19,6 +19,10 @@ export default function Toolbar({
     async (tx) => {
       if (view.type === "all") {
         return "All Tasks";
+      } else if (view.type === "due-today") {
+        return "Due Today";
+      } else if (view.type === "upcoming") {
+        return "Upcoming";
       } else if (view.type === "list") {
         const list = await getList(tx, view.id);
         return list?.title ?? "Untitled List";

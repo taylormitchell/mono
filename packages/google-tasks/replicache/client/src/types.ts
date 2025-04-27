@@ -9,4 +9,10 @@ export type ViewSelection =
     }
   | {
       type: "all";
+    }
+  | {
+      type: "due-today";
+    }
+  | {
+      type: "upcoming";
     };

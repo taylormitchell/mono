@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 
 google-personal-credentials.json
+data/*

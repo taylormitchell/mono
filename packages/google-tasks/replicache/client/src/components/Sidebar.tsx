@@ -53,6 +53,26 @@ export default function Sidebar({
           >
             All Tasks
           </li>
+          <li
+            className={`px-3 py-2 rounded-md cursor-pointer ${
+              view.type === "due-today"
+                ? "bg-blue-100 dark:bg-blue-900"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+            onClick={() => setView({ type: "due-today" })}
+          >
+            Due Today
+          </li>
+          <li
+            className={`px-3 py-2 rounded-md cursor-pointer ${
+              view.type === "upcoming"
+                ? "bg-blue-100 dark:bg-blue-900"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+            onClick={() => setView({ type: "upcoming" })}
+          >
+            Upcoming
+          </li>
         </ul>
       </div>
       {/* Lists list */}
