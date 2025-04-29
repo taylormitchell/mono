@@ -163,8 +163,9 @@ export default function TaskListView({
     rep,
     async (tx) => {
       const tasks = await listTasks(tx);
-
-      if (view.type === "list") {
+      if (view.type === "all") {
+        return tasks;
+      } else if (view.type === "list") {
         return tasks.filter((task) => task.listId === view.id);
       } else if (view.type === "tag") {
         return tasks.filter((task) => task.notes?.includes(`#${view.id}`));
@@ -181,6 +182,8 @@ export default function TaskListView({
         return tasks
           .filter((task) => task.due)
           .sort((a, b) => new Date(a.due!).getTime() - new Date(b.due!).getTime());
+      } else {
+        return view satisfies never;
       }
     },
     { default: [] as Task[], dependencies: [viewId] }
