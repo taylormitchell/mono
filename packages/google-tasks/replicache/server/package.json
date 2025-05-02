@@ -1,0 +1,12 @@
+{
+  "name": "google-tasks-server",
+  "version": "0.1.0",
+  "description": "Server for Google Tasks client",
+  "type": "module",
+  "scripts": {
+    "start": "bun run server.ts",
+    "dev": "bun run --watch server.ts"
+  },
+  "dependencies": {
+  }
+}
