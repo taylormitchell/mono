@@ -1,8 +1,12 @@
 #!/usr/bin/env bun
 import { program } from "commander";
 import chalk from "chalk";
-import { syncCommand } from "./src/commands/sync";
-import { loadConfig } from "./src/lib/config";
+import { syncCommand } from "./commands/sync";
+import { pathCommand } from "./commands/path";
+import { scriptCommand } from "./commands/script";
+import { cdCommand } from "./commands/cd";
+import { lsCommand } from "./commands/ls";
+import { loadConfig } from "./lib/config";
 
 // Create the program
 program
@@ -15,6 +19,10 @@ program
 
 // Register commands
 program.addCommand(syncCommand);
+program.addCommand(pathCommand);
+program.addCommand(scriptCommand);
+program.addCommand(cdCommand);
+program.addCommand(lsCommand);
 
 // Error handling for unknown commands
 program.on("command:*", () => {

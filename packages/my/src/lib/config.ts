@@ -91,7 +91,8 @@ export async function loadConfig(): Promise<MyConfig> {
 
     const configData = fs.readFileSync(CONFIG_PATH, "utf8");
     const parsedConfig = JSON.parse(configData);
-    return configSchema.parse(parsedConfig);
+    configInstance = configSchema.parse(parsedConfig);
+    return configInstance;
   } catch (error) {
     console.error("Error loading config:", error);
     throw error;

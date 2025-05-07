@@ -1,19 +1,20 @@
 # My CLI Refactoring Todo List
 
 ## Phase 1: Project Setup & Core Infrastructure
-- [ ] Setup basic project structure following plan
-- [ ] Configure TypeScript and Commander.js
-- [ ] Create config loader for `~/.config/my/config.json`
-- [ ] Setup shared utilities in `src/common/`
-- [ ] Create basic Git interaction service for sync command
+- [x] Setup basic project structure following plan
+- [x] Configure TypeScript and Commander.js
+- [x] Create config loader for `~/.config/my/config.json`
+- [x] Setup shared utilities in `src/common/`
+- [x] Replace custom Git service with simple-git
 
 ## Phase 2: Top-Level Commands Migration
-- [ ] Implement `my script` command
-- [ ] Implement `my path` command
-- [ ] Implement `my sync` command
-- [ ] Implement path resolution service for `cd` and `ls`
-- [ ] Implement `my cd` command
-- [ ] Implement `my ls` command
+- [x] Implement `my script` command
+- [x] Implement `my path` command
+- [x] Implement `my sync` command
+- [x] Implement path resolution service for `cd` and `ls`
+- [x] Implement `my cd` command
+- [x] Implement `my ls` command
+- [x] Create shell integration with index.sh
 
 ## Phase 3: Notes Management
 - [ ] Implement `my note create` command
@@ -58,7 +59,7 @@
 - [ ] Create release plan
 
 ## Phase 9: Migration & Release
-- [ ] Create shell wrapper for zsh/bash
+- [ ] Create installation instructions
 - [ ] Deprecation notices for old CLI tools
 - [ ] Final testing across all commands
 - [ ] Release v1.0
