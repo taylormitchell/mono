@@ -1,0 +1,92 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+
+/**
+ * Check if a path exists
+ */
+export function pathExists(filePath: string): boolean {
+  return fs.existsSync(filePath);
+}
+
+/**
+ * Ensure a directory exists, create it if it doesn't
+ */
+export function ensureDir(dirPath: string): void {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+}
+
+/**
+ * Get current date in YYYY-MM-DD format
+ */
+export function getFormattedDate(date?: Date): string {
+  const d = date || new Date();
+  return d.toISOString().split('T')[0];
+}
+
+/**
+ * Format a path for display or use
+ * Replaces home directory with ~
+ */
+export function formatPath(filePath: string): string {
+  const home = os.homedir();
+  if (filePath.startsWith(home)) {
+    return path.join('~', filePath.slice(home.length));
+  }
+  return filePath;
+}
+
+/**
+ * Expand ~ in path to home directory
+ */
+export function expandPath(filePath: string): string {
+  if (filePath.startsWith('~')) {
+    return path.join(os.homedir(), filePath.slice(1));
+  }
+  return filePath;
+}
+
+/**
+ * Print a message to stdout
+ */
+export function printMessage(message: string): void {
+  console.log(message);
+}
+
+/**
+ * Print an error message to stderr
+ */
+export function printError(message: string): void {
+  console.error(message);
+}
+
+/**
+ * Get date with offset
+ * @param offset Number of days to offset (positive or negative)
+ */
+export function getDateWithOffset(offset: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return date;
+}
+
+/**
+ * Parse date string or return offset date
+ * If input is a number, treats it as an offset
+ * If input is a date string, parses it
+ * Otherwise returns current date
+ */
+export function parseDate(input?: string | number): Date {
+  if (input === undefined) {
+    return new Date();
+  }
+  
+  if (typeof input === 'number') {
+    return getDateWithOffset(input);
+  }
+  
+  const date = new Date(input);
+  return isNaN(date.getTime()) ? new Date() : date;
+}
