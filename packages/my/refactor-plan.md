@@ -75,14 +75,20 @@ The `kb init`, `kb update`, `kb save`, and `kb status` commands related to git-b
     ```
     my/
     ├── src/
-    │   ├── commands/
-    │   │   ├── notes/    (for note subcommands like daily, weekly, etc.)
+    │   ├── cli/
+    │   │   ├── index.ts  (main CLI entry point, registers all commands)
+    │   │   ├── cd/       (for cd command)
+    │   │   ├── ls/       (for ls command)
+    │   │   ├── path/     (for path command)
+    │   │   ├── script/   (for script command)
+    │   │   ├── sync/     (for sync command)
+    │   │   ├── note/     (for note subcommands like create, daily, weekly, etc.)
     │   │   ├── todo/     (for Google Tasks integration)
     │   │   ├── calendar/ (for Google Calendar integration)
-    │   │   ├── ai/       (for AI integration)
-    │   │   └── ...
+    │   │   └── ai/       (for AI integration)
     │   ├── lib/ (shared utilities, types, config loader, git interaction for sync)
-    │   └── index.ts (main entry point, registers all commands)
+    │   └── services/ (service implementations like git, AI, etc.)
+    ├── index.sh (shell script that must be sourced for shell integration)
     ├── package.json
     ├── tsconfig.json
     ├── bun.lockb
@@ -94,26 +100,27 @@ The `kb init`, `kb update`, `kb save`, and `kb status` commands related to git-b
 1.  **Setup New Project**: Create the `my` project with the proposed structure.
 2.  **Shell Wrapper Consideration**: Throughout the migration, keep in mind that commands like `my cd`, `my script` (for opening in editor), and `my note create` (for opening) will rely on a shell wrapper. The TypeScript CLI's primary role for these is to compute and output the relevant path or information.
 3.  **Core Modules First**:
-    *   Migrate shared utilities (date handling, fs ops, config loader) to `my/src/common/`.
-    *   Develop/migrate Git interaction logic for `my sync` into `my/src/common/gitService.ts` (or similar).
-    *   Adapt OpenAI logic from `mono-cli` into `my/src/services/aiService.ts` and `my/src/commands/ai/`.
+    *   Migrate shared utilities (date handling, fs ops, config loader) to `my/src/lib/`.
+    *   Develop/migrate Git interaction logic for `my sync` into `my/src/services/gitService.ts` (or similar).
+    *   Adapt OpenAI logic from `mono-cli` into `my/src/services/aiService.ts` and `my/src/cli/ai/`.
 4.  **Migrate `mono-cli` features to Top-Level and `my note`**:
-    *   `script`, `root`, `path`, `packages ls` to `my/src/commands/top_level/`.
-    *   `note create` (if kept as `my note create`) or to `top_level`.
-    *   `notes diff` to `my/src/commands/notes/`.
+    *   `script` to `my/src/cli/script/`.
+    *   `path` to `my/src/cli/path/`.
+    *   `note create` to `my/src/cli/note/`.
+    *   `notes diff` to `my/src/cli/note/diff/`.
 5.  **Migrate `kb` features (Notes only)**:
-    *   Transfer note management (`daily`, `weekly`, `monthly`, `post`, `today`, `kb root` as `my note root`) to `my/src/commands/notes/`.
-    *   `kb tail` to `my/src/commands/notes/`.
+    *   Transfer note management (`daily`, `weekly`, `monthly`, `post`, `today`, `kb root` as `my note root`) to `my/src/cli/note/`.
+    *   `kb tail` to `my/src/cli/note/tail/`.
     *   Git-based metadata commands (`kb init, update, save, status`) and Markdown todo functionalities will *not* be migrated.
 6.  **Implement New Top-Level Commands**:
-    *   `my cd`: Logic for path resolution in `my/src/services/` and command in `top_level`.
-    *   `my ls`: Logic for path resolution/listing in `my/src/services/` and command in `top_level`.
-    *   `my sync`: Command in `top_level` using the git service.
+    *   `my cd`: Logic for path resolution in `my/src/services/` and command in `my/src/cli/cd/`.
+    *   `my ls`: Logic for path resolution/listing in `my/src/services/` and command in `my/src/cli/ls/`.
+    *   `my sync`: Command in `my/src/cli/sync/` using the git service.
 7.  **Migrate `gcal-cli` features**:
     *   Google API client setup to `my/src/services/googleClient.ts`.
-    *   Calendar commands to `my/src/commands/calendar/`.
-    *   Google Tasks commands to `my/src/commands/todo/`.
-8.  **Command Registration**: Wire up all commands in `my/src/index.ts`.
+    *   Calendar commands to `my/src/cli/calendar/`.
+    *   Google Tasks commands to `my/src/cli/todo/`.
+8.  **Command Registration**: Wire up all commands in `my/src/cli/index.ts`.
 9.  **Configuration Handling**: Implement the new config system using `~/.config/my/config.json`.
 10. **Testing**: Incrementally test, including interaction with a prototype shell wrapper.
 11. **Documentation**: Update/create README for `my` and document the shell wrapper requirements/example.

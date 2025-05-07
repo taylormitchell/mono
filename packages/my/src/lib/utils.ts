@@ -100,8 +100,14 @@ export function fn<
   Callback extends (arg1: z.output<ArgSchema>) => any
 >(arg: ArgSchema, cb: Callback) {
   return (input: z.input<ArgSchema>): ReturnType<Callback> => {
-    const parsed = arg.parse(input);
-    return cb.apply(cb, [parsed]);
+    try {
+      const parsed = arg.parse(input);
+      return cb.apply(cb, [parsed]);
+    } catch (error) {
+      console.error("Error parsing input:", input);
+      console.error(error);
+      throw error;
+    }
   };
 }
 /**

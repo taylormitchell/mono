@@ -4,7 +4,7 @@
 - **refactor-plan.md** - Contains the detailed plan for unifying CLI tools into a single `my` tool
 - **todo.md** - Keep track of todos and progress in this file
 - **index.sh** - Main entry point shell script that handles shell-specific operations
-- **index.ts** - TypeScript entry point for the CLI
+- **src/cli/index.ts** - TypeScript entry point for the CLI
 
 ## Code guidelines
 - Use Bun for runtime
@@ -19,7 +19,9 @@
 The CLI uses a hybrid approach for commands that need shell integration:
 
 1. **index.sh** - Main shell script entry point that:
-   - Handles commands that require shell capabilities (`cd`, opening files in editors)
+   - Needs to be sourced (not executed directly) to enable shell capabilities
+   - Provides the `_my` function that handles commands requiring shell capabilities 
+   - Handles commands that require shell integration (`cd`, opening files in editors)
    - Delegates to the TypeScript code for everything else
    - Manages the preferred editor selection
 
@@ -28,6 +30,11 @@ The CLI uses a hybrid approach for commands that need shell integration:
    - Don't try to do things that require shell capabilities directly
 
 This approach allows for proper directory changes and file opening while maintaining most logic in TypeScript.
+
+## Using the CLI During Development
+1. Source the shell script: `source ./index.sh`
+2. This makes the special function available during your shell session
+3. Use the function for all commands: `_my cd mono`, `_my script js`, etc.
 
 ## Reminders
 - Check todo.md regularly to track tasks and update progress
@@ -40,7 +47,7 @@ This approach allows for proper directory changes and file opening while maintai
 - Using Commander.js for CLI command parsing
 - Basic structure follows the refactor plan
 - Config file located at ~/.config/my/config.json
-- Command modules will be created in src/commands/
+- Command modules will be created in src/cli/commands/
 - Shared utilities in src/lib/
 - Services (like API clients) in src/services/
 
