@@ -1,6 +1,7 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
+import fs from "fs";
+import path from "path";
+import os from "os";
+import { ZodSchema, z } from "zod";
 
 /**
  * Check if a path exists
@@ -23,7 +24,7 @@ export function ensureDir(dirPath: string): void {
  */
 export function getFormattedDate(date?: Date): string {
   const d = date || new Date();
-  return d.toISOString().split('T')[0];
+  return d.toISOString().split("T")[0];
 }
 
 /**
@@ -33,7 +34,7 @@ export function getFormattedDate(date?: Date): string {
 export function formatPath(filePath: string): string {
   const home = os.homedir();
   if (filePath.startsWith(home)) {
-    return path.join('~', filePath.slice(home.length));
+    return path.join("~", filePath.slice(home.length));
   }
   return filePath;
 }
@@ -42,7 +43,7 @@ export function formatPath(filePath: string): string {
  * Expand ~ in path to home directory
  */
 export function expandPath(filePath: string): string {
-  if (filePath.startsWith('~')) {
+  if (filePath.startsWith("~")) {
     return path.join(os.homedir(), filePath.slice(1));
   }
   return filePath;
@@ -82,11 +83,24 @@ export function parseDate(input?: string | number): Date {
   if (input === undefined) {
     return new Date();
   }
-  
-  if (typeof input === 'number') {
+
+  if (typeof input === "number") {
     return getDateWithOffset(input);
   }
-  
+
   const date = new Date(input);
   return isNaN(date.getTime()) ? new Date() : date;
+}
+
+/**
+ * Create a function that parses input with a Zod schema and calls a callback with the parsed result
+ */
+export function fn<
+  ArgSchema extends ZodSchema,
+  Callback extends (arg1: z.output<ArgSchema>) => any
+>(arg: ArgSchema, cb: Callback) {
+  return (input: z.input<ArgSchema>): ReturnType<Callback> => {
+    const parsed = arg.parse(input);
+    return cb.apply(cb, [parsed]);
+  };
 }

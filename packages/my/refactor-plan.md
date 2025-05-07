@@ -76,14 +76,12 @@ The `kb init`, `kb update`, `kb save`, and `kb status` commands related to git-b
     my/
     ├── src/
     │   ├── commands/
-    │   │   ├── top_level/ (for script, root, path, packagesLs, cd, ls, sync, note_create)
     │   │   ├── notes/    (for note subcommands like daily, weekly, etc.)
     │   │   ├── todo/     (for Google Tasks integration)
     │   │   ├── calendar/ (for Google Calendar integration)
     │   │   ├── ai/       (for AI integration)
     │   │   └── ...
-    │   ├── common/ (shared utilities, types, config loader, git interaction for sync)
-    │   ├── services/ (Google API interactions, path resolution for cd/ls)
+    │   ├── lib/ (shared utilities, types, config loader, git interaction for sync)
     │   └── index.ts (main entry point, registers all commands)
     ├── package.json
     ├── tsconfig.json

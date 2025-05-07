@@ -6,3 +6,5 @@ temp.*
 *.log
 **/.obsidian/plugins/*
 
+
+**/.claude/settings.local.json

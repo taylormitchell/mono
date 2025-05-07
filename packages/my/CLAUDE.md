@@ -1,8 +1,16 @@
-# Claude's Internal Notes
+# Project Guide
 
 ## Important Files
 - **refactor-plan.md** - Contains the detailed plan for unifying CLI tools into a single `my` tool
 - **todo.md** - Keep track of todos and progress in this file
+
+## Code guidelines
+- Use Bun for runtime
+- Use Zod for runtime validation, explicit TypeScript types for interfaces
+- Use kebab case for directories and files, camelCase for functions and variables, and PascalCase for classes 
+- Use Commander.js for CLI command parsing
+- Prefer a functional programming style
+- No barrel files
 
 ## Reminders
 - Check todo.md regularly to track tasks and update progress
