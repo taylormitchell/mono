@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { ZodSchema, z } from "zod";
+import { z } from "zod";
 
 /**
  * Check if a path exists
@@ -92,24 +92,6 @@ export function parseDate(input?: string | number): Date {
   return isNaN(date.getTime()) ? new Date() : date;
 }
 
-/**
- * Create a function that parses input with a Zod schema and calls a callback with the parsed result
- */
-export function fn<
-  ArgSchema extends ZodSchema,
-  Callback extends (arg1: z.output<ArgSchema>) => any
->(arg: ArgSchema, cb: Callback) {
-  return (input: z.input<ArgSchema>): ReturnType<Callback> => {
-    try {
-      const parsed = arg.parse(input);
-      return cb.apply(cb, [parsed]);
-    } catch (error) {
-      console.error("Error parsing input:", input);
-      console.error(error);
-      throw error;
-    }
-  };
-}
 /**
  * Returns a timestamp with the current timezone offset
  * Example: "2024-01-20-15-30-45-0400"

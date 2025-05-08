@@ -7,42 +7,36 @@ import path from "node:path";
 import fs from "node:fs";
 import { an } from "../../lib/an";
 
-// Schema for ls command
-const lsSchema = z.object({
-  pathOrQuery: z.string().optional(),
-  long: z.boolean().default(false),
-});
-
 export const lsCommand = new Command("ls")
   .description("List files/directories in a named location or based on a query")
   .argument("[path_or_query]", "Path or query to find directory (default: mono root)")
   .option("-l, --long", "Use a long listing format with additional details")
   .action(
     an(
-      z.tuple([z.string().optional()]),
+      z.tuple([z.string()]).or(z.tuple([])),
       z.object({
         long: z.boolean().default(false),
       }),
       async (args, options) => {
         try {
           const pathOrQuery = args[0];
-          
+
           // Get list of directories
           const directories = await listDirectories(pathOrQuery);
-          
+
           if (directories.length === 0) {
             console.error(chalk.yellow(`No directories found for '${pathOrQuery || "mono root"}'`));
             process.exit(0);
           }
-          
+
           // Sort alphabetically
           directories.sort();
-          
+
           // Display directories
           if (options.long) {
             // Get formatting width for alignment
-            const maxPathLength = Math.max(...directories.map(dir => formatPath(dir).length));
-            
+            const maxPathLength = Math.max(...directories.map((dir) => formatPath(dir).length));
+
             // Display with additional details
             for (const dir of directories) {
               try {
@@ -57,7 +51,7 @@ export const lsCommand = new Command("ls")
             }
           } else {
             // Simple display, just the paths
-            directories.forEach(dir => console.log(formatPath(dir)));
+            directories.forEach((dir) => console.log(formatPath(dir)));
           }
         } catch (error) {
           console.error(

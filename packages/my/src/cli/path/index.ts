@@ -2,21 +2,20 @@ import { Command } from "commander";
 import { getConfig } from "../../lib/config";
 import chalk from "chalk";
 import { z } from "zod";
-import { fn } from "../../lib/utils";
 import path from "node:path";
 import fs from "node:fs";
-
-// Schema for named paths
-const pathNameSchema = z.string();
+import { an } from "../../lib/an";
 
 export const pathCommand = new Command("path")
   .description("Get the full path of a folder")
-  .argument("<name>", "Name of the folder")
+  .argument("<n>", "Name of the folder")
   .action(
-    fn(
-      pathNameSchema,
-      (name) => {
+    an(
+      z.tuple([z.string()]),
+      z.object({}),
+      (args) => {
         try {
+          const name = args[0];
           const config = getConfig();
           
           // Check if it's the notes directory

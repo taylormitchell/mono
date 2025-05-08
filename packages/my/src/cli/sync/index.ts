@@ -2,18 +2,18 @@ import { Command } from "commander";
 import { getConfig } from "../../lib/config";
 import { syncRepo } from "../../lib/git";
 import chalk from "chalk";
-import { fn } from "../../lib/utils";
 import { z } from "zod";
+import { an } from "../../lib/an";
 
 export const syncCommand = new Command("sync")
   .description("Sync notes repository (pull then push)")
   .option("-v, --verbose", "Show detailed output")
   .action(
-    fn(
+    an(
       z.object({
         verbose: z.boolean().default(false),
       }),
-      async ({ verbose }) => {
+      async (options) => {
         try {
           const config = getConfig();
           const notesDir = config.notesDir;
@@ -28,7 +28,7 @@ export const syncCommand = new Command("sync")
 
           const result = await syncRepo(notesDir);
 
-          if (verbose) {
+          if (options.verbose) {
             console.log(chalk.gray("Pull result:"), result.pull);
             console.log(chalk.gray("Push result:"), result.push);
           }
