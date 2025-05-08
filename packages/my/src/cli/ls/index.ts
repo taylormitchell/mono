@@ -1,11 +1,11 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import { z } from "zod";
-import { fn } from "../../lib/utils";
+import { formatPath } from "../../lib/utils";
 import { resolvePath, listDirectories } from "../../lib/path-resolver";
 import path from "node:path";
 import fs from "node:fs";
-import { formatPath } from "../../lib/utils";
+import { an } from "../../lib/an";
 
 // Schema for ls command
 const lsSchema = z.object({
@@ -18,10 +18,15 @@ export const lsCommand = new Command("ls")
   .argument("[path_or_query]", "Path or query to find directory (default: mono root)")
   .option("-l, --long", "Use a long listing format with additional details")
   .action(
-    fn(
-      lsSchema,
-      async ({ pathOrQuery, long }) => {
+    an(
+      z.tuple([z.string().optional()]),
+      z.object({
+        long: z.boolean().default(false),
+      }),
+      async (args, options) => {
         try {
+          const pathOrQuery = args[0];
+          
           // Get list of directories
           const directories = await listDirectories(pathOrQuery);
           
@@ -34,7 +39,7 @@ export const lsCommand = new Command("ls")
           directories.sort();
           
           // Display directories
-          if (long) {
+          if (options.long) {
             // Get formatting width for alignment
             const maxPathLength = Math.max(...directories.map(dir => formatPath(dir).length));
             
