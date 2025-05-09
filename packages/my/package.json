@@ -16,7 +16,7 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "start": "./index.sh",
+    "dev": "echo 'While developing, run with: source ./index.sh && _my note'",
     "build": "bun build --target=bun ./index.ts --outfile=dist/my.js",
     "typecheck": "tsc --noEmit --skipLibCheck"
   }

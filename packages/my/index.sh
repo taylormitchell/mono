@@ -12,17 +12,13 @@ TS_SCRIPT="$SCRIPT_DIR/src/cli/index.ts"
 
 # Function to get preferred editor
 get_editor() {
-  if [ "$TERM_PROGRAM" = "vscode" ] || [ -n "$VSCODE_IPC_HOOK" ]; then
+  if [ "$TERM_PROGRAM" = "vscode" ]; then
     echo "code"
-  elif command -v cursor &> /dev/null; then
-    echo "cursor"
   else
     echo "vim"
   fi
 }
 
-# This is the main function that handles all commands
-# It will be available as 'mydev' when sourced
 _my() {
   local command="$1"
   
@@ -55,23 +51,21 @@ _my() {
       ;;
       
     "note")
-      if [ "$2" = "create" ]; then
-        # Check for -m flag
-        if [[ "$*" =~ " -m " ]]; then
-          # Just output the note path
-          bun "$TS_SCRIPT" note create "${@:3}"
-        else
-          # Create note and open in editor
-          local NOTE_PATH=$(bun "$TS_SCRIPT" note create "${@:3}")
+        local RESULT=$(bun "$TS_SCRIPT" note "${@:2}")
+        
+        # Parse the result to get file path and whether to open
+        local IFS=":"
+        read -r NOTE_PATH SHOULD_OPEN <<< "$RESULT"
+        
+        echo $NOTE_PATH
+        
+        # Open the file if the TypeScript code indicated we should
+        if [ "$SHOULD_OPEN" = "true" ]; then
           if [ -n "$NOTE_PATH" ]; then
             local EDITOR=$(get_editor)
             "$EDITOR" "$NOTE_PATH"
           fi
         fi
-      else
-        # For other note commands, pass through to TS script
-        bun "$TS_SCRIPT" note "${@:2}"
-      fi
       ;;
       
     *)
