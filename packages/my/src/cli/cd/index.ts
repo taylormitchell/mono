@@ -8,10 +8,8 @@ export const cdCommand = new Command("cd")
   .description("Change directory to a named location (works with shell wrapper)")
   .argument("[name_or_query]", "Name or query to find directory (default: mono root)")
   .action(
-    an(z.tuple([z.string()]).or(z.tuple([])), z.object({}), async (args) => {
+    an(z.tuple([z.string().optional()]), async (nameOrQuery) => {
       try {
-        const nameOrQuery = args[0];
-
         // If no name/query provided, use mono root
         if (!nameOrQuery) {
           const config = await import("../../lib/config").then((m) => m.getConfig());

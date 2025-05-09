@@ -4,7 +4,7 @@ import { describe, it, expect, jest } from "bun:test";
 import { z } from "zod";
 
 describe("an", () => {
-  // Test case for the first signature: an(optsSchema, handler)
+  // Test case for options only (no args)
   describe("with options only", () => {
     it("should validate options and call handler with parsed options", () => {
       const handler = jest.fn();
@@ -13,10 +13,12 @@ describe("an", () => {
         .option("-a, --age <age>", "User age")
         .action(
           an(
-            z.object({
-              name: z.string(),
-              age: z.string().transform(Number),
-            }),
+            z.tuple([
+              z.object({
+                name: z.string(),
+                age: z.string().transform(Number),
+              }),
+            ]),
             handler
           )
         );
@@ -39,10 +41,12 @@ describe("an", () => {
         .option("-a, --age <age>", "User age (optional)")
         .action(
           an(
-            z.object({
-              name: z.string(),
-              age: z.string().transform(Number).optional(),
-            }),
+            z.tuple([
+              z.object({
+                name: z.string(),
+                age: z.string().transform(Number).optional(),
+              }),
+            ]),
             handler
           )
         );
@@ -58,7 +62,21 @@ describe("an", () => {
     });
   });
 
-  // Test case for the second signature: an(argsSchema, optsSchema, handler)
+  // Test case for required arguments
+  describe("with required arguments", () => {
+    it("should validate required argument and call handler", () => {
+      const handler = jest.fn();
+      const command = new Command()
+        .argument("<filename>", "Name of the file")
+        .action(an(z.tuple([z.string()]), handler));
+
+      command.parse(["node", "test", "config.json"]);
+
+      expect(handler).toHaveBeenCalledWith("config.json", {}, expect.any(Command));
+    });
+  });
+
+  // Test case for arguments and options
   describe("with arguments and options", () => {
     it("should validate both arguments and options and call handler", () => {
       const handler = jest.fn();
@@ -67,10 +85,12 @@ describe("an", () => {
         .option("-m, --mode <mode>", "File mode")
         .action(
           an(
-            z.tuple([z.string()]),
-            z.object({
-              mode: z.string().optional(),
-            }),
+            z.tuple([
+              z.string(),
+              z.object({
+                mode: z.string().optional(),
+              }),
+            ]),
             handler
           )
         );
@@ -78,7 +98,7 @@ describe("an", () => {
       command.parse(["node", "test", "config.json", "--mode", "read"]);
 
       expect(handler).toHaveBeenCalledWith(
-        ["config.json"],
+        "config.json",
         {
           mode: "read",
         },
@@ -94,10 +114,13 @@ describe("an", () => {
         .option("-f, --force", "Force overwrite")
         .action(
           an(
-            z.tuple([z.string(), z.string()]),
-            z.object({
-              force: z.boolean().optional(),
-            }),
+            z.tuple([
+              z.string(),
+              z.string(),
+              z.object({
+                force: z.boolean().optional(),
+              }),
+            ]),
             handler
           )
         );
@@ -105,7 +128,8 @@ describe("an", () => {
       command.parse(["node", "test", "file1.txt", "file2.txt", "--force"]);
 
       expect(handler).toHaveBeenCalledWith(
-        ["file1.txt", "file2.txt"],
+        "file1.txt",
+        "file2.txt",
         {
           force: true,
         },
@@ -118,12 +142,12 @@ describe("an", () => {
       const command = new Command()
         .argument("<required>", "Required argument")
         .argument("[optional]", "Optional argument")
-        .action(an(z.tuple([z.string()]).rest(z.string().optional()), z.object({}), handler));
+        .action(an(z.tuple([z.string(), z.string().optional(), z.object({})]), handler));
 
       // Test with just the required argument
       command.parse(["node", "test", "required-value"]);
 
-      expect(handler).toHaveBeenCalledWith(["required-value"], {}, expect.any(Command));
+      expect(handler).toHaveBeenCalledWith("required-value", undefined, {}, expect.any(Command));
 
       // Reset the mock
       handler.mockClear();
@@ -132,7 +156,8 @@ describe("an", () => {
       command.parse(["node", "test", "required-value", "optional-value"]);
 
       expect(handler).toHaveBeenCalledWith(
-        ["required-value", "optional-value"],
+        "required-value",
+        "optional-value",
         {},
         expect.any(Command)
       );
@@ -145,9 +170,11 @@ describe("an", () => {
       const handler = jest.fn();
       const command = new Command().option("-p, --port <port>", "Port number").action(
         an(
-          z.object({
-            port: z.string().regex(/^\d+$/).transform(Number),
-          }),
+          z.tuple([
+            z.object({
+              port: z.string().regex(/^\d+$/).transform(Number),
+            }),
+          ]),
           handler
         )
       );
@@ -163,7 +190,7 @@ describe("an", () => {
       const handler = jest.fn();
       const command = new Command()
         .argument("<email>", "Email address")
-        .action(an(z.tuple([z.string().email()]), z.object({}), handler));
+        .action(an(z.tuple([z.string().email()]), handler));
 
       expect(() => {
         command.parse(["node", "test", "not-an-email"]);

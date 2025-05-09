@@ -13,13 +13,10 @@ export const lsCommand = new Command("ls")
   .option("-l, --long", "Use a long listing format with additional details")
   .action(
     an(
-      z.tuple([z.string()]).or(z.tuple([])),
-      z.object({
-        long: z.boolean().default(false),
-      }),
-      async (args, options) => {
+      z.tuple([z.string().optional(), z.object({ long: z.boolean().default(false) })]),
+      async (pathOrQuery, options) => {
         try {
-          const pathOrQuery = args[0];
+          // Get list of directories
 
           // Get list of directories
           const directories = await listDirectories(pathOrQuery);

@@ -16,11 +16,8 @@ export const noteCommand = new Command("note")
       .option("-m, --message <message>", "Initial content of the note")
       .action(
         an(
-          z.tuple([z.string()]).or(z.tuple([])),
-          z.object({
-            message: z.string().optional(),
-          }),
-          (args, options) => {
+          z.tuple([z.string().optional(), z.object({ message: z.string().optional() })]),
+          (filename, options) => {
             try {
               const config = getConfig();
               const notesDir = config.notesDir;
@@ -34,13 +31,11 @@ export const noteCommand = new Command("note")
               ensureDir(notesDir);
 
               // Generate filename if not provided
-              const noteFilename = args[0] || `${toTimestampWithTimezone(new Date())}.md`;
-
-              // Make sure the filename ends with .md
-              const filename = noteFilename.endsWith(".md") ? noteFilename : `${noteFilename}.md`;
+              let noteFilename = filename || `${toTimestampWithTimezone(new Date())}.md`;
+              noteFilename = noteFilename.endsWith(".md") ? noteFilename : `${noteFilename}.md`;
 
               // Create the full file path
-              const filePath = path.join(notesDir, filename);
+              const filePath = path.join(notesDir, noteFilename);
 
               // Write the file with the provided message or empty content
               fs.writeFileSync(filePath, options.message || "");
