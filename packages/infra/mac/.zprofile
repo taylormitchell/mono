@@ -15,3 +15,11 @@ alias x="clear"
 alias kb="bun $HOME/Code/mono/packages/kb/cli/index.ts"
 alias log="bun $HOME/Code/mono/scripts/2025-03-30-log-cli.ts"
 alias cal="bun --env-file $HOME/Code/mono/packages/gcal-cli/.env $HOME/Code/mono/packages/gcal-cli/index.ts"
+alias gs="git status"
+gsw() {
+  if [ -z "$1" ]; then
+    git switch -
+  else
+    git switch "$@"
+  fi
+}
