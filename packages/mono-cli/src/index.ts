@@ -8,14 +8,7 @@ import OpenAI from "openai";
 import dotenv from "dotenv";
 
 // Check and load OpenAI API key
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-if (!OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY is not set in environment variables");
-}
 
-// OpenAI client
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 /**
  * Returns a timestamp with the current timezone offset
@@ -102,6 +95,14 @@ You are a helpful assistant that can answer questions and help with tasks.
  * Gets a command suggestion from OpenAI based on a natural language query
  */
 async function getAIResponse(query: string, prompt: string): Promise<string> {
+  dotenv.config({ path: path.resolve(__dirname, "../.env") });
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set in environment variables");
+  }
+
+  // OpenAI client
+  const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
   if (!openai) {
     return "Error: OPENAI_API_KEY is not set in environment variables";
   }

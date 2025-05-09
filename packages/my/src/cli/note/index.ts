@@ -119,12 +119,14 @@ export const noteCommand = new Command("note")
   .description("Create a new note")
   .argument("[name]", "Name of the note file (optional)")
   .option("-m, --message <message>", "Initial content of the note")
+  .option("-o, --offset <offset>", "Offset from today's date")
   .action(
     an(
       z.tuple([
         z.string().optional(),
         z.object({
           message: z.string().optional(),
+          offset: z.string().default("0").transform(Number),
         }),
       ]),
       (name, options) => {
@@ -144,15 +146,9 @@ export const noteCommand = new Command("note")
           
           // Handle special cases
           if (name === "daily") {
-            filePath = getOrCreateDailyNote(undefined, notesDir);
-          } else if (name?.startsWith("daily ")) {
-            const dateOrOffset = name.substring(6).trim();
-            filePath = getOrCreateDailyNote(parseDateOrOffset(dateOrOffset), notesDir);
+            filePath = getOrCreateDailyNote(options.offset, notesDir);
           } else if (name === "weekly") {
-            filePath = getOrCreateWeeklyNote(undefined, notesDir);
-          } else if (name?.startsWith("weekly ")) {
-            const dateOrOffset = name.substring(7).trim();
-            filePath = getOrCreateWeeklyNote(parseDateOrOffset(dateOrOffset), notesDir);
+            filePath = getOrCreateWeeklyNote(options.offset, notesDir);
           } else if (name === "monthly") {
             filePath = getOrCreateMonthlyNote(notesDir);
           } else if (!name) {
