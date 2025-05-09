@@ -1,10 +1,10 @@
 # Project Guide
 
 ## Important Files
-- **refactor-plan.md** - Contains the detailed plan for unifying CLI tools into a single `my` tool
-- **todo.md** - Keep track of todos and progress in this file
-- **index.sh** - Main entry point shell script that handles shell-specific operations
-- **src/cli/index.ts** - TypeScript entry point for the CLI
+- **./docs/refactor-plan.md** - Contains the detailed plan for unifying CLI tools into a single `my` tool
+- **./docs/todo.md** - Keep track of todos and progress in this file
+- **./bin/index.sh** - Main entry point shell script that handles shell-specific operations
+- **./src/cli/index.ts** - TypeScript entry point for the CLI
 
 ## Code guidelines
 - Use Bun for runtime

@@ -8,6 +8,7 @@ import { getConfig } from "../lib/config";
 import chalk from "chalk";
 import os from "os";
 import { z } from "zod";
+import { getNested } from "../lib/get-nested";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar",
@@ -41,68 +42,59 @@ const tokenSchema = z.object({
  * Uses stored tokens or initiates auth flow if needed
  */
 export async function getAuth(): Promise<OAuth2Client> {
-  try {
-    const clientPath = path.join(os.homedir(), ".config", "my", "google", "client.json");
-    const {
-      installed: { client_id, client_secret },
-    } = clientSchema.parse(JSON.parse(fs.readFileSync(clientPath, "utf8")));
-    const oAuth2Client = new OAuth2Client(client_id, client_secret, "urn:ietf:wg:oauth:2.0:oob");
+  const clientPath = path.join(os.homedir(), ".config", "my", "google", "client.json");
+  const tokenPath = path.join(os.homedir(), ".config", "my", "google", "token.json");
 
-    const tokenPath = path.join(os.homedir(), ".config", "my", "google", "token.json");
+  const {
+    installed: { client_id, client_secret, redirect_uris },
+  } = clientSchema.parse(JSON.parse(fs.readFileSync(clientPath, "utf8")));
 
-    // If we have tokens for this account, use them
-    if (fs.existsSync(tokenPath)) {
-      const token = tokenSchema.parse(JSON.parse(fs.readFileSync(tokenPath, "utf8")));
-      oAuth2Client.setCredentials(token);
+  const oAuth2Client = new OAuth2Client(client_id, client_secret, "urn:ietf:wg:oauth:2.0:oob");
 
-      // Check if token is expired or close to expiry (within 5 minutes)
-      const now = Date.now();
-      const expiryTime = token.expiry_date;
-      if (expiryTime && expiryTime - now < 5 * 60 * 1000) {
-        // Force token refresh
-        await oAuth2Client.getAccessToken();
-      }
-
+  if (fs.existsSync(tokenPath)) {
+    // Load existing credentials
+    const saved = tokenSchema.parse(JSON.parse(fs.readFileSync(tokenPath, "utf8")));
+    oAuth2Client.setCredentials(saved);
+    if (saved.expiry_date > Date.now()) {
       return oAuth2Client;
     }
-
-    // Otherwise, start authorization flow
-    console.log(chalk.blue("🔑 First-time authentication required for Google APIs"));
-
-    // Generate auth URL and open in browser
-    const authUrl = oAuth2Client.generateAuthUrl({
-      access_type: "offline",
-      scope: SCOPES.join(" "),
-      prompt: "consent", // Force consent screen to always get refresh token
-    });
-
-    console.log(chalk.yellow("Opening browser for authorization..."));
-    await open(authUrl);
-
-    // Get authorization code from user
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    const code = await rl.question("Paste the authorization code here: ");
-    rl.close();
-
-    // Exchange code for tokens
-    const { tokens: newTokens } = await oAuth2Client.getToken(code.trim());
-    oAuth2Client.setCredentials(newTokens);
-
-    // Save tokens for future use
-    fs.writeFileSync(tokenPath, JSON.stringify(newTokens, null, 2));
-    console.log(chalk.green("✅ Authentication successful. Tokens stored."));
-
-    return oAuth2Client;
-  } catch (error) {
-    console.error(
-      chalk.red(`Authentication error: ${error instanceof Error ? error.message : String(error)}`)
-    );
-    throw error;
+    // Refresh access token
+    try {
+      await oAuth2Client.getAccessToken();
+      fs.mkdirSync(path.dirname(tokenPath), { recursive: true });
+      fs.writeFileSync(tokenPath, JSON.stringify(oAuth2Client.credentials, null, 2));
+      return oAuth2Client;
+    } catch (err: unknown) {
+      if (getNested(err, "response.data.error") === "invalid_grant") {
+        // Refresh token no longer valid – re‑authorising
+        console.log(chalk.yellow("🔄 Refresh token no longer valid – re‑authorising…"));
+        fs.rmSync(tokenPath, { force: true });
+        return await interactiveLogin(oAuth2Client);
+      }
+      throw err;
+    }
+  } else {
+    return await interactiveLogin(oAuth2Client);
   }
+}
+
+async function interactiveLogin(oAuth2Client: OAuth2Client): Promise<OAuth2Client> {
+  const authUrl = oAuth2Client.generateAuthUrl({
+    access_type: "offline", // guarantees refresh_token
+    scope: SCOPES,
+  });
+
+  console.log(chalk.blue("\n▶ Opening browser for Google authorisation…\n"));
+  await open(authUrl);
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const code = await rl.question("Paste the authorisation code here: ");
+  rl.close();
+
+  const { tokens } = await oAuth2Client.getToken(code.trim());
+  oAuth2Client.setCredentials(tokens); // triggers the "tokens" event → persists
+  console.log(chalk.green("✅ Login complete – credentials saved.\n"));
+  return oAuth2Client;
 }
 
 /**

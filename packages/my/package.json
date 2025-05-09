@@ -19,7 +19,7 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "dev": "echo 'While developing, run with: source ./index.sh && _my note'",
+    "dev": "echo 'While developing, run with: source ./bin/index.sh && _my --help'",
     "build": "bun build --target=bun ./index.ts --outfile=dist/my.js",
     "typecheck": "tsc --noEmit --skipLibCheck"
   }
