@@ -17,12 +17,15 @@
 - [x] Create shell integration with index.sh
 
 ## Phase 3: Notes Management
-- [ ] Implement `my note create` command in `src/cli/note/`
-- [ ] Implement `my note daily` command in `src/cli/note/`
-- [ ] Implement `my note weekly` command in `src/cli/note/`
-- [ ] Implement `my note monthly` command in `src/cli/note/`
-- [ ] Implement `my note diff` command in `src/cli/note/`
-- [ ] Implement `my note tail` command in `src/cli/note/`
+### Create a note
+- [ ] Implement `my note [name]` command in `src/cli/note/`. The `daily`, `weekly`, and `monthly` are special cases of this command. 
+Example usage:
+- `my note` will create a note with the current date and time in the format `YYYY-MM-DD_HH-MM-SS_-0500.md`
+- `my note some-name.md` will create a note with the name `some-name.md` 
+- `my note daily` will create a note with the current date in the format `YYYY-MM-DD.md`
+### Manage notes
+- [ ] Implement `my notes diff` command in `src/cli/note/`
+- [ ] Implement `my notes tail` command in `src/cli/note/`
 
 ## Phase 4: Google API Integration
 - [ ] Setup Google API client infrastructure in `src/services/`
