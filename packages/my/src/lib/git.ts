@@ -1,6 +1,7 @@
 import simpleGit from 'simple-git';
 import type { SimpleGit } from 'simple-git';
 import chalk from 'chalk';
+import { exec } from 'child_process';
 
 /**
  * Create git client instance for a repository
@@ -75,4 +76,23 @@ export async function syncRepo(repoPath: string): Promise<{ pull: string; push: 
     console.error(chalk.red(`Error during sync: ${errorMessage}`));
     throw error;
   }
+}
+
+/**
+ * Execute arbitrary git command
+ */
+export async function executeGit(
+  args: string[],
+  options: { cwd: string }
+): Promise<{ success: boolean; data: string }> {
+  return new Promise((resolve) => {
+    const command = `git ${args.join(' ')}`;
+    exec(command, { cwd: options.cwd }, (error, stdout, stderr) => {
+      if (error) {
+        resolve({ success: false, data: stderr || error.message });
+      } else {
+        resolve({ success: true, data: stdout });
+      }
+    });
+  });
 }

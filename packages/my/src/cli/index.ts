@@ -7,6 +7,7 @@ import { scriptCommand } from "./script";
 import { cdCommand } from "./cd";
 import { lsCommand } from "./ls";
 import { noteCommand } from "./note";
+import { notesCommand } from "./notes";
 import { loadConfig } from "../lib/config";
 
 // Create the program
@@ -25,6 +26,7 @@ program.addCommand(scriptCommand);
 program.addCommand(cdCommand);
 program.addCommand(lsCommand);
 program.addCommand(noteCommand);
+program.addCommand(notesCommand);
 
 // Error handling for unknown commands
 program.on("command:*", () => {
