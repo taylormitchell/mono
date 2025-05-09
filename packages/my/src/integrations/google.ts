@@ -54,6 +54,15 @@ export async function getAuth(): Promise<OAuth2Client> {
     if (fs.existsSync(tokenPath)) {
       const token = tokenSchema.parse(JSON.parse(fs.readFileSync(tokenPath, "utf8")));
       oAuth2Client.setCredentials(token);
+
+      // Check if token is expired or close to expiry (within 5 minutes)
+      const now = Date.now();
+      const expiryTime = token.expiry_date;
+      if (expiryTime && expiryTime - now < 5 * 60 * 1000) {
+        // Force token refresh
+        await oAuth2Client.getAccessToken();
+      }
+
       return oAuth2Client;
     }
 
@@ -64,6 +73,7 @@ export async function getAuth(): Promise<OAuth2Client> {
     const authUrl = oAuth2Client.generateAuthUrl({
       access_type: "offline",
       scope: SCOPES.join(" "),
+      prompt: "consent", // Force consent screen to always get refresh token
     });
 
     console.log(chalk.yellow("Opening browser for authorization..."));

@@ -88,7 +88,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   echo "  _my cd mono    # Changes to the mono directory"
   echo "  _my script js  # Creates and opens a JavaScript script"
   echo ""
-  echo "For production use, you'll need to add a similar function to your .zprofile or .bashrc,"
-  echo "but named 'my' instead of '_my'."
   exit 0
 fi
