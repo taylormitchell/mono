@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Main entry point script for the 'my' CLI
 # This script handles shell-specific operations and delegates to TypeScript code
 
@@ -6,9 +5,9 @@
 # source ./index.sh
 # Then use the 'my' command
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-TS_SCRIPT="$SCRIPT_DIR/src/cli/index.ts"
+SCRIPT_DIR=$0
+PROJECT_ROOT="$(cd "$(dirname "$SCRIPT_DIR")/.." >/dev/null && pwd)"
+TS_SCRIPT="$PROJECT_ROOT/src/cli/index.ts"
 
 # Function to get preferred editor
 get_editor() {
