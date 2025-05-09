@@ -5,7 +5,7 @@ import chalk from "chalk";
 import path from "node:path";
 import fs from "node:fs";
 import { getConfig } from "../../lib/config";
-import { executeGit } from "../../lib/git";
+import { executeGit } from "../../integrations/git";
 
 export const tailCommand = new Command("tail")
   .description("Show recently modified notes")

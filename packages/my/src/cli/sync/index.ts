@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { getConfig } from "../../lib/config";
-import { syncRepo } from "../../lib/git";
+import { syncRepo } from "../../integrations/git";
 import chalk from "chalk";
 import { z } from "zod";
 import { an } from "../../lib/an";

@@ -20,8 +20,10 @@ function validateDir(p: string) {
 const configSchema = z.object({
   notesDir: z.string().transform((p) => validateDir(expandHome(p))),
   monoDir: z.string().transform((p) => validateDir(expandHome(p))),
-  googleCredentialsPath: z.string().optional(),
-  googleTokenPath: z.string().optional(),
+  googleCredentialsPath: z.string().optional().transform((p) => p ? expandHome(p) : p),
+  googleTokenPath: z.string().optional().transform((p) => p ? expandHome(p) : p),
+  defaultCalendarId: z.string().optional().default("primary"),
+  defaultTaskListId: z.string().optional().default("@default"),
 });
 
 // TypeScript type inferred from Zod schema

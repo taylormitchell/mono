@@ -8,7 +8,12 @@ import { cdCommand } from "./cd";
 import { lsCommand } from "./ls";
 import { noteCommand } from "./note";
 import { notesCommand } from "./notes";
+import { calendarCommand } from "./calendar";
+import { todoCommand } from "./todo";
+import { aiCommand } from "./ai";
 import { loadConfig } from "../lib/config";
+import { askCommand } from "./ask";
+import { cmdCommand } from "./cmd";
 
 // Create the program
 program
@@ -27,6 +32,11 @@ program.addCommand(cdCommand);
 program.addCommand(lsCommand);
 program.addCommand(noteCommand);
 program.addCommand(notesCommand);
+program.addCommand(calendarCommand);
+program.addCommand(todoCommand);
+program.addCommand(aiCommand);
+program.addCommand(askCommand);
+program.addCommand(cmdCommand);
 
 // Error handling for unknown commands
 program.on("command:*", () => {

@@ -3,7 +3,7 @@ import { an } from "../../lib/an";
 import { z } from "zod";
 import chalk from "chalk";
 import { getConfig } from "../../lib/config";
-import { executeGit } from "../../lib/git";
+import { executeGit } from "../../integrations/git";
 
 export const diffCommand = new Command("diff")
   .description("Show git diff analysis of recent note changes")
