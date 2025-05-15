@@ -3,13 +3,14 @@
   "module": "index.ts",
   "type": "module",
   "dependencies": {
+    "@linear/sdk": "^40.0.0",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
     "googleapis": "^148.0.0",
+    "node-fetch": "^3.3.2",
     "open": "^10.1.1",
     "simple-git": "^3.27.0",
-    "zod": "^3.24.4",
-    "node-fetch": "^3.3.2"
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/bun": "latest",

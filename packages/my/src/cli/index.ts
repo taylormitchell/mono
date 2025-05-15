@@ -14,6 +14,7 @@ import { aiCommand } from "./ai";
 import { loadConfig } from "../lib/config";
 import { askCommand } from "./ask";
 import { cmdCommand } from "./cmd";
+import { linearCommand } from "./linear";
 
 // Create the program
 program
@@ -37,6 +38,7 @@ program.addCommand(todoCommand);
 program.addCommand(aiCommand);
 program.addCommand(askCommand);
 program.addCommand(cmdCommand);
+program.addCommand(linearCommand);
 
 // Error handling for unknown commands
 program.on("command:*", () => {
