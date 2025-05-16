@@ -44,7 +44,7 @@ function getOrCreateJournalNote({
   const year = targetDate.getFullYear();
   const month = String(targetDate.getMonth() + 1).padStart(2, "0");
   const day = String(targetDate.getDate()).padStart(2, "0");
-  
+
   switch (type) {
     case "daily":
       filepath = path.join(notesDir, `${year}-${month}-${day}.md`);
@@ -143,9 +143,24 @@ export const noteCommand = new Command("note")
           ensureDir(notesDir);
 
           let filePath: string;
-          
+
           // Handle special cases
-          if (name === "daily") {
+          if (name === "head") {
+            const files = fs
+              .readdirSync(notesDir)
+              .filter((file) => file.endsWith(".md"))
+              .map((file) => ({
+                name: file,
+                path: path.join(notesDir, file),
+                mtime: fs.statSync(path.join(notesDir, file)).mtime,
+              }))
+              .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+            if (files.length === 0) {
+              console.error(chalk.red("No markdown files found in notes directory"));
+              process.exit(1);
+            }
+            filePath = files[0].path;
+          } else if (name === "daily") {
             filePath = getOrCreateDailyNote(options.offset, notesDir);
           } else if (name === "weekly") {
             filePath = getOrCreateWeeklyNote(options.offset, notesDir);
@@ -155,14 +170,14 @@ export const noteCommand = new Command("note")
             // Default: timestamp format
             const noteFilename = `${toTimestampWithTimezone(new Date())}.md`;
             filePath = path.join(notesDir, noteFilename);
-            
+
             // Write the file with the provided message or empty content
             fs.writeFileSync(filePath, options.message || "");
           } else {
             // User provided name
             const noteFilename = name.endsWith(".md") ? name : `${name}.md`;
             filePath = path.join(notesDir, noteFilename);
-            
+
             // Write the file with the provided message or empty content
             fs.writeFileSync(filePath, options.message || "");
           }
@@ -181,3 +196,18 @@ export const noteCommand = new Command("note")
       }
     )
   );
+
+export const createNoteAction = (args: any[]) => {
+  if (args.length === 1 && typeof args[0] === "string" && args[0].includes(" ")) {
+    const config = getConfig();
+    const notesDir = config.notesDir;
+    const noteFilename = `${toTimestampWithTimezone(new Date())}.md`;
+    const filePath = path.join(notesDir, noteFilename);
+    fs.writeFileSync(filePath, args[0]);
+    console.log(filePath);
+  } else {
+    // console.error(chalk.red(`Error: unknown command "${args.join(" ")}"`));
+    // console.log(`See ${chalk.green("--help")} for a list of available commands.`);
+    process.exit(1);
+  }
+};

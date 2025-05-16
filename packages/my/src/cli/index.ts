@@ -6,7 +6,7 @@ import { pathCommand } from "./path";
 import { scriptCommand } from "./script";
 import { cdCommand } from "./cd";
 import { lsCommand } from "./ls";
-import { noteCommand } from "./note";
+import { noteCommand, createNoteAction as catchAllAction } from "./note";
 import { notesCommand } from "./notes";
 import { calendarCommand } from "./calendar";
 import { todoCommand } from "./todo";
@@ -16,7 +16,6 @@ import { askCommand } from "./ask";
 import { cmdCommand } from "./cmd";
 import { linearCommand } from "./linear";
 import { mcpCommand } from "./mcp";
-
 // Create the program
 program
   .name("my")
@@ -41,13 +40,7 @@ program.addCommand(askCommand);
 program.addCommand(cmdCommand);
 program.addCommand(linearCommand);
 program.addCommand(mcpCommand);
-
-// Error handling for unknown commands
-program.on("command:*", () => {
-  console.error(chalk.red(`Error: unknown command "${program.args.join(" ")}"`));
-  console.log(`See ${chalk.green("--help")} for a list of available commands.`);
-  process.exit(1);
-});
+program.arguments("[text...]").action(catchAllAction);
 
 // Parse command line arguments
 program.parse();

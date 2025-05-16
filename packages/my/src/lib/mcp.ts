@@ -1,7 +1,6 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as linear from "../integrations/linear";
-import { LinearClient } from "@linear/sdk";
 import fetch from "node-fetch";
 
 // Create the MCP server

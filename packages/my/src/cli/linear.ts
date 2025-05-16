@@ -41,16 +41,4 @@ export const linearCommand = new Command("linear")
         }
       })
     )
-  )
-  .addCommand(
-    new Command("api-key").description("Use the graphql api directly").action(
-      an(z.tuple([z.object({})]), () => {
-        const apiKey = getApiKey();
-        if (!apiKey) {
-          console.error(chalk.red(`Failed to load api key`));
-          process.exit(1);
-        }
-        console.log(apiKey);
-      })
-    )
   );
