@@ -145,21 +145,27 @@ export const noteCommand = new Command("note")
           let filePath: string;
 
           // Handle special cases
-          if (name === "head") {
+          if (name?.match(/^head\^*$/)) {
+            const offset = name.replace("head", "").trim().length;
+            // Find the most recently modified note file
             const files = fs
               .readdirSync(notesDir)
               .filter((file) => file.endsWith(".md"))
-              .map((file) => ({
-                name: file,
-                path: path.join(notesDir, file),
-                mtime: fs.statSync(path.join(notesDir, file)).mtime,
-              }))
+              .map((file) => {
+                const filePath = path.join(notesDir, file);
+                const stats = fs.statSync(filePath);
+                return {
+                  path: filePath,
+                  mtime: stats.mtime,
+                };
+              })
               .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+
             if (files.length === 0) {
-              console.error(chalk.red("No markdown files found in notes directory"));
+              console.error(chalk.red("No note files found"));
               process.exit(1);
             }
-            filePath = files[0].path;
+            filePath = files[offset].path;
           } else if (name === "daily") {
             filePath = getOrCreateDailyNote(options.offset, notesDir);
           } else if (name === "weekly") {
