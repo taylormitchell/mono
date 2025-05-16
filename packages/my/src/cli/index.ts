@@ -15,6 +15,7 @@ import { loadConfig } from "../lib/config";
 import { askCommand } from "./ask";
 import { cmdCommand } from "./cmd";
 import { linearCommand } from "./linear";
+import { mcpCommand } from "./mcp";
 
 // Create the program
 program
@@ -39,6 +40,7 @@ program.addCommand(aiCommand);
 program.addCommand(askCommand);
 program.addCommand(cmdCommand);
 program.addCommand(linearCommand);
+program.addCommand(mcpCommand);
 
 // Error handling for unknown commands
 program.on("command:*", () => {
