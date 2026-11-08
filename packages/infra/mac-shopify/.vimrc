@@ -25,3 +25,5 @@ set foldmethod=indent
 set foldlevel=99
 au BufEnter *.md setlocal foldexpr=MarkdownLevel()  
 au BufEnter *.md setlocal foldmethod=expr   
+set clipboard=unnamed
+
